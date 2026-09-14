@@ -117,3 +117,22 @@ app.*.symbols
 !**/ios/**/default.perspectivev3
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 !/dev/ci/**/Gemfile.lock
+
+# Team project additions
+.env
+.env.*
+!.env.example
+!**/.env.example
+!frontend/pubspec.lock
+__pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.code-workspace

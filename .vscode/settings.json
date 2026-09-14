@@ -1,0 +1,12 @@
+{
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "[dart]": {
+    "editor.formatOnSave": true
+  },
+  "search.exclude": {
+    "**/.dart_tool": true,
+    "**/.venv": true,
+    "**/build": true
+  }
+}
