@@ -2,7 +2,10 @@
 
 Flutter Web은 UI와 공개 환경 설정을 담당합니다. FastAPI는 API 및 서버 전용 외부 서비스 연동을 담당합니다.
 Supabase는 Auth, PostgreSQL Database, Storage를 담당할 예정입니다.
-MediaPipe 자세 분석과 외부 LLM 호출은 backend services에 구현할 예정입니다.
+MediaPipe 분석 모듈은 `backend/app/services/movement/`에 배치되어 있습니다.
+PC 웹캠 검증은 `tools/motion_demo/`의 독립 도구를 사용하며 제품 API와 Flutter 화면에는 아직 연결하지 않았습니다.
+외부 LLM 호출은 backend services에 구현할 예정입니다.
+원본 파일 이동 및 테스트 방법은 [모션 통합 문서](movement/README.md)에 있습니다.
 
 Frontend는 `BACKEND_URL`을 통해 FastAPI에 접근합니다. 현재 HTTP 요청 기능은 구현하지 않았습니다.
 Supabase 공개 설정이 모두 입력된 경우 앱 시작 시 Flutter client를 초기화합니다.

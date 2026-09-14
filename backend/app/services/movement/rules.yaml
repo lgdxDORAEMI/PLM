@@ -1,0 +1,30 @@
+# 규칙 엔진 임계값 (계획서 §5.5)
+# 데모용으로 단축된 값이 포함되어 있다. 실서비스 값은 별도 산정 필요 (계획서 §8 참고).
+# 코드 수정 없이 이 파일만 바꿔서 튜닝한다.
+
+posture:
+  # 캘리브레이션 기준선 대비 이 이상 벗어나면 "허리 숙임"으로 판정 (도)
+  bending_trunk_dev_min: 20
+  # 기준선보다 무릎각이 이만큼 작아지면 "앉음/스쿼트"로 판정 (도)
+  sitting_knee_dev_min: 40
+  # 노이즈성 순간 변화를 걸러내기 위한 최소 지속시간 (초)
+  min_state_duration: 0.5
+  # 판정 불가(가시성 미달) 프레임이 이 시간 이내면 직전 상태를 유지한다 (일시적 흔들림 허용)
+  grace_period_sec: 1.0
+
+bending_burden:
+  # 한 번의 숙임이 이만큼 지속되면 Prolonged Load
+  prolonged_after_sec: 8
+  # 아래 시간(window) 안에 이 횟수 이상 반복되면 Repeated Load
+  repeated_after_count: 3
+  repeated_window_sec: 60
+
+standing_burden:
+  # 서 있는 자세가 이만큼 지속되면 Prolonged Load
+  # (실서비스는 NIOSH 3시간 기준, 데모는 단축값 — 계획서 §5.6 참고)
+  prolonged_after_sec: 15
+
+sit_to_stand:
+  # 앉음 → 일어섬 전환 시 High-load Action 이벤트로 기록 (Lou 등 2001 연구 근거)
+  # 노이즈성 짧은 웅크림은 제외하기 위한 최소 착석 지속시간
+  min_sit_duration_sec: 1.0

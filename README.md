@@ -180,7 +180,13 @@ python -m unittest discover -s tests
 
 ## Current Scope
 
+첨부 모션 데모의 분석 모듈과 모델은 `backend/app/services/movement/`, `backend/models/`에 배치했습니다.
+PC 웹캠 테스트 도구는 `tools/motion_demo/`에서 별도로 실행합니다.
+원본 파일 이동 목록과 설치/테스트 명령은 [모션 통합 문서](docs/movement/README.md)를 참고하세요.
+기본 Backend 요구사항과 Flutter 설정은 유지하며 웹·모바일 카메라 및 HTTP 분석 API는 아직 연결하지 않았습니다.
+
 초기 화면, 환경 설정, API 상태 확인, 로컬 CORS, Supabase client 생성 경계만 준비되어 있습니다.
 프로필/컨디션/루틴/식단/움직임/수면 기능, 상태관리, 인증/토큰 검증, DB 스키마 및 migration,
-Storage 작업, LLM 실제 호출, MediaPipe 자세 분석은 구현하지 않았습니다.
-LLM은 추상 인터페이스이며 MediaPipe 분석 메서드는 호출 시 `NotImplementedError`를 발생시킵니다.
+Storage 작업, LLM 실제 호출, 제품 화면의 MediaPipe 연동은 구현하지 않았습니다.
+LLM은 추상 인터페이스이며 기존 API용 MediaPipe 서비스 메서드는 호출 시 `NotImplementedError`를 발생시킵니다.
+독립 모션 분석 모듈과 PC 웹캠 도구는 이 API용 확장 지점과 별도로 제공됩니다.
