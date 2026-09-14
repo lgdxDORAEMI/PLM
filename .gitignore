@@ -132,6 +132,7 @@ __pycache__/
 .vscode/*
 !.vscode/settings.json
 !.vscode/extensions.json
+!.vscode/launch.json
 .DS_Store
 Thumbs.db
 Desktop.ini
