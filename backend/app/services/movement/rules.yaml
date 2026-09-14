@@ -28,3 +28,24 @@ sit_to_stand:
   # 앉음 → 일어섬 전환 시 High-load Action 이벤트로 기록 (Lou 등 2001 연구 근거)
   # 노이즈성 짧은 웅크림은 제외하기 위한 최소 착석 지속시간
   min_sit_duration_sec: 1.0
+
+# --- 아래는 다른 규칙들과 성격이 다름: 위 규칙들은 "개인 캘리브레이션 편차" +
+# "연속 지속시간/최근 반복횟수" 기준인 반면, 이건 "절대각" + "끊김과 무관한 누적시간" 기준.
+# 근거: Frankel 등, Occupational and Environmental Medicine.
+# "Occupational standing, walking and forward bending during pregnancy and the
+# risk of miscarriage: a Danish nationwide, register-based, cohort study"
+# 덴마크 전국 등록 코호트, 임신 803,829건. 가속도계로 실측한 하루 8시간 근무 중
+# "30도 이상 전방 굴곡" 누적시간이 1시간 늘어날 때마다 유산 위험 HR 1.36
+# (상관관계 연구이며, 인과관계를 확정한 연구는 아님 — 리포트 문구는 반드시
+# "위험 X%" 같은 확정적 표현 없이 관찰 사실 + 문헌 언급까지만 사용할 것)
+cumulative_forward_bend_risk:
+  # 가속도계 기준 절대각(수직선 기준). 개인 캘리브레이션과 무관하게 고정값 사용.
+  absolute_angle_deg: 30
+  # 원 연구 수치: 하루 누적 1시간이 늘 때마다 HR 1.36 (연속 자세일 필요 없음, 끊겨도 합산)
+  real_reference_hours: 1.0
+  # 데모에서 "1시간 도달"을 상징적으로 보여주기 위한 축소값 (실서비스는 실제 시간 단위로 복원)
+  demo_scaled_seconds: 10
+  # 누적 중 아주 짧은 끊김(추적 실패 등)은 무시하고 계속 더한다.
+  # 이 시간을 넘는 끊김은 그 구간을 '없었던 시간'으로 보고 누적에 포함하지 않는다
+  # (실제로 숙이고 있었을 수도 있지만, 확인 안 된 시간을 누적에 넣지 않는 보수적 처리)
+  max_gap_to_bridge_sec: 1.0

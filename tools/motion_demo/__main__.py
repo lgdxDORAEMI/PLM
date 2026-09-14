@@ -78,10 +78,13 @@ def webcam(index: int | None) -> None:
                 features = compute_features(pose) if pose is not None else None
                 valid = features is not None and features.valid
                 trunk_dev = knee_dev = float("nan")
+                trunk_abs = float("nan")
                 if valid:
-                    trunk_dev = profile.trunk_deviation(smoother.update("trunk", features.trunk_flexion_3d))
+                    trunk_abs = smoother.update("trunk", features.trunk_flexion_3d)
+                    trunk_dev = profile.trunk_deviation(trunk_abs)
                     knee_dev = profile.knee_deviation(smoother.update("knee", features.knee_mean_3d))
-                judgement = engine.update(timestamp / 1000, valid, trunk_dev, knee_dev)
+                judgement = engine.update(timestamp / 1000, valid, trunk_dev, knee_dev,
+                                          trunk_flexion_abs=trunk_abs)
                 preview = frame[:, ::-1].copy() if config.mirror_preview else frame.copy()
                 if pose is not None:
                     width = frame.shape[1]

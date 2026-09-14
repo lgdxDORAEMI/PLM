@@ -42,6 +42,9 @@ class FrameJudgement:
     state_duration: float
     bend_reps_in_window: int
     event: str | None = None  # 예: "sit_to_stand"
+    # Frankel 등 연구 기반 누적 지표 (절대각 30도 기준, 끊겨도 계속 합산됨)
+    cumulative_bend_sec: float = 0.0
+    research_threshold_crossed: bool = False
 
 
 class RuleEngine:
@@ -71,11 +74,22 @@ class RuleEngine:
         sts = self.rules["sit_to_stand"]
         self.min_sit_duration = sts["min_sit_duration_sec"]
 
+        r = self.rules.get("cumulative_forward_bend_risk")
+        self.research_enabled = r is not None
+        if self.research_enabled:
+            self.research_angle_min = r["absolute_angle_deg"]
+            self.research_threshold_sec = r["demo_scaled_seconds"]
+            self.research_max_gap = r["max_gap_to_bridge_sec"]
+
         self._current_posture = UNKNOWN
         self._state_start_t: float | None = None
         self._last_valid_t: float | None = None
         self._sit_start_t: float | None = None
         self._bend_session_ends: deque[float] = deque()
+
+        # Frankel 등 연구 기반 누적 카운터 (개인 상태 전이와 무관하게 별도로 흘러간다)
+        self._cumulative_bend_sec = 0.0
+        self._last_accum_t: float | None = None
 
     def classify(self, trunk_dev: float, knee_dev: float) -> str:
         """가시성 있는 프레임 하나의 순간 자세 분류. 무릎 기준이 몸통보다 우선한다
@@ -109,14 +123,34 @@ class RuleEngine:
 
         return event
 
+    def _accumulate_research_bend(self, t: float, valid: bool, trunk_flexion_abs: float) -> None:
+        """Frankel 등 연구 지표: 절대각 기준, 자세 전이와 무관하게 끊김 없이 계속 합산.
+
+        가시성 미달 등으로 유효하지 않은 프레임에서는 last_accum_t를 갱신하지 않는다.
+        그래야 추적이 복귀했을 때 간격(dt)이 max_gap_to_bridge_sec를 넘어 자동으로
+        누적에서 제외된다 (안 보이던 동안 실제로 숙이고 있었을 수도 있지만,
+        확인 안 된 시간은 보수적으로 누적하지 않는다 — rules.yaml 주석 참고).
+        """
+        if not self.research_enabled:
+            return
+        if not valid or trunk_flexion_abs != trunk_flexion_abs:  # NaN 체크
+            return
+        if self._last_accum_t is not None:
+            dt = t - self._last_accum_t
+            if dt <= self.research_max_gap and trunk_flexion_abs >= self.research_angle_min:
+                self._cumulative_bend_sec += dt
+        self._last_accum_t = t
+
     def update(
         self,
         t: float,
         valid: bool,
         trunk_dev: float = float("nan"),
         knee_dev: float = float("nan"),
+        trunk_flexion_abs: float = float("nan"),
     ) -> FrameJudgement:
         event: str | None = None
+        self._accumulate_research_bend(t, valid, trunk_flexion_abs)
 
         if not valid:
             if (self._last_valid_t is not None
@@ -155,7 +189,19 @@ class RuleEngine:
         else:
             label = NORMAL
 
+        research_crossed = (
+            self.research_enabled and self._cumulative_bend_sec >= self.research_threshold_sec
+        )
+        if research_crossed and LABEL_LEVEL[label] < LABEL_LEVEL[PROLONGED_LOAD]:
+            # 등록 코호트 80만 건 규모 연구 근거라 다른 추정값 규칙보다 신뢰도가 높다.
+            # 다만 sit_to_stand 순간의 High-load Action(더 급성 이벤트)은 덮어쓰지 않는다.
+            label = PROLONGED_LOAD
+
         if event == "sit_to_stand":
             label = HIGH_LOAD_ACTION
 
-        return FrameJudgement(t, posture, label, state_duration, bend_reps, event)
+        return FrameJudgement(
+            t, posture, label, state_duration, bend_reps, event,
+            cumulative_bend_sec=self._cumulative_bend_sec,
+            research_threshold_crossed=research_crossed,
+        )
