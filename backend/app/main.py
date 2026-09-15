@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.v1.movement import router as movement_router
+
 app = FastAPI(title="PLM API", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
@@ -9,6 +11,8 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type"],
 )
+
+app.include_router(movement_router, prefix="/api/v1")
 
 
 @app.get("/")
