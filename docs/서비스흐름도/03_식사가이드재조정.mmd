@@ -1,0 +1,28 @@
+%% 서비스 흐름도: 식사 가이드 확인 및 AI 챗봇 재조정
+%% 관련 기능: W-MEAL-001, W-MEAL-002, W-MEAL-003, W-CHAT-001 / 관련 UC: UC4, UC11 (전제: UC3 루틴 생성 완료)
+flowchart TD
+    classDef user fill:#E8F0FE,stroke:#4285F4,color:#1a1a1a;
+    classDef system fill:#F1F3F4,stroke:#5f6368,color:#1a1a1a;
+    classDef decision fill:#FEF7E0,stroke:#F9AB00,color:#1a1a1a;
+    classDef terminal fill:#E6F4EA,stroke:#34A853,color:#1a1a1a;
+    classDef external fill:#FCE8E6,stroke:#EA4335,color:#1a1a1a,stroke-dasharray: 4 3;
+
+    Start(["시작: 식사 가이드 화면 진입"]):::terminal --> A["시스템: 추천 메뉴·추천 이유·영양 목적 표시"]:::system
+    A --> B{"사용자: 추천 메뉴가 마음에 드는가?"}:::decision
+    B -- 예 --> C["시스템: 수락 이력 기록"]:::system --> End1(["종료: 루틴 실행 기록으로 이동"]):::terminal
+
+    B -- 아니오 --> D(["사용자: 챗봇에게 상황/요청 전달<br/>(예: 다른 메뉴로 변경 요청)"]):::user
+    D --> E["시스템: 프로필·컨디션·이전 이력 맥락 구성"]:::system
+
+    subgraph EXT["외부 시스템"]
+        F["AI 엔진: 대화 맥락 반영 재추천 생성"]:::external
+    end
+
+    E --> F
+    F --> G{"시스템: AI 엔진 응답 정상인가?"}:::decision
+    G -- 실패/시간초과 --> H["시스템: 오류 안내 및 재시도 요청"]:::system --> D
+    G -- 정상 --> I["시스템: 재추천 메뉴 표시"]:::system
+    I --> J{"사용자: 재추천 결과를 수락하는가?"}:::decision
+    J -- 아니오 --> D
+    J -- 예 --> K["시스템: 변경된 메뉴 저장 및 수락 이력 기록"]:::system
+    K --> End2(["종료: 루틴 실행 기록으로 이동"]):::terminal
