@@ -1,0 +1,29 @@
+%% 서비스 흐름도: 수면 가이드 확인 및 실행
+%% 관련 기능: W-SLEEP-001, W-SLEEP-002, W-RECORD-001 / 관련 UC: UC3, UC6, UC12 (전제: UC3 루틴 생성 완료)
+%% UI 기준: AI가 추천한 5개 환경 항목(조명/온도/습도/소리/공기청정기) 중 사용자가 실행할 항목을 선택(카드 탭)하고,
+%%          '설정 직접 변경하기'로 항목별 값을 수정할 수 있으며, '수면 루틴 시작하기'를 누르면 선택된 항목만 가전에 실행된다.
+flowchart TD
+    classDef user fill:#E8F0FE,stroke:#4285F4,color:#1a1a1a;
+    classDef system fill:#F1F3F4,stroke:#5f6368,color:#1a1a1a;
+    classDef decision fill:#FEF7E0,stroke:#F9AB00,color:#1a1a1a;
+    classDef terminal fill:#E6F4EA,stroke:#34A853,color:#1a1a1a;
+    classDef external fill:#FCE8E6,stroke:#EA4335,color:#1a1a1a,stroke-dasharray: 4 3;
+
+    Start(["시작: 수면 가이드 화면 진입"]):::terminal --> A["시스템: AI 추천 수면 루틴·권장 취침시간·환경 5항목(조명·온도·습도·소리·공기청정기) 표시"]:::system
+    A --> B(["사용자: 실행할 환경 항목 선택<br/>(카드 탭, 복수 선택 가능)"]):::user
+    B --> C{"사용자: 항목 값을 직접 바꾸고 싶은가?"}:::decision
+
+    C -- 예 --> D(["사용자: '설정 직접 변경하기'에서 값 수정"]):::user
+    D --> E["시스템: 변경값 저장 및 화면 갱신"]:::system
+    E --> A
+
+    C -- 아니오 --> F(["사용자: '수면 루틴 시작하기' 클릭"]):::user
+    F --> G["시스템: 선택된 항목만 실행 명령 구성"]:::system
+
+    subgraph EXT["외부 시스템"]
+        H["ThinQ 연동 가전: 선택된 조명·온도·습도·소리·공기청정기 실행"]:::external
+    end
+
+    G --> H
+    H --> I["시스템: 실행 결과 수신 및 완료 상태를 루틴 실행 기록에 반영"]:::system
+    I --> End(["다음 흐름: 05_루틴실행기록및리포트"]):::terminal

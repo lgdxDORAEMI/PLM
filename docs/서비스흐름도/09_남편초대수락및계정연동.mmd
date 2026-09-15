@@ -1,0 +1,24 @@
+%% 서비스 흐름도: 남편 초대 수락 및 계정 연동
+%% 관련 기능: H-INVITE-001 / 관련 UC: UC16 (전제: UC15 아내의 초대 링크 발송 완료)
+flowchart TD
+    classDef user fill:#E8F0FE,stroke:#4285F4,color:#1a1a1a;
+    classDef system fill:#F1F3F4,stroke:#5f6368,color:#1a1a1a;
+    classDef decision fill:#FEF7E0,stroke:#F9AB00,color:#1a1a1a;
+    classDef terminal fill:#E6F4EA,stroke:#34A853,color:#1a1a1a;
+
+    Start(["시작: 남편이 초대 링크 클릭"]):::terminal --> A{"시스템: 링크 토큰이 유효한가?<br/>(만료 전 · 미사용)"}:::decision
+
+    A -- 무효/만료 --> B["시스템: 링크 만료/이미 사용됨 안내"]:::system
+    B --> End1(["종료: 연동 실패, 아내에게 재초대 요청 안내"]):::terminal
+
+    A -- 유효 --> C{"시스템: ThinQ 앱이 설치되어 있는가?"}:::decision
+    C -- 미설치 --> D(["사용자(남편): 앱스토어에서 설치"]):::user --> E
+    C -- 설치됨 --> E(["사용자(남편): ThinQ 가입/로그인"]):::user
+
+    E --> F{"시스템: 해당 남편 계정이 이미 다른 아내 계정과 연동되어 있는가?"}:::decision
+    F -- 예 --> G["시스템: 중복 연동 불가 안내"]:::system
+    G --> End2(["종료: 연동 실패"]):::terminal
+
+    F -- 아니오 --> H["시스템: 남편 계정을 아내 계정과 연동"]:::system
+    H --> I["시스템: 연동 완료 안내"]:::system
+    I --> End3(["종료: 남편 홈(캘린더)으로 이동"]):::terminal

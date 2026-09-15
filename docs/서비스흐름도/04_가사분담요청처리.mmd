@@ -1,0 +1,29 @@
+%% 서비스 흐름도: 가사 가이드 & 가족 분담 요청 처리
+%% 관련 기능: W-HOUSE-001, W-HOUSE-003, W-RECORD-002, H-REQUEST-001, H-REQUEST-002, H-REQUEST-003 / 관련 UC: UC3, UC5, UC9
+flowchart TD
+    classDef user fill:#E8F0FE,stroke:#4285F4,color:#1a1a1a;
+    classDef system fill:#F1F3F4,stroke:#5f6368,color:#1a1a1a;
+    classDef terminal fill:#E6F4EA,stroke:#34A853,color:#1a1a1a;
+
+    Start(["시작: 가사 가이드 화면 진입"]):::terminal --> A["시스템: 집안일을 직접수행/가전수행/가족분담으로 분류 표시"]:::system
+
+    subgraph WIFE["아내 앱"]
+        B(["사용자(아내): 가족 분담 항목 선택 후 카드 보내기"]):::user
+    end
+
+    A --> B
+    B --> C["시스템: 요청 생성 및 남편 계정에 알림 전송"]:::system
+
+    subgraph HUSBAND["남편 앱"]
+        D(["사용자(남편): 알림/카드에서 요청 확인"]):::user
+        E(["사용자(남편): '확인' 버튼 클릭"]):::user
+        F(["사용자(남편): 실제 집안일 수행"]):::user
+        G(["사용자(남편): '완료했어요' 버튼 클릭"]):::user
+    end
+
+    C --> D --> E
+    E --> H["시스템: 요청 상태 = 확인됨, 아내 화면 반영"]:::system
+    H --> F --> G
+    G --> I["시스템: 요청 상태 = 완료, Household DB 저장"]:::system
+    I --> J["시스템: 아내의 루틴 실행 기록에 완료 상태 자동 반영"]:::system
+    J --> End(["종료: 캘린더/리포트에 가족 분담 내역 반영"]):::terminal

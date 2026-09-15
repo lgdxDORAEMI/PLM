@@ -1,0 +1,21 @@
+%% 서비스 흐름도: 남편 오전 리포트 & 알림
+%% 관련 기능: W-COND-002, H-REPORT-001, H-NOTI-001, H-CAL-001 / 관련 UC: UC2, UC8, UC10
+flowchart TD
+    classDef user fill:#E8F0FE,stroke:#4285F4,color:#1a1a1a;
+    classDef system fill:#F1F3F4,stroke:#5f6368,color:#1a1a1a;
+    classDef decision fill:#FEF7E0,stroke:#F9AB00,color:#1a1a1a;
+    classDef terminal fill:#E6F4EA,stroke:#34A853,color:#1a1a1a;
+
+    Start(["시작: 아내가 컨디션 체크 완료"]):::terminal --> A["시스템: 오전 컨디션 리포트 자동 생성<br/>(임신주수·컨디션·예정활동·4대가이드 요약)"]:::system
+    A --> B{"시스템: 남편 계정이 연동되어 있는가?"}:::decision
+    B -- 아니오 --> C["시스템: 알림 생략, 리포트만 저장"]:::system --> End1(["종료"]):::terminal
+    B -- 예 --> D["시스템: 남편에게 알림 전송"]:::system
+
+    D --> E(["사용자(남편): 알림 벨에서 리포트 도착 확인"]):::user
+    E --> F(["사용자(남편): 리포트 상세 화면 진입"]):::user
+    F --> G["시스템: 오전 리포트 상세 표시"]:::system
+    G --> End2(["종료: 아내 상태 파악 완료"]):::terminal
+
+    E -.대안: 알림 대신 직접 조회.-> H(["사용자(남편): 캘린더에서 오늘 날짜 선택"]):::user
+    H --> I["시스템: 해당 날짜 기록 표시"]:::system
+    I --> End2

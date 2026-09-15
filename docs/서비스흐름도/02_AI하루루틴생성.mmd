@@ -1,0 +1,26 @@
+%% 서비스 흐름도: AI 하루 루틴 생성
+%% 관련 기능: W-COND-001, W-ACT-001, W-ROUTINE-001, W-ROUTINE-002, W-ROUTINE-003 / 관련 UC: UC2, UC3, UC11
+flowchart TD
+    classDef user fill:#E8F0FE,stroke:#4285F4,color:#1a1a1a;
+    classDef system fill:#F1F3F4,stroke:#5f6368,color:#1a1a1a;
+    classDef decision fill:#FEF7E0,stroke:#F9AB00,color:#1a1a1a;
+    classDef terminal fill:#E6F4EA,stroke:#34A853,color:#1a1a1a;
+    classDef external fill:#FCE8E6,stroke:#EA4335,color:#1a1a1a,stroke-dasharray: 4 3;
+
+    Start(["시작: 하루 시작"]):::terminal --> A(["사용자: 오늘의 컨디션 입력<br/>(입덧·통증·피로·수면 상태)"]):::user
+    A --> B["시스템: 당일 컨디션 저장"]:::system
+    B --> C(["사용자: 오늘 예정 활동 선택"]):::user
+    C --> D["시스템: 프로필·컨디션·임신주차·전일 활동데이터 취합"]:::system
+
+    subgraph EXT["외부 시스템"]
+        E["AI 엔진: 루틴 판단 및 생성<br/>(식사·가사·건강·수면 4종)"]:::external
+    end
+
+    D --> E
+    E --> F{"시스템: AI 엔진 응답 정상인가?"}:::decision
+    F -- 실패/시간초과 --> G["시스템: 폴백 루틴 제공<br/>(전일 루틴 또는 기본 템플릿)"]:::system
+    G --> H["시스템: 오류 로깅 및 정확도 저하 가능성 안내"]:::system
+    H --> J["시스템: 루틴 화면 표시"]:::system
+    F -- 정상 --> I["시스템: 식사·가사·건강·수면 4종 가이드 반영"]:::system
+    I --> J
+    J --> End(["종료: 아내가 하루 루틴 확인"]):::terminal
