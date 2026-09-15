@@ -72,6 +72,28 @@ void main() {
     expect(controller.latestFrame?.burdenLabel, BurdenLabel.highLoadAction);
   });
 
+  test('세션에 기존 캘리브레이션이 있어 calibration_done 없이 frame이 바로 오면 그래도 live로 전환된다', () async {
+    // 실기기 테스트로 발견한 버그: 서버가 이미 저장된 캘리브레이션을 발견하면
+    // 캘리브레이션 단계를 통째로 건너뛰고 곧바로 frame을 보낸다. 이 경우
+    // calibration_done을 절대 안 보내므로, frame 수신 자체가 live 전환의
+    // 신호가 되어야 한다.
+    await controller.start();
+    expect(controller.state, MovementConnectionState.calibrating);
+
+    transport.emitMessage('''
+      {"type": "frame", "data": {
+        "session_id": "00000000-0000-0000-0000-000000000001",
+        "occurred_at": "2026-09-15T01:00:00Z",
+        "posture": "Standing", "burden_label": "Normal",
+        "state_duration_sec": 0.5, "cumulative_bend_sec": 0.0, "landmarks": []
+      }}
+    ''');
+    await Future<void>.delayed(Duration.zero);
+
+    expect(controller.state, MovementConnectionState.live);
+    expect(controller.latestFrame?.posture, PostureType.standing);
+  });
+
   test('stop()은 카메라/transport를 정리하고 idle로 되돌린다', () async {
     await controller.start();
     await controller.stop();
@@ -80,6 +102,16 @@ void main() {
     expect(transport.closed, isTrue);
     expect(controller.state, MovementConnectionState.idle);
     expect(controller.cameraViewType, isNull);
+  });
+
+  test('stop() 없이 dispose()만 호출해도 카메라/transport가 정리된다', () async {
+    await controller.start();
+
+    controller.dispose();
+    await Future<void>.delayed(Duration.zero);
+
+    expect(camera.disposed, isTrue);
+    expect(transport.closed, isTrue);
   });
 
   test('연결 중 예외가 나면 error 상태가 되고 리소스를 정리한다', () async {

@@ -3,8 +3,14 @@
 # 키는 EventTrigger 값(schemas/movement.py)과 동일해야 한다. report.py가 이 값으로
 # 골라 쓴다. rules.yaml처럼 코드 수정 없이 문구만 조정할 수 있도록 여기 외부화했다.
 #
-# 사용 가능한 플레이스홀더: {count}, {total_duration_sec}, {max_duration_sec}, {posture_label}
-# {posture_label}은 report.py의 _POSTURE_LABEL_KO 매핑에서 채워진다 (예: "허리를 숙이는").
+# sit_to_stand/state_duration/repeated_count: 자세유형×라벨 그룹별 문구.
+#   사용 가능한 플레이스홀더: {count}, {total_duration_sec}, {max_duration_sec}, {posture_label}
+#   {posture_label}은 report.py의 _POSTURE_LABEL_KO 매핑에서 채워진다 (예: "허리를 숙이는").
+#
+# cumulative_research_threshold: 위 세 개와 다르게 그룹별이 아니라 "그날 하루 전체"
+#   합산 한 줄이다(2026-09-15부터, 실시간 라벨에는 더 이상 안 씀 — 세션 종료 시
+#   기록된 이벤트를 report.py가 그날치로 합산해서 채운다). 사용 가능한 플레이스홀더는
+#   {duration_label}(예: "12분 30초", report.py에서 미리 포맷해서 넘김) 하나뿐이다.
 
 sit_to_stand: >-
   낮은 의자에서 일어나는 동작이 오늘 {count}회 관찰됐습니다. 임신 후기에는 이 동작에서
@@ -22,7 +28,7 @@ repeated_count: >-
   동작 빈도나 방법을 조정해보세요.
 
 cumulative_research_threshold: >-
-  오늘 누적 전방 굴곡 시간이 기준을 넘긴 경우가 {count}회 관찰됐습니다. 덴마크 코호트
-  연구(Frankel 등)에서는 하루 누적 전방 굴곡 시간이 길어질수록 위험이 높아진다는
-  상관관계가 보고된 적 있습니다(인과관계를 확정한 연구는 아닙니다). 몸 상태를 확인하고
-  휴식을 취해보세요.
+  오늘 부담 자세(허리를 30도 이상 숙인 자세)가 포착된 누적 시간이 {duration_label}이었습니다.
+  덴마크 코호트 연구(Frankel 등)에서는 하루 누적 전방 굴곡 시간이 길어질수록 위험이
+  높아진다는 상관관계가 보고된 적 있습니다(인과관계를 확정한 연구는 아닙니다). 오늘 어떤
+  활동에서 이 자세가 많았는지 돌아보고, 휴식을 취해보세요.

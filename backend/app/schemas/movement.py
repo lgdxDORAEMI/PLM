@@ -207,4 +207,9 @@ class DailyReportSummary(BaseModel):
     top_burdened_body_part: BodyPart | None = None
     """W-REPORT-002의 "최다 부담 관절" 요약. aggregates 중 total_duration_sec이
     가장 큰 body_part를 골라 채운다 (동률 처리 등 구체 규칙은 report.py 구현 시 정의)."""
+    cumulative_forward_bend_sec: float = 0.0
+    """그날 관찰된 절대 30도 이상 전방굴곡 누적 시간(초). Frankel 등 코호트 연구
+    근거(§2.5). 2026-09-15부터 실시간 라벨에는 영향을 안 주고 이 필드로만 노출한다
+    — SessionManager.end_session()이 세션별로 남긴 이벤트를 report.py가 그날치
+    합산한 값이다. aggregates(자세유형×라벨 집계)에는 포함하지 않는다."""
     narratives: list[str] = Field(default_factory=list)

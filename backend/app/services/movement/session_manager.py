@@ -14,10 +14,17 @@
    자세유형별 누적 횟수/지속시간을 이벤트가 닫힐 때마다 갱신한다.
 
 트리거 사유(EventTrigger) 판단은 FrameJudgement에 남아있는 신호만으로 추정한
-근사치다: 누적 위험 임계값을 넘었으면 CUMULATIVE_RESEARCH_THRESHOLD, 그 다음
-Prolonged Load면 STATE_DURATION, 그 다음이면 REPEATED_COUNT로 본다. 이벤트가
-지속되는 동안 더 강한 사유로 바뀌어도 소급 갱신하지 않는다 — "왜 시작됐는지"만
-기록하는 단순화이며, 실제 서비스에서 더 정밀한 판단이 필요해지면 여기를 고친다.
+근사치다: Prolonged Load면 STATE_DURATION, 그 다음이면 REPEATED_COUNT로 본다.
+이벤트가 지속되는 동안 더 강한 사유로 바뀌어도 소급 갱신하지 않는다 — "왜
+시작됐는지"만 기록하는 단순화이며, 실제 서비스에서 더 정밀한 판단이 필요해지면
+여기를 고친다.
+
+3. (2026-09-15) 누적 전방굴곡 위험(Frankel 등 연구 기반)은 더 이상 실시간
+   라벨을 바꾸지 않는다. 대신 세션이 끝날 때(end_session) 그 세션에서 관찰된
+   누적 시간을 trigger_reason=CUMULATIVE_RESEARCH_THRESHOLD인 PostureEvent
+   하나로 남겨서, report.py가 일일 리포트에서만 "오늘 누적 시간" 형태로
+   보여줄 수 있게 한다. LiveAccumulatedState 집계(_update_tally)에는 반영하지
+   않는다 — 실시간 화면에서 이 개념이 안 보여야 하기 때문이다.
 """
 
 from __future__ import annotations
@@ -67,11 +74,10 @@ class _Session:
     latest_judgement_posture: PostureType = PostureType.UNKNOWN
     latest_judgement_label: BurdenLabel = BurdenLabel.NORMAL
     latest_cumulative_bend_sec: float = 0.0
+    latest_research_threshold_crossed: bool = False
 
 
-def _derive_trigger(research_threshold_crossed: bool, burden_label: str) -> EventTrigger:
-    if research_threshold_crossed:
-        return EventTrigger.CUMULATIVE_RESEARCH_THRESHOLD
+def _derive_trigger(burden_label: str) -> EventTrigger:
     if burden_label == PROLONGED_LOAD:
         return EventTrigger.STATE_DURATION
     return EventTrigger.REPEATED_COUNT
@@ -115,10 +121,15 @@ class SessionManager:
         self._calibration_store.save(session.user_id, profile)
 
     def end_session(self, session_id: UUID) -> None:
-        """세션을 종료한다. 열려 있던 이벤트가 있으면 지금 시점으로 닫아 기록한다."""
+        """세션을 종료한다. 열려 있던 이벤트가 있으면 지금 시점으로 닫아 기록하고,
+        그날 관찰된 누적 전방굴곡 시간을 리포트용으로 하나 남긴다."""
         session = self._sessions.pop(session_id, None)
-        if session is not None and session.open_event is not None:
-            self._close_event(session, datetime.now(timezone.utc))
+        if session is None:
+            return
+        now = datetime.now(timezone.utc)
+        if session.open_event is not None:
+            self._close_event(session, now)
+        self._record_cumulative_bend(session, now)
 
     def process_frame(self, session_id: UUID, extractor: PoseExtractor, rgb_frame, timestamp_ms: int) -> PostureFrameState:
         """프레임 하나를 처리해 실시간 오버레이용 상태를 돌려준다.
@@ -189,6 +200,7 @@ class SessionManager:
         session.latest_judgement_posture = posture
         session.latest_judgement_label = burden_label
         session.latest_cumulative_bend_sec = judgement.cumulative_bend_sec
+        session.latest_research_threshold_crossed = judgement.research_threshold_crossed
 
         if judgement.event == "sit_to_stand":
             self._record_instant_event(
@@ -245,7 +257,7 @@ class SessionManager:
             # "그 자세가 실제로 시작된 시점"을 이벤트 시작으로 잡는다. 그래야
             # Prolonged Load처럼 지속시간 임계값을 넘어야 격상되는 라벨의 duration_sec가
             # "격상된 후 경과 시간"이 아니라 "그 부담 자세가 실제로 지속된 시간"이 된다.
-            trigger = _derive_trigger(judgement.research_threshold_crossed, judgement.burden_label)
+            trigger = _derive_trigger(judgement.burden_label)
             session.open_event = _OpenEvent(
                 started_at=occurred_at - timedelta(seconds=judgement.state_duration),
                 posture_type=posture,
@@ -303,6 +315,36 @@ class SessionManager:
         )
         self._event_store.record(event)
         self._update_tally(session, event)
+
+    def _record_cumulative_bend(self, session: _Session, ended_at: datetime) -> None:
+        """세션 종료 시점까지 관찰된 누적 전방굴곡 시간을 리포트용으로 기록한다.
+
+        일부러 _update_tally()를 안 부른다 — "실시간 탭"/오버레이에는 이 개념이
+        보이면 안 된다는 2026-09-15 결정 때문이다(report.py만 trigger_reason으로
+        이 이벤트를 따로 골라 그날 총합을 낸다). duration_sec은 이 이벤트 "자체"의
+        길이가 아니라 세션 동안 관찰된 누적 굴곡 시간을 담는 용도로 쓴다 — 다른
+        이벤트들과 의미가 다르니 헷갈리지 않도록 주의.
+        """
+        if session.latest_cumulative_bend_sec <= 0:
+            return
+        event = PostureEvent(
+            event_id=uuid.uuid4(),
+            user_id=session.user_id,
+            session_id=session.session_id,
+            posture_type=PostureType.BENDING,
+            burden_label=(
+                BurdenLabel.PROLONGED_LOAD
+                if session.latest_research_threshold_crossed
+                else BurdenLabel.NORMAL
+            ),
+            started_at=session.started_at,
+            ended_at=ended_at,
+            duration_sec=session.latest_cumulative_bend_sec,
+            trigger_reason=EventTrigger.CUMULATIVE_RESEARCH_THRESHOLD,
+            cumulative_bend_sec=session.latest_cumulative_bend_sec,
+            created_at=ended_at,
+        )
+        self._event_store.record(event)
 
     def _update_tally(self, session: _Session, event: PostureEvent) -> None:
         existing = session.tallies.get(event.posture_type)

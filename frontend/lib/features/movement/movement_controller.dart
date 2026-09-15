@@ -42,6 +42,7 @@ class MovementController extends ChangeNotifier {
   int calibrationTarget = 0;
   PostureFrameState? latestFrame;
   String? errorMessage;
+  bool _disposed = false;
 
   String? get cameraViewType => _camera?.viewType;
 
@@ -97,7 +98,13 @@ class MovementController extends ChangeNotifier {
       case CalibrationDone():
         _setState(MovementConnectionState.live);
       case FrameUpdate(state: final frame):
+        // 세션에 이미 저장된 캘리브레이션이 있으면 서버가 캘리브레이션 단계를
+        // 통째로 건너뛰고 곧바로 frame을 보낸다 — 그 경우 calibration_done을
+        // 절대 못 받으므로, frame이 오면 그 자체로 live 상태임을 보장해야 한다.
+        // (실기기 테스트로 발견: 이걸 안 하면 화면이 "캘리브레이션 준비 중"에
+        // 갇힌 채로 실제로는 keypoint가 계속 갱신되는 상태가 된다.)
         latestFrame = frame;
+        state = MovementConnectionState.live;
         notifyListeners();
     }
   }
@@ -108,6 +115,7 @@ class MovementController extends ChangeNotifier {
   }
 
   void _setState(MovementConnectionState next) {
+    if (_disposed) return;
     state = next;
     notifyListeners();
   }
@@ -137,6 +145,11 @@ class MovementController extends ChangeNotifier {
 
   @override
   void dispose() {
+    // stop()의 정리 작업(_cleanup)은 비동기라 dispose() 시점엔 안 끝나 있다.
+    // _disposed를 먼저 세워서, 정리가 나중에 끝나고 _setState가 notifyListeners를
+    // 부르려 할 때 "disposed ChangeNotifier 사용" assertion이 터지지 않게 막는다
+    // (dispose()만 직접 호출하는 테스트로 발견, 2026-09-15).
+    _disposed = true;
     unawaited(stop());
     super.dispose();
   }

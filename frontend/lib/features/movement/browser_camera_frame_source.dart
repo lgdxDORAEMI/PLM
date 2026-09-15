@@ -5,6 +5,7 @@
 // 수 없으므로, `flutter run -d chrome`으로 반드시 수동 확인이 필요하다.
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:html' as html;
 import 'dart:typed_data';
 import 'dart:ui_web' as ui_web;
@@ -33,10 +34,17 @@ class BrowserCameraFrameSource implements CameraFrameSource {
   @override
   final String viewType;
 
+  // drawImageScaled()가 원본 비율과 무관하게 항상 captureWidth x captureHeight로
+  // "늘려서" 캡처하므로, 화면에 보이는 미리보기도 브라우저 기본 동작(원본 비율
+  // 유지)이 아니라 똑같이 늘려서 보여줘야 keypoint 위치가 화면과 어긋나지
+  // 않는다 (실기기 테스트로 발견, 2026-09-15).
   final html.VideoElement _video = html.VideoElement()
     ..autoplay = true
     ..muted = true
-    ..setAttribute('playsinline', 'true');
+    ..setAttribute('playsinline', 'true')
+    ..style.width = '100%'
+    ..style.height = '100%'
+    ..style.setProperty('object-fit', 'fill');
 
   html.MediaStream? _stream;
   html.CanvasElement? _canvas;
@@ -58,28 +66,23 @@ class BrowserCameraFrameSource implements CameraFrameSource {
     await _video.play();
 
     _canvas = html.CanvasElement(width: captureWidth, height: captureHeight);
-    _timer = Timer.periodic(captureInterval, (_) {
-      unawaited(_captureFrame());
-    });
+    _timer = Timer.periodic(captureInterval, (_) => _captureFrame());
   }
 
-  Future<void> _captureFrame() async {
+  // toBlob()+FileReader(비동기 콜백 체인)는 브라우저 없이 짠 코드라 실제로
+  // 동작하는지 검증 못 했고, 실제로 캘리브레이션이 멈추는 원인이 됐다(2026-09-15
+  // 실기기 테스트로 발견). toDataUrl()은 훨씬 오래되고 단순한 동기 API라 이걸로
+  // 바꿨다 — 캔버스를 base64 JPEG 문자열로 바로 뽑아서 디코딩만 하면 된다.
+  void _captureFrame() {
     final canvas = _canvas;
     if (canvas == null || _controller.isClosed) return;
     final ctx = canvas.context2D;
     ctx.drawImageScaled(_video, 0, 0, captureWidth, captureHeight);
-    final blob = await canvas.toBlob('image/jpeg', jpegQuality);
-    final bytes = await _blobToBytes(blob);
+    final dataUrl = canvas.toDataUrl('image/jpeg', jpegQuality);
+    final bytes = base64Decode(dataUrl.substring(dataUrl.indexOf(',') + 1));
     if (!_controller.isClosed) {
       _controller.add(bytes);
     }
-  }
-
-  Future<Uint8List> _blobToBytes(html.Blob blob) async {
-    final reader = html.FileReader();
-    reader.readAsArrayBuffer(blob);
-    await reader.onLoad.first;
-    return (reader.result as ByteBuffer).asUint8List();
   }
 
   @override

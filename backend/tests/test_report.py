@@ -108,6 +108,34 @@ class ReportTest(unittest.TestCase):
 
         self.assertEqual(report.aggregates, [])
 
+    def test_cumulative_forward_bend_is_summed_separately_not_mixed_into_aggregates(self) -> None:
+        """2026-09-15 결정: CUMULATIVE_RESEARCH_THRESHOLD 이벤트는 자세유형×라벨
+        집계(aggregates)에 안 섞이고, 하루 총합만 별도 필드/문구로 나와야 한다."""
+        store = InMemoryEventStore()
+        # SessionManager.end_session()이 세션 두 개에서 남겼다고 가정 (사용자가
+        # 재접속했다면 세션이 여러 개일 수 있음) — 둘 다 그날 총합에 더해져야 한다.
+        store.record(_event(9, PostureType.BENDING, BurdenLabel.NORMAL, EventTrigger.CUMULATIVE_RESEARCH_THRESHOLD, 12.0))
+        store.record(
+            _event(15, PostureType.BENDING, BurdenLabel.PROLONGED_LOAD, EventTrigger.CUMULATIVE_RESEARCH_THRESHOLD, 8.0)
+        )
+
+        report = generate_daily_report(store, _USER_ID, _TODAY)
+
+        self.assertEqual(report.aggregates, [])  # 일반 집계에는 전혀 안 나타남
+        self.assertIsNone(report.top_burdened_body_part)
+        self.assertEqual(report.cumulative_forward_bend_sec, 20.0)
+        self.assertEqual(len(report.narratives), 1)
+        self.assertIn("누적 시간", report.narratives[0])
+
+    def test_no_cumulative_narrative_when_zero(self) -> None:
+        store = InMemoryEventStore()
+        store.record(_event(9, PostureType.STANDING, BurdenLabel.PROLONGED_LOAD, EventTrigger.STATE_DURATION, 20.0))
+
+        report = generate_daily_report(store, _USER_ID, _TODAY)
+
+        self.assertEqual(report.cumulative_forward_bend_sec, 0.0)
+        self.assertFalse(any("누적 시간" in n for n in report.narratives))
+
 
 if __name__ == "__main__":
     unittest.main()

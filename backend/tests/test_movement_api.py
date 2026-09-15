@@ -17,6 +17,7 @@ import unittest
 import cv2
 import numpy as np
 from fastapi.testclient import TestClient
+from starlette.websockets import WebSocketDisconnect
 
 from app.api.v1.movement import _calibration_store, get_pose_extractor
 from app.main import app
@@ -52,6 +53,9 @@ _SITTING = _world(
 )
 
 _BLANK_JPEG = cv2.imencode(".jpg", np.zeros((240, 320, 3), dtype=np.uint8))[1].tobytes()
+
+# 실제 브라우저가 보내는 것과 같은 형태(로컬 Flutter Web 개발 포트)의 Origin.
+_ALLOWED_ORIGIN_HEADERS = {"origin": "http://localhost:5173"}
 
 
 class FakePoseExtractor:
@@ -96,7 +100,9 @@ class MovementWebSocketTest(unittest.TestCase):
     def test_calibration_then_sit_to_stand_event_is_recorded(self) -> None:
         num_frames = _capture_frames_setting()
 
-        with self.client.websocket_connect("/api/v1/movement/live/stream") as ws:
+        with self.client.websocket_connect(
+            "/api/v1/movement/live/stream", headers=_ALLOWED_ORIGIN_HEADERS
+        ) as ws:
             # 캘리브레이션 단계: 서 있는 자세로 num_frames번 보낸다.
             for i in range(num_frames):
                 ws.send_bytes(_BLANK_JPEG)
@@ -153,6 +159,21 @@ class MovementWebSocketTest(unittest.TestCase):
         empty_report_response = self.client.get("/api/v1/movement/report/daily?date=2000-01-01")
         self.assertEqual(empty_report_response.status_code, 200)
         self.assertEqual(empty_report_response.json()["aggregates"], [])
+
+    def test_disallowed_origin_is_rejected(self) -> None:
+        with self.assertRaises(WebSocketDisconnect):
+            with self.client.websocket_connect(
+                "/api/v1/movement/live/stream",
+                headers={"origin": "https://evil.example.com"},
+            ):
+                pass
+
+    def test_missing_origin_is_rejected(self) -> None:
+        # 실제 브라우저는 항상 Origin을 보내지만, Origin이 없는 요청까지도
+        # "허용된 곳에서 온 게 확인되지 않았다"고 보고 막아야 더 안전하다.
+        with self.assertRaises(WebSocketDisconnect):
+            with self.client.websocket_connect("/api/v1/movement/live/stream"):
+                pass
 
 
 if __name__ == "__main__":

@@ -4,6 +4,12 @@ EventStore에 쌓인 그날의 PostureEvent를 자세유형×라벨 조합으로
 DailyReportSummary를 만든다. Repeated Load 이상인 조합에만 문구를 붙인다
 (Normal 수준까지 리포트에 나열할 필요는 없음).
 
+trigger_reason이 CUMULATIVE_RESEARCH_THRESHOLD인 이벤트는 다른 이벤트들과
+성격이 달라서(자세유형×라벨 집계에 안 섞는다) 따로 뽑아 그날 총합만 낸다 —
+SessionManager.end_session()이 세션별로 남긴 "그 세션에서 관찰된 누적
+전방굴곡 시간"을 그대로 하루 단위로 합친 것이다 (2026-09-15부터, 실시간
+라벨에는 더 이상 영향 안 줌).
+
 문구 자체는 report_templates.yaml에 트리거 사유(EventTrigger)별로 외부화했다.
 rules.yaml이 판정 임계값을 코드 밖에 둔 것과 같은 이유 — 문헌 근거 표현은
 팀이 코드를 안 건드리고 다듬을 일이 많다.
@@ -22,6 +28,7 @@ from ...schemas.movement import (
     BodyPart,
     BurdenLabel,
     DailyReportSummary,
+    EventTrigger,
     PostureAggregate,
     PostureEvent,
     PostureType,
@@ -63,18 +70,27 @@ def generate_daily_report(
     end = start + timedelta(days=1)
     events = event_store.list_events(user_id, start=start, end=end)
 
+    cumulative_events = [e for e in events if e.trigger_reason == EventTrigger.CUMULATIVE_RESEARCH_THRESHOLD]
+    normal_events = [e for e in events if e.trigger_reason != EventTrigger.CUMULATIVE_RESEARCH_THRESHOLD]
+    cumulative_forward_bend_sec = sum(e.duration_sec for e in cumulative_events)
+
     groups: dict[_GroupKey, list[PostureEvent]] = defaultdict(list)
-    for event in events:
+    for event in normal_events:
         groups[(event.posture_type, event.burden_label)].append(event)
 
     aggregates = [_build_aggregate(key, group) for key, group in groups.items()]
+
+    narratives = _build_narratives(groups)
+    if cumulative_forward_bend_sec > 0:
+        narratives.append(_build_cumulative_narrative(cumulative_forward_bend_sec))
 
     return DailyReportSummary(
         user_id=user_id,
         date=start,
         aggregates=aggregates,
         top_burdened_body_part=_pick_top_burdened(aggregates),
-        narratives=_build_narratives(groups),
+        cumulative_forward_bend_sec=cumulative_forward_bend_sec,
+        narratives=narratives,
     )
 
 
@@ -132,3 +148,22 @@ def _build_narratives(groups: dict[_GroupKey, list[PostureEvent]]) -> list[str]:
             )
         )
     return narratives
+
+
+def _format_duration(total_seconds: float) -> str:
+    """초 단위를 자연스러운 한글 표현으로. 데모 축소값(몇~몇십 초)과 실제
+    운영값(몇 시간)을 같은 함수로 다 처리하려고 시/분/초 중 있는 단위만 쓴다."""
+    total = int(round(total_seconds))
+    hours, remainder = divmod(total, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    if hours > 0:
+        return f"{hours}시간 {minutes}분"
+    if minutes > 0:
+        return f"{minutes}분 {seconds}초"
+    return f"{seconds}초"
+
+
+def _build_cumulative_narrative(cumulative_forward_bend_sec: float) -> str:
+    """자세유형×라벨 그룹과 무관한, 그날 하루 전체에 대한 단일 문장."""
+    template = _TEMPLATES.get(EventTrigger.CUMULATIVE_RESEARCH_THRESHOLD.value, "")
+    return template.format(duration_label=_format_duration(cumulative_forward_bend_sec))

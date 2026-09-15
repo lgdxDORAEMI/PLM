@@ -16,9 +16,9 @@
 - `BodyPart`, `resolve_body_part()`: 일일 리포트의 "최다 부담 부위" 집계용(허리·몸통 / 무릎 / 전신). `posture_type`만으로는 Sit-to-Stand 이벤트를 오분류하므로 `trigger_reason`도 함께 보는 함수로 뒀습니다.
 - `PostureFrameState`: 카메라 프레임마다의 "지금 이 순간" 상태(골격 33개 landmark 좌표 포함). DB에 저장하지 않고, **데모 시연용 실시간 오버레이 표시로만** 씁니다.
 - `PostureTypeTally`, `LiveAccumulatedState`: **"실시간 탭" 조회 응답**(W-MOTION-001). 조회 시점까지 세션에 누적된 상태를 돌려주는 풀(pull) 방식이며, 임계 이벤트 발생 시 앱이 먼저 알림을 띄우는 푸시 방식은 채택하지 않았습니다 (2026-09-15 팀 결정, 아래 참고).
-- `PostureEvent`: 라벨이 Repeated Load 이상으로 올라갔다가 내려오는 구간, 또는 Sit-to-Stand 같은 순간 이벤트를 하나씩 기록하는 저장 단위입니다. DB 저장 및 일일 리포트 집계에 씁니다. `PostureFrameState`와의 차이는 [설계 논의 기록](../../../docs/movement/구현계획서_v3.md) 참고.
+- `PostureEvent`: 라벨이 Repeated Load 이상으로 올라갔다가 내려오는 구간, 또는 Sit-to-Stand 같은 순간 이벤트를 하나씩 기록하는 저장 단위입니다. DB 저장 및 일일 리포트 집계에 씁니다. `PostureFrameState`와의 차이는 [설계 논의 기록](../../../docs/movement/구현계획서_v3.md) 참고. `trigger_reason=cumulative_research_threshold`인 이벤트는 세션 종료 시 딱 한 번만 기록되는 "그 세션 누적 굴곡 시간" 요약이라 다른 이벤트와 성격이 다릅니다(아래 참고).
 - `CalibrationProfileSchema`: `calibration.py`의 `CalibrationProfile`에 `user_id`만 추가한 버전.
-- `PostureAggregate`, `DailyReportSummary`: 일일 리포트 조회 API 응답 형태(§5.9, report.py는 아직 미구현). `top_burdened_body_part`로 W-REPORT-002의 "최다 부담 관절"을 표현합니다.
+- `PostureAggregate`, `DailyReportSummary`: 일일 리포트 조회 API 응답 형태(§5.9). `top_burdened_body_part`로 W-REPORT-002의 "최다 부담 관절"을 표현합니다. `cumulative_forward_bend_sec`(2026-09-15 추가)는 `cumulative_research_threshold` 이벤트만 따로 합산한 값이며, `aggregates`/`top_burdened_body_part`에는 안 섞입니다.
 
 **설계 결정 (확정, 이후 코드 작성 시 이 전제로 진행)**
 
@@ -39,6 +39,11 @@
 - 리포트는 관절 좌우 구분 없이 **부위(허리·몸통 / 무릎) 단위**로 집계한다 (`resolve_body_part()`).
 - NFR-008/011/012/014(암호화, 영상 보관기한, 동의 철회, 최소 데이터 전달)는 **지금은 코드 주석으로만
   남기고**, 실제 구현은 마이그레이션 작성 시점으로 미룬다.
+- **누적 전방굴곡 위험(§2.5)은 실시간 라벨에 영향을 주지 않는다 (2026-09-15 재결정)**. 원래 실시간
+  라벨을 강제로 격상시키던 코드가 있었는데, 실기기 데모 중 "Standing이 계속 Prolonged Load로 뜨는"
+  증상으로 발견됐다. 원래 의도가 리포트용 사실 안내였던 것과 실시간 판정이 섞여 있었던 것 — 지금은
+  세션 종료 시 `trigger_reason=cumulative_research_threshold` 이벤트 하나로만 남고,
+  `DailyReportSummary.cumulative_forward_bend_sec`로만 노출된다.
 
 **다음에 이 스키마를 쓰게 될 곳**
 

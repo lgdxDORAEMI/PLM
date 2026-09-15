@@ -32,6 +32,10 @@ Swagger UI: `/docs`, OpenAPI schema: `/openapi.json`.
 이 프로토콜은 데모 전용이며 동시에 한 세션만 가정한다(`_current_session_id` 전역 변수).
 실제 다중 사용자 서비스에서는 인증 컨텍스트별로 세션을 조회하는 방식으로 바꿔야 한다.
 
+`CORSMiddleware`는 WebSocket 핸드셰이크에는 적용되지 않아서, `/live/stream`은 연결을 수락하기
+전에 `Origin` 헤더를 따로 확인한다(2026-09-15 추가, 아래 HTTP CORS와 동일한 규칙 재사용).
+허용되지 않은 origin이거나 origin이 없으면 코드 1008(정책 위반)로 바로 닫는다.
+
 ### `/report/daily` 집계 방식
 
 `(posture_type, burden_label)` 조합별로 그날 이벤트를 묶어 `count`/`total_duration_sec`/

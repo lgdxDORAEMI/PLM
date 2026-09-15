@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'browser_camera_frame_source.dart';
-import 'browser_live_transport.dart';
+import 'camera_frame_source.dart';
+import 'live_transport.dart';
 import 'models/posture_frame_state.dart';
 import 'movement_controller.dart';
 import 'movement_overlay_painter.dart';
@@ -10,19 +10,27 @@ import 'movement_overlay_painter.dart';
 /// 라벨을 보여준다. 데모 전용이며(구현계획서_v3.md §4), 실제 브라우저 카메라
 /// 동작은 이 화면에서 `flutter run -d chrome`으로 수동 확인이 필요하다.
 ///
-/// 실제 dart:html 기반 카메라/WebSocket 구현을 여기서만 연결한다 — 그래야
-/// movement_controller.dart는 그 구현들을 몰라도 되고 순수 Dart VM에서
-/// 테스트할 수 있다 (movement_controller.dart 상단 주석 참고).
+/// movement_controller.dart와 마찬가지로 dart:html 기반 구현(Browser*)을 직접
+/// import하지 않는다 — 이 파일이 import하는 순간 이 파일을 쓰는 테스트 전체가
+/// `flutter test --platform chrome`을 요구하게 된다. 실제 브라우저 구현은
+/// 호출부(app.dart)에서 cameraFrameSourceFactory/transportFactory로 주입한다.
 class MovementScreen extends StatefulWidget {
-  const MovementScreen({super.key, required this.backendWsUri});
+  const MovementScreen({
+    super.key,
+    required this.backendWsUri,
+    required this.cameraFrameSourceFactory,
+    required this.transportFactory,
+  });
 
   final Uri backendWsUri;
+  final CameraFrameSource Function() cameraFrameSourceFactory;
+  final Future<LiveTransport> Function(Uri) transportFactory;
 
   @override
   State<MovementScreen> createState() => _MovementScreenState();
 }
 
-class _MovementScreenState extends State<MovementScreen> {
+class _MovementScreenState extends State<MovementScreen> with WidgetsBindingObserver {
   late final MovementController _controller;
 
   @override
@@ -30,16 +38,34 @@ class _MovementScreenState extends State<MovementScreen> {
     super.initState();
     _controller = MovementController(
       wsUri: widget.backendWsUri,
-      cameraFrameSourceFactory: BrowserCameraFrameSource.new,
-      transportFactory: BrowserLiveTransport.connect,
+      cameraFrameSourceFactory: widget.cameraFrameSourceFactory,
+      transportFactory: widget.transportFactory,
     );
     _controller.addListener(_onControllerChanged);
+    WidgetsBinding.instance.addObserver(this);
   }
 
   void _onControllerChanged() => setState(() {});
 
+  // 브라우저 탭 전환/창 최소화(웹) · 앱 백그라운드 전환(모바일) 시 위젯 자체는
+  // dispose되지 않으므로, 이 콜백이 없으면 카메라가 켜진 채로 남는다. 탭 안에서
+  // 다른 화면으로 이동하는 경우(위젯 dispose)는 이미 아래 dispose()가 처리한다.
+  // inactive는 모바일에서 시스템 다이얼로그 등으로도 잠깐 발생해 과도 반응을
+  // 일으키므로 제외했다.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      if (_isRunning) _controller.stop();
+    }
+  }
+
+  bool get _isRunning => _controller.state != MovementConnectionState.idle &&
+      _controller.state != MovementConnectionState.error &&
+      _controller.state != MovementConnectionState.disconnected;
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller.removeListener(_onControllerChanged);
     _controller.dispose();
     super.dispose();
@@ -131,12 +157,9 @@ class _MovementScreenState extends State<MovementScreen> {
   }
 
   Widget _buildControlButton() {
-    final isRunning = _controller.state != MovementConnectionState.idle &&
-        _controller.state != MovementConnectionState.error &&
-        _controller.state != MovementConnectionState.disconnected;
     return FilledButton(
-      onPressed: isRunning ? _controller.stop : _controller.start,
-      child: Text(isRunning ? '중지' : '시작'),
+      onPressed: _isRunning ? _controller.stop : _controller.start,
+      child: Text(_isRunning ? '중지' : '시작'),
     );
   }
 }

@@ -23,6 +23,7 @@ WebSocket 프로토콜 (프론트 B-4가 구현할 대상):
 
 from __future__ import annotations
 
+import re
 import time
 import uuid
 from collections.abc import Iterator
@@ -34,12 +35,15 @@ import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
 from mediapipe.tasks.python.vision import RunningMode
 
+from app.core.config import ALLOWED_ORIGIN_REGEX
 from app.schemas.movement import DEMO_USER_ID, DailyReportSummary, LiveAccumulatedState, PostureEvent
 from app.services.movement.calibration import CalibrationCollector, LocalFileCalibrationStore
 from app.services.movement.events import InMemoryEventStore
 from app.services.movement.pose_extractor import PoseExtractor
 from app.services.movement.report import generate_daily_report
 from app.services.movement.session_manager import SessionManager
+
+_ORIGIN_PATTERN = re.compile(ALLOWED_ORIGIN_REGEX)
 
 router = APIRouter(prefix="/movement", tags=["movement"])
 
@@ -79,12 +83,23 @@ def _decode_jpeg_to_rgb(data: bytes) -> np.ndarray:
     return cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
 
 
+def _is_allowed_origin(origin: str | None) -> bool:
+    """HTTP 요청에 이미 걸려있는 CORS 규칙(ALLOWED_ORIGIN_REGEX)을 WebSocket
+    핸드셰이크에도 똑같이 적용한다. CORSMiddleware는 WebSocket에는 적용되지
+    않아서(2026-09-15 발견), 여기서 따로 확인해야 한다."""
+    return origin is not None and _ORIGIN_PATTERN.fullmatch(origin) is not None
+
+
 @router.websocket("/live/stream")
 async def stream_live(
     websocket: WebSocket,
     manager: SessionManager = Depends(get_session_manager),
     extractor: PoseExtractor = Depends(get_pose_extractor),
 ) -> None:
+    if not _is_allowed_origin(websocket.headers.get("origin")):
+        await websocket.close(code=1008)
+        return
+
     global _current_session_id
     await websocket.accept()
 
