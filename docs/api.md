@@ -46,37 +46,49 @@ Swagger UI: `/docs`, OpenAPI schema: `/openapi.json`.
 `_pick_top_burdened()` 주석 참고). 문구는 `report_templates.yaml`에서 트리거 사유별로
 가져오며 Repeated Load 이상인 조합에만 생성한다.
 
-## 임산부 프로필 (W-PROFILE-001)
+## 임산부 프로필 (W-PROFILE-001, 화면설계서: 프로필 설정)
 
 모든 요청에 `Authorization: Bearer <Supabase access token>`이 필요합니다.
+프로필 설정은 단계마다 저장합니다. 3~6단계는 화면설계서가 확정되면 같은 방식으로 추가합니다.
 
-| Method | Path | 성공 응답 | 설명 |
-| --- | --- | --- | --- |
-| POST | /api/v1/profile | 201 프로필 + 임신 주수 | 프로필 입력 및 저장 (사용자당 1개) |
-| GET | /api/v1/profile/me | 200 프로필 + 임신 주수 | 내 프로필 조회 |
+| Method | Path | 화면 | 성공 응답 | 설명 |
+| --- | --- | --- | --- | --- |
+| GET | /api/v1/profile/me | 이어하기·진행바 | 200 프로필 | 내 프로필 조회 |
+| PUT | /api/v1/profile/me/due-date | 프로필 설정 1/6 | 200 프로필 | 출산예정일 저장 |
+| PUT | /api/v1/profile/me/body | 프로필 설정 2/6 | 200 프로필 | 임신 전 신장·체중 저장 |
 
-요청 본문 (POST)
+요청 본문: `PUT /api/v1/profile/me/due-date` (둘 중 하나 이상)
 
 | 필드 | 타입 | 규칙 |
 | --- | --- | --- |
 | due_date | `YYYY-MM-DD` | 오늘(KST) 기준 14일 전 ~ 280일 후 |
-| age | 정수 | 15 ~ 55 |
-| height_cm | 숫자 | 100 ~ 250, 소수 첫째 자리까지 저장 |
-| pre_pregnancy_weight_kg | 숫자 | 30 ~ 200, 소수 첫째 자리까지 저장 |
-| parity | 문자열 | `primiparous`(초산) / `multiparous`(경산) |
-| fetus_count | 문자열 | `singleton`(단태아) / `multiple`(다태아) |
+| last_period_start | `YYYY-MM-DD` | 보내면 서버가 `+280일`로 출산예정일을 계산해 함께 저장. `due_date`와 같이 보내면 두 값이 일치해야 함 |
 
-응답 본문은 요청 필드에 `pregnancy_weeks`, `pregnancy_days`를 더한 형태입니다.
-임신 주수는 저장하지 않고 조회 시점(KST)에 `출산예정일 - 280일`을 시작일로 계산합니다.
+`due_date`만 보내면 이전에 저장된 `last_period_start`는 비워집니다. 다른 단계 값은 유지됩니다.
+
+요청 본문: `PUT /api/v1/profile/me/body` (두 필드 모두 필수)
+
+| 필드 | 타입 | 규칙 |
+| --- | --- | --- |
+| height_cm | 숫자 | 100 ~ 250, 소수 첫째 자리까지 |
+| pre_pregnancy_weight_kg | 숫자 | 30 ~ 200, 소수 첫째 자리까지 |
+
+응답 본문 (세 API 공통)
+
+| 필드 | 설명 |
+| --- | --- |
+| due_date, last_period_start, height_cm, pre_pregnancy_weight_kg | 저장된 값. 아직 입력하지 않은 단계는 `null` |
+| pregnancy_weeks, pregnancy_days | 저장하지 않고 조회 시점(KST)에 `출산예정일 - 280일`을 시작일로 계산한 임신 주수 |
+| completed_step | 연속으로 완료한 단계 수(현재 1~2). 진행바·이어하기에 사용 |
 
 | 상태 코드 | 의미 |
 | --- | --- |
 | 401 | 토큰 없음 또는 유효하지 않음 |
 | 404 | 등록된 프로필 없음 (GET) |
-| 409 | 이미 등록된 프로필 있음 (POST) |
-| 422 | 입력 검증 실패. `detail[].loc`의 마지막 값이 필드명 |
+| 409 | 출산예정일(1단계)을 저장하기 전에 신장·체중(2단계)을 보냄 |
+| 422 | 입력 검증 실패. 필드 오류는 `detail[].loc`의 마지막 값이 필드명, 두 값의 관계 오류는 `loc`이 `["body"]` |
 | 503 | Supabase 설정 누락 또는 연결 실패 |
 
 로컬 Flutter Web의 임의 개발 포트를 허용합니다.
 허용 origin은 `http://localhost[:port]`, `http://127.0.0.1[:port]`입니다.
-Authorization, Content-Type 헤더와 GET/POST/PUT/PATCH/DELETE/OPTIONS 메서드를 허용합니다.
+Authorization, Content-Type 헤더와 GET/POST/PUT/PATCH/DELETE/OPTIONS 메서드를 허용합니다.   
