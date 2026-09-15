@@ -189,13 +189,13 @@ class RuleEngine:
         else:
             label = NORMAL
 
+        # 2026-09-15 결정: 이 누적값은 실시간 라벨을 바꾸는 용도가 아니라
+        # 일일 리포트에 "오늘 부담 자세 누적 시간"으로만 보여주기 위한 것이다
+        # (SessionManager.end_session()이 세션 종료 시 별도 기록을 남긴다).
+        # 그래서 여기서는 계산만 하고, label을 더 이상 강제로 올리지 않는다.
         research_crossed = (
             self.research_enabled and self._cumulative_bend_sec >= self.research_threshold_sec
         )
-        if research_crossed and LABEL_LEVEL[label] < LABEL_LEVEL[PROLONGED_LOAD]:
-            # 등록 코호트 80만 건 규모 연구 근거라 다른 추정값 규칙보다 신뢰도가 높다.
-            # 다만 sit_to_stand 순간의 High-load Action(더 급성 이벤트)은 덮어쓰지 않는다.
-            label = PROLONGED_LOAD
 
         if event == "sit_to_stand":
             label = HIGH_LOAD_ACTION

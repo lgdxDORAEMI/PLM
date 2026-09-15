@@ -4,6 +4,11 @@ from pathlib import Path
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# 로컬 Flutter Web 개발 포트만 허용한다. main.py의 CORSMiddleware와
+# app/api/v1/movement.py의 WebSocket Origin 검증이 이 값을 같이 참조한다 —
+# 한 곳에만 정의해서 두 곳이 서로 다른 규칙으로 어긋나지 않게 한다.
+ALLOWED_ORIGIN_REGEX = r"http://(?:localhost|127\.0\.0\.1)(?::[0-9]+)?"
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(

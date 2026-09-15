@@ -32,8 +32,12 @@ ZIP 내부 계획서는 원본 참고 문서이며, 실제 배치와 실행 상�
 
 기존 `backend/requirements.txt`, Backend 환경변수, CORS, API, Flutter 의존성 및 화면은 유지했습니다.
 `mediapipe_service.py`의 기존 API용 확장 지점도 유지하며 이번 분석 모듈을 자동으로 호출하지 않습니다.
-분석 모듈은 직접 import할 수 있고 독립 도구에서 사용합니다. HTTP 분석 API는 아직 없습니다.
-모션용 패키지는 별도 가상환경에 설치하므로 기본 Backend 개발에는 추가 설치가 필요 없습니다.
+분석 모듈은 직접 import할 수 있고 독립 도구에서도 계속 사용합니다.
+**2026-09-15부터 HTTP·WebSocket 분석 API가 실제로 존재합니다** (`backend/app/api/v1/movement.py`,
+`WS /api/v1/movement/live/stream`, `GET /live`·`GET /events`, 상세는 `docs/api.md` 참고).
+이에 따라 `mediapipe`·`PyYAML`이 `backend/requirements.txt` 기본 요구사항에 포함되어, 기본 Backend를
+그대로 설치하면(별도 venv 없이) 이 API가 동작합니다. `tools/motion_demo/.venv`는 여전히 FastAPI 서버
+없이 카메라 단독 테스트/캘리브레이션 실험용으로 유효합니다.
 
 ZIP의 원본 MediaPipe `1.0.1`과 numpy `2.4.6` 고정값은 적용하지 않았습니다.
 현재 Backend의 MediaPipe `0.10.35` 및 OpenCV 간접 의존성을 그대로 사용하며 PyYAML만 선택 추가합니다.
@@ -44,7 +48,8 @@ ZIP의 원본 MediaPipe `1.0.1`과 numpy `2.4.6` 고정값은 적용하지 않�
 
 - 분석 모듈 import를 패키지 상대 import로 변경했습니다.
 - 모델 경로를 `backend/models/`, 설정 경로를 분석 패키지의 YAML 위치로 수정했습니다.
-- 캘리브레이션 저장 기본 경로를 Git에서 제외되는 `backend/.local/motion_demo/`로 옮겼습니다.
+- 캘리브레이션 저장 기본 경로를 Git에서 제외되는 `backend/.local/motion_demo/calibration/`로 옮겼습니다
+  (2026-09-15 `CalibrationStore` 도입 이후 사용자별 파일로 저장, [스키마 문서](../../backend/app/schemas/README.md) 참고).
   독립 웹캠 도구는 기준선을 메모리에만 보관하며 자동 저장하지 않습니다.
 - 원본 규칙 엔진의 `시작 시각 0`이 거짓으로 처리되어 숙임 횟수가 누락되는 부분을 수정했습니다.
 - 원본 문서, 모델과 데모 판정 임계값은 변경하지 않았습니다.
@@ -95,15 +100,19 @@ tools/motion_demo/.venv/bin/python -m unittest tools.motion_demo.test_motion -v
 
 ## 웹 및 모바일 적용 범위
 
-현재는 Python 실행 PC의 카메라만 지원합니다. Python 서버의 `VideoCapture(0)`은 접속 사용자의 카메라를 열지 않습니다.
-Flutter의 `features/movement`에서 브라우저 촬영을 구현하고 프레임 전송 API를 추가해야 웹/모바일에서 사용할 수 있습니다.
+`tools/motion_demo`는 Python 실행 PC의 카메라만 지원합니다. Python 서버의 `VideoCapture(0)`은 접속 사용자의 카메라를 열지 않습니다.
+프레임 전송 API(`WS /api/v1/movement/live/stream`)는 2026-09-15에 추가됐고, Flutter의
+`features/movement`에서 브라우저 촬영 → 이 API로 프레임 전송하는 클라이언트도 같은 날 구현했습니다(B-4).
+카메라/WebSocket 저수준 호출이 `dart:html` 기반이라 이 저장소 환경(카메라 없음)에서는 자동 검증이
+안 되고, 실제 브라우저에서의 동작은 아직 사람이 확인해야 합니다(`frontend/lib/features/movement/README.md` 참고).
 모바일 카메라 테스트에는 HTTPS와 브라우저 카메라 권한이 필요합니다.
 휴대폰의 localhost는 휴대폰 자신이므로 별도 접근 가능한 Backend 주소가 필요합니다.
 현재 localhost CORS 설정을 유지했으므로 HTTPS 테스트 origin을 명시적으로 허용하거나 같은 origin의 프록시가 필요합니다.
 근거: [MDN getUserMedia](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getUserMedia).
 
-규칙 엔진, 평활화와 기준선은 한 사용자 세션당 별도 인스턴스를 사용해야 합니다.
-캘리브레이션 파일은 데모용이며 운영에서는 사용자별 저장과 인증을 별도로 설계해야 합니다.
+규칙 엔진, 평활화와 기준선은 한 사용자 세션당 별도 인스턴스를 쓴다 — `SessionManager`(2026-09-15
+구현 완료, `backend/app/services/movement/session_manager.py`)가 이를 관리한다.
+캘리브레이션 파일은 데모용(로컬 JSON)이며 운영에서는 사용자별 저장과 인증을 별도로 설계해야 합니다.
 원본의 시간/각도 임계값은 데모 값으로, 사용자 대상 정확도 검증은 아직 수행하지 않았습니다.
 
 ## 배치 후 검증 결과

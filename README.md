@@ -188,7 +188,19 @@ python -m unittest discover -s tests
 첨부 모션 데모의 분석 모듈과 모델은 `backend/app/services/movement/`, `backend/models/`에 배치했습니다.
 PC 웹캠 테스트 도구는 `tools/motion_demo/`에서 별도로 실행합니다.
 원본 파일 이동 목록과 설치/테스트 명령은 [모션 통합 문서](docs/movement/README.md)를 참고하세요.
-기본 Backend 요구사항과 Flutter 설정은 유지하며 웹·모바일 카메라 및 HTTP 분석 API는 아직 연결하지 않았습니다.
+백엔드 쪽 실시간 분석 API(`WS /api/v1/movement/live/stream`, `GET /live`, `GET /events`, `GET /report/daily`)는
+전부 실제로 동작합니다: 브라우저가 JPEG 프레임을 WebSocket으로 보내면 백엔드의 기존 MediaPipe·규칙 엔진
+파이프라인이 처리해 캘리브레이션→실시간 판정→이벤트 기록→일일 리포트까지 수행하고, 결과를 다시
+브라우저로 돌려줍니다(테스트는 가짜 카메라 입력으로 검증, `backend/tests/test_movement_api.py`,
+`backend/tests/test_report.py`). 카메라 처리에 필요한 `mediapipe`/`PyYAML`이 `backend/requirements.txt`
+기본 요구사항에 포함되어 있으니 위 Backend 설치 절차만 그대로 따르면 됩니다(별도 설치 불필요).
+Flutter Web 쪽 카메라 캡처/전송 클라이언트(B-4, `frontend/lib/features/movement/`)도 구현했고
+`app.dart`의 "모션 인식 데모 보기" 버튼으로 접근할 수 있습니다. 다만 카메라/WebSocket 저수준 호출은
+`dart:html` 기반이라 이 저장소 환경(카메라 없음)에서는 자동 검증이 안 되고, **실제 브라우저에서의
+카메라 권한·캘리브레이션·실시간 오버레이 동작은 아직 사람이 직접 확인해야 합니다**
+(`flutter run -d chrome`, 상세는 `frontend/lib/features/movement/README.md`).
+이 WebSocket 연동은 데모 속도를 위한 결정이며, 실서비스에서는 온디바이스 프라이버시 원칙 복원을 위해
+클라이언트 사이드 추론 전환을 재검토해야 합니다. 상세 근거는 [구현계획서 v3 §4](docs/movement/구현계획서_v3.md)를 참고하세요.
 
 초기 화면, 환경 설정, API 상태 확인, 로컬 CORS, Supabase client 생성 경계만 준비되어 있습니다.
 프로필/컨디션/루틴/식단/움직임/수면 기능, 상태관리, 인증/토큰 검증, DB 스키마 및 migration,
