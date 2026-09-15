@@ -1,5 +1,6 @@
-%% 서비스 흐름도: AI 하루 루틴 생성
-%% 관련 기능: W-COND-001, W-ACT-001, W-ROUTINE-001, W-ROUTINE-002, W-ROUTINE-003 / 관련 UC: UC2, UC3, UC11
+%% 서비스 흐름도: 홈 화면 진입 및 AI 하루 루틴 생성
+%% 관련 기능: W-ROUTINE-002, W-COND-001, W-ACT-001, W-ROUTINE-001, W-ROUTINE-003 / 관련 UC: UC2, UC3, UC11
+%% 전제: 프로필 등록 완료(UC1) 상태. 홈 화면은 하나이며, 컨디션 입력 여부에 따라 CTA/가이드 영역만 조건부 렌더링된다.
 flowchart TD
     classDef user fill:#E8F0FE,stroke:#4285F4,color:#1a1a1a;
     classDef system fill:#F1F3F4,stroke:#5f6368,color:#1a1a1a;
@@ -7,8 +8,13 @@ flowchart TD
     classDef terminal fill:#E6F4EA,stroke:#34A853,color:#1a1a1a;
     classDef external fill:#FCE8E6,stroke:#EA4335,color:#1a1a1a,stroke-dasharray: 4 3;
 
-    Start(["시작: 하루 시작"]):::terminal --> A(["사용자: 오늘의 컨디션 입력<br/>(입덧·통증·피로·수면 상태)"]):::user
-    A --> B["시스템: 당일 컨디션 저장"]:::system
+    Start(["시작: 하단 메뉴바 '홈' 탭 진입<br/>(프로필 등록 완료 상태)"]):::terminal --> W["시스템: 상단 웰컴 카드 표시<br/>(인사말·임신 주차·이번 주차 맞춤 팁)"]:::system
+    W --> P{"시스템: 오늘 컨디션을 입력했는가?"}:::decision
+
+    P -- 아니오 --> Q["시스템: '오늘의 컨디션 체크하러 가기' CTA 버튼 노출<br/>(하단 가이드 영역 없음)"]:::system
+    Q --> R(["사용자: CTA 버튼 클릭"]):::user
+    R --> A(["사용자: 오늘의 컨디션 입력<br/>(입덧·통증·피로·수면 상태)"]):::user
+    A --> B["시스템: 당일 컨디션 저장, CTA 버튼 숨김"]:::system
     B --> C(["사용자: 오늘 예정 활동 선택"]):::user
     C --> D["시스템: 프로필·컨디션·임신주차·전일 활동데이터 취합"]:::system
 
@@ -20,7 +26,10 @@ flowchart TD
     E --> F{"시스템: AI 엔진 응답 정상인가?"}:::decision
     F -- 실패/시간초과 --> G["시스템: 폴백 루틴 제공<br/>(전일 루틴 또는 기본 템플릿)"]:::system
     G --> H["시스템: 오류 로깅 및 정확도 저하 가능성 안내"]:::system
-    H --> J["시스템: 루틴 화면 표시"]:::system
-    F -- 정상 --> I["시스템: 식사·가사·건강·수면 4종 가이드 반영"]:::system
+    H --> J["시스템: 웰컴 카드 하단에 4종 가이드 스크롤 표시"]:::system
+    F -- 정상 --> I["시스템: 생성된 4종 가이드 저장"]:::system
     I --> J
-    J --> End(["종료: 아내가 하루 루틴 확인"]):::terminal
+
+    P -- 예(이미 오늘 생성됨) --> K["시스템: 저장된 오늘의 4종 가이드를<br/>웰컴 카드 하단에 스크롤로 표시 (CTA 없음)"]:::system
+    K --> End2(["종료: 아내가 하루 루틴 확인"]):::terminal
+    J --> End1(["종료: 아내가 하루 루틴 확인"]):::terminal
