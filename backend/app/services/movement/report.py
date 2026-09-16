@@ -50,6 +50,26 @@ _NOTABLE_LEVEL = LABEL_LEVEL[REPEATED_LOAD]
 
 _GroupKey = tuple[PostureType, BurdenLabel]
 
+_BENDING_BURDEN_LABELS = {BurdenLabel.REPEATED_LOAD, BurdenLabel.PROLONGED_LOAD}
+
+
+def _count_bending_burden_events(normal_events: list[PostureEvent]) -> int:
+    """2026-09-16 팀 결정: Bending의 Repeated Load/Prolonged Load, 그리고
+    High-load Action(Sit-to-Stand) 포착 횟수를 합쳐 하나의 지표로 노출한다.
+
+    High-load Action은 무릎 동작이라 posture_type이 실제로는 거의 항상
+    Standing으로 기록되므로(session_manager._record_instant_event 참고),
+    이 라벨만 posture_type 조건 없이 포함한다 — posture_type=Bending으로
+    강제 태깅하면 resolve_body_part()의 body_part 분류 의미가 왜곡되기
+    때문에, 필터링은 여기 집계 시점에서만 예외 처리한다.
+    """
+    return sum(
+        1
+        for e in normal_events
+        if (e.posture_type == PostureType.BENDING and e.burden_label in _BENDING_BURDEN_LABELS)
+        or e.burden_label == BurdenLabel.HIGH_LOAD_ACTION
+    )
+
 
 def _load_templates() -> dict[str, str]:
     if not TEMPLATES_PATH.exists():
@@ -90,6 +110,7 @@ def generate_daily_report(
         aggregates=aggregates,
         top_burdened_body_part=_pick_top_burdened(aggregates),
         cumulative_forward_bend_sec=cumulative_forward_bend_sec,
+        bending_burden_event_count=_count_bending_burden_events(normal_events),
         narratives=narratives,
     )
 

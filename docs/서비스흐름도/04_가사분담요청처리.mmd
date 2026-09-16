@@ -1,5 +1,6 @@
 %% 서비스 흐름도: 가사 가이드 & 가족 분담 요청 처리
-%% 관련 기능: W-HOUSE-001, W-HOUSE-003, W-HOUSE-003-1, W-RECORD-002, H-REQUEST-001, H-REQUEST-002, H-REQUEST-003, H-REQUEST-003-1 / 관련 UC: UC3, UC5, UC9
+%% 관련 기능: FUC-W-HOUSE-001, FUC-W-HOUSE-003, FUC-W-HOUSE-003-1, FUC-W-RECORD-002, FUC-H-REQUEST-001, FUC-H-REQUEST-002, FUC-H-REQUEST-003 / 관련 UC: UC3, UC5, UC9
+%% 참고: 완료 확인 팝업(구 FUC-H-REQUEST-003)은 FUC-H-REQUEST-002(요청 확인 및 완료 처리)에 병합됨. 완료 결과 안내 팝업(구 FUC-H-REQUEST-003-1)은 FUC-H-REQUEST-003으로 번호 변경됨
 flowchart TD
     classDef user fill:#E8F0FE,stroke:#4285F4,color:#1a1a1a;
     classDef system fill:#F1F3F4,stroke:#5f6368,color:#1a1a1a;
@@ -13,14 +14,14 @@ flowchart TD
 
     A --> B
     B --> C["시스템: 요청 생성 및 남편 계정에 알림 전송"]:::system
-    C --> C1["시스템: 딤 배경 팝업으로 전송 완료·도착 위치 안내 (W-HOUSE-003-1)"]:::system
+    C --> C1["시스템: 딤 배경 팝업으로 전송 완료·도착 위치 안내 (FUC-W-HOUSE-003-1)"]:::system
 
     subgraph HUSBAND["남편 앱"]
         D(["사용자(남편): 알림/카드에서 요청 확인"]):::user
-        E(["사용자(남편): '확인' 버튼 클릭 (H-REQUEST-002)"]):::user
+        E(["사용자(남편): '확인' 버튼 클릭 (FUC-H-REQUEST-002)"]):::user
         F(["사용자(남편): 실제 집안일 수행"]):::user
         G(["사용자(남편): '완료했어요' 버튼 클릭"]):::user
-        G1(["사용자(남편): 완료 확인 팝업에서 '완료했어요' 재확인 (H-REQUEST-003)"]):::user
+        G1(["사용자(남편): 완료 확인 팝업에서 '완료했어요' 재확인 (FUC-H-REQUEST-002)"]):::user
     end
 
     C1 --> D --> E
@@ -28,6 +29,6 @@ flowchart TD
     H --> F --> G
     G --> G1
     G1 --> I["시스템: 요청 상태 = 완료, Household DB 저장"]:::system
-    I --> K["시스템: 완료 결과·오늘 가족 분담 내역 안내 (H-REQUEST-003-1)"]:::system
+    I --> K["시스템: 완료 결과·오늘 가족 분담 내역 안내 (FUC-H-REQUEST-003)"]:::system
     K --> J["시스템: 아내의 루틴 실행 기록에 완료 상태 자동 반영"]:::system
     J --> End(["종료: 캘린더/리포트에 가족 분담 내역 반영"]):::terminal

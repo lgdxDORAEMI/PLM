@@ -2,6 +2,10 @@
 
 개발 기본 주소: `http://localhost:8000`
 
+## 최근 변경사항 (프론트 영향)
+
+- 2026-09-16: `GET /api/v1/movement/report/daily` 응답에 `bending_burden_event_count`(int) 필드 추가 — Bending의 Repeated Load/Prolonged Load와 High-load Action(Sit-to-Stand) 포착 횟수를 합친 값. 상세는 아래 `/report/daily` 집계 방식 참고.
+
 | Method | Path | 200 응답 | 설명 |
 | --- | --- | --- | --- |
 | GET | / | `{"message":"PLM API","status":"ok"}` | API 기본 상태 |
@@ -45,6 +49,12 @@ Swagger UI: `/docs`, OpenAPI schema: `/openapi.json`.
 절대 1위가 될 수 없기 때문이다(`backend/app/services/movement/report.py`의
 `_pick_top_burdened()` 주석 참고). 문구는 `report_templates.yaml`에서 트리거 사유별로
 가져오며 Repeated Load 이상인 조합에만 생성한다.
+
+`bending_burden_event_count`(2026-09-16 추가)는 Bending의 Repeated Load/Prolonged Load
+이벤트와 High-load Action(Sit-to-Stand) 이벤트의 개수를 합친 값이다. High-load Action은
+무릎 동작이라 `posture_type`이 실제로는 거의 항상 Standing으로 기록되지만, 이 필드에는
+`posture_type`과 무관하게 항상 포함된다 — `aggregates` 배열의 개별 조합과는 다른, 별도로
+계산된 요약값이다(`report.py`의 `_count_bending_burden_events()` 참고).
 
 ## 임산부 프로필 (W-PROFILE-001, 화면설계서: 프로필 설정)
 

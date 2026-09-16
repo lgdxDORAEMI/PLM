@@ -1,5 +1,5 @@
 %% 서비스 흐름도: 루틴 실행 기록 & Daily 리포트/캘린더
-%% 관련 기능: W-HEALTH-002, W-RECORD-001, W-RECORD-002, W-REPORT-001, W-REPORT-001-1, B-CAL-001 / 관련 UC: UC6, UC7
+%% 관련 기능: FUC-W-HEALTH-002, FUC-W-RECORD-001, FUC-W-RECORD-002, FUC-W-REPORT-001, FUC-W-REPORT-001-1, FUC-B-CAL-001 / 관련 UC: UC6, UC7
 flowchart TD
     classDef user fill:#E8F0FE,stroke:#4285F4,color:#1a1a1a;
     classDef system fill:#F1F3F4,stroke:#5f6368,color:#1a1a1a;
@@ -14,9 +14,9 @@ flowchart TD
     B --> D(["사용자: '오늘의 일정 마치기' 클릭"]):::user
     D --> E["시스템: Daily 리포트 생성<br/>(실행 통계·카테고리별 루틴·인사이트·가족분담 집계)"]:::system
     E --> Share{"사용자: '저장하고 마치기' 또는 '남편에게 공유'?"}:::decision
-    Share -- 저장하고 마치기 --> F["시스템: 컨디션 캘린더(B-CAL-001)에 날짜별 저장, 홈 초기화"]:::system
-    Share -- 남편에게 공유 --> Pop["시스템: 딤 배경 팝업으로 전송 완료·조회 위치 안내 (W-REPORT-001-1)"]:::system
+    Share -- 저장하고 마치기 --> F["시스템: 컨디션 캘린더(FUC-B-CAL-001)에 날짜별 저장, 홈 초기화"]:::system
+    Share -- 남편에게 공유 --> Pop["시스템: 딤 배경 팝업으로 전송 완료·조회 위치 안내 (FUC-W-REPORT-001-1)"]:::system
     Pop --> F
     F --> G(["사용자: 캘린더에서 조회할 날짜 선택"]):::user
-    G --> H["시스템: 해당 날짜 컨디션·루틴·실행여부·가족분담 내역 표시 (B-CAL-001)"]:::system
+    G --> H["시스템: 해당 날짜 컨디션·루틴·실행여부·가족분담 내역 표시 (FUC-B-CAL-001)"]:::system
     H --> End(["종료: 생활 기록 확인 완료"]):::terminal

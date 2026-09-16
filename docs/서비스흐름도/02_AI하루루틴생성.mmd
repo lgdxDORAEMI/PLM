@@ -1,5 +1,6 @@
 %% 서비스 흐름도: 홈 화면 진입 및 AI 하루 루틴 생성
-%% 관련 기능: W-HOME-001, W-COND-001, W-TASK-001, W-ROUTINE-001, W-ROUTINE-003 / 관련 UC: UC2, UC3, UC11
+%% 관련 기능: FUC-W-HOME-001, FUC-W-COND-001, FUC-W-TASK-001, FUC-W-CALLBACK-001 / 관련 UC: UC2, UC3, UC11
+%% 참고: AI 루틴 생성 요청·응답 반영(구 FUC-W-ROUTINE-001)은 FUC-W-HOME-001에 통합됨. 폴백 처리(구 FUC-W-ROUTINE-003)는 모든 AI 엔진 호출 화면이 공유하는 FUC-W-CALLBACK-001로 분리됨
 %% 전제: 프로필 등록 완료(UC1) 상태. 홈 화면은 하나이며, 컨디션 입력 여부에 따라 CTA/가이드 영역만 조건부 렌더링된다.
 flowchart TD
     classDef user fill:#E8F0FE,stroke:#4285F4,color:#1a1a1a;
@@ -24,7 +25,7 @@ flowchart TD
 
     D --> E
     E --> F{"시스템: AI 엔진 응답 정상인가?"}:::decision
-    F -- 실패/시간초과 --> G["시스템: 폴백 루틴 제공<br/>(전일 루틴 또는 기본 템플릿)"]:::system
+    F -- 실패/시간초과 --> G["시스템: 폴백 루틴 제공 (FUC-W-CALLBACK-001)<br/>(전일 루틴 또는 기본 템플릿)"]:::system
     G --> H["시스템: 오류 로깅 및 정확도 저하 가능성 안내"]:::system
     H --> J["시스템: 웰컴 카드 하단에 4종 가이드 스크롤 표시"]:::system
     F -- 정상 --> I["시스템: 생성된 4종 가이드 저장"]:::system

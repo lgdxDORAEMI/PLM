@@ -41,6 +41,28 @@ class ReportTest(unittest.TestCase):
         self.assertEqual(report.aggregates, [])
         self.assertIsNone(report.top_burdened_body_part)
         self.assertEqual(report.narratives, [])
+        self.assertEqual(report.bending_burden_event_count, 0)
+
+    def test_bending_burden_event_count_combines_bending_and_high_load_action(self) -> None:
+        """2026-09-16 팀 결정: Bending의 Repeated Load/Prolonged Load와
+        High-load Action(Sit-to-Stand)의 포착 횟수를 하나로 합산해 노출한다.
+        High-load Action은 posture_type=Standing으로 기록되지만(무릎 동작이라
+        Bending으로 태깅하지 않음) 그래도 이 카운트에는 포함되어야 하고,
+        Standing의 Prolonged Load처럼 Bending도 High-load Action도 아닌
+        이벤트는 포함되면 안 된다."""
+        store = InMemoryEventStore()
+        store.record(_event(9, PostureType.BENDING, BurdenLabel.PROLONGED_LOAD, EventTrigger.STATE_DURATION, 8.0))
+        store.record(_event(10, PostureType.BENDING, BurdenLabel.REPEATED_LOAD, EventTrigger.REPEATED_COUNT, 3.0))
+        store.record(
+            _event(11, PostureType.STANDING, BurdenLabel.HIGH_LOAD_ACTION, EventTrigger.SIT_TO_STAND, 0.0)
+        )
+        # 아래 둘은 카운트에 포함되면 안 됨: Standing-Prolonged Load, Sitting-Normal
+        store.record(_event(12, PostureType.STANDING, BurdenLabel.PROLONGED_LOAD, EventTrigger.STATE_DURATION, 20.0))
+        store.record(_event(13, PostureType.SITTING, BurdenLabel.NORMAL, EventTrigger.STATE_DURATION, 1.0))
+
+        report = generate_daily_report(store, _USER_ID, _TODAY)
+
+        self.assertEqual(report.bending_burden_event_count, 3)
 
     def test_groups_by_posture_and_label(self) -> None:
         store = InMemoryEventStore()

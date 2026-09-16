@@ -8,12 +8,14 @@
 설계 결정 (2026-09-14 논의):
 - 이벤트 경계: 구간형. 라벨이 Repeated Load 이상으로 올라간 시점부터 다시
   Normal로 내려간 시점까지를 하나의 PostureEvent로 묶는다. Sit-to-Stand는
-  순간 이벤트로 별도 기록한다 (§구현계획서_v3 §2.4, §2.5 참고).
+  순간 이벤트로 별도 기록한다 (구현계획서_v3.md §2.3, §2.4 참고).
 - 시각 표현: 세션 상대초(rule_engine의 t)가 아니라 절대 UTC datetime으로
   저장한다. 세션 시작 시각을 기준으로 변환해서 채운다.
 - 실시간 프레임 상태(PostureFrameState)에는 골격 오버레이를 그릴 수 있도록
   33개 landmark 좌표를 포함한다.
-- user_id는 Supabase Auth 연동 전까지 DEMO_USER_ID 고정값을 사용한다.
+- user_id는 Supabase Auth 연동 전까지 DEMO_USER_ID 고정값을 사용했으나,
+  2026-09-16 인증 연동 완료로 이 상수는 제거했다 — 이제 모든 호출부가
+  `get_current_user`로 얻은 실제 user_id를 명시적으로 넘긴다.
 
 설계 결정 (2026-09-15 팀 논의, docs/requirements/ 정합성 점검 반영):
 - 임계 이벤트 발생 시 앱에 먼저 알림을 보내는 **푸시 방식은 채택하지 않는다**
@@ -40,10 +42,6 @@ from enum import Enum
 from uuid import UUID
 
 from pydantic import BaseModel, Field
-
-# Supabase Auth 연동 전까지 사용하는 고정 데모 사용자 id.
-# 인증이 붙으면 각 호출부에서 실제 user_id로 교체하고 이 상수는 제거한다.
-DEMO_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
 
 
 class PostureType(str, Enum):
@@ -142,7 +140,7 @@ class PostureEvent(BaseModel):
     """일일 리포트 집계와 이벤트 조회 API에 쓰이는 저장 단위."""
 
     event_id: UUID
-    user_id: UUID = DEMO_USER_ID
+    user_id: UUID
     session_id: UUID
     posture_type: PostureType
     burden_label: BurdenLabel
@@ -158,7 +156,7 @@ class PostureEvent(BaseModel):
 class CalibrationProfileSchema(BaseModel):
     """calibration.CalibrationProfile 대응. user_id만 추가되었다."""
 
-    user_id: UUID = DEMO_USER_ID
+    user_id: UUID
     baseline_trunk_flexion: float
     baseline_knee_angle: float
     frame_count: int
@@ -201,7 +199,7 @@ class PostureAggregate(BaseModel):
 class DailyReportSummary(BaseModel):
     """일일 리포트 조회 API 응답. report.py(§5.9, 아직 미구현) 산출물 형태."""
 
-    user_id: UUID = DEMO_USER_ID
+    user_id: UUID
     date: datetime
     aggregates: list[PostureAggregate] = Field(default_factory=list)
     top_burdened_body_part: BodyPart | None = None
@@ -212,4 +210,11 @@ class DailyReportSummary(BaseModel):
     근거(§2.5). 2026-09-15부터 실시간 라벨에는 영향을 안 주고 이 필드로만 노출한다
     — SessionManager.end_session()이 세션별로 남긴 이벤트를 report.py가 그날치
     합산한 값이다. aggregates(자세유형×라벨 집계)에는 포함하지 않는다."""
+    bending_burden_event_count: int = 0
+    """2026-09-16 팀 결정: Bending의 Repeated Load/Prolonged Load, 그리고
+    High-load Action(Sit-to-Stand) 포착 횟수를 합쳐 리포트에서 하나의 지표로
+    강조하기로 함. High-load Action은 무릎 동작이라 실제로는 posture_type이
+    거의 항상 Standing으로 기록되므로(resolve_body_part() 참고), 이 라벨만
+    posture_type 조건 없이 포함한다 — posture_type=Bending으로 강제 태깅하면
+    body_part 분류 의미가 왜곡되기 때문에 집계 시점에서만 예외 처리한다."""
     narratives: list[str] = Field(default_factory=list)
