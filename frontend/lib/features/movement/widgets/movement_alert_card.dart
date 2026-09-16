@@ -9,9 +9,11 @@ class MovementAlertCard extends StatelessWidget {
   const MovementAlertCard({
     super.key,
     required this.alert,
+    required this.reviewed,
     required this.onTap,
   });
   final MovementAlert alert;
+  final bool reviewed;
   final VoidCallback onTap;
   @override
   Widget build(BuildContext context) {
@@ -62,11 +64,25 @@ class MovementAlertCard extends StatelessWidget {
                 ],
               ),
             ),
-            Text(
-              alert.time,
-              style: Theme.of(
-                context,
-              ).textTheme.labelSmall?.copyWith(color: AppColors.textTertiary),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  alert.time,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+                if (reviewed) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    '확인함',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.labelSmall?.copyWith(color: AppColors.success),
+                  ),
+                ],
+              ],
             ),
             const Icon(Icons.chevron_right, color: AppColors.textTertiary),
           ],

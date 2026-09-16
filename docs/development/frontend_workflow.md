@@ -160,4 +160,4 @@ UI
 - 이전 STEP 결과를 사용자가 확인하기 전에 다음 STEP의 대규모 작업을 시작하지 않는다.
 - 각 STEP에서 새로 전달되는 요구사항은 이 문서의 해당 단계 기준에 누적 기록한다.
 - 새 요구사항이 기존 기준과 충돌하면 최신 사용자 지시를 우선하고 충돌 내용을 기록한다.
-- 현재 상태: **STEP 6 진행 중. 제품 화면 20개·공용 Design System·서비스 흐름 기반 Router 구축 완료, Profile·Today Care·Daily Routine·Meal·가사·건강·수면·제품용 Movement Mock UI 구현 완료, 나머지 화면은 Task 단위 구현 대기**
+- 현재 상태: **STEP 6 진행 중. 요구사항 ID가 확정된 MVP 화면과 공용 Design System·서비스 흐름 기반 Router 구현 완료. 설정·Partner Profile은 요구사항 확정 대기**
