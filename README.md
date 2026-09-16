@@ -27,9 +27,9 @@ MVP는 가전 자동 실행과 홈카메라 기반 실시간 위험 행동 로�
 | Frontend 제품 UI | 부분 구현 | Profile 6단계, Home·Today Care, Daily Routine, Meal, 가사 분담, 건강 활동, Sleep Care, mock 실시간 Movement Flow 구현 |
 | 모션 인식 Web 데모 | 구현 | 브라우저 카메라 프레임 전송, 캘리브레이션, 자세 오버레이와 상태 표시 |
 | Backend 기본 API | 구현 | `/`, `/health`, 개발용 CORS |
-| 임산부 프로필 | 부분 구현 | 프로필 1/6 출산예정일, 2/6 신장·임신 전 체중 조회·저장 |
+| 임산부 프로필 | 부분 구현 | 프로필 1/6 출산예정일(W-PROFILE-001), 2/6 신장·임신 전 체중(W-PROFILE-002) 조회·저장. 3~6단계(초산/경산·단태/쌍태·알레르기·주의 진단)와 확인·저장 단계는 미구현 |
 | 모션 분석 API | 데모 구현 | 단일 세션 WebSocket 분석, 이벤트 및 일일 집계 조회 |
-| Supabase | 부분 구현 | Auth 토큰 검증 경계와 `pregnancy_profiles` migration |
+| Supabase | 부분 구현 | Auth 토큰 검증 경계와 `pregnancy_profiles` migration 2건(생성, 출산예정일 제약 완화) |
 | AI 루틴·LLM | 미구현 | 인터페이스만 존재하며 공급자 및 실제 호출 없음 |
 | 배우자 UI | Skeleton | 화면별 Placeholder를 Mock Service 기반 실제 UI로 교체 예정 |
 | ThinQ 가전 연동 | 미구현 | MVP에서는 추천까지만 제공하고 실제 제어는 제외 |
@@ -104,7 +104,7 @@ Copy-Item .env.example .env
 | --- | :---: | :---: | --- |
 | `BACKEND_URL` | O | - | FastAPI 기본 주소 |
 | `SUPABASE_URL` | O | O | Supabase 프로젝트 URL |
-| `SUPABASE_ANON_KEY` | O | O | 공개 클라이언트 키 |
+| `SUPABASE_ANON_KEY` | O | - | 공개 클라이언트 키. Backend는 `Settings`에 선언만 있고 사용하지 않습니다 |
 | `SUPABASE_SERVICE_ROLE_KEY` | - | O | 서버 전용 DB 접근 키 |
 | `LLM_API_KEY` | - | O | 향후 외부 AI 공급자 인증 |
 | `LLM_API_BASE_URL` | - | O | 향후 외부 AI API 주소 |
@@ -127,6 +127,25 @@ cd backend
 ```
 
 카메라 권한과 실제 WebSocket 모션 흐름은 자동 테스트만으로 검증할 수 없으므로 Chrome에서 별도 확인해야 합니다.
+
+## 최근 변경
+
+### 2026-09-16 — Backend 프로필 출산예정일 규칙 완화 (W-PROFILE-001)
+
+기획 개정에서 W-PROFILE-001이 "출산예정일 입력(1/6)"으로 세분화되고, 출산예정일을 모르는 경우 마지막 생리 시작일(LMP)로 산출한다는 내용이 확정되면서 Backend 검증 규칙을 맞췄습니다.
+
+| 항목 | 이전 | 현재 |
+| --- | --- | --- |
+| 출산예정일 입력 범위 | 오늘 기준 14일 전 ~ 280일 후 | 오늘 기준 14일 전 ~ **365일 후** |
+| 마지막 생리 시작일 | 선택이지만 출산예정일과 함께 보내면 `+280일`로 정확히 일치해야 함 | **선택 입력**. 함께 보내도 일치 검사를 하지 않음 |
+| 두 값을 함께 보낸 경우 | 불일치 시 422 | 병원에서 진단받은 `due_date`를 그대로 저장하고 LMP는 보낸 값 그대로 보관 |
+| 마지막 생리 시작일만 보낸 경우 | `+280일`로 출산예정일 자동 계산 | 동일하게 유지 |
+| 미래 날짜의 마지막 생리 시작일 | 범위 검사에 걸릴 때만 거부 | 명시적으로 거부 |
+
+- 임신 주수 계산 기준(`FULL_TERM_DAYS = 280`)은 바뀌지 않았습니다. 입력 상한만 `MAX_DUE_AHEAD_DAYS = 365`로 분리했습니다.
+- 두 값이 `+280일` 관계여야 한다는 DB CHECK 제약을 `supabase/migrations/20260916000000_relax_due_date_constraint.sql`로 제거했습니다. **이 migration을 Supabase에 적용해야 변경이 완료됩니다.**
+- 변경 파일: `backend/app/schemas/profile.py`, `backend/tests/test_profile.py`, `docs/api.md`, `supabase/migrations/20260916000000_relax_due_date_constraint.sql`
+- 검증: `backend`에서 `python -m unittest discover -s tests` 23개 통과
 
 ## 주요 문서
 

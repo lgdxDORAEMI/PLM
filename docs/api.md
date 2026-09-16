@@ -57,12 +57,12 @@ Swagger UI: `/docs`, OpenAPI schema: `/openapi.json`.
 | PUT | /api/v1/profile/me/due-date | 프로필 설정 1/6 | 200 프로필 | 출산예정일 저장 |
 | PUT | /api/v1/profile/me/body | 프로필 설정 2/6 | 200 프로필 | 임신 전 신장·체중 저장 |
 
-요청 본문: `PUT /api/v1/profile/me/due-date` (둘 중 하나 이상)
+요청 본문: `PUT /api/v1/profile/me/due-date` (둘 중 하나 이상, 출산예정일이 기본 입력)
 
 | 필드 | 타입 | 규칙 |
 | --- | --- | --- |
-| due_date | `YYYY-MM-DD` | 오늘(KST) 기준 14일 전 ~ 280일 후 |
-| last_period_start | `YYYY-MM-DD` | 보내면 서버가 `+280일`로 출산예정일을 계산해 함께 저장. `due_date`와 같이 보내면 두 값이 일치해야 함 |
+| due_date | `YYYY-MM-DD` | 오늘(KST) 기준 14일 전 ~ 365일 후. 병원에서 진단받은 값을 그대로 저장한다 |
+| last_period_start | `YYYY-MM-DD` | 선택 입력. 미래 날짜는 거부한다. `due_date` 없이 이 값만 보내면 서버가 `+280일`로 출산예정일을 계산해 함께 저장한다. 둘 다 보내면 `due_date`를 그대로 쓰고 이 값은 보낸 그대로 저장한다(초음파 보정으로 280일과 어긋나도 허용) |
 
 `due_date`만 보내면 이전에 저장된 `last_period_start`는 비워집니다. 다른 단계 값은 유지됩니다.
 
@@ -86,7 +86,7 @@ Swagger UI: `/docs`, OpenAPI schema: `/openapi.json`.
 | 401 | 토큰 없음 또는 유효하지 않음 |
 | 404 | 등록된 프로필 없음 (GET) |
 | 409 | 출산예정일(1단계)을 저장하기 전에 신장·체중(2단계)을 보냄 |
-| 422 | 입력 검증 실패. 필드 오류는 `detail[].loc`의 마지막 값이 필드명, 두 값의 관계 오류는 `loc`이 `["body"]` |
+| 422 | 입력 검증 실패. 필드 오류는 `detail[].loc`의 마지막 값이 필드명, 본문 전체 규칙 오류(두 값 모두 누락, 미래 생리 시작일, 출산예정일 범위 초과)는 `loc`이 `["body"]` |
 | 503 | Supabase 설정 누락 또는 연결 실패 |
 
 로컬 Flutter Web의 임의 개발 포트를 허용합니다.
