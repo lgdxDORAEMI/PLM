@@ -144,4 +144,5 @@ cd backend
 - 커밋 제목과 본문은 한글로 작성합니다.
 - Frontend 작업은 [Frontend 작업 운영 기준](docs/development/frontend_workflow.md)의 STEP을 순서대로 진행합니다.
 - 화면 구조·콘텐츠는 `docs/screens/**`를 참고하되 시각 규칙이 충돌하면 `DESIGN.md`를 우선합니다.
+- 화면과 Route의 추적 ID는 `docs/requirements/04_1_기능요구사항명세서.md`의 `W-*`·`H-*` 기능 요구사항 ID를 사용하며 별도 Screen ID를 만들지 않습니다.
 - 기능 변경 시 관련 README를, 환경 설정과 실행 예외가 바뀌면 `guide.md`를 함께 갱신합니다.

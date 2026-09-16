@@ -5,35 +5,35 @@ import 'package:plm_frontend/routing/route_context.dart';
 import 'package:plm_frontend/routing/route_names.dart';
 
 void main() {
-  const expectedScreenIds = <String, String>{
-    RouteNames.profileSetup: 'SCR-W-01',
-    RouteNames.wifeProfile: 'SCR-W-01',
-    RouteNames.partnerInvite: 'SCR-W-14',
-    RouteNames.wifeInvite: 'SCR-W-14',
-    '${RouteNames.invitationEntry}?token=test-token': 'SCR-H-06',
-    RouteNames.condition: 'SCR-W-02',
-    '${RouteNames.condition}?mode=edit': 'SCR-W-02',
-    RouteNames.activity: 'SCR-W-03',
-    RouteNames.wifeHome: 'SCR-W-04',
-    RouteNames.mealGuide: 'SCR-W-05',
-    RouteNames.householdGuide: 'SCR-W-06',
-    RouteNames.wifeMovement: 'SCR-W-07',
-    RouteNames.partnerMovement: 'SCR-W-07',
-    RouteNames.healthGuide: 'SCR-W-08',
-    RouteNames.sleepGuide: 'SCR-W-09',
-    RouteNames.mealChat: 'SCR-W-10',
-    '/wife/calendar/report/2026-09-16': 'SCR-W-11',
-    RouteNames.wifeCalendar: 'SCR-W-12',
-    RouteNames.wifeSettings: 'SCR-W-13',
-    '/partner/report/2026-09-16': 'SCR-H-01',
-    RouteNames.partnerCalendar: 'SCR-H-02',
-    RouteNames.partnerNotifications: 'SCR-H-03',
-    '/partner/requests/request-123': 'SCR-H-04',
-    RouteNames.partnerProfile: 'SCR-H-05',
+  const expectedRequirementIds = <String, String>{
+    RouteNames.profileSetup: 'W-PROFILE-001',
+    RouteNames.wifeProfile: 'W-PROFILE-001',
+    RouteNames.partnerInvite: 'W-INVITE-001',
+    RouteNames.wifeInvite: 'W-INVITE-001',
+    '${RouteNames.invitationEntry}?token=test-token': 'H-INVITE-001',
+    RouteNames.condition: 'W-COND-001',
+    '${RouteNames.condition}?mode=edit': 'W-COND-001',
+    RouteNames.activity: 'W-ACT-001',
+    RouteNames.wifeHome: 'W-ROUTINE-001',
+    RouteNames.mealGuide: 'W-MEAL-001',
+    RouteNames.householdGuide: 'W-HOUSE-001',
+    RouteNames.wifeMovement: 'W-MOTION-001',
+    RouteNames.partnerMovement: 'H-MOTION-001',
+    RouteNames.healthGuide: 'W-HEALTH-001',
+    RouteNames.sleepGuide: 'W-SLEEP-001',
+    RouteNames.mealChat: 'W-CHAT-001',
+    '/wife/calendar/report/2026-09-16': 'W-REPORT-001',
+    RouteNames.wifeCalendar: 'W-CAL-001',
+    RouteNames.wifeSettings: 'W-SETTING-001',
+    '/partner/report/2026-09-16': 'H-REPORT-001',
+    RouteNames.partnerCalendar: 'H-CAL-001',
+    RouteNames.partnerNotifications: 'H-NOTI-001',
+    '/partner/requests/request-123': 'H-REQUEST-001',
+    RouteNames.partnerProfile: 'H-PROFILE-001',
   };
 
   testWidgets('ROUTE_MAP의 모든 내부 경로가 대응 화면을 만든다', (tester) async {
-    for (final entry in expectedScreenIds.entries) {
+    for (final entry in expectedRequirementIds.entries) {
       await tester.pumpWidget(
         MaterialApp(
           key: ValueKey(entry.key),
@@ -43,7 +43,11 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.text(entry.value), findsOneWidget, reason: entry.key);
+      expect(
+        find.textContaining(entry.value),
+        findsOneWidget,
+        reason: entry.key,
+      );
     }
   });
 
@@ -57,11 +61,11 @@ void main() {
 
     await tester.tap(find.text('프로필 입력 완료'));
     await tester.pumpAndSettle();
-    expect(find.text('SCR-W-14'), findsOneWidget);
+    expect(find.textContaining('W-INVITE-001'), findsOneWidget);
 
     await tester.tap(find.text('링크 보내기 또는 나중에'));
     await tester.pumpAndSettle();
-    expect(find.text('SCR-W-04'), findsOneWidget);
+    expect(find.textContaining('W-ROUTINE-001'), findsOneWidget);
   });
 
   testWidgets('동적 date와 requestId를 화면에 전달한다', (tester) async {
@@ -87,7 +91,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('수정 저장 후 이전 화면'));
     await tester.pumpAndSettle();
-    expect(find.text('SCR-W-04'), findsOneWidget);
+    expect(find.textContaining('W-ROUTINE-001'), findsOneWidget);
   });
 
   testWidgets('아내 Shell은 서비스 흐름의 네 가지 하단 탭을 제공한다', (tester) async {
@@ -129,6 +133,6 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('404'), findsOneWidget);
+    expect(find.textContaining('등록되지 않은 경로입니다: /missing'), findsOneWidget);
   });
 }

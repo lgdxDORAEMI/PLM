@@ -10,26 +10,26 @@
 
 | Task | Screen | Feature | Owner | Status | Branch | Route | Notes |
 |---|---|---|---|---|---|---|---|
-| UI-001 | SCR-W-01 임산부 프로필 설정 | profile | Unassigned | Todo | - | `/onboarding/profile`, `/wife/profile` | SKELETON; create/edit 진입 맥락 구현 |
-| UI-002 | SCR-W-14 배우자 초대 | invitation | Unassigned | Todo | - | `/onboarding/invite`, `/wife/invite` | SKELETON; onboarding/manual 복귀 계약 구현 |
-| UI-003 | SCR-H-06 초대 수락 | invitation | Unassigned | Todo | - | `/invitation-entry?token=` | SKELETON; Token 파싱, 외부 Domain/인증 복귀 미정 |
-| UI-004 | SCR-W-02 오늘의 컨디션 | condition | Unassigned | Todo | - | `/wife/home/condition?mode=` | SKELETON; create/edit 분기 구현 |
-| UI-005 | SCR-W-03 오늘 예정 활동 | condition | Unassigned | Todo | - | `/wife/home/activity` | SKELETON |
-| UI-006 | SCR-W-04 통합 홈 | routine | Unassigned | Todo | - | `/wife/home` | SKELETON; Wife Shell 연결 |
-| UI-007 | SCR-W-05 식사 가이드 | meal | Unassigned | Todo | - | `/wife/home/meal` | SKELETON |
-| UI-008 | SCR-W-10 식사 재조정 채팅 | meal | Unassigned | Todo | - | `/wife/meal-chat` | SKELETON; Wife Chat Tab 연결 |
-| UI-009 | SCR-W-08 건강 가이드 | health | Unassigned | Todo | - | `/wife/home/health` | SKELETON |
-| UI-010 | SCR-W-09 수면 가이드 | sleep | Unassigned | Todo | - | `/wife/home/sleep` | SKELETON |
-| UI-011 | SCR-W-06 가사 가이드 | household | Unassigned | Todo | - | `/wife/home/household` | SKELETON; Partner 화면 직접 이동 제거 |
-| UI-012 | SCR-H-04 파트너 가사 요청 | household | Unassigned | Todo | - | `/partner/requests/:requestId` | SKELETON; requestId 전달 구현 |
-| UI-013 | SCR-H-05 파트너 프로필 | profile | Unassigned | Todo | - | `/partner/profile` | SKELETON |
-| UI-014 | SCR-H-03 알림 | notification | Unassigned | Todo | - | `/partner/notifications` | SKELETON; Push 제외 |
-| UI-015 | SCR-W-11 Daily 리포트 | report | Unassigned | Todo | - | `/wife/calendar/report/:date` | SKELETON; date 전달 구현 |
-| UI-016 | SCR-W-12 컨디션 캘린더 | report | Unassigned | Todo | - | `/wife/calendar` | SKELETON |
-| UI-017 | SCR-H-01 파트너 아침 리포트 | report | Unassigned | Todo | - | `/partner/report/:date` | SKELETON; date 전달 구현 |
-| UI-018 | SCR-H-02 파트너 캘린더 | report | Unassigned | Todo | - | `/partner/calendar` | SKELETON; Partner Main/Shell 연결 |
-| UI-019 | SCR-W-13 설정 | settings | Unassigned | Blocked | - | `/wife/settings` | SKELETON; 상세 요구사항 미정 Phase 2 |
-| UI-020 | SCR-W-07 공유 실시간 모션 | movement | Unassigned | Blocked | - | `/wife/movement`, `/partner/movement` | SKELETON / Phase 2; 기존 Web Demo 별도 보존 |
+| UI-001 | W-PROFILE-001 임산부 프로필 설정 | profile | Unassigned | Todo | - | `/onboarding/profile`, `/wife/profile` | SKELETON; create/edit 진입 맥락 구현 |
+| UI-002 | W-INVITE-001 배우자 초대 | invitation | Unassigned | Todo | - | `/onboarding/invite`, `/wife/invite` | SKELETON; onboarding/manual 복귀 계약 구현 |
+| UI-003 | H-INVITE-001 초대 수락 | invitation | Unassigned | Todo | - | `/invitation-entry?token=` | SKELETON; Token 파싱, 외부 Domain/인증 복귀 미정 |
+| UI-004 | W-COND-001 오늘의 컨디션 | condition | Unassigned | Todo | - | `/wife/home/condition?mode=` | SKELETON; create/edit 분기 구현 |
+| UI-005 | W-ACT-001 오늘 예정 활동 | condition | Unassigned | Todo | - | `/wife/home/activity` | SKELETON |
+| UI-006 | W-ROUTINE-001 통합 홈 | routine | Unassigned | Todo | - | `/wife/home` | SKELETON; Wife Shell 연결 |
+| UI-007 | W-MEAL-001 식사 가이드 | meal | Unassigned | Todo | - | `/wife/home/meal` | SKELETON |
+| UI-008 | W-CHAT-001 식사 재조정 채팅 | meal | Unassigned | Todo | - | `/wife/meal-chat` | SKELETON; Wife Chat Tab 연결 |
+| UI-009 | W-HEALTH-001 건강 가이드 | health | Unassigned | Todo | - | `/wife/home/health` | SKELETON |
+| UI-010 | W-SLEEP-001 수면 가이드 | sleep | Unassigned | Todo | - | `/wife/home/sleep` | SKELETON |
+| UI-011 | W-HOUSE-001 가사 가이드 | household | Unassigned | Todo | - | `/wife/home/household` | SKELETON; Partner 화면 직접 이동 제거 |
+| UI-012 | H-REQUEST-001 파트너 가사 요청 | household | Unassigned | Todo | - | `/partner/requests/:requestId` | SKELETON; requestId 전달 구현 |
+| UI-013 | H-PROFILE-001 파트너 프로필 | profile | Unassigned | Todo | - | `/partner/profile` | SKELETON |
+| UI-014 | H-NOTI-001 알림 | notification | Unassigned | Todo | - | `/partner/notifications` | SKELETON; Push 제외 |
+| UI-015 | W-REPORT-001 Daily 리포트 | report | Unassigned | Todo | - | `/wife/calendar/report/:date` | SKELETON; date 전달 구현 |
+| UI-016 | W-CAL-001 컨디션 캘린더 | report | Unassigned | Todo | - | `/wife/calendar` | SKELETON |
+| UI-017 | H-REPORT-001 파트너 아침 리포트 | report | Unassigned | Todo | - | `/partner/report/:date` | SKELETON; date 전달 구현 |
+| UI-018 | H-CAL-001 파트너 캘린더 | report | Unassigned | Todo | - | `/partner/calendar` | SKELETON; Partner Main/Shell 연결 |
+| UI-019 | W-SETTING-001 설정 | settings | Unassigned | Blocked | - | `/wife/settings` | SKELETON; 상세 요구사항 미정 Phase 2 |
+| UI-020 | W-MOTION-001 공유 실시간 모션 | movement | Unassigned | Blocked | - | `/wife/movement`, `/partner/movement` | SKELETON / Phase 2; 기존 Web Demo 별도 보존 |
 
 ## Shared Components
 

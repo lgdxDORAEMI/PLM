@@ -135,7 +135,7 @@ abstract final class AppRouter {
     }
     if (path == RouteNames.partnerProfile) return const PartnerProfileScreen();
     return ProductSkeletonScreen(
-      screenId: '404',
+      requirementIds: const [],
       title: '화면을 찾을 수 없습니다',
       description: '등록되지 않은 경로입니다: $path',
       actions: const [

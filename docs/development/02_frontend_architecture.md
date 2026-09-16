@@ -157,11 +157,11 @@ App composition
 
 | Feature | 포함 범위 | 관련 화면 | 경계 설정 이유 |
 |---|---|---|---|
-| `invitation` | 배우자 초대, 링크 상태, 초대 수락·연결 결과 | SCR-W-14, SCR-H-06 | Profile 데이터 편집과 Deep Link/연결 상태의 생명주기가 다름 |
-| `household` | 가사 추천, 직접/가전/가족 분담, 요청·확인·완료 상태 | SCR-W-06, SCR-H-04 | 아내와 파트너가 같은 요청 Model과 상태를 공유해야 함 |
-| `health` | 컨디션 기반 건강 가이드와 완료 기록 | SCR-W-08 | Guide 콘텐츠와 수행 상태가 독립적이며 향후 모션 연계 확장점이 있음 |
-| `report` | 일일 기록, 컨디션 캘린더, 파트너 아침 리포트와 읽기 전용 날짜 상세 | SCR-W-11, SCR-W-12, SCR-H-01, SCR-H-02 | 동일한 날짜별 기록 Projection을 역할별 UI가 공유함 |
-| `notification` | 파트너 앱 내 알림 목록과 읽음 상태 | SCR-H-03 | Push Infra와 분리된 앱 내 Inbox이며 Household/Report로 Routing하는 진입점임 |
+| `invitation` | 배우자 초대, 링크 상태, 초대 수락·연결 결과 | W-INVITE-001, H-INVITE-001 | Profile 데이터 편집과 Deep Link/연결 상태의 생명주기가 다름 |
+| `household` | 가사 추천, 직접/가전/가족 분담, 요청·확인·완료 상태 | W-HOUSE-001, H-REQUEST-001 | 아내와 파트너가 같은 요청 Model과 상태를 공유해야 함 |
+| `health` | 컨디션 기반 건강 가이드와 완료 기록 | W-HEALTH-001 | Guide 콘텐츠와 수행 상태가 독립적이며 향후 모션 연계 확장점이 있음 |
+| `report` | 일일 기록, 컨디션 캘린더, 파트너 아침 리포트와 읽기 전용 날짜 상세 | W-REPORT-001, W-CAL-001, H-REPORT-001, H-CAL-001 | 동일한 날짜별 기록 Projection을 역할별 UI가 공유함 |
+| `notification` | 파트너 앱 내 알림 목록과 읽음 상태 | H-NOTI-001 | Push Infra와 분리된 앱 내 Inbox이며 Household/Report로 Routing하는 진입점임 |
 
 ## 별도 Feature로 만들지 않는 항목
 
@@ -517,33 +517,33 @@ Flutter Web URL, Browser Back/Forward, 초대 Deep Link, 역할별 Navigation Sh
 root
 ├─ bootstrap                         # Session/Profile 상태 확인 후 Redirect
 ├─ onboarding
-│  ├─ profile                       # SCR-W-01 단계형 Profile
-│  └─ invite                        # SCR-W-14
-├─ invitation-entry                 # SCR-H-06, 외부 Deep Link 진입 Adapter
+│  ├─ profile                       # W-PROFILE-001 단계형 Profile
+│  └─ invite                        # W-INVITE-001
+├─ invitation-entry                 # H-INVITE-001, 외부 Deep Link 진입 Adapter
 │
 ├─ wife-shell
-│  ├─ home                          # SCR-W-04
-│  │  ├─ condition                  # SCR-W-02
-│  │  ├─ activity                   # SCR-W-03
-│  │  ├─ meal                       # SCR-W-05
-│  │  ├─ household                  # SCR-W-06
-│  │  ├─ health                     # SCR-W-08
-│  │  └─ sleep                      # SCR-W-09
-│  ├─ movement                      # SCR-W-07, Phase 2/노출 정책 미정
-│  ├─ meal-chat                     # SCR-W-10
-│  ├─ calendar                      # SCR-W-12
-│  │  └─ report/:date               # SCR-W-11
-│  ├─ profile                       # SCR-W-01 수정 모드
-│  ├─ invite                        # SCR-W-14 재진입
-│  └─ settings                      # SCR-W-13, Phase 2/상세 미정
+│  ├─ home                          # W-ROUTINE-001
+│  │  ├─ condition                  # W-COND-001
+│  │  ├─ activity                   # W-ACT-001
+│  │  ├─ meal                       # W-MEAL-001
+│  │  ├─ household                  # W-HOUSE-001
+│  │  ├─ health                     # W-HEALTH-001
+│  │  └─ sleep                      # W-SLEEP-001
+│  ├─ movement                      # W-MOTION-001, Phase 2/노출 정책 미정
+│  ├─ meal-chat                     # W-CHAT-001
+│  ├─ calendar                      # W-CAL-001
+│  │  └─ report/:date               # W-REPORT-001
+│  ├─ profile                       # W-PROFILE-001 수정 모드
+│  ├─ invite                        # W-INVITE-001 재진입
+│  └─ settings                      # W-SETTING-001, Phase 2/상세 미정
 │
 └─ partner-shell
-   ├─ calendar                      # SCR-H-02, 연결 후 Main
-   ├─ report/:date                  # SCR-H-01 또는 선택일 Report
-   ├─ notifications                 # SCR-H-03
-   ├─ requests/:requestId           # SCR-H-04
-   ├─ profile                       # SCR-H-05
-   └─ movement                      # SCR-W-07 공용, Phase 2/노출 정책 미정
+   ├─ calendar                      # H-CAL-001, 연결 후 Main
+   ├─ report/:date                  # H-REPORT-001 또는 선택일 Report
+   ├─ notifications                 # H-NOTI-001
+   ├─ requests/:requestId           # H-REQUEST-001
+   ├─ profile                       # H-PROFILE-001
+   └─ movement                      # W-MOTION-001 공용, Phase 2/노출 정책 미정
 ```
 
 ## Route와 Overlay 구분

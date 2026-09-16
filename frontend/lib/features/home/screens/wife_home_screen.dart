@@ -4,7 +4,11 @@ import '../../../shared/widgets/product_skeleton_screen.dart';
 class WifeHomeScreen extends ProductSkeletonScreen {
   const WifeHomeScreen({super.key})
     : super(
-        screenId: 'SCR-W-04',
+        requirementIds: const [
+          'W-ROUTINE-001',
+          'W-ROUTINE-002',
+          'W-ROUTINE-003',
+        ],
         title: '통합 홈',
         description: '임신 주차와 오늘의 케어 진입점을 제공할 Wife Shell의 루트입니다.',
         showBack: false,

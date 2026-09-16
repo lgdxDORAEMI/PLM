@@ -15,30 +15,30 @@
 
 ## Screens
 
-| ID | 화면 | 상태 |
+| 대표 요구사항 ID | 화면 | 상태 |
 | --- | --- | --- |
-| SCR-W-01 | 임산부 프로필 설정 | SKELETON |
-| SCR-W-14 | 배우자 초대 | SKELETON |
-| SCR-H-06 | 초대 수락 | SKELETON |
-| SCR-W-02 | 오늘의 컨디션 | SKELETON |
-| SCR-W-03 | 오늘 예정 활동 | SKELETON |
-| SCR-W-04 | 통합 홈 | SKELETON |
-| SCR-W-05 | 식사 가이드 | SKELETON |
-| SCR-W-06 | 가사 가이드 | SKELETON |
-| SCR-W-07 | 실시간 모션 | SKELETON / DEFERRED PHASE 2 |
-| SCR-W-08 | 건강 가이드 | SKELETON |
-| SCR-W-09 | 수면 가이드 | SKELETON |
-| SCR-W-10 | 식사 재조정 채팅 | SKELETON |
-| SCR-W-11 | Daily 리포트 | SKELETON |
-| SCR-W-12 | 컨디션 캘린더 | SKELETON |
-| SCR-W-13 | 설정 | SKELETON / BLOCKED PHASE 2 |
-| SCR-H-01 | 파트너 아침 리포트 | SKELETON |
-| SCR-H-02 | 파트너 캘린더 | SKELETON |
-| SCR-H-03 | 알림 | SKELETON |
-| SCR-H-04 | 파트너 가사 요청 | SKELETON |
-| SCR-H-05 | 파트너 프로필 | SKELETON |
+| W-PROFILE-001 | 임산부 프로필 설정 | SKELETON |
+| W-INVITE-001 | 배우자 초대 | SKELETON |
+| H-INVITE-001 | 초대 수락 | SKELETON |
+| W-COND-001 | 오늘의 컨디션 | SKELETON |
+| W-ACT-001 | 오늘 예정 활동 | SKELETON |
+| W-ROUTINE-001 | 통합 홈 | SKELETON |
+| W-MEAL-001 | 식사 가이드 | SKELETON |
+| W-HOUSE-001 | 가사 가이드 | SKELETON |
+| W-MOTION-001 | 실시간 모션 | SKELETON / DEFERRED PHASE 2 |
+| W-HEALTH-001 | 건강 가이드 | SKELETON |
+| W-SLEEP-001 | 수면 가이드 | SKELETON |
+| W-CHAT-001 | 식사 재조정 채팅 | SKELETON |
+| W-REPORT-001 | Daily 리포트 | SKELETON |
+| W-CAL-001 | 컨디션 캘린더 | SKELETON |
+| W-SETTING-001 | 설정 | SKELETON / BLOCKED PHASE 2 |
+| H-REPORT-001 | 파트너 아침 리포트 | SKELETON |
+| H-CAL-001 | 파트너 캘린더 | SKELETON |
+| H-NOTI-001 | 알림 | SKELETON |
+| H-REQUEST-001 | 파트너 가사 요청 | SKELETON |
+| H-PROFILE-001 | 파트너 프로필 | SKELETON |
 
-`SCR-W-07`은 제품용 Placeholder이며 기존 모션 데모 구현을 삭제하지 않는다. `SCR-W-13`은 요구사항이 확정되기 전까지 임의 설정 항목을 추가하지 않는다.
+`W-MOTION-001`·`H-MOTION-001`은 하나의 공유 제품 Placeholder이며 기존 모션 데모 구현을 삭제하지 않는다. `W-SETTING-001`은 요구사항이 확정되기 전까지 임의 설정 항목을 추가하지 않는다.
 
 ## Route Contract
 

@@ -28,7 +28,7 @@ enum SkeletonShell { none, wife, partner }
 class ProductSkeletonScreen extends StatelessWidget {
   const ProductSkeletonScreen({
     super.key,
-    required this.screenId,
+    required this.requirementIds,
     required this.title,
     required this.description,
     this.actions = const [],
@@ -38,7 +38,7 @@ class ProductSkeletonScreen extends StatelessWidget {
     this.partnerLinked = false,
   });
 
-  final String screenId;
+  final List<String> requirementIds;
   final String title;
   final String description;
   final List<SkeletonAction> actions;
@@ -62,13 +62,15 @@ class ProductSkeletonScreen extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.all(AppSpacing.pageMobile),
               children: [
-                Text(
-                  screenId,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelLarge?.copyWith(color: AppColors.primary600),
-                ),
-                const SizedBox(height: AppSpacing.sm),
+                if (requirementIds.isNotEmpty) ...[
+                  Text(
+                    '관련 요구사항 · ${requirementIds.join(', ')}',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: AppColors.primary600,
+                    ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                ],
                 Text(title, style: Theme.of(context).textTheme.headlineSmall),
                 const SizedBox(height: AppSpacing.sm),
                 Text(

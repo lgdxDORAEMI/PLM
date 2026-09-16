@@ -96,89 +96,89 @@ Feature Component는 해당 Feature의 Model과 업무 용어를 알 수 있다.
 
 | Name | Purpose | Used In | Variants | Props | State | Interaction | Responsive Behavior | Design Token |
 |---|---|---|---|---|---|---|---|---|
-| `ProfileWizardForm` | 6단계 Profile 입력 흐름의 현재 Step 표현 | SCR-W-01 최초 등록 | dueDate, body, parity, multiple, allergy, diagnosis | `step`, `draft`, `errors`, `onChanged`, `onNext`, `onBack`, `isSubmitting` | editing, invalid, submitting | 입력/선택, Back/Next; 한 화면 Primary Task 1개 | Form 최대 560, 선택지 2열/Wrap 가능, 짧은 Viewport만 CTA Sticky | AppTextField, AppSelectionCard, AppButton, progress primary, spacing 24/32 |
-| `ProfileSummary` | 입력값을 Core/Health/Partner 구획으로 검토 | SCR-W-01 요약·수정 | editable, readOnlyPartner | `profile`, `partnerStatus`, `onEditSection`, `onInvite` | ready, missingOptionalData | 수정 가능한 Section만 Action 제공 | Mobile 단일 열, Desktop Form 폭 유지 | AppCard, SectionHeader, InfoBanner, title/body, radius16 |
+| `ProfileWizardForm` | 6단계 Profile 입력 흐름의 현재 Step 표현 | W-PROFILE-001 최초 등록 | dueDate, body, parity, multiple, allergy, diagnosis | `step`, `draft`, `errors`, `onChanged`, `onNext`, `onBack`, `isSubmitting` | editing, invalid, submitting | 입력/선택, Back/Next; 한 화면 Primary Task 1개 | Form 최대 560, 선택지 2열/Wrap 가능, 짧은 Viewport만 CTA Sticky | AppTextField, AppSelectionCard, AppButton, progress primary, spacing 24/32 |
+| `ProfileSummary` | 입력값을 Core/Health/Partner 구획으로 검토 | W-PROFILE-001 요약·수정 | editable, readOnlyPartner | `profile`, `partnerStatus`, `onEditSection`, `onInvite` | ready, missingOptionalData | 수정 가능한 Section만 Action 제공 | Mobile 단일 열, Desktop Form 폭 유지 | AppCard, SectionHeader, InfoBanner, title/body, radius16 |
 | `ProfileMenu` | 전역 Profile Action 제공 | Wife 전역 Menu | unlinked, linked | `summary`, `isPartnerLinked`, `onEdit`, `onInvite`, `onSettings` | open, selected | Menu 선택; 연결 완료 시 초대 항목 미노출 | Mobile Bottom Sheet 또는 Menu, Desktop Anchored Menu는 Shell Context에 맞춤 | surfaceElevated, elevation2, radius14/20, hit44 |
 
 ## Invitation
 
 | Name | Purpose | Used In | Variants | Props | State | Interaction | Responsive Behavior | Design Token |
 |---|---|---|---|---|---|---|---|---|
-| `PartnerInvitePanel` | 연결 가치, 초대 링크와 공유 Action 표시 | SCR-W-14 | generating, ready, shared, linked, error | `inviteLinkLabel`, `status`, `onGenerate`, `onCopy`, `onShare`, `onLater`, `benefits` | loading, ready, submitting, success, error | Copy/Share/Later; 실제 공유 방식은 Callback | Form 최대 560, Action은 Mobile Stack/충분한 폭에서 Row | AppCard, AppButton, info colors, primary CTA, spacing16/24 |
-| `InvitationAcceptancePanel` | 초대 검증과 수락 결과 표현 | SCR-H-06 | validating, valid, loginRequired, expired, alreadyUsed, duplicateLink, linking, complete | `inviterName`, `status`, `onAccept`, `onRetry`, `onContinue` | loading, ready, submitting, success, error | 수락/재시도/계속; 외부 설치·로그인은 Router가 처리 | Compact 최대 480, 상태 Text가 잘리지 않게 Scroll | AppBanner, AppButton, AppDialog semantics, success/error/info |
+| `PartnerInvitePanel` | 연결 가치, 초대 링크와 공유 Action 표시 | W-INVITE-001 | generating, ready, shared, linked, error | `inviteLinkLabel`, `status`, `onGenerate`, `onCopy`, `onShare`, `onLater`, `benefits` | loading, ready, submitting, success, error | Copy/Share/Later; 실제 공유 방식은 Callback | Form 최대 560, Action은 Mobile Stack/충분한 폭에서 Row | AppCard, AppButton, info colors, primary CTA, spacing16/24 |
+| `InvitationAcceptancePanel` | 초대 검증과 수락 결과 표현 | H-INVITE-001 | validating, valid, loginRequired, expired, alreadyUsed, duplicateLink, linking, complete | `inviterName`, `status`, `onAccept`, `onRetry`, `onContinue` | loading, ready, submitting, success, error | 수락/재시도/계속; 외부 설치·로그인은 Router가 처리 | Compact 최대 480, 상태 Text가 잘리지 않게 Scroll | AppBanner, AppButton, AppDialog semantics, success/error/info |
 
 ## Condition
 
 | Name | Purpose | Used In | Variants | Props | State | Interaction | Responsive Behavior | Design Token |
 |---|---|---|---|---|---|---|---|---|
-| `ConditionSelector` | 입덧·통증·피로·기분 등 오늘 상태 입력 | SCR-W-02 | create, edit | `conditionDraft`, `availableMetrics`, `errors`, `onMetricChanged`, `onSubmit`, `isSubmitting` | initial, editing, invalid, submitting | Metric과 부위 값 선택, 저장 | Form 최대 560, Metric은 단일 Dominant Column, 200% Text 지원 | AppProgressMetric, AppButton, section gap32, neutral/semantic state |
+| `ConditionSelector` | 입덧·통증·피로·기분 등 오늘 상태 입력 | W-COND-001 | create, edit | `conditionDraft`, `availableMetrics`, `errors`, `onMetricChanged`, `onSubmit`, `isSubmitting` | initial, editing, invalid, submitting | Metric과 부위 값 선택, 저장 | Form 최대 560, Metric은 단일 Dominant Column, 200% Text 지원 | AppProgressMetric, AppButton, section gap32, neutral/semantic state |
 | `BodyPainSelector` | 부위별 통증 수준 입력 | `ConditionSelector` 내부 | interactive, readOnly | `areas`, `values`, `onChanged`, `enabled` | default, selected, error | 부위별 5단계 선택; Keyboard 순서 유지 | Mobile Stack, 충분한 폭에서도 Label 가독성 우선 | AppProgressMetric, body category, card gap10/12 |
-| `PlannedActivitySelector` | 오늘 예정 활동 복수 선택 | SCR-W-03 | create, edit | `options`, `selectedIds`, `onToggle`, `onSubmit`, `isSubmitting` | initial, selected, invalid, submitting | Card 선택/해제, 다음 | Form 최대 560; 2열은 Card Text가 짧고 200% Text가 아닐 때만 | AppSelectionCard, AppButton, primary selected, gap12 |
+| `PlannedActivitySelector` | 오늘 예정 활동 복수 선택 | W-ACT-001 | create, edit | `options`, `selectedIds`, `onToggle`, `onSubmit`, `isSubmitting` | initial, selected, invalid, submitting | Card 선택/해제, 다음 | Form 최대 560; 2열은 Card Text가 짧고 200% Text가 아닐 때만 | AppSelectionCard, AppButton, primary selected, gap12 |
 
 ## Routine / Home
 
 | Name | Purpose | Used In | Variants | Props | State | Interaction | Responsive Behavior | Design Token |
 |---|---|---|---|---|---|---|---|---|
-| `PregnancyWeekHero` | 인사, 현재 임신 주차, 주차별 핵심 Tip 표시 | SCR-W-04, SCR-H-01 일부 | withConditionCta, guideReady, readOnly | `name`, `week`, `message`, `tips`, `onCheckCondition` | ready, conditionMissing | 조건 미입력 때만 CTA | Dashboard 최대 720, 원형 Indicator 비율 유지, 장식 최대 2~3개 | Hero radius20, display, primary600/50, surface, spacing20/24 |
-| `DailyCareSection` | 오늘 4개 Guide Summary를 한 흐름으로 조합 | SCR-W-04 | ready, partialComplete, complete, fallback | `guides`, `onGuideSelected`, `onFinishDay`, `onEditCondition`, `isFinishing` | ready, submitting, fallback | Guide 진입, 컨디션 수정, 하루 끝내기 | Mobile Single Column, Desktop도 Main 흐름 단일 Column | SectionHeader, RoutineGuideCard, AppButton, section gap32 |
+| `PregnancyWeekHero` | 인사, 현재 임신 주차, 주차별 핵심 Tip 표시 | W-ROUTINE-001, H-REPORT-001 일부 | withConditionCta, guideReady, readOnly | `name`, `week`, `message`, `tips`, `onCheckCondition` | ready, conditionMissing | 조건 미입력 때만 CTA | Dashboard 최대 720, 원형 Indicator 비율 유지, 장식 최대 2~3개 | Hero radius20, display, primary600/50, surface, spacing20/24 |
+| `DailyCareSection` | 오늘 4개 Guide Summary를 한 흐름으로 조합 | W-ROUTINE-001 | ready, partialComplete, complete, fallback | `guides`, `onGuideSelected`, `onFinishDay`, `onEditCondition`, `isFinishing` | ready, submitting, fallback | Guide 진입, 컨디션 수정, 하루 끝내기 | Mobile Single Column, Desktop도 Main 흐름 단일 Column | SectionHeader, RoutineGuideCard, AppButton, section gap32 |
 | `RoutineGuideCard` | Meal/Household/Health/Sleep Summary와 진행 상태 표시 | `DailyCareSection` | meal, household, health, sleep; pending/inProgress/complete | `guide`, `onTap`, `status`, `isFallback` | default, hover/focus, complete, disabled | 전체 Card 진입, 내부 중복 Action 없음 | Content 높이 가변; 4개 Card를 무조건 서로 다른 전체 Pastel로 채우지 않음 | AppCard, CategoryBadge, StatusBadge, borderSubtle, tint icon only |
-| `RoutineGenerationState` | AI Routine 생성·지연·Fallback 상태 전달 | SCR-W-04 | generating, delayed, fallback, retrying | `status`, `message`, `onRetry` | loading, warning, error/retrying | Retry는 실패 시에만 | 기존 Home Layout 높이를 가능한 보존 | LoadingState, AppBanner, AppSkeleton, warning/info, motion reduced |
+| `RoutineGenerationState` | AI Routine 생성·지연·Fallback 상태 전달 | W-ROUTINE-001 | generating, delayed, fallback, retrying | `status`, `message`, `onRetry` | loading, warning, error/retrying | Retry는 실패 시에만 | 기존 Home Layout 높이를 가능한 보존 | LoadingState, AppBanner, AppSkeleton, warning/info, motion reduced |
 
 ## Meal
 
 | Name | Purpose | Used In | Variants | Props | State | Interaction | Responsive Behavior | Design Token |
 |---|---|---|---|---|---|---|---|---|
-| `MealPeriodSelector` | 아침·점심·저녁·간식 추천 진입 선택 | SCR-W-05 | current, otherPeriod | `periods`, `selected`, `onSelected` | default, selected, disabled | Card 선택/Keyboard | Mobile Stack, 넓은 폭에서 2열 가능 | AppSelectionCard, CategoryBadge meal, gap12 |
-| `MealRecommendationCard` | 추천 Menu, 이유, 영양 목적, 이미지 표현 | SCR-W-05, 식사 재추천 결과 | initial, replacement, accepted | `meal`, `image`, `evidence`, `tags`, `status`, `onAccept`, `onRechoose`, `onShare` | loading, ready, submitting, accepted, error | 수락/재선택/공유; Primary Action 1개 | 이미지 비율 일관, Mobile Stack; Desktop에서도 최대 Content 폭 유지 | AppCard, meal tint/icon, AppChip, AppButton, radius16, borderSubtle |
-| `MealCautionSection` | 오늘 피하거나 조절할 식품과 이유 표시 | SCR-W-05 | list, withAllowance | `items`, `title`, `description` | ready, empty | 기본 비상호작용 | 긴 설명 줄바꿈, Table 형태로 압축하지 않음 | warning/background, body1/body2, icon20, gap10 |
-| `MealChatConversation` | 식사 한정 대화와 응답 대기 표현 | SCR-W-10 | initial, conversation, waiting, failed | `messages`, `quickReplies`, `draft`, `onDraftChanged`, `onSend`, `onQuickReply`, `isResponding` | ready, composing, submitting, error | Message 입력/전송, Quick Reply 최대 2~3개 | Bubble max 78%/84%, 입력부 Safe Area, Desktop Content 720 | user primary500/600, assistant surfaceSubtle, radius16/6, body1 |
-| `MealRechoiceCard` | 대화에서 나온 새 추천을 적용 | SCR-W-10 | proposed, applying, applied | `recommendation`, `onApply`, `onShowAnother` | ready, submitting, success, error | 적용/다른 Menu 보기 | Mobile Action Stack 또는 2개 Row, Card 높이 가변 | AppCard, meal category, AppButton, AppChip, primary CTA |
+| `MealPeriodSelector` | 아침·점심·저녁·간식 추천 진입 선택 | W-MEAL-001 | current, otherPeriod | `periods`, `selected`, `onSelected` | default, selected, disabled | Card 선택/Keyboard | Mobile Stack, 넓은 폭에서 2열 가능 | AppSelectionCard, CategoryBadge meal, gap12 |
+| `MealRecommendationCard` | 추천 Menu, 이유, 영양 목적, 이미지 표현 | W-MEAL-001, 식사 재추천 결과 | initial, replacement, accepted | `meal`, `image`, `evidence`, `tags`, `status`, `onAccept`, `onRechoose`, `onShare` | loading, ready, submitting, accepted, error | 수락/재선택/공유; Primary Action 1개 | 이미지 비율 일관, Mobile Stack; Desktop에서도 최대 Content 폭 유지 | AppCard, meal tint/icon, AppChip, AppButton, radius16, borderSubtle |
+| `MealCautionSection` | 오늘 피하거나 조절할 식품과 이유 표시 | W-MEAL-001 | list, withAllowance | `items`, `title`, `description` | ready, empty | 기본 비상호작용 | 긴 설명 줄바꿈, Table 형태로 압축하지 않음 | warning/background, body1/body2, icon20, gap10 |
+| `MealChatConversation` | 식사 한정 대화와 응답 대기 표현 | W-CHAT-001 | initial, conversation, waiting, failed | `messages`, `quickReplies`, `draft`, `onDraftChanged`, `onSend`, `onQuickReply`, `isResponding` | ready, composing, submitting, error | Message 입력/전송, Quick Reply 최대 2~3개 | Bubble max 78%/84%, 입력부 Safe Area, Desktop Content 720 | user primary500/600, assistant surfaceSubtle, radius16/6, body1 |
+| `MealRechoiceCard` | 대화에서 나온 새 추천을 적용 | W-CHAT-001 | proposed, applying, applied | `recommendation`, `onApply`, `onShowAnother` | ready, submitting, success, error | 적용/다른 Menu 보기 | Mobile Action Stack 또는 2개 Row, Card 높이 가변 | AppCard, meal category, AppButton, AppChip, primary CTA |
 
 ## Household
 
 | Name | Purpose | Used In | Variants | Props | State | Interaction | Responsive Behavior | Design Token |
 |---|---|---|---|---|---|---|---|---|
-| `HouseholdTaskGroup` | 직접 수행·가전 추천·가족 분담 항목을 인간적인 구획으로 표현 | SCR-W-06 | direct, applianceRecommendation, family | `title`, `description`, `tasks`, `onTaskAction`, `selection` | ready, partial, complete, disabled | Task Action과 선택을 외부 Callback으로 전달 | Main은 Single Column, 짧은 보조 Task만 Tablet 2열 가능 | SectionHeader, GuideTaskCard, home category, section gap28/32 |
-| `HouseholdShareSelector` | 배우자에게 요청할 가사 항목 복수 선택·전송 | SCR-W-06 | unlinked, selectable, submitting, shared | `tasks`, `selectedIds`, `partnerName`, `onToggle`, `onShare` | initial, selected, disabled/unlinked, submitting, success, error | 선택/해제/공유, 미연결 안내 | Mobile Single Column, CTA Full Width | AppSelectionCard, AppButton, PartnerShareResultDialog, primary selected |
-| `PartnerRequestCard` | 파트너가 요청 이유·가사·상태를 확인하고 처리 | SCR-H-04, H-NOTI 진입 결과 | requested, acknowledged, completed | `request`, `onAcknowledge`, `onComplete` | ready, submitting, success, error | 요청 확인, 완료 처리; 허용된 다음 Action만 표시 | Mobile Full Width, Desktop 최대 720; Action은 Text Scale에 따라 Stack | AppCard, StatusBadge, AppButton, home/info/success, radius16 |
-| `RequestStatusView` | 아내 화면에 파트너 확인·완료 상태 반영 | SCR-W-06, SCR-W-11 | requested, acknowledged, completed | `status`, `partnerName`, `updatedAt`, `compact` | live/readOnly, unavailable | 비상호작용, 상태 변경 시 Semantics 안내 | Compact는 한 줄 우선하되 Wrap 허용 | StatusBadge, info/success, body2/caption |
+| `HouseholdTaskGroup` | 직접 수행·가전 추천·가족 분담 항목을 인간적인 구획으로 표현 | W-HOUSE-001 | direct, applianceRecommendation, family | `title`, `description`, `tasks`, `onTaskAction`, `selection` | ready, partial, complete, disabled | Task Action과 선택을 외부 Callback으로 전달 | Main은 Single Column, 짧은 보조 Task만 Tablet 2열 가능 | SectionHeader, GuideTaskCard, home category, section gap28/32 |
+| `HouseholdShareSelector` | 배우자에게 요청할 가사 항목 복수 선택·전송 | W-HOUSE-001 | unlinked, selectable, submitting, shared | `tasks`, `selectedIds`, `partnerName`, `onToggle`, `onShare` | initial, selected, disabled/unlinked, submitting, success, error | 선택/해제/공유, 미연결 안내 | Mobile Single Column, CTA Full Width | AppSelectionCard, AppButton, PartnerShareResultDialog, primary selected |
+| `PartnerRequestCard` | 파트너가 요청 이유·가사·상태를 확인하고 처리 | H-REQUEST-001, H-NOTI 진입 결과 | requested, acknowledged, completed | `request`, `onAcknowledge`, `onComplete` | ready, submitting, success, error | 요청 확인, 완료 처리; 허용된 다음 Action만 표시 | Mobile Full Width, Desktop 최대 720; Action은 Text Scale에 따라 Stack | AppCard, StatusBadge, AppButton, home/info/success, radius16 |
+| `RequestStatusView` | 아내 화면에 파트너 확인·완료 상태 반영 | W-HOUSE-001, W-REPORT-001 | requested, acknowledged, completed | `status`, `partnerName`, `updatedAt`, `compact` | live/readOnly, unavailable | 비상호작용, 상태 변경 시 Semantics 안내 | Compact는 한 줄 우선하되 Wrap 허용 | StatusBadge, info/success, body2/caption |
 
 ## Health
 
 | Name | Purpose | Used In | Variants | Props | State | Interaction | Responsive Behavior | Design Token |
 |---|---|---|---|---|---|---|---|---|
-| `BodyLoadSummary` | 컨디션 기반 부위별 부담과 집중 부위 표시 | SCR-W-08 | conditionBased, motionEnhancedPhase2 | `areas`, `focusArea`, `sourceLabel` | ready, unavailable | 기본 비상호작용 | Mobile Stack, Tablet에서 짧은 Metric 2열 가능 | body category, AppProgressMetric readOnly, Info text, gap12 |
-| `HealthActivityCard` | 스트레칭·산책·마사지 콘텐츠와 완료 Action 제공 | SCR-W-08 | featured, compact, completed | `activity`, `thumbnail`, `onOpen`, `onComplete` | ready, loadingMedia, submitting, completed, error | 콘텐츠 보기, 완료 체크 | Featured는 Full Width, Compact List; 이미지 없으면 무작위 Placeholder 생성 금지 | AppCard/GuideTaskCard, body tint, AppButton, radius16 |
+| `BodyLoadSummary` | 컨디션 기반 부위별 부담과 집중 부위 표시 | W-HEALTH-001 | conditionBased, motionEnhancedPhase2 | `areas`, `focusArea`, `sourceLabel` | ready, unavailable | 기본 비상호작용 | Mobile Stack, Tablet에서 짧은 Metric 2열 가능 | body category, AppProgressMetric readOnly, Info text, gap12 |
+| `HealthActivityCard` | 스트레칭·산책·마사지 콘텐츠와 완료 Action 제공 | W-HEALTH-001 | featured, compact, completed | `activity`, `thumbnail`, `onOpen`, `onComplete` | ready, loadingMedia, submitting, completed, error | 콘텐츠 보기, 완료 체크 | Featured는 Full Width, Compact List; 이미지 없으면 무작위 Placeholder 생성 금지 | AppCard/GuideTaskCard, body tint, AppButton, radius16 |
 
 ## Sleep
 
 | Name | Purpose | Used In | Variants | Props | State | Interaction | Responsive Behavior | Design Token |
 |---|---|---|---|---|---|---|---|---|
-| `SleepEnvironmentSelector` | 조명·온도·습도·소리·공기청정기 추천값 선택·조정 | SCR-W-09 | recommended, editing, completed | `items`, `selectedIds`, `onToggle`, `onEditValue`, `onStart`, `isSubmitting` | ready, selected, editing, submitting, completed, error | 복수 선택, 값 수정, MVP 수행 기록 시작 | Mobile 1~2열은 가용 폭 기준, Tablet 2열; 200% Text에서는 1열 | AppSelectionCard, sleep foreground/background, AppButton primary, gap12 |
-| `SleepTipList` | 오늘의 수면 행동 Tip 전달 | SCR-W-09 | standard | `tips`, `sourceLabel` | ready, empty | 비상호작용 | Single Column, 긴 Text 자연 줄바꿈 | success/info icon+text, body1, gap12 |
+| `SleepEnvironmentSelector` | 조명·온도·습도·소리·공기청정기 추천값 선택·조정 | W-SLEEP-001 | recommended, editing, completed | `items`, `selectedIds`, `onToggle`, `onEditValue`, `onStart`, `isSubmitting` | ready, selected, editing, submitting, completed, error | 복수 선택, 값 수정, MVP 수행 기록 시작 | Mobile 1~2열은 가용 폭 기준, Tablet 2열; 200% Text에서는 1열 | AppSelectionCard, sleep foreground/background, AppButton primary, gap12 |
+| `SleepTipList` | 오늘의 수면 행동 Tip 전달 | W-SLEEP-001 | standard | `tips`, `sourceLabel` | ready, empty | 비상호작용 | Single Column, 긴 Text 자연 줄바꿈 | success/info icon+text, body1, gap12 |
 
 ## Report
 
 | Name | Purpose | Used In | Variants | Props | State | Interaction | Responsive Behavior | Design Token |
 |---|---|---|---|---|---|---|---|---|
-| `DailyReportSummary` | 날짜·주차·완료 수치 요약 | SCR-W-11 | inProgress, completed, historical | `date`, `week`, `metrics`, `status` | loading, ready, empty | 기본 비상호작용 | Mobile Stack, Tablet 이상 Metric 2~3열은 Text Scale 허용 시 | ConditionSummaryBanner, MetricCard, title/body, gap12 |
-| `RoutineRecordList` | 수행·건너뜀·파트너 완료 내역 표시 | SCR-W-11, SCR-H-02 상세 | wifeEditableBeforeFinish, readOnly | `records`, `onRecordSelected` | loading, ready, empty, error | 필요 시 Detail 진입; 완료 결과 자체는 읽기 전용 | Single Column, Category/상태 Label Wrap | GuideTaskCard readOnly, CategoryBadge, StatusBadge, gap10 |
-| `FamilyParticipationSummary` | 요청·확인·완료 수치와 메시지 요약 | SCR-W-11, SCR-H-01 | compact, detailed | `requested`, `acknowledged`, `completed`, `message` | ready, empty | 비상호작용 | Mobile Stack 또는 행, Tablet Metric Grid | infoBackground, success, MetricCard, radius16 |
-| `ConditionCalendar` | 날짜별 컨디션 수준과 선택일 탐색 | SCR-W-12, SCR-H-02 | wife, partnerReadOnly | `month`, `days`, `selectedDate`, `onDateSelected`, `onPreviousMonth`, `onNextMonth` | loading, ready, emptyMonth, error | 월 이동, 날짜 선택, Keyboard Grid 탐색 | Content 최대 720; Cell 최소 Hit 44, Text 200%에서 Calendar와 Detail 분리/Stack | primary selected ring, 상태 dot/ring/tint, legend, borderSubtle |
-| `PartnerMorningSummary` | 파트너에게 임신 주차·컨디션·예정 활동·4개 Guide 요약 전달 | SCR-H-01 | linked, noSharedData, partial | `report`, `onRequestSelected`, `onCalendarSelected` | loading, ready, empty, error | 요청 또는 Calendar 진입 | Mobile Single Column, Desktop Secondary Summary 2열 가능 | ConditionSummaryBanner, CategoryBadge, GuideTaskCard readOnly, info |
+| `DailyReportSummary` | 날짜·주차·완료 수치 요약 | W-REPORT-001 | inProgress, completed, historical | `date`, `week`, `metrics`, `status` | loading, ready, empty | 기본 비상호작용 | Mobile Stack, Tablet 이상 Metric 2~3열은 Text Scale 허용 시 | ConditionSummaryBanner, MetricCard, title/body, gap12 |
+| `RoutineRecordList` | 수행·건너뜀·파트너 완료 내역 표시 | W-REPORT-001, H-CAL-001 상세 | wifeEditableBeforeFinish, readOnly | `records`, `onRecordSelected` | loading, ready, empty, error | 필요 시 Detail 진입; 완료 결과 자체는 읽기 전용 | Single Column, Category/상태 Label Wrap | GuideTaskCard readOnly, CategoryBadge, StatusBadge, gap10 |
+| `FamilyParticipationSummary` | 요청·확인·완료 수치와 메시지 요약 | W-REPORT-001, H-REPORT-001 | compact, detailed | `requested`, `acknowledged`, `completed`, `message` | ready, empty | 비상호작용 | Mobile Stack 또는 행, Tablet Metric Grid | infoBackground, success, MetricCard, radius16 |
+| `ConditionCalendar` | 날짜별 컨디션 수준과 선택일 탐색 | W-CAL-001, H-CAL-001 | wife, partnerReadOnly | `month`, `days`, `selectedDate`, `onDateSelected`, `onPreviousMonth`, `onNextMonth` | loading, ready, emptyMonth, error | 월 이동, 날짜 선택, Keyboard Grid 탐색 | Content 최대 720; Cell 최소 Hit 44, Text 200%에서 Calendar와 Detail 분리/Stack | primary selected ring, 상태 dot/ring/tint, legend, borderSubtle |
+| `PartnerMorningSummary` | 파트너에게 임신 주차·컨디션·예정 활동·4개 Guide 요약 전달 | H-REPORT-001 | linked, noSharedData, partial | `report`, `onRequestSelected`, `onCalendarSelected` | loading, ready, empty, error | 요청 또는 Calendar 진입 | Mobile Single Column, Desktop Secondary Summary 2열 가능 | ConditionSummaryBanner, CategoryBadge, GuideTaskCard readOnly, info |
 
 ## Notification
 
 | Name | Purpose | Used In | Variants | Props | State | Interaction | Responsive Behavior | Design Token |
 |---|---|---|---|---|---|---|---|---|
-| `NotificationListItem` | Report 도착·가사 요청·미완료 알림을 읽음 상태와 함께 표시 | SCR-H-03 | report, request, reminder; read/unread | `notification`, `onTap`, `onMarkRead` | default, hover/focus, unread, read, disabled | 항목 선택 후 목적 Route로 이동, 읽음 Callback | Mobile Full Width List, Desktop 최대 720; Timestamp 줄바꿈 허용 | AppCard, StatusBadge, primary small indicator, body1/caption |
+| `NotificationListItem` | Report 도착·가사 요청·미완료 알림을 읽음 상태와 함께 표시 | H-NOTI-001 | report, request, reminder; read/unread | `notification`, `onTap`, `onMarkRead` | default, hover/focus, unread, read, disabled | 항목 선택 후 목적 Route로 이동, 읽음 Callback | Mobile Full Width List, Desktop 최대 720; Timestamp 줄바꿈 허용 | AppCard, StatusBadge, primary small indicator, body1/caption |
 
 ## Movement (Phase 2)
 
 | Name | Purpose | Used In | Variants | Props | State | Interaction | Responsive Behavior | Design Token |
 |---|---|---|---|---|---|---|---|---|
-| `MovementStatusPanel` | Sensor 연결·감지 상태와 핵심 Metric 표시 | 향후 SCR-W-07 | disconnected, connecting, calibrating, live, error | `connectionState`, `duration`, `recommendation`, `onToggle` | 기존 Movement Controller 상태 Mapping | 시작/중지, 권한/오류 안내 | Camera Preview와 충돌하지 않게 Stack, Desktop 최대 720 | info/success/warning/error, MetricCard, AppButton |
-| `RealtimeAlertCard` | 위험 행동 Log의 시간·유형·행동 안내 표시 | 향후 SCR-W-07 | warning, highAttention, resolved | `event`, `onTap` | default, hover/focus, resolved | Detail 진입 가능; 색만으로 심각도 표시 금지 | Single Column List, Timestamp와 Action Wrap | semantic icon shape+color+text, AppCard, radius16 |
+| `MovementStatusPanel` | Sensor 연결·감지 상태와 핵심 Metric 표시 | 향후 W-MOTION-001 | disconnected, connecting, calibrating, live, error | `connectionState`, `duration`, `recommendation`, `onToggle` | 기존 Movement Controller 상태 Mapping | 시작/중지, 권한/오류 안내 | Camera Preview와 충돌하지 않게 Stack, Desktop 최대 720 | info/success/warning/error, MetricCard, AppButton |
+| `RealtimeAlertCard` | 위험 행동 Log의 시간·유형·행동 안내 표시 | 향후 W-MOTION-001 | warning, highAttention, resolved | `event`, `onTap` | default, hover/focus, resolved | Detail 진입 가능; 색만으로 심각도 표시 금지 | Single Column List, Timestamp와 Action Wrap | semantic icon shape+color+text, AppCard, radius16 |
 
 현재 `movement_screen.dart`, `MovementOverlayPainter`, Private `_PostureBadge`는 이미 존재한다. `MovementOverlayPainter`는 Canvas Rendering Helper이며 공통 UI Component로 승격하지 않는다. `_PostureBadge`도 데모 전용이므로 지금 이동하거나 공통화하지 않는다. 위 두 신규 Component는 Phase 2 제품화 시에만 만든다.
 

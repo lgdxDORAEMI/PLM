@@ -4,7 +4,7 @@ import '../../../shared/widgets/product_skeleton_screen.dart';
 class PartnerMorningReportScreen extends ProductSkeletonScreen {
   const PartnerMorningReportScreen({super.key, required String date})
     : super(
-        screenId: 'SCR-H-01',
+        requirementIds: const ['H-REPORT-001'],
         title: '파트너 아침 리포트',
         description: '$date 날짜에 공유가 허용된 상태를 읽기 전용으로 보여줍니다.',
         shell: SkeletonShell.partner,

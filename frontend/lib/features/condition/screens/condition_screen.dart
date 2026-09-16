@@ -5,7 +5,7 @@ import '../../../shared/widgets/product_skeleton_screen.dart';
 class ConditionScreen extends ProductSkeletonScreen {
   const ConditionScreen({super.key, required ConditionMode mode})
     : super(
-        screenId: 'SCR-W-02',
+        requirementIds: const ['W-COND-001', 'W-COND-002'],
         title: '오늘의 컨디션',
         description: mode == ConditionMode.create
             ? '통증·피로도 등 오늘 상태를 입력할 화면입니다.'

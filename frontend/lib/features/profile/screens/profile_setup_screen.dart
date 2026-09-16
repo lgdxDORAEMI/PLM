@@ -5,7 +5,11 @@ import '../../../shared/widgets/product_skeleton_screen.dart';
 class ProfileSetupScreen extends ProductSkeletonScreen {
   const ProfileSetupScreen({super.key, required ProfileMode mode})
     : super(
-        screenId: 'SCR-W-01',
+        requirementIds: const [
+          'W-PROFILE-001',
+          'W-PROFILE-002',
+          'W-PROFILE-003',
+        ],
         title: mode == ProfileMode.create ? '임산부 프로필 설정' : '임산부 프로필 수정',
         description: mode == ProfileMode.create
             ? '최초 등록용 6단계 프로필 Wizard가 들어갈 화면입니다.'

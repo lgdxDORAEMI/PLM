@@ -7,7 +7,7 @@ class PartnerInviteScreen extends ProductSkeletonScreen {
     super.key,
     required InviteEntryContext entryContext,
   }) : super(
-         screenId: 'SCR-W-14',
+         requirementIds: const ['W-INVITE-001', 'W-INVITE-002'],
          title: '배우자 초대',
          description: entryContext == InviteEntryContext.onboarding
              ? '최초 등록 후 초대 공유 또는 나중에 하기를 선택합니다.'

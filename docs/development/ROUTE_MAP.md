@@ -2,7 +2,7 @@
 
 ## 1. 기준과 현재 상태
 
-이 문서는 `docs/서비스흐름도/01~09`, `docs/requirements/01_MVP.md`, `01_PRD.md`, `03_유스케이스명세서.md`, `04_1_기능요구사항명세서.md`, `메뉴구조도.md`를 다시 대조해 생성한 Frontend 내부 Route 계약이다.
+이 문서는 `docs/서비스흐름도/01~09`, `docs/requirements/01_MVP.md`, `01_PRD.md`, `03_유스케이스명세서.md`, `04_1_기능요구사항명세서.md`를 다시 대조해 생성한 Frontend 내부 Route 계약이다.
 
 - 제품 화면 20개와 재사용 진입 경로가 Flutter 기본 `Navigator` 기반 Skeleton Router에 등록되어 있다.
 - 아래 Path는 Frontend 내부 경로다. 외부 초대 Domain, ThinQ 인증 복귀 URL, Backend Endpoint 계약이 아니다.
@@ -10,12 +10,12 @@
 - 인증·Session Adapter가 없어 실제 자동 Redirect와 권한 Guard는 `PARTIAL`이다.
 - 실시간 모션과 설정은 접근 가능한 Placeholder만 제공하며 실제 기능은 Phase 2다.
 
-### Screen ID 규칙
+### 요구사항 ID 추적 규칙
 
-- Screen ID의 Source of Truth는 `docs/requirements/**`, 구체적으로 `docs/requirements/메뉴구조도.md`다.
-- Route 재사용이나 역할별 진입 경로가 여러 개여도 요구사항에 정의된 Screen ID 하나를 그대로 사용한다.
-- 요구사항에 없는 `SCR-*` ID를 Route Map, Task, 코드에서 임의로 만들지 않는다.
-- 남편 실시간 탭은 요구사항의 동일 화면 재사용 규칙에 따라 별도 `SCR-H-*`가 아니라 `SCR-W-07`을 사용한다.
+- Source of Truth는 `docs/requirements/04_1_기능요구사항명세서.md`의 기능 요구사항 ID다.
+- 별도 Screen ID는 정의하지 않는다. Route와 화면은 관련 `W-*`·`H-*` ID를 하나 이상 연결해 추적한다.
+- 하나의 화면이 여러 기능을 담당하면 관련 요구사항 ID를 모두 기록하고, 표의 첫 ID만 대표 ID로 사용한다.
+- 공유 실시간 화면은 역할에 따라 `W-MOTION-001`과 `H-MOTION-001`을 함께 연결한다.
 
 ## 2. Bootstrap 계약
 
@@ -32,78 +32,78 @@
 
 ## 3. Route Table
 
-| Screen ID | 화면 | 내부 Route | 진입 | 다음 경로 | Context/Parameter | 상태 |
+| 관련 요구사항 ID | 화면 | 내부 Route | 진입 | 다음 경로 | Context/Parameter | 상태 |
 | --- | --- | --- | --- | --- | --- | --- |
-| SCR-W-01 | 임산부 프로필 설정/수정 | `/onboarding/profile`, `/wife/profile` | Bootstrap 또는 전역 프로필 메뉴 | 최초 등록은 SCR-W-14, 수정은 이전 화면 | Path로 `ProfileMode` 구분 | SKELETON |
-| SCR-W-14 | 배우자 초대 | `/onboarding/invite`, `/wife/invite` | 최초 등록 완료 또는 미연동 전역 메뉴 | 온보딩은 SCR-W-04, 수동 진입은 이전 화면 | Path로 `InviteEntryContext` 구분 | SKELETON |
-| SCR-H-06 | 초대 수락 | `/invitation-entry?token={token}` | 외부 초대 Link Adapter | 성공 시 SCR-H-02 | `token`; 외부 Domain/인증 복귀 TBD | SKELETON |
-| SCR-W-02 | 오늘의 컨디션 | `/wife/home/condition?mode=create|edit` | Home CTA 또는 수정 Action | 최초 입력은 SCR-W-03, 수정은 SCR-W-04 | `mode`, 당일 날짜는 State/Service | SKELETON |
-| SCR-W-03 | 오늘 예정 활동 | `/wife/home/activity` | SCR-W-02 최초 저장 | SCR-W-04 | 당일 Context는 Service | SKELETON |
-| SCR-W-04 | 통합 홈 | `/wife/home` | Bootstrap, 초대 종료, 활동 저장 | Guide, Report, Calendar, 전역 메뉴 | 없음 | SKELETON |
-| SCR-W-05 | 식사 가이드 | `/wife/home/meal` | Home 식사 영역 | SCR-W-10 또는 Home | 날짜·끼니는 Feature State | SKELETON |
-| SCR-W-06 | 가사 가이드 | `/wife/home/household` | Home 가사 영역 | 요청 전송 결과 후 현재 화면/Home | 요청 생성은 상태/Modal, 남편 화면 직접 이동 금지 | SKELETON |
-| SCR-W-07 | 공유 실시간 모션 | `/wife/movement`, `/partner/movement` | 역할별 하단 실시간 Tab만 | 역할별 이전 Tab | 역할은 Path, 계정 연동·동의 Guard TODO | SKELETON / PHASE 2 |
-| SCR-W-08 | 건강 가이드 | `/wife/home/health` | Home 건강 영역 | 완료 후 현재 화면/Home | 날짜·활동 ID는 Feature State | SKELETON |
-| SCR-W-09 | 수면 가이드 | `/wife/home/sleep` | Home 수면 영역 | 완료 후 현재 화면/Home | 날짜는 Feature State | SKELETON |
-| SCR-W-10 | 식사 재조정 채팅 | `/wife/meal-chat` | 식사 가이드 또는 Wife Chat Tab | 적용 시 SCR-W-05 | Meal Context/Draft는 Feature State | SKELETON |
-| SCR-W-11 | Daily 리포트 | `/wife/calendar/report/:date` | 하루 끝내기 또는 Wife Calendar | SCR-W-12/공유 Modal | `date` 필수 | SKELETON |
-| SCR-W-12 | 컨디션 캘린더 | `/wife/calendar` | Wife Calendar Tab 또는 Report | 선택 날짜 SCR-W-11 | 선택 날짜는 URL 이동 시 `date`로 전달 | SKELETON |
-| SCR-W-13 | 설정 | `/wife/settings` | Wife 전역 프로필 메뉴 | 이전 화면 | 상세 설정 요구사항 없음 | BLOCKED / PHASE 2 |
-| SCR-H-01 | 파트너 아침 리포트 | `/partner/report/:date` | 알림 또는 Partner Calendar | SCR-H-04 또는 이전 화면 | `date` 필수 | SKELETON |
-| SCR-H-02 | 파트너 캘린더 | `/partner/calendar` | Bootstrap/연동 완료 | Report, Notification, Request, Profile | 선택 날짜는 Report `date`로 전달 | SKELETON |
-| SCR-H-03 | 파트너 알림 | `/partner/notifications` | Partner 전역 Bell | SCR-H-01 또는 SCR-H-04 | 앱 내 Mock Inbox | SKELETON |
-| SCR-H-04 | 파트너 가사 요청 | `/partner/requests/:requestId` | 알림, 리포트, 캘린더 | 상태 처리 후 Detail 유지/이전 화면 | `requestId` 필수 | SKELETON |
-| SCR-H-05 | 파트너 프로필 | `/partner/profile` | Partner 전역 Profile Button | 이전 화면 | 조회 전용 | SKELETON |
+| W-PROFILE-001<br>W-PROFILE-002<br>W-PROFILE-003 | 임산부 프로필 설정/수정 | `/onboarding/profile`, `/wife/profile` | Bootstrap 또는 전역 프로필 메뉴 | 최초 등록은 W-INVITE-001, 수정은 이전 화면 | Path로 `ProfileMode` 구분 | SKELETON |
+| W-INVITE-001<br>W-INVITE-002 | 배우자 초대 | `/onboarding/invite`, `/wife/invite` | 최초 등록 완료 또는 미연동 전역 메뉴 | 온보딩은 W-ROUTINE-001, 수동 진입은 이전 화면 | Path로 `InviteEntryContext` 구분 | SKELETON |
+| H-INVITE-001 | 초대 수락 | `/invitation-entry?token={token}` | 외부 초대 Link Adapter | 성공 시 H-CAL-001 | `token`; 외부 Domain/인증 복귀 TBD | SKELETON |
+| W-COND-001<br>W-COND-002 | 오늘의 컨디션 | `/wife/home/condition?mode=create|edit` | Home CTA 또는 수정 Action | 최초 입력은 W-ACT-001, 수정은 W-ROUTINE-001 | `mode`, 당일 날짜는 State/Service | SKELETON |
+| W-ACT-001 | 오늘 예정 활동 | `/wife/home/activity` | W-COND-001 최초 저장 | W-ROUTINE-001 | 당일 Context는 Service | SKELETON |
+| W-ROUTINE-001<br>W-ROUTINE-002<br>W-ROUTINE-003 | 통합 홈 | `/wife/home` | Bootstrap, 초대 종료, 활동 저장 | Guide, Report, Calendar, 전역 메뉴 | 없음 | SKELETON |
+| W-MEAL-001<br>W-MEAL-002<br>W-MEAL-003<br>W-MEAL-004<br>W-RECORD-001 | 식사 가이드 | `/wife/home/meal` | Home 식사 영역 | W-CHAT-001 또는 Home | 날짜·끼니는 Feature State | SKELETON |
+| W-HOUSE-001<br>W-HOUSE-002<br>W-HOUSE-003<br>W-RECORD-002 | 가사 가이드 | `/wife/home/household` | Home 가사 영역 | 요청 전송 결과 후 현재 화면/Home | 요청 생성은 상태/Modal, 남편 화면 직접 이동 금지 | SKELETON |
+| W-MOTION-001<br>H-MOTION-001 | 공유 실시간 모션 | `/wife/movement`, `/partner/movement` | 역할별 하단 실시간 Tab만 | 역할별 이전 Tab | 역할은 Path, 계정 연동·동의 Guard TODO | SKELETON / PHASE 2 |
+| W-HEALTH-001<br>W-HEALTH-002<br>W-RECORD-001 | 건강 가이드 | `/wife/home/health` | Home 건강 영역 | 완료 후 현재 화면/Home | 날짜·활동 ID는 Feature State | SKELETON |
+| W-SLEEP-001<br>W-SLEEP-002<br>W-RECORD-001 | 수면 가이드 | `/wife/home/sleep` | Home 수면 영역 | 완료 후 현재 화면/Home | 날짜는 Feature State | SKELETON |
+| W-MEAL-002<br>W-CHAT-001<br>W-CHAT-002 | 식사 재조정 채팅 | `/wife/meal-chat` | 식사 가이드 또는 Wife Chat Tab | 적용 시 W-MEAL-001 | Meal Context/Draft는 Feature State | SKELETON |
+| W-REPORT-001<br>W-REPORT-002 | Daily 리포트 | `/wife/calendar/report/:date` | 하루 끝내기 또는 Wife Calendar | W-CAL-001/공유 Modal | `date` 필수 | SKELETON |
+| W-CAL-001 | 컨디션 캘린더 | `/wife/calendar` | Wife Calendar Tab 또는 Report | 선택 날짜 W-REPORT-001 | 선택 날짜는 URL 이동 시 `date`로 전달 | SKELETON |
+| W-SETTING-001 | 설정 | `/wife/settings` | Wife 전역 프로필 메뉴 | 이전 화면 | 상세 설정 요구사항 없음 | BLOCKED / PHASE 2 |
+| H-REPORT-001 | 파트너 아침 리포트 | `/partner/report/:date` | 알림 또는 Partner Calendar | H-REQUEST-001 또는 이전 화면 | `date` 필수 | SKELETON |
+| H-CAL-001 | 파트너 캘린더 | `/partner/calendar` | Bootstrap/연동 완료 | Report, Notification, Request, Profile | 선택 날짜는 Report `date`로 전달 | SKELETON |
+| H-NOTI-001 | 파트너 알림 | `/partner/notifications` | Partner 전역 Bell | H-REPORT-001 또는 H-REQUEST-001 | 앱 내 Mock Inbox | SKELETON |
+| H-REQUEST-001<br>H-REQUEST-002<br>H-REQUEST-003 | 파트너 가사 요청 | `/partner/requests/:requestId` | 알림, 리포트, 캘린더 | 상태 처리 후 Detail 유지/이전 화면 | `requestId` 필수 | SKELETON |
+| H-PROFILE-001 | 파트너 프로필 | `/partner/profile` | Partner 전역 Profile Button | 이전 화면 | 조회 전용 | SKELETON |
 
 ## 4. 사용자 Route Flow
 
 ```mermaid
 flowchart TD
-  B[Bootstrap Resolver] -->|Wife / Profile 없음| WP[SCR-W-01 create]
-  B -->|Wife / Profile 있음| WH[SCR-W-04 Home]
-  B -->|Partner / Linked| PC[SCR-H-02 Partner Calendar]
+  B[Bootstrap Resolver] -->|Wife / Profile 없음| WP[W-PROFILE-001 create]
+  B -->|Wife / Profile 있음| WH[W-ROUTINE-001 Home]
+  B -->|Partner / Linked| PC[H-CAL-001 Partner Calendar]
 
-  WP --> WI[SCR-W-14 onboarding]
+  WP --> WI[W-INVITE-001 onboarding]
   WI -->|링크 보내기 또는 나중에| WH
 
-  WH -->|전역 Profile Menu / edit| WPE[SCR-W-01 edit]
+  WH -->|전역 Profile Menu / edit| WPE[W-PROFILE-001 edit]
   WPE -->|저장| PREV[이전 화면]
-  WH -->|미연동 / 전역 Profile Menu| WIM[SCR-W-14 manual]
+  WH -->|미연동 / 전역 Profile Menu| WIM[W-INVITE-001 manual]
   WIM -->|처리 또는 나중에| PREV
 
-  EXT[외부 초대 Link + token] --> PA[SCR-H-06 Invitation Entry]
+  EXT[외부 초대 Link + token] --> PA[H-INVITE-001 Invitation Entry]
   PA -->|검증·로그인·연동 성공| PC
 
-  WH -->|컨디션 미입력 CTA| WC[SCR-W-02 create]
-  WC --> WA[SCR-W-03 Activity]
+  WH -->|컨디션 미입력 CTA| WC[W-COND-001 create]
+  WC --> WA[W-ACT-001 Activity]
   WA --> WH
-  WH -->|기존 컨디션 수정| WCE[SCR-W-02 edit]
+  WH -->|기존 컨디션 수정| WCE[W-COND-001 edit]
   WCE --> WH
 
-  WH --> WM[SCR-W-05 Meal]
-  WM --> WCHAT[SCR-W-10 Meal Chat]
+  WH --> WM[W-MEAL-001 Meal]
+  WM --> WCHAT[W-CHAT-001 Meal Chat]
   WCHAT -->|추천 적용| WM
-  WH --> WHT[SCR-W-06 Household]
-  WH --> WHE[SCR-W-08 Health]
-  WH --> WS[SCR-W-09 Sleep]
+  WH --> WHT[W-HOUSE-001 Household]
+  WH --> WHE[W-HEALTH-001 Health]
+  WH --> WS[W-SLEEP-001 Sleep]
 
-  WHT -->|요청 생성·알림; 화면 직접 이동 없음| PN[SCR-H-03 Partner Notifications]
-  PN --> PR[SCR-H-04 Partner Request]
+  WHT -->|요청 생성·알림; 화면 직접 이동 없음| PN[H-NOTI-001 Partner Notifications]
+  PN --> PR[H-REQUEST-001 Partner Request]
   PR -->|확인·완료 상태 반영| WHT
 
-  WH -->|하루 루틴 끝내기| WR[SCR-W-11 Daily Report / date]
-  WR --> WCA[SCR-W-12 Wife Calendar]
+  WH -->|하루 루틴 끝내기| WR[W-REPORT-001 Daily Report / date]
+  WR --> WCA[W-CAL-001 Wife Calendar]
   WCA -->|날짜 선택| WR
 
-  PC -->|날짜 선택| PRT[SCR-H-01 Morning Report / date]
+  PC -->|날짜 선택| PRT[H-REPORT-001 Morning Report / date]
   PN --> PRT
   PRT --> PR
-  PC --> PP[SCR-H-05 Partner Profile]
+  PC --> PP[H-PROFILE-001 Partner Profile]
 
-  WH -. Wife Bottom Tab .-> WMO[SCR-W-07 Wife Movement]
+  WH -. Wife Bottom Tab .-> WMO[W-MOTION-001 Wife Movement]
   WH -. Wife Bottom Tab .-> WCHAT
   WH -. Wife Bottom Tab .-> WCA
-  PC -. Partner Bottom Tab .-> PMO[SCR-W-07 Partner Movement]
+  PC -. Partner Bottom Tab .-> PMO[H-MOTION-001 Partner Movement]
 ```
 
 ## 5. Route Context 계약

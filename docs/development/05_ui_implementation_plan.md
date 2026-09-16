@@ -5,14 +5,14 @@
 - 모든 화면은 Page → Feature Widget → Controller/State → Service Interface → Mock Service 방향을 유지한다.
 - Mock Data는 Widget에 직접 작성하지 않고 Feature의 Mock Service와 Fixture에서 제공한다.
 - 한 번에 전체 화면을 구현하지 않고 Foundation과 Shared Component를 검증한 뒤 Task 단위로 진행한다.
-- Screen ID는 `docs/requirements/메뉴구조도.md`에 정의된 값을 그대로 사용하며 개발 편의를 위한 새 ID나 역할별 별칭을 만들지 않는다.
+- 각 화면은 `docs/requirements/04_1_기능요구사항명세서.md`의 대표 요구사항 ID로 구분하고, 상세 범위에는 연결된 `W-*`·`H-*` ID를 모두 기록한다. 별도 Screen ID는 만들지 않는다.
 - Partner Navigation은 Route Map에 명시된 Calendar/Realtime 최소 항목만 사용하고, 인증 Redirect·실시간 기능 노출·수면 가전 실행처럼 미정인 동작은 임의로 확정하지 않는다.
 
-# SCR-W-01 — 임산부 프로필 설정
+# W-PROFILE-001 — 임산부 프로필 설정
 
-## Screen ID
+## 대표 요구사항 ID
 
-`SCR-W-01`
+`W-PROFILE-001`
 
 ## Screen Name
 
@@ -71,7 +71,7 @@ Page
 ## Navigation
 
 - 최초 진입: Bootstrap에서 Profile 없음
-- 최초 저장 성공: SCR-W-14
+- 최초 저장 성공: W-INVITE-001
 - 수정 진입: 전역 Profile Menu
 - 수정 저장 성공: 이전 화면
 - Back: Draft 손실 정책은 STEP 5 이후 Interaction 구현 전 확인
@@ -95,11 +95,11 @@ Page
 - 200% Text에서 잘림이 없고 최소 44×44 Target을 충족한다.
 - Profile 저장 로직은 Mock Service에만 연결된다.
 
-# SCR-W-14 — 배우자 초대
+# W-INVITE-001 — 배우자 초대
 
-## Screen ID
+## 대표 요구사항 ID
 
-`SCR-W-14`
+`W-INVITE-001`
 
 ## Screen Name
 
@@ -153,7 +153,7 @@ Page
 ## Navigation
 
 - 최초 Profile 등록 성공 또는 미연결 상태의 Profile Menu에서 진입
-- 나중에/공유 완료: SCR-W-04
+- 나중에/공유 완료: W-ROUTINE-001
 - 연결 완료 상태: 초대 Action을 제거하고 상태만 표시하거나 이전 화면으로 복귀
 
 ## Responsive
@@ -173,11 +173,11 @@ Page
 - 실제 Endpoint나 공유 Channel을 임의로 확정하지 않는다.
 - 공유 성공을 색만이 아닌 Icon/Text로 알린다.
 
-# SCR-W-02 — 오늘의 컨디션
+# W-COND-001 — 오늘의 컨디션
 
-## Screen ID
+## 대표 요구사항 ID
 
-`SCR-W-02`
+`W-COND-001`
 
 ## Screen Name
 
@@ -233,9 +233,9 @@ Page
 
 ## Navigation
 
-- SCR-W-04의 컨디션 CTA 또는 다시 입력 Action에서 진입
-- 저장 성공: SCR-W-03
-- 수정 취소: SCR-W-04
+- W-ROUTINE-001의 컨디션 CTA 또는 다시 입력 Action에서 진입
+- 저장 성공: W-ACT-001
+- 수정 취소: W-ROUTINE-001
 
 ## Responsive
 
@@ -254,11 +254,11 @@ Page
 - 색 없이도 모든 단계가 구분된다.
 - Mock Service 저장 후 다음 화면과 Home State가 갱신된다.
 
-# SCR-W-03 — 오늘 예정 활동
+# W-ACT-001 — 오늘 예정 활동
 
-## Screen ID
+## 대표 요구사항 ID
 
-`SCR-W-03`
+`W-ACT-001`
 
 ## Screen Name
 
@@ -309,9 +309,9 @@ Page
 
 ## Navigation
 
-- SCR-W-02 저장 후 진입
-- 제출 성공: SCR-W-04의 Routine Generation 상태
-- Back: SCR-W-02
+- W-COND-001 저장 후 진입
+- 제출 성공: W-ROUTINE-001의 Routine Generation 상태
+- Back: W-COND-001
 
 ## Responsive
 
@@ -329,11 +329,11 @@ Page
 - 다음 화면에 선택 결과가 Mock Service를 통해 반영된다.
 - 200% Text에서 선택 Card가 겹치지 않는다.
 
-# SCR-W-04 — 통합 홈
+# W-ROUTINE-001 — 통합 홈
 
-## Screen ID
+## 대표 요구사항 ID
 
-`SCR-W-04`
+`W-ROUTINE-001`
 
 ## Screen Name
 
@@ -393,10 +393,10 @@ AppShell
 ## Navigation
 
 - Profile 완료 사용자 기본 진입
-- 컨디션 CTA → SCR-W-02
-- 각 Guide → SCR-W-05/06/08/09
-- Chat Tab → SCR-W-10, Calendar Tab → SCR-W-12
-- Finish Day → SCR-W-11
+- 컨디션 CTA → W-COND-001
+- 각 Guide → W-MEAL-001, W-HOUSE-001, W-HEALTH-001, W-SLEEP-001
+- Chat Tab → W-CHAT-001, Calendar Tab → W-CAL-001
+- Finish Day → W-REPORT-001
 - Realtime Tab 정책은 Phase 2 범위 확인 전 확정하지 않는다.
 
 ## Responsive
@@ -417,11 +417,11 @@ AppShell
 - 미입력 상태에서는 Guide 영역이 표시되지 않는다.
 - Home에서 API/Mock 구현을 직접 참조하지 않는다.
 
-# SCR-W-05 — 식사 가이드
+# W-MEAL-001 — 식사 가이드
 
-## Screen ID
+## 대표 요구사항 ID
 
-`SCR-W-05`
+`W-MEAL-001`
 
 ## Screen Name
 
@@ -478,9 +478,9 @@ Page/AppShell
 
 ## Navigation
 
-- SCR-W-04 Meal Guide Card에서 진입
-- 재선택 → SCR-W-10
-- 수락/Back → SCR-W-04 또는 실행 기록 흐름
+- W-ROUTINE-001 Meal Guide Card에서 진입
+- 재선택 → W-CHAT-001
+- 수락/Back → W-ROUTINE-001 또는 실행 기록 흐름
 
 ## Responsive
 
@@ -499,11 +499,11 @@ Page/AppShell
 - 추천 이유가 시각적으로 분리되고 의료적 단정 표현이 없다.
 - Category Color를 CTA Background로 사용하지 않는다.
 
-# SCR-W-06 — 가사 가이드
+# W-HOUSE-001 — 가사 가이드
 
-## Screen ID
+## 대표 요구사항 ID
 
-`SCR-W-06`
+`W-HOUSE-001`
 
 ## Screen Name
 
@@ -559,9 +559,9 @@ Page/AppShell
 
 ## Navigation
 
-- SCR-W-04 Household Card에서 진입
+- W-ROUTINE-001 Household Card에서 진입
 - 공유 후 현재 화면 유지, 파트너 상태 반영
-- 미연결 상태의 초대 Action이 요구될 경우 SCR-W-14로 연결하되 문구/노출은 STEP 5 이후 확인
+- 미연결 상태의 초대 Action이 요구될 경우 W-INVITE-001로 연결하되 문구/노출은 STEP 5 이후 확인
 
 ## Responsive
 
@@ -580,11 +580,11 @@ Page/AppShell
 - 요청 상태 3단계가 Wife 화면에 Mock으로 반영된다.
 - 실제 ThinQ 제어 API를 호출하거나 계약하지 않는다.
 
-# SCR-W-07 — 실시간 모션
+# W-MOTION-001 — 실시간 모션
 
-## Screen ID
+## 대표 요구사항 ID
 
-`SCR-W-07`
+`W-MOTION-001`
 
 ## Screen Name
 
@@ -658,11 +658,11 @@ AppShell
 - 제품화 시 권한·동의 철회·Resource 정리·당일 Log 초기화가 검증되어야 한다.
 - 기존 Demo 회귀 테스트와 실제 Browser 수동 검증이 유지되어야 한다.
 
-# SCR-W-08 — 건강 가이드
+# W-HEALTH-001 — 건강 가이드
 
-## Screen ID
+## 대표 요구사항 ID
 
-`SCR-W-08`
+`W-HEALTH-001`
 
 ## Screen Name
 
@@ -716,8 +716,8 @@ Page/AppShell
 
 ## Navigation
 
-- SCR-W-04 Health Card에서 진입
-- 완료/Back → SCR-W-04, 결과는 SCR-W-11에 반영
+- W-ROUTINE-001 Health Card에서 진입
+- 완료/Back → W-ROUTINE-001, 결과는 W-REPORT-001에 반영
 
 ## Responsive
 
@@ -736,11 +736,11 @@ Page/AppShell
 - 의료 진단처럼 표현하지 않고 불필요한 불안을 유발하지 않는다.
 - 이미지 Asset이 없을 때 무작위 Style Placeholder를 추가하지 않는다.
 
-# SCR-W-09 — 수면 가이드
+# W-SLEEP-001 — 수면 가이드
 
-## Screen ID
+## 대표 요구사항 ID
 
-`SCR-W-09`
+`W-SLEEP-001`
 
 ## Screen Name
 
@@ -794,8 +794,8 @@ Page/AppShell
 
 ## Navigation
 
-- SCR-W-04 Sleep Card에서 진입
-- 수행 기록 성공/Back → SCR-W-04, 결과는 SCR-W-11에 반영
+- W-ROUTINE-001 Sleep Card에서 진입
+- 수행 기록 성공/Back → W-ROUTINE-001, 결과는 W-REPORT-001에 반영
 
 ## Responsive
 
@@ -814,11 +814,11 @@ Page/AppShell
 - MVP에서는 실제 가전 실행을 호출하지 않는다.
 - 완료 결과가 Routine/Report Mock 데이터에 반영된다.
 
-# SCR-W-10 — 식사 재조정 채팅
+# W-CHAT-001 — 식사 재조정 채팅
 
-## Screen ID
+## 대표 요구사항 ID
 
-`SCR-W-10`
+`W-CHAT-001`
 
 ## Screen Name
 
@@ -875,8 +875,8 @@ AppShell/Page
 
 ## Navigation
 
-- Bottom Chat Tab 또는 SCR-W-05 재선택에서 진입
-- 추천 적용 → 갱신된 SCR-W-05
+- Bottom Chat Tab 또는 W-MEAL-001 재선택에서 진입
+- 추천 적용 → 갱신된 W-MEAL-001
 - Back → 이전 Meal/Home Context
 
 ## Responsive
@@ -896,11 +896,11 @@ AppShell/Page
 - 식사 외 요청을 실제 지원하는 것처럼 구현하지 않는다.
 - Bubble 색 대비와 Keyboard Composer가 검증된다.
 
-# SCR-W-11 — Daily 리포트
+# W-REPORT-001 — Daily 리포트
 
-## Screen ID
+## 대표 요구사항 ID
 
-`SCR-W-11`
+`W-REPORT-001`
 
 ## Screen Name
 
@@ -952,8 +952,8 @@ Page/AppShell
 
 ## Navigation
 
-- SCR-W-04의 하루 마치기 또는 SCR-W-12 날짜 선택에서 진입
-- 저장 완료 → SCR-W-12
+- W-ROUTINE-001의 하루 마치기 또는 W-CAL-001 날짜 선택에서 진입
+- 저장 완료 → W-CAL-001
 - Back → 원래 Home/Calendar Context
 
 ## Responsive
@@ -973,11 +973,11 @@ Page/AppShell
 - MVP 제외 데이터가 리포트에 노출되지 않는다.
 - 저장 후 Calendar Mock 데이터에서 날짜 기록을 확인할 수 있다.
 
-# SCR-W-12 — 컨디션 캘린더
+# W-CAL-001 — 컨디션 캘린더
 
-## Screen ID
+## 대표 요구사항 ID
 
-`SCR-W-12`
+`W-CAL-001`
 
 ## Screen Name
 
@@ -1032,8 +1032,8 @@ AppShell
 
 ## Navigation
 
-- Bottom Calendar Tab 또는 SCR-W-11 저장 후 진입
-- 선택일 상세 → SCR-W-11
+- Bottom Calendar Tab 또는 W-REPORT-001 저장 후 진입
+- 선택일 상세 → W-REPORT-001
 - 다른 Tab → 해당 Shell Route
 
 ## Responsive
@@ -1053,11 +1053,11 @@ AppShell
 - 다수의 진한 원형 Fill 대신 Dot/Ring/Tint와 항상 보이는 Legend를 사용한다.
 - 최소 44×44 날짜 Target과 200% Text를 검증한다.
 
-# SCR-W-13 — 설정
+# W-SETTING-001 — 설정
 
-## Screen ID
+## 대표 요구사항 ID
 
-`SCR-W-13`
+`W-SETTING-001`
 
 ## Screen Name
 
@@ -1116,11 +1116,11 @@ Page
 - **Phase 2 보류:** 상세 요구사항 확정 전 제품 기능처럼 구현하지 않는다.
 - 임의 Setting Toggle이나 Backend Contract를 추가하지 않는다.
 
-# SCR-H-01 — 파트너 아침 리포트
+# H-REPORT-001 — 파트너 아침 리포트
 
-## Screen ID
+## 대표 요구사항 ID
 
-`SCR-H-01`
+`H-REPORT-001`
 
 ## Screen Name
 
@@ -1172,8 +1172,8 @@ Partner AppShell
 ## Navigation
 
 - Notification 또는 오늘 날짜 Calendar에서 진입
-- 가사 요청 → SCR-H-04
-- Calendar → SCR-H-02
+- 가사 요청 → H-REQUEST-001
+- Calendar → H-CAL-001
 
 ## Responsive
 
@@ -1192,11 +1192,11 @@ Partner AppShell
 - 허용되지 않은 민감정보가 노출되지 않는다.
 - 파트너가 상태를 변경할 수 없는 읽기 전용 영역이 명확하다.
 
-# SCR-H-02 — 파트너 캘린더
+# H-CAL-001 — 파트너 캘린더
 
-## Screen ID
+## 대표 요구사항 ID
 
-`SCR-H-02`
+`H-CAL-001`
 
 ## Screen Name
 
@@ -1249,9 +1249,9 @@ Partner AppShell
 ## Navigation
 
 - 초대 연결 완료 후 Partner Main
-- 리포트 → SCR-H-01
-- 요청 → SCR-H-04
-- 알림 → SCR-H-03, Profile → SCR-H-05
+- 리포트 → H-REPORT-001
+- 요청 → H-REQUEST-001
+- 알림 → H-NOTI-001, Profile → H-PROFILE-001
 
 ## Responsive
 
@@ -1260,7 +1260,7 @@ Partner AppShell
 
 ## Accessibility
 
-- Focus/Keyboard: Calendar Grid 규칙을 SCR-W-12와 공유
+- Focus/Keyboard: Calendar Grid 규칙을 W-CAL-001와 공유
 - Semantics: 공유 여부, 날짜, 컨디션과 기록 존재 여부
 
 ## Definition of Done
@@ -1269,11 +1269,11 @@ Partner AppShell
 - Wife Calendar Component를 Variant로 재사용한다.
 - Partner Bottom Navigation은 문서에 명시된 Calendar/Realtime만 사용하고 추가 항목을 임의로 고정하지 않는다.
 
-# SCR-H-03 — 알림
+# H-NOTI-001 — 알림
 
-## Screen ID
+## 대표 요구사항 ID
 
-`SCR-H-03`
+`H-NOTI-001`
 
 ## Screen Name
 
@@ -1325,8 +1325,8 @@ Partner Page/AppShell
 ## Navigation
 
 - AppBar 알림 Bell에서 진입
-- 리포트 알림 → SCR-H-01
-- 가사 요청 → SCR-H-04
+- 리포트 알림 → H-REPORT-001
+- 가사 요청 → H-REQUEST-001
 - Back → 이전 Partner 화면
 
 ## Responsive
@@ -1345,11 +1345,11 @@ Partner Page/AppShell
 - Push Infra를 구현하지 않는다.
 - 읽지 않음 상태를 색만으로 표시하지 않는다.
 
-# SCR-H-04 — 가사 요청
+# H-REQUEST-001 — 가사 요청
 
-## Screen ID
+## 대표 요구사항 ID
 
-`SCR-H-04`
+`H-REQUEST-001`
 
 ## Screen Name
 
@@ -1400,7 +1400,7 @@ Partner Page
 
 ## Navigation
 
-- SCR-H-03 알림 또는 SCR-H-01/02 Summary에서 진입
+- H-NOTI-001 알림 또는 H-REPORT-001·H-CAL-001 Summary에서 진입
 - 완료 후 이전 화면 또는 요청 Detail 유지
 
 ## Responsive
@@ -1420,11 +1420,11 @@ Partner Page
 - 완료가 Wife Routine/Report 재조회에 반영된다.
 - 허용되지 않은 상태 전환 Action은 노출하지 않는다.
 
-# SCR-H-05 — 파트너 프로필
+# H-PROFILE-001 — 파트너 프로필
 
-## Screen ID
+## 대표 요구사항 ID
 
-`SCR-H-05`
+`H-PROFILE-001`
 
 ## Screen Name
 
@@ -1488,11 +1488,11 @@ Page
 - Profile 수정 UI를 제공하지 않는다.
 - Profile Menu 단계를 거치지 않고 직접 진입한다.
 
-# SCR-H-06 — 초대 수락
+# H-INVITE-001 — 초대 수락
 
-## Screen ID
+## 대표 요구사항 ID
 
-`SCR-H-06`
+`H-INVITE-001`
 
 ## Screen Name
 
@@ -1542,7 +1542,7 @@ Standalone Page
 ## Navigation
 
 - 외부 Invite Entry Adapter에서 진입
-- 완료 → SCR-H-02
+- 완료 → H-CAL-001
 - 로그인/설치 필요 상태는 실제 화면 미정이므로 안내 상태까지만 Mock
 
 ## Responsive
@@ -1573,7 +1573,7 @@ Standalone Page
 ## UI-001
 
 - **Goal:** 단계형 Profile 등록·수정 기반 완성
-- **Related Screen:** SCR-W-01
+- **Related Screen:** W-PROFILE-001
 - **Components:** ProfileWizardForm, ProfileSummary, Form 계열 Foundation
 - **Files:** `features/profile/{models,services,state,pages,widgets}`, Profile Mock Fixture
 - **Dependencies:** AppTheme, AppButton, AppTextField, AppSelectionCard, ResponsivePageContent, AppTopBar
@@ -1583,7 +1583,7 @@ Standalone Page
 ## UI-002
 
 - **Goal:** 임산부 초대 발급·공유·나중에 흐름 구현
-- **Related Screen:** SCR-W-14
+- **Related Screen:** W-INVITE-001
 - **Components:** PartnerInvitePanel, PartnerShareResultDialog
 - **Files:** `features/invitation/{models,services,state,pages,widgets}`
 - **Dependencies:** UI-001 완료 Navigation, AppDialog, AppBanner
@@ -1593,7 +1593,7 @@ Standalone Page
 ## UI-003
 
 - **Goal:** 초대 수락 상태와 Partner 연결 완료 구현
-- **Related Screen:** SCR-H-06
+- **Related Screen:** H-INVITE-001
 - **Components:** InvitationAcceptancePanel
 - **Files:** Invitation Feature의 Acceptance Page/State/Mock Scenario
 - **Dependencies:** UI-002의 공통 Invitation Model/Service Contract
@@ -1603,7 +1603,7 @@ Standalone Page
 ## UI-004
 
 - **Goal:** 오늘 컨디션 입력·수정 구현
-- **Related Screen:** SCR-W-02
+- **Related Screen:** W-COND-001
 - **Components:** ConditionSelector, BodyPainSelector, AppProgressMetric
 - **Files:** `features/condition/{models,services,state,pages,widgets}`
 - **Dependencies:** UI-001 Profile/주차 Mock, Form Foundation
@@ -1613,7 +1613,7 @@ Standalone Page
 ## UI-005
 
 - **Goal:** 예정 활동 선택과 Routine 생성 요청 연결
-- **Related Screen:** SCR-W-03
+- **Related Screen:** W-ACT-001
 - **Components:** PlannedActivitySelector
 - **Files:** Condition Feature의 Activity Page/State/Fixture
 - **Dependencies:** UI-004, AppSelectionCard
@@ -1623,7 +1623,7 @@ Standalone Page
 ## UI-006
 
 - **Goal:** 조건 분기와 4개 Guide를 가진 통합 Home 구현
-- **Related Screen:** SCR-W-04
+- **Related Screen:** W-ROUTINE-001
 - **Components:** AppShell, PregnancyWeekHero, RoutineGenerationState, DailyCareSection, RoutineGuideCard
 - **Files:** `features/routine/{models,services,state,pages,widgets}`, Shell/Router Files
 - **Dependencies:** UI-001, UI-004, UI-005, AppShell/Navigation
@@ -1633,7 +1633,7 @@ Standalone Page
 ## UI-007
 
 - **Goal:** 끼니 선택과 추천 상세·수락·공유 구현
-- **Related Screen:** SCR-W-05
+- **Related Screen:** W-MEAL-001
 - **Components:** MealPeriodSelector, MealRecommendationCard, MealCautionSection
 - **Files:** `features/meal/{models,services,state,pages,widgets}`
 - **Dependencies:** UI-006 Routine Summary, Category/Share Shared Component
@@ -1643,7 +1643,7 @@ Standalone Page
 ## UI-008
 
 - **Goal:** 식사 재추천 대화 Loop 구현
-- **Related Screen:** SCR-W-10
+- **Related Screen:** W-CHAT-001
 - **Components:** MealChatConversation, MealRechoiceCard
 - **Files:** Meal Feature Chat Page/State/Mock Conversation
 - **Dependencies:** UI-007
@@ -1653,7 +1653,7 @@ Standalone Page
 ## UI-009
 
 - **Goal:** 컨디션 기반 건강 Guide와 완료 기록 구현
-- **Related Screen:** SCR-W-08
+- **Related Screen:** W-HEALTH-001
 - **Components:** BodyLoadSummary, HealthActivityCard
 - **Files:** `features/health/{models,services,state,pages,widgets}`
 - **Dependencies:** UI-004, UI-006, GuideTaskCard
@@ -1663,7 +1663,7 @@ Standalone Page
 ## UI-010
 
 - **Goal:** 수면 환경 선택·수정·완료 기록 구현
-- **Related Screen:** SCR-W-09
+- **Related Screen:** W-SLEEP-001
 - **Components:** SleepEnvironmentSelector, SleepTipList
 - **Files:** `features/sleep/{models,services,state,pages,widgets}`
 - **Dependencies:** UI-004, UI-006, AppSelectionCard
@@ -1673,7 +1673,7 @@ Standalone Page
 ## UI-011
 
 - **Goal:** 가사 3개 Group과 파트너 요청 생성 구현
-- **Related Screen:** SCR-W-06
+- **Related Screen:** W-HOUSE-001
 - **Components:** HouseholdTaskGroup, HouseholdShareSelector, RequestStatusView
 - **Files:** `features/household/{models,services,state,pages,widgets}`
 - **Dependencies:** UI-002 연결 상태, UI-006, 공유 MockAppStore
@@ -1683,7 +1683,7 @@ Standalone Page
 ## UI-012
 
 - **Goal:** 파트너 가사 요청 확인·완료 구현
-- **Related Screen:** SCR-H-04
+- **Related Screen:** H-REQUEST-001
 - **Components:** PartnerRequestCard, RequestStatusView
 - **Files:** Household Partner Page/State
 - **Dependencies:** UI-011
@@ -1693,7 +1693,7 @@ Standalone Page
 ## UI-013
 
 - **Goal:** 파트너 읽기 전용 Profile 구현
-- **Related Screen:** SCR-H-05
+- **Related Screen:** H-PROFILE-001
 - **Components:** ProfileSummary(readOnlyPartner)
 - **Files:** Profile Partner Page/State
 - **Dependencies:** UI-001 공통 Profile Model, UI-003 연결 상태
@@ -1703,7 +1703,7 @@ Standalone Page
 ## UI-014
 
 - **Goal:** 앱 내 파트너 알림 목록 구현
-- **Related Screen:** SCR-H-03
+- **Related Screen:** H-NOTI-001
 - **Components:** NotificationListItem, 상태 Shared Components
 - **Files:** `features/notification/{models,services,state,pages,widgets}`
 - **Dependencies:** UI-003, UI-012, Report Route Placeholder
@@ -1713,7 +1713,7 @@ Standalone Page
 ## UI-015
 
 - **Goal:** Wife Daily Report와 저장·공유 구현
-- **Related Screen:** SCR-W-11
+- **Related Screen:** W-REPORT-001
 - **Components:** DailyReportSummary, RoutineRecordList, FamilyParticipationSummary
 - **Files:** `features/report/{models,services,state,pages,widgets}`
 - **Dependencies:** UI-007, UI-009, UI-010, UI-012의 수행 기록
@@ -1723,7 +1723,7 @@ Standalone Page
 ## UI-016
 
 - **Goal:** Wife 컨디션 Calendar 구현
-- **Related Screen:** SCR-W-12
+- **Related Screen:** W-CAL-001
 - **Components:** ConditionCalendar, Selected Date Summary
 - **Files:** Report Feature의 Wife Calendar Page/State
 - **Dependencies:** UI-015
@@ -1733,7 +1733,7 @@ Standalone Page
 ## UI-017
 
 - **Goal:** Partner 오전 Report 구현
-- **Related Screen:** SCR-H-01
+- **Related Screen:** H-REPORT-001
 - **Components:** PartnerMorningSummary, read-only Guide Summary
 - **Files:** Report Feature의 Partner Morning Page/State
 - **Dependencies:** UI-003, UI-011/12, UI-015 Report Projection
@@ -1743,7 +1743,7 @@ Standalone Page
 ## UI-018
 
 - **Goal:** Partner Main Calendar와 날짜별 기록 구현
-- **Related Screen:** SCR-H-02
+- **Related Screen:** H-CAL-001
 - **Components:** ConditionCalendar(partner), PartnerMorningSummary
 - **Files:** Report Feature의 Partner Calendar Page/State
 - **Dependencies:** UI-016, UI-017, UI-014
@@ -1754,7 +1754,7 @@ Standalone Page
 
 - **Status:** Deferred (Phase 2)
 - **Goal:** 정의된 범위가 생길 때 설정 화면 구현
-- **Related Screen:** SCR-W-13
+- **Related Screen:** W-SETTING-001
 - **Components:** AppTopBar, EmptyState/AppBanner
 - **Files:** 요구사항 확정 후 결정
 - **Dependencies:** Phase 2 설정 요구사항 확정
@@ -1765,7 +1765,7 @@ Standalone Page
 
 - **Status:** Deferred (Phase 2)
 - **Goal:** 기존 모션 Demo와 제품 실시간 Log 화면의 Phase 2 통합
-- **Related Screen:** SCR-W-07
+- **Related Screen:** W-MOTION-001
 - **Components:** MovementStatusPanel, RealtimeAlertCard, 기존 MovementScreen
 - **Files:** 기존 `features/movement/**`를 보존하며 확정 범위만 추가
 - **Dependencies:** Phase 2 노출 정책, 개인정보 동의, Platform 전략, 실제 Browser 검증

@@ -4,7 +4,7 @@ import '../../../shared/widgets/product_skeleton_screen.dart';
 class PartnerCalendarScreen extends ProductSkeletonScreen {
   const PartnerCalendarScreen({super.key})
     : super(
-        screenId: 'SCR-H-02',
+        requirementIds: const ['H-CAL-001'],
         title: '파트너 캘린더',
         description: '공유가 허용된 기록을 날짜별로 확인하는 Partner Shell 루트입니다.',
         showBack: false,

@@ -4,7 +4,7 @@ import '../../../shared/widgets/product_skeleton_screen.dart';
 class InvitationEntryScreen extends ProductSkeletonScreen {
   InvitationEntryScreen({super.key, required String? token})
     : super(
-        screenId: 'SCR-H-06',
+        requirementIds: const ['H-INVITE-001'],
         title: '초대 수락',
         description: token == null || token.isEmpty
             ? '초대 토큰이 없어 만료·잘못된 링크 안내를 표시할 상태입니다.'
