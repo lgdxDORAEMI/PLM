@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'design_system/theme/app_theme.dart';
 import 'routing/app_router.dart';
@@ -12,6 +13,13 @@ class PLMApp extends StatelessWidget {
       title: 'PLM',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      locale: const Locale('ko'),
+      supportedLocales: const [Locale('ko')],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       onGenerateRoute: AppRouter.onGenerateRoute,
       onGenerateInitialRoutes: AppRouter.onGenerateInitialRoutes,
     );

@@ -1,5 +1,5 @@
-%% 서비스 흐름도: 식사 가이드 확인 및 AI 챗봇 재조정
-%% 관련 기능: W-MEAL-001, W-MEAL-002, W-MEAL-003, W-CHAT-001 / 관련 UC: UC4, UC11 (전제: UC3 루틴 생성 완료)
+%% 서비스 흐름도: 식사 가이드 끼니 선택 → 메뉴 상세 확인 및 AI 챗봇 재조정
+%% 관련 기능: W-MEAL-001(끼니선택), W-MEAL-002(메뉴상세), W-MEAL-003(챗봇재추천), W-MEAL-004(이력기록), W-CHAT-001 / 관련 UC: UC4, UC11 (전제: UC3 루틴 생성 완료)
 flowchart TD
     classDef user fill:#E8F0FE,stroke:#4285F4,color:#1a1a1a;
     classDef system fill:#F1F3F4,stroke:#5f6368,color:#1a1a1a;
@@ -7,11 +7,13 @@ flowchart TD
     classDef terminal fill:#E6F4EA,stroke:#34A853,color:#1a1a1a;
     classDef external fill:#FCE8E6,stroke:#EA4335,color:#1a1a1a,stroke-dasharray: 4 3;
 
-    Start(["시작: 식사 가이드 화면 진입"]):::terminal --> A["시스템: 추천 메뉴·추천 이유·영양 목적 표시"]:::system
+    Start(["시작: 식사 가이드 화면 진입"]):::terminal --> S["시스템: 현재 시간대 끼니를 '지금' 배지로 강조,<br/>나머지 끼니 요약 미리보기 (W-MEAL-001)"]:::system
+    S --> T(["사용자: 확인할 끼니 선택(기본값=현재 끼니)"]):::user
+    T --> A["시스템: 추천 메뉴·추천 이유·영양 목적,<br/>오늘 조심할 것, 잔여 허용량 배지 표시 (W-MEAL-002)"]:::system
     A --> B{"사용자: 추천 메뉴가 마음에 드는가?"}:::decision
-    B -- 예 --> C["시스템: 수락 이력 기록"]:::system --> End1(["종료: 루틴 실행 기록으로 이동"]):::terminal
+    B -- 예 --> C["시스템: 수락 이력 기록 (W-MEAL-004)"]:::system --> End1(["종료: 루틴 실행 기록으로 이동"]):::terminal
 
-    B -- 아니오 --> D(["사용자: 챗봇에게 상황/요청 전달<br/>(예: 다른 메뉴로 변경 요청)"]):::user
+    B -- 아니오 --> D(["사용자: 챗봇에게 상황/요청 전달<br/>(예: 다른 메뉴로 변경 요청) (W-MEAL-003)"]):::user
     D --> E["시스템: 프로필·컨디션·이전 이력 맥락 구성"]:::system
 
     subgraph EXT["외부 시스템"]
@@ -24,5 +26,5 @@ flowchart TD
     G -- 정상 --> I["시스템: 재추천 메뉴 표시"]:::system
     I --> J{"사용자: 재추천 결과를 수락하는가?"}:::decision
     J -- 아니오 --> D
-    J -- 예 --> K["시스템: 변경된 메뉴 저장 및 수락 이력 기록"]:::system
+    J -- 예 --> K["시스템: 변경된 메뉴 저장 및 수락 이력 기록 (W-MEAL-004)"]:::system
     K --> End2(["종료: 루틴 실행 기록으로 이동"]):::terminal

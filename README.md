@@ -2,7 +2,7 @@
 
 PLM은 임신 주수, 당일 컨디션, 예정 활동과 생활 기록을 바탕으로 임산부의 식사·가사·건강·수면 루틴을 개인화하고 가족의 돌봄 참여를 돕는 생활관리 서비스입니다.
 
-현재 저장소는 제품 UI 개발을 분업할 수 있는 Frontend Skeleton이 구축된 Flutter Web Frontend와, 프로필 일부 및 모션 인식 데모를 제공하는 FastAPI Backend로 구성됩니다. 기획상 AI 추천, ThinQ 가전 제어, 전체 Supabase 데이터 연동은 목표 구조에 포함되지만 아직 구현 완료 기능이 아닙니다.
+현재 저장소는 Profile Setup, Home·Today Care·Daily Routine, Smart Meal Guide, 가사·건강·Sleep Care·실시간 Movement Flow가 실제 UI로 구현되고 나머지 제품 화면은 분업 가능한 Skeleton으로 준비된 Flutter Web Frontend와, 프로필 일부 및 모션 인식 데모를 제공하는 FastAPI Backend로 구성됩니다. Routine과 Meal, 가사·건강·수면·제품용 Movement 데이터는 Mock/local 상태를 사용합니다.
 
 ## 핵심 사용자 흐름
 
@@ -23,15 +23,15 @@ MVP는 가전 자동 실행과 홈카메라 기반 실시간 위험 행동 로�
 
 | 영역 | 구현 상태 | 비고 |
 | --- | --- | --- |
-| Frontend 기반 | 구현 | Flutter Web 초기화, 환경설정, DESIGN.md 기반 Theme·공통 Component |
-| Frontend 제품 UI | Skeleton 완료 | 서비스 흐름 기반 20개 화면, 역할별 Navigation과 동적 Route Parameter 연결 |
+| Frontend 기반 | 구현 | Flutter Web 초기화, 환경설정, DESIGN.md 기반 Theme·반응형 Layout·공통 상태/Badge/Task Component |
+| Frontend 제품 UI | 부분 구현 | Profile 6단계, Home·Today Care, Daily Routine, Meal, 가사 분담, 건강 활동, Sleep Care, mock 실시간 Movement Flow 구현 |
 | 모션 인식 Web 데모 | 구현 | 브라우저 카메라 프레임 전송, 캘리브레이션, 자세 오버레이와 상태 표시 |
 | Backend 기본 API | 구현 | `/`, `/health`, 개발용 CORS |
 | 임산부 프로필 | 부분 구현 | 프로필 1/6 출산예정일, 2/6 신장·임신 전 체중 조회·저장 |
 | 모션 분석 API | 데모 구현 | 단일 세션 WebSocket 분석, 이벤트 및 일일 집계 조회 |
 | Supabase | 부분 구현 | Auth 토큰 검증 경계와 `pregnancy_profiles` migration |
 | AI 루틴·LLM | 미구현 | 인터페이스만 존재하며 공급자 및 실제 호출 없음 |
-| 식사·가사·건강·수면·배우자 UI | Skeleton | 화면별 Placeholder를 Mock Service 기반 실제 UI로 교체 예정 |
+| 배우자 UI | Skeleton | 화면별 Placeholder를 Mock Service 기반 실제 UI로 교체 예정 |
 | ThinQ 가전 연동 | 미구현 | MVP에서는 추천까지만 제공하고 실제 제어는 제외 |
 | Android / iOS | 미지원 | 저장소에는 Web 플랫폼만 준비되어 있음 |
 
@@ -137,6 +137,8 @@ cd backend
 - [Design System 설계](docs/development/03_design_system.md)
 - [Component System 설계](docs/development/04_component_system.md)
 - [화면 구현 계획](docs/development/05_ui_implementation_plan.md)
+- [Screen 구현 Map](docs/SCREEN_IMPLEMENTATION_MAP.md)
+- [공통 UI Gap 분석](docs/development/06_common_ui_gap_analysis.md)
 - [모션 통합 문서](docs/movement/README.md)
 
 ## 협업 규칙

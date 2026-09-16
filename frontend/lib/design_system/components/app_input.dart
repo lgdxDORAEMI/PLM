@@ -7,20 +7,59 @@ class AppInput extends StatelessWidget {
     required this.label,
     this.controller,
     this.hintText,
+    this.helperText,
+    this.errorText,
     this.enabled = true,
+    this.readOnly = false,
+    this.prefixIcon,
+    this.suffixIcon,
+    this.keyboardType,
+    this.textInputAction,
+    this.onChanged,
+    this.onSubmitted,
+    this.onTap,
+    this.maxLines = 1,
+    this.autofillHints,
   });
 
   final String label;
   final TextEditingController? controller;
   final String? hintText;
+  final String? helperText;
+  final String? errorText;
   final bool enabled;
+  final bool readOnly;
+  final Widget? prefixIcon;
+  final Widget? suffixIcon;
+  final TextInputType? keyboardType;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final VoidCallback? onTap;
+  final int maxLines;
+  final Iterable<String>? autofillHints;
 
   @override
   Widget build(BuildContext context) {
     return TextField(
       controller: controller,
       enabled: enabled,
-      decoration: InputDecoration(labelText: label, hintText: hintText),
+      readOnly: readOnly,
+      keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      onChanged: onChanged,
+      onSubmitted: onSubmitted,
+      onTap: onTap,
+      maxLines: maxLines,
+      autofillHints: autofillHints,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hintText,
+        helperText: helperText,
+        errorText: errorText,
+        prefixIcon: prefixIcon,
+        suffixIcon: suffixIcon,
+      ),
     );
   }
 }
