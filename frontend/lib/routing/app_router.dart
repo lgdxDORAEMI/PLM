@@ -131,7 +131,7 @@ abstract final class AppRouter {
     }
     if (path == RouteNames.partnerProfile) {
       return const ProductSkeletonScreen(
-        requirementIds: ['H-PROFILE-001'],
+        requirementIds: [],
         title: '파트너 프로필',
         description: '연결된 계정과 프로필 정보를 확인하는 화면입니다.',
       );

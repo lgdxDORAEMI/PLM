@@ -4,7 +4,7 @@
 
 이 문서는 `docs/서비스흐름도/01~09`, `docs/requirements/01_MVP.md`, `01_PRD.md`, `03_유스케이스명세서.md`, `04_1_기능요구사항명세서.md`를 다시 대조해 생성한 Frontend 내부 Route 계약이다.
 
-- 제품 화면 20개와 재사용 진입 경로가 Flutter 기본 `Navigator` 기반 Router에 등록되어 있으며, Profile Setup, Home·Today Care·Daily Routine, Smart Meal Guide Flow는 실제 UI로 구현되어 있다.
+- 제품 화면과 재사용 진입 경로가 Flutter 기본 `Navigator` 기반 Router에 등록되어 있으며, 요구사항 ID가 확정된 MVP 화면은 실제 UI 또는 local/mock UI로 구현되어 있다.
 - 아래 Path는 Frontend 내부 경로다. 외부 초대 Domain, ThinQ 인증 복귀 URL, Backend Endpoint 계약이 아니다.
 - 날짜·요청 ID·초대 Token은 URL에서 보존하고 화면 생성자에 전달한다.
 - 인증·Session Adapter가 없어 실제 자동 Redirect와 권한 Guard는 `PARTIAL`이다.
@@ -26,7 +26,7 @@
 | 아내, 프로필 없음 | `/onboarding/profile` | Resolver 계약과 local Profile Wizard 구현, `/`의 기본값 |
 | 아내, 프로필 있음 | `/wife/home` | Resolver 계약 구현, 실제 Session 연결 TODO |
 | 남편, 계정 연동 완료 | `/partner/calendar` | Resolver 계약 구현, 실제 Session 연결 TODO |
-| 남편, 초대 링크 진입 | `/invitation-entry?token={token}` | Token 파싱 구현, 검증/인증 복귀 TODO |
+| 남편, 초대 링크 진입 | `/invitation-entry?token={token}` | Token 파싱·Mock 검증/연동 구현, 실제 인증 복귀 TODO |
 
 `/`은 인증 상태가 없는 Skeleton 실행 환경에서 최초 등록 화면으로 연결한다. 제품 연결 시 `AppRouter.resolveLaunchRoute`에 실제 Session 상태를 주입한다.
 
@@ -35,10 +35,10 @@
 | 관련 요구사항 ID | 화면 | 내부 Route | 진입 | 다음 경로 | Context/Parameter | 상태 |
 | --- | --- | --- | --- | --- | --- | --- |
 | W-PROFILE-001<br>W-PROFILE-002<br>W-PROFILE-003 | 임산부 프로필 설정/수정 | `/onboarding/profile`, `/wife/profile` | Bootstrap 또는 전역 프로필 메뉴 | 최초 등록은 W-INVITE-001, 수정은 이전 화면 | Path로 `ProfileMode` 구분 | IMPLEMENTED |
-| W-INVITE-001<br>W-INVITE-002 | 배우자 초대 | `/onboarding/invite`, `/wife/invite` | 최초 등록 완료 또는 미연동 전역 메뉴 | 온보딩은 W-ROUTINE-001, 수동 진입은 이전 화면 | Path로 `InviteEntryContext` 구분 | SKELETON |
-| H-INVITE-001 | 초대 수락 | `/invitation-entry?token={token}` | 외부 초대 Link Adapter | 성공 시 H-CAL-001 | `token`; 외부 Domain/인증 복귀 TBD | SKELETON |
-| W-COND-001<br>W-COND-002 | 오늘의 컨디션 | `/wife/home/condition?mode=create|edit` | Home CTA 또는 수정 Action | 최초 입력은 W-ACT-001, 수정은 W-ROUTINE-001 | `mode`, 당일 날짜는 local Store | IMPLEMENTED |
-| W-ACT-001 | 오늘 예정 활동 | `/wife/home/activity` | W-COND-001 최초 저장 | W-ROUTINE-001 | 당일 Context는 Service | SKELETON |
+| W-INVITE-001<br>W-INVITE-002 | 배우자 초대 | `/onboarding/invite`, `/wife/invite` | 최초 등록 완료 또는 미연동 전역 메뉴 | 온보딩은 W-ROUTINE-001, 수동 진입은 이전 화면 | Path로 `InviteEntryContext` 구분, 링크·공유 결과 mock | IMPLEMENTED |
+| H-INVITE-001 | 초대 수락 | `/invitation-entry?token={token}` | 외부 초대 Link Adapter | 성공 시 B-CAL-001 Partner Variant | `token`; 검증·연동 mock, 외부 Domain/인증 복귀 TBD | IMPLEMENTED / MOCK AUTH |
+| W-COND-001<br>W-COND-002 | 오늘의 컨디션 | `/wife/home/condition?mode=create|edit` | Home CTA 또는 수정 Action | 최초 입력은 W-TASK-001, 수정은 W-ROUTINE-001 | `mode`, 당일 날짜는 local Store | IMPLEMENTED |
+| W-TASK-001 | 오늘 예정 활동 | `/wife/home/activity` | W-COND-001 최초 저장 | W-ROUTINE-001 | 선택값은 `PlannedActivityStore`, AI 생성은 mock | IMPLEMENTED |
 | W-ROUTINE-001<br>W-ROUTINE-002<br>W-ROUTINE-003 | 통합 홈 | `/wife/home` | Bootstrap, 초대 종료, 활동 저장 | Guide, Report, Calendar, 전역 메뉴 | 당일 컨디션 local Store, `MockRoutineService` | IMPLEMENTED |
 | W-MEAL-001<br>W-MEAL-002<br>W-MEAL-003<br>W-MEAL-004<br>W-RECORD-001 | 식사 가이드 | `/wife/home/meal` | Home 식사 영역 | W-CHAT-001 또는 Home | 끼니·적용 추천은 `MealSelectionStore` | IMPLEMENTED |
 | W-HOUSE-001<br>W-HOUSE-002<br>W-HOUSE-003<br>W-RECORD-002 | 가사 가이드 | `/wife/home/household` | Home 가사 영역, 실시간의 가전 전환 CTA | 요청 전송 결과 후 현재 화면/Home | 요청·가전 실행은 local mock 상태, 남편 화면 직접 이동 금지 | IMPLEMENTED |
@@ -48,12 +48,12 @@
 | W-MEAL-002<br>W-CHAT-001 | 식사 재조정 채팅 | `/wife/meal-chat` | 식사 가이드 또는 Wife Chat Tab | 적용 시 W-MEAL-001 | Meal Context/Draft는 Feature State | IMPLEMENTED; W-CHAT-002 Phase 2 제외 |
 | W-REPORT-001<br>W-REPORT-002 | Daily 리포트 | `/wife/calendar/report/:date` | 하루 끝내기 또는 Wife Calendar | B-CAL-001/공유 Modal | `date` 필수, 기록·저장·공유는 mock | IMPLEMENTED |
 | B-CAL-001 | 컨디션 캘린더(아내) | `/wife/calendar` | Wife Calendar Tab 또는 Report | 선택 날짜 W-REPORT-001 | 선택 날짜를 ISO `date`로 전달, 공통 Mock Record 사용 | IMPLEMENTED |
-| W-SETTING-001 | 설정 | `/wife/settings` | Wife 전역 프로필 메뉴 | 이전 화면 | 상세 설정 요구사항 없음 | BLOCKED / PHASE 2 |
-| H-REPORT-001 | 파트너 아침 리포트 | `/partner/report/:date` | 알림 또는 Partner Calendar | H-REQUEST-001 또는 이전 화면 | `date` 필수 | SKELETON |
+| 요구사항 ID 미정 | 설정 | `/wife/settings` | Wife 전역 프로필 메뉴 | 이전 화면 | 서비스 흐름상 비활성·스코프 제외 | BLOCKED / PHASE 2 |
+| H-REPORT-001 | 파트너 아침 리포트 | `/partner/report/:date` | 알림 또는 Partner Calendar | H-REQUEST-001 또는 이전 화면 | `date` 필수, 공유 요약 Mock Record | IMPLEMENTED |
 | B-CAL-001 | 컨디션 캘린더(파트너) | `/partner/calendar` | Bootstrap/연동 완료 | H-REPORT-001, Notification, Profile, Movement | 선택 날짜를 H-REPORT-001의 ISO `date`로 전달 | IMPLEMENTED |
-| H-NOTI-001 | 파트너 알림 | `/partner/notifications` | Partner 전역 Bell | H-REPORT-001 또는 H-REQUEST-001 | 앱 내 Mock Inbox | SKELETON |
-| H-REQUEST-001<br>H-REQUEST-002<br>H-REQUEST-003 | 파트너 가사 요청 | `/partner/requests/:requestId` | 알림, 리포트, 캘린더 | 상태 처리 후 Detail 유지/이전 화면 | `requestId` 필수 | SKELETON |
-| H-PROFILE-001 | 파트너 프로필 | `/partner/profile` | Partner 전역 Profile Button | 이전 화면 | 조회 전용 | SKELETON |
+| H-NOTI-001 | 파트너 알림 | `/partner/notifications` | Partner 전역 Bell | H-REPORT-001 또는 H-REQUEST-001 | 앱 내 Mock Inbox와 local 읽음 상태 | IMPLEMENTED |
+| H-REQUEST-001<br>H-REQUEST-002<br>H-REQUEST-003<br>H-REQUEST-003-1 | 파트너 가사 요청 | `/partner/requests/:requestId` | 알림, 리포트, 캘린더 | 상태 처리 후 Detail 유지 또는 Calendar | `requestId` 필수, 상태는 local Store | IMPLEMENTED |
+| 요구사항 ID 미정 | 파트너 프로필 | `/partner/profile` | Partner 전역 Profile Button | 이전 화면 | 최신 요구사항에 표시 항목 정의 없음 | BLOCKED |
 
 ## 4. 사용자 Route Flow
 
@@ -75,7 +75,7 @@ flowchart TD
   PA -->|검증·로그인·연동 성공| PC
 
   WH -->|컨디션 미입력 CTA| WC[W-COND-001 create]
-  WC --> WA[W-ACT-001 Activity]
+  WC --> WA[W-TASK-001 Activity]
   WA --> WH
   WH -->|기존 컨디션 수정| WCE[W-COND-001 edit]
   WCE --> WH
@@ -98,7 +98,7 @@ flowchart TD
   PC -->|날짜 선택| PRT[H-REPORT-001 Morning Report / date]
   PN --> PRT
   PRT --> PR
-  PC --> PP[H-PROFILE-001 Partner Profile]
+  PC --> PP[Partner Profile / Requirement ID TBD]
 
   WH -. Wife Bottom Tab .-> WMO[B-MOTION-001 Wife Movement]
   WH -. Wife Bottom Tab .-> WCHAT

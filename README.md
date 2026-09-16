@@ -2,7 +2,7 @@
 
 PLM은 임신 주수, 당일 컨디션, 예정 활동과 생활 기록을 바탕으로 임산부의 식사·가사·건강·수면 루틴을 개인화하고 가족의 돌봄 참여를 돕는 생활관리 서비스입니다.
 
-현재 저장소는 Profile Setup, Home·Today Care·Daily Routine, Smart Meal Guide, 식사 재조정 AI Chat, 가사·건강·Sleep Care, 날짜별 Record/Calendar, 실시간 Movement Flow가 실제 UI로 구현되고 나머지 제품 화면은 분업 가능한 Skeleton으로 준비된 Flutter Web Frontend와, 프로필 일부 및 모션 인식 데모를 제공하는 FastAPI Backend로 구성됩니다. Routine과 Meal Chat, 가사·건강·수면·기록·제품용 Movement 데이터는 Mock/local 상태를 사용합니다.
+현재 저장소는 Profile Setup, 배우자 초대·수락, Home·Today Care·예정 활동·Daily Routine, Smart Meal Guide, 식사 재조정 AI Chat, 가사·건강·Sleep Care, 날짜별 Record/Calendar, 실시간 Movement, 파트너 리포트·알림·가사 요청 Flow가 실제 UI로 구현된 Flutter Web Frontend와, 프로필 일부 및 모션 인식 데모를 제공하는 FastAPI Backend로 구성됩니다. 외부 연동 전인 Routine·Chat·초대·Partner Flow와 생활 데이터는 Mock/local 상태를 사용합니다.
 
 ## 핵심 사용자 흐름
 
@@ -24,14 +24,14 @@ MVP는 가전 자동 실행과 홈카메라 기반 실시간 위험 행동 로�
 | 영역 | 구현 상태 | 비고 |
 | --- | --- | --- |
 | Frontend 기반 | 구현 | Flutter Web 초기화, 환경설정, DESIGN.md 기반 Theme·반응형 Layout·공통 상태/Badge/Task Component |
-| Frontend 제품 UI | 부분 구현 | Profile 6단계, Home·Today Care, Daily Routine, Meal과 누적 대화형 Mock AI Chat, 가사 분담, 건강 활동, Sleep Care, Record/Calendar, severity·확인 상태를 포함한 mock Realtime Flow 구현 |
+| Frontend 제품 UI | 부분 구현 | Profile 6단계, 초대, Home·Today Care·예정 활동, Daily Routine, Meal·Chat, 가사·건강·Sleep, Record/Calendar·Realtime, Partner Report·Inbox·Request 구현. 설정·Partner Profile은 요구사항 확정 대기 |
 | 모션 인식 Web 데모 | 구현 | 브라우저 카메라 프레임 전송, 캘리브레이션, 자세 오버레이와 상태 표시 |
 | Backend 기본 API | 구현 | `/`, `/health`, 개발용 CORS |
 | 임산부 프로필 | 부분 구현 | 프로필 1/6 출산예정일, 2/6 신장·임신 전 체중 조회·저장 |
 | 모션 분석 API | 데모 구현 | 단일 세션 WebSocket 분석, 이벤트 및 일일 집계 조회 |
 | Supabase | 부분 구현 | Auth 토큰 검증 경계와 `pregnancy_profiles` migration |
 | AI 루틴·LLM | 미구현 | 인터페이스만 존재하며 공급자 및 실제 호출 없음 |
-| 배우자 UI | Skeleton | 화면별 Placeholder를 Mock Service 기반 실제 UI로 교체 예정 |
+| 배우자 UI | 부분 구현 | 초대 수락, 공통 Calendar, 오전 리포트, 알림함, 가사 요청 확인·완료 구현. Partner Profile은 상세 요구사항 확정 대기 |
 | ThinQ 가전 연동 | 미구현 | MVP에서는 추천까지만 제공하고 실제 제어는 제외 |
 | Android / iOS | 미지원 | 저장소에는 Web 플랫폼만 준비되어 있음 |
 
