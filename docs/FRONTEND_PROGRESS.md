@@ -20,15 +20,15 @@
 | W-PROFILE-001 | 임산부 프로필 설정/수정 | IMPLEMENTED |
 | W-INVITE-001 | 배우자 초대 | SKELETON |
 | H-INVITE-001 | 초대 수락 | SKELETON |
-| W-COND-001 | 오늘의 컨디션 | SKELETON |
+| W-COND-001 | 오늘의 컨디션 | IMPLEMENTED |
 | W-ACT-001 | 오늘 예정 활동 | SKELETON |
-| W-ROUTINE-001 | 통합 홈 | SKELETON |
-| W-MEAL-001 | 식사 가이드 | SKELETON |
-| W-HOUSE-001 | 가사 가이드 | SKELETON |
-| W-MOTION-001 | 실시간 모션 | SKELETON / DEFERRED PHASE 2 |
-| W-HEALTH-001 | 건강 가이드 | SKELETON |
-| W-SLEEP-001 | 수면 가이드 | SKELETON |
-| W-CHAT-001 | 식사 재조정 채팅 | SKELETON |
+| W-ROUTINE-001 | 통합 홈 | IMPLEMENTED |
+| W-MEAL-001 | 식사 가이드 | IMPLEMENTED |
+| W-HOUSE-001 | 가사 가이드 | IMPLEMENTED |
+| W-MOTION-001 | 실시간 모션 | IMPLEMENTED / MOCK UI |
+| W-HEALTH-001 | 건강 가이드 | IMPLEMENTED |
+| W-SLEEP-001 | 수면 가이드 | IMPLEMENTED / MOCK DEVICE |
+| W-CHAT-001 | 식사 재조정 채팅 | IMPLEMENTED |
 | W-REPORT-001 | Daily 리포트 | SKELETON |
 | W-CAL-001 | 컨디션 캘린더 | SKELETON |
 | W-SETTING-001 | 설정 | SKELETON / BLOCKED PHASE 2 |
@@ -38,7 +38,7 @@
 | H-REQUEST-001 | 파트너 가사 요청 | SKELETON |
 | H-PROFILE-001 | 파트너 프로필 | SKELETON |
 
-`W-MOTION-001`·`H-MOTION-001`은 하나의 공유 제품 Placeholder이며 기존 모션 데모 구현을 삭제하지 않는다. `W-SETTING-001`은 요구사항이 확정되기 전까지 임의 설정 항목을 추가하지 않는다.
+`W-MOTION-001`·`H-MOTION-001`은 하나의 공유 제품 UI이며 현재 움직임 감지와 알림 데이터는 mock이다. `W-SLEEP-002`의 수면 환경 실행도 local mock이며 ThinQ Device API를 호출하지 않는다. 기존 모션 데모 구현은 별도로 보존한다. `W-SETTING-001`은 요구사항이 확정되기 전까지 임의 설정 항목을 추가하지 않는다.
 
 ## Route Contract
 
@@ -75,6 +75,6 @@ lib/shared/widgets/product_skeleton_screen.dart
 ## 검증
 
 - `flutter analyze`: 통과
-- `flutter test`: 28개 통과 (Profile UI·Controller와 기존 회귀 테스트)
+- `flutter test`: 38개 통과 (Profile·Home·Today Care·Routine·Meal UI/Controller와 기존 회귀 테스트)
 - `flutter build web`: 통과
-- Router test: 20개 화면의 재사용 경로, Profile 6단계·Back·온보딩 흐름, 동적 date/requestId/token, 역할별 Navigation, Bootstrap Resolver, 404 처리 확인
+- Router test: 20개 화면의 재사용 경로, Profile 6단계·Back·온보딩 흐름, Home→Today Care→Activity→Home local 상태 흐름, Routine 4종 Detail 이동, Routine→Meal→재추천 적용→Routine 복귀, 동적 date/requestId/token, 역할별 Navigation, Bootstrap Resolver, 404 처리 확인

@@ -4,11 +4,11 @@
 
 이 문서는 `docs/서비스흐름도/01~09`, `docs/requirements/01_MVP.md`, `01_PRD.md`, `03_유스케이스명세서.md`, `04_1_기능요구사항명세서.md`를 다시 대조해 생성한 Frontend 내부 Route 계약이다.
 
-- 제품 화면 20개와 재사용 진입 경로가 Flutter 기본 `Navigator` 기반 Router에 등록되어 있으며, Profile Setup Flow는 실제 UI로 구현되어 있다.
+- 제품 화면 20개와 재사용 진입 경로가 Flutter 기본 `Navigator` 기반 Router에 등록되어 있으며, Profile Setup, Home·Today Care·Daily Routine, Smart Meal Guide Flow는 실제 UI로 구현되어 있다.
 - 아래 Path는 Frontend 내부 경로다. 외부 초대 Domain, ThinQ 인증 복귀 URL, Backend Endpoint 계약이 아니다.
 - 날짜·요청 ID·초대 Token은 URL에서 보존하고 화면 생성자에 전달한다.
 - 인증·Session Adapter가 없어 실제 자동 Redirect와 권한 Guard는 `PARTIAL`이다.
-- 실시간 모션과 설정은 접근 가능한 Placeholder만 제공하며 실제 기능은 Phase 2다.
+- 실시간 모션은 제품용 mock UI를 제공하고 실제 카메라 감지·공유는 Phase 2다. 설정은 접근 가능한 Placeholder만 제공한다.
 
 ### 요구사항 ID 추적 규칙
 
@@ -37,15 +37,15 @@
 | W-PROFILE-001<br>W-PROFILE-002<br>W-PROFILE-003 | 임산부 프로필 설정/수정 | `/onboarding/profile`, `/wife/profile` | Bootstrap 또는 전역 프로필 메뉴 | 최초 등록은 W-INVITE-001, 수정은 이전 화면 | Path로 `ProfileMode` 구분 | IMPLEMENTED |
 | W-INVITE-001<br>W-INVITE-002 | 배우자 초대 | `/onboarding/invite`, `/wife/invite` | 최초 등록 완료 또는 미연동 전역 메뉴 | 온보딩은 W-ROUTINE-001, 수동 진입은 이전 화면 | Path로 `InviteEntryContext` 구분 | SKELETON |
 | H-INVITE-001 | 초대 수락 | `/invitation-entry?token={token}` | 외부 초대 Link Adapter | 성공 시 H-CAL-001 | `token`; 외부 Domain/인증 복귀 TBD | SKELETON |
-| W-COND-001<br>W-COND-002 | 오늘의 컨디션 | `/wife/home/condition?mode=create|edit` | Home CTA 또는 수정 Action | 최초 입력은 W-ACT-001, 수정은 W-ROUTINE-001 | `mode`, 당일 날짜는 State/Service | SKELETON |
+| W-COND-001<br>W-COND-002 | 오늘의 컨디션 | `/wife/home/condition?mode=create|edit` | Home CTA 또는 수정 Action | 최초 입력은 W-ACT-001, 수정은 W-ROUTINE-001 | `mode`, 당일 날짜는 local Store | IMPLEMENTED |
 | W-ACT-001 | 오늘 예정 활동 | `/wife/home/activity` | W-COND-001 최초 저장 | W-ROUTINE-001 | 당일 Context는 Service | SKELETON |
-| W-ROUTINE-001<br>W-ROUTINE-002<br>W-ROUTINE-003 | 통합 홈 | `/wife/home` | Bootstrap, 초대 종료, 활동 저장 | Guide, Report, Calendar, 전역 메뉴 | 없음 | SKELETON |
-| W-MEAL-001<br>W-MEAL-002<br>W-MEAL-003<br>W-MEAL-004<br>W-RECORD-001 | 식사 가이드 | `/wife/home/meal` | Home 식사 영역 | W-CHAT-001 또는 Home | 날짜·끼니는 Feature State | SKELETON |
-| W-HOUSE-001<br>W-HOUSE-002<br>W-HOUSE-003<br>W-RECORD-002 | 가사 가이드 | `/wife/home/household` | Home 가사 영역 | 요청 전송 결과 후 현재 화면/Home | 요청 생성은 상태/Modal, 남편 화면 직접 이동 금지 | SKELETON |
-| W-MOTION-001<br>H-MOTION-001 | 공유 실시간 모션 | `/wife/movement`, `/partner/movement` | 역할별 하단 실시간 Tab만 | 역할별 이전 Tab | 역할은 Path, 계정 연동·동의 Guard TODO | SKELETON / PHASE 2 |
-| W-HEALTH-001<br>W-HEALTH-002<br>W-RECORD-001 | 건강 가이드 | `/wife/home/health` | Home 건강 영역 | 완료 후 현재 화면/Home | 날짜·활동 ID는 Feature State | SKELETON |
-| W-SLEEP-001<br>W-SLEEP-002<br>W-RECORD-001 | 수면 가이드 | `/wife/home/sleep` | Home 수면 영역 | 완료 후 현재 화면/Home | 날짜는 Feature State | SKELETON |
-| W-MEAL-002<br>W-CHAT-001<br>W-CHAT-002 | 식사 재조정 채팅 | `/wife/meal-chat` | 식사 가이드 또는 Wife Chat Tab | 적용 시 W-MEAL-001 | Meal Context/Draft는 Feature State | SKELETON |
+| W-ROUTINE-001<br>W-ROUTINE-002<br>W-ROUTINE-003 | 통합 홈 | `/wife/home` | Bootstrap, 초대 종료, 활동 저장 | Guide, Report, Calendar, 전역 메뉴 | 당일 컨디션 local Store, `MockRoutineService` | IMPLEMENTED |
+| W-MEAL-001<br>W-MEAL-002<br>W-MEAL-003<br>W-MEAL-004<br>W-RECORD-001 | 식사 가이드 | `/wife/home/meal` | Home 식사 영역 | W-CHAT-001 또는 Home | 끼니·적용 추천은 `MealSelectionStore` | IMPLEMENTED |
+| W-HOUSE-001<br>W-HOUSE-002<br>W-HOUSE-003<br>W-RECORD-002 | 가사 가이드 | `/wife/home/household` | Home 가사 영역, 실시간의 가전 전환 CTA | 요청 전송 결과 후 현재 화면/Home | 요청·가전 실행은 local mock 상태, 남편 화면 직접 이동 금지 | IMPLEMENTED |
+| W-MOTION-001<br>H-MOTION-001 | 공유 실시간 모션 | `/wife/movement`, `/partner/movement` | 역할별 하단 실시간 Tab만 | 아내는 가사 가이드 또는 역할별 이전 Tab | 제품 UI의 감지·로그는 local mock, 실제 계정 연동·동의 Guard TODO | IMPLEMENTED / MOCK UI |
+| W-HEALTH-001<br>W-HEALTH-002<br>W-RECORD-001 | 건강 가이드 | `/wife/home/health` | Home 건강 영역 | 완료 후 현재 화면/Home | 완료 상태는 화면 Controller의 local State | IMPLEMENTED |
+| W-SLEEP-001<br>W-SLEEP-002<br>W-RECORD-001 | 수면 가이드 | `/wife/home/sleep` | Home 수면 영역 | 설정 Bottom Sheet 후 현재 화면, 완료 후 현재 화면/Home | 선택·설정·실행 결과는 local State, 실제 ThinQ 실행 없음 | IMPLEMENTED / MOCK DEVICE |
+| W-MEAL-002<br>W-CHAT-001 | 식사 재조정 채팅 | `/wife/meal-chat` | 식사 가이드 또는 Wife Chat Tab | 적용 시 W-MEAL-001 | Meal Context/Draft는 Feature State | IMPLEMENTED; W-CHAT-002 Phase 2 제외 |
 | W-REPORT-001<br>W-REPORT-002 | Daily 리포트 | `/wife/calendar/report/:date` | 하루 끝내기 또는 Wife Calendar | W-CAL-001/공유 Modal | `date` 필수 | SKELETON |
 | W-CAL-001 | 컨디션 캘린더 | `/wife/calendar` | Wife Calendar Tab 또는 Report | 선택 날짜 W-REPORT-001 | 선택 날짜는 URL 이동 시 `date`로 전달 | SKELETON |
 | W-SETTING-001 | 설정 | `/wife/settings` | Wife 전역 프로필 메뉴 | 이전 화면 | 상세 설정 요구사항 없음 | BLOCKED / PHASE 2 |
@@ -141,7 +141,7 @@ flowchart TD
 서비스 메뉴 구조 순서를 따른다.
 
 1. Home → `/wife/home`
-2. Realtime → `/wife/movement` (Phase 2 Placeholder)
+2. Realtime → `/wife/movement` (제품 UI는 mock, 실제 감지는 Phase 2)
 3. Chat → `/wife/meal-chat`
 4. Calendar → `/wife/calendar`
 
@@ -150,7 +150,7 @@ flowchart TD
 요구사항에서 명시된 최소 전역 항목만 Skeleton에 둔다.
 
 1. Calendar → `/partner/calendar`
-2. Realtime → `/partner/movement` (Phase 2 Placeholder)
+2. Realtime → `/partner/movement` (제품 UI는 mock, 실제 공유는 Phase 2)
 
 Partner의 추가 하단 Tab은 문서에 정의되지 않았으므로 임의 추가하지 않는다.
 
