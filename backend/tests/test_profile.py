@@ -97,8 +97,12 @@ class DueDateInputTest(unittest.TestCase):
             ({"due_date": iso(100)}, iso(100)),
             ({"last_period_start": iso(-100)}, iso(180)),
             ({"due_date": iso(180), "last_period_start": iso(-100)}, iso(180)),
+            # 병원 진단 출산예정일이 마지막 생리 시작일 + 280일과 달라도 진단값을 그대로 쓴다.
+            ({"due_date": iso(174), "last_period_start": iso(-100)}, iso(174)),
             ({"due_date": iso(-14)}, iso(-14)),
             ({"last_period_start": iso(0)}, iso(280)),
+            # 상한은 오늘 + 365일이다.
+            ({"due_date": iso(365)}, iso(365)),
         ):
             with self.subTest(payload=payload):
                 self.assertEqual(DueDateInput.model_validate(payload).due_date.isoformat(), expected_due)
@@ -108,10 +112,9 @@ class DueDateInputTest(unittest.TestCase):
             {},
             {"due_date": None, "last_period_start": None},
             {"due_date": iso(-15)},
-            {"due_date": iso(281)},
+            {"due_date": iso(366)},
             {"last_period_start": iso(1)},
             {"last_period_start": iso(-295)},
-            {"due_date": iso(100), "last_period_start": iso(-100)},
             {"due_date": "2026-02-30"},
             {"due_date": iso(100), "user_id": "someone-else"},
         ):
@@ -206,7 +209,7 @@ class ProfileApiTest(unittest.IsolatedAsyncioTestCase):
         async with self.client() as client:
             response = await client.put(
                 "/api/v1/profile/me/due-date",
-                json={"due_date": iso(100), "last_period_start": iso(-100)},
+                json={"last_period_start": iso(1)},  # 미래 생리 시작일
             )
             self.assertEqual(response.status_code, 422)
             self.assertEqual(response.json()["detail"][0]["loc"], ["body"])

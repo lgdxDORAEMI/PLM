@@ -12,8 +12,9 @@ import '../../../design_system/tokens/app_radius.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_names.dart';
 import '../controllers/meal_chat_controller.dart';
+import '../models/meal_chat_message.dart';
 import '../models/meal_guide.dart';
-import '../services/meal_service.dart';
+import '../services/meal_chat_service.dart';
 import '../services/mock_meal_service.dart';
 import '../widgets/meal_chat_bubble.dart';
 import '../widgets/meal_recommendation_card.dart';
@@ -21,7 +22,7 @@ import '../widgets/meal_recommendation_card.dart';
 class MealChatScreen extends StatefulWidget {
   const MealChatScreen({super.key, this.service});
 
-  final MealService? service;
+  final MealChatService? service;
 
   @override
   State<MealChatScreen> createState() => _MealChatScreenState();
@@ -30,6 +31,7 @@ class MealChatScreen extends StatefulWidget {
 class _MealChatScreenState extends State<MealChatScreen> {
   late final MealChatController _controller;
   late final TextEditingController _inputController;
+  late final ScrollController _scrollController;
 
   @override
   void initState() {
@@ -39,7 +41,7 @@ class _MealChatScreenState extends State<MealChatScreen> {
       ..addListener(_refresh)
       ..initialize(_initialRecommendation());
     _inputController = TextEditingController();
-    unawaited(_controller.requestAlternative('속이 좀 메스꺼워요'));
+    _scrollController = ScrollController();
   }
 
   @override
@@ -48,15 +50,20 @@ class _MealChatScreenState extends State<MealChatScreen> {
       ..removeListener(_refresh)
       ..dispose();
     _inputController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  void _refresh() => setState(() {});
+  void _refresh() {
+    if (!mounted) return;
+    setState(() {});
+    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: TopAppBar(title: '식사 다시 고르기', onBack: _handleBack),
+      appBar: TopAppBar(title: '챗봇', onBack: _handleBack),
       body: SafeArea(
         top: false,
         child: ResponsivePageContent(
@@ -65,29 +72,32 @@ class _MealChatScreenState extends State<MealChatScreen> {
               Expanded(
                 child: ListView(
                   key: const ValueKey('meal-chat-log'),
+                  controller: _scrollController,
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
                   children: [
                     const _MealChatContext(),
                     const SizedBox(height: AppSpacing.xxl),
-                    const MealChatBubble(
-                      message: '아침 메뉴, 어떤 점이 고민이세요?\n냄새·식감·속 불편함 뭐든 말씀해 주세요.',
-                      fromUser: false,
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    MealChatBubble(
-                      message: _controller.request,
-                      fromUser: true,
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    if (_controller.responding)
-                      const _RespondingIndicator()
-                    else if (_controller.proposal != null) ...[
-                      const MealChatBubble(
-                        message:
-                            '계란찜 냄새가 부담되셨군요.\n냄새가 거의 없고 더 담백한 메뉴로 다시 골라볼게요.',
-                        fromUser: false,
+                    for (final message in _controller.messages) ...[
+                      MealChatBubble(
+                        key: ValueKey(message.id),
+                        message: message.text,
+                        fromUser: message.author == MealChatAuthor.user,
                       ),
                       const SizedBox(height: AppSpacing.lg),
+                    ],
+                    if (_controller.messages.length == 1 &&
+                        !_controller.responding) ...[
+                      _SuggestedPrompts(onSelected: _send),
+                      const SizedBox(height: AppSpacing.lg),
+                    ],
+                    if (_controller.responding)
+                      const _RespondingIndicator()
+                    else if (_controller.errorMessage != null)
+                      _ChatError(
+                        message: _controller.errorMessage!,
+                        onRetry: () => unawaited(_controller.retry()),
+                      )
+                    else if (_controller.proposal != null) ...[
                       MealRecommendationCard(
                         key: const ValueKey('meal-alternative-card'),
                         recommendation: _controller.proposal!,
@@ -108,9 +118,8 @@ class _MealChatScreenState extends State<MealChatScreen> {
                             child: AppButton(
                               label: '다른 메뉴 보기',
                               variant: AppButtonVariant.secondary,
-                              onPressed: () => _controller.requestAlternative(
-                                _controller.request,
-                              ),
+                              onPressed: () =>
+                                  unawaited(_controller.requestAnother()),
                             ),
                           ),
                         ],
@@ -123,7 +132,7 @@ class _MealChatScreenState extends State<MealChatScreen> {
                 padding: const EdgeInsets.only(bottom: AppSpacing.lg),
                 child: AppInput(
                   key: const ValueKey('meal-chat-input'),
-                  label: '메뉴 변경 요청',
+                  label: '무엇이든 물어보세요',
                   hintText: '냄새나 식감 등 불편한 점을 알려주세요',
                   controller: _inputController,
                   textInputAction: TextInputAction.send,
@@ -169,7 +178,16 @@ class _MealChatScreenState extends State<MealChatScreen> {
     if (value.trim().isEmpty) return;
     FocusManager.instance.primaryFocus?.unfocus();
     _inputController.clear();
-    unawaited(_controller.requestAlternative(value));
+    unawaited(_controller.sendMessage(value));
+  }
+
+  void _scrollToBottom() {
+    if (!_scrollController.hasClients) return;
+    _scrollController.animateTo(
+      _scrollController.position.maxScrollExtent,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+    );
   }
 
   void _applyProposal() {
@@ -243,9 +261,75 @@ class _RespondingIndicator extends StatelessWidget {
       label: '대체 메뉴를 준비하고 있어요',
       child: const Align(
         alignment: Alignment.centerLeft,
-        child: Padding(
-          padding: EdgeInsets.all(AppSpacing.lg),
-          child: CircularProgressIndicator(),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: AppSpacing.md),
+            Text('답변을 준비하고 있어요'),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SuggestedPrompts extends StatelessWidget {
+  const _SuggestedPrompts({required this.onSelected});
+
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Wrap(
+        spacing: AppSpacing.sm,
+        runSpacing: AppSpacing.sm,
+        children: [
+          for (final prompt in MealChatController.suggestedPrompts)
+            ActionChip(
+              key: ValueKey('meal-chat-prompt-$prompt'),
+              label: Text(prompt),
+              onPressed: () => onSelected(prompt),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChatError extends StatelessWidget {
+  const _ChatError({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.borderSubtle),
+        borderRadius: BorderRadius.circular(AppRadius.card),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(message),
+            const SizedBox(height: AppSpacing.md),
+            AppButton(
+              label: '다시 시도',
+              variant: AppButtonVariant.secondary,
+              onPressed: onRetry,
+            ),
+          ],
         ),
       ),
     );

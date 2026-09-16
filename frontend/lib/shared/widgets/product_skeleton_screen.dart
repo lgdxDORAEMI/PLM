@@ -243,12 +243,6 @@ class ProductSkeletonScreen extends StatelessWidget {
               Navigator.pushNamed(context, RouteNames.partnerNotifications),
           icon: const Icon(Icons.notifications_outlined),
         ),
-        IconButton(
-          tooltip: '프로필',
-          onPressed: () =>
-              Navigator.pushNamed(context, RouteNames.partnerProfile),
-          icon: const Icon(Icons.account_circle_outlined),
-        ),
       ];
     }
     return null;

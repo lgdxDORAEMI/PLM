@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../design_system/components/app_button.dart';
 import '../../design_system/components/bottom_navigation.dart';
 import '../../design_system/components/responsive_page_content.dart';
 import '../../design_system/components/top_app_bar.dart';
@@ -8,6 +9,7 @@ import '../../design_system/tokens/app_radius.dart';
 import '../../design_system/tokens/app_spacing.dart';
 import '../../routing/route_context.dart';
 import '../../routing/route_names.dart';
+import 'controllers/realtime_alert_controller.dart';
 import 'models/movement_alert.dart';
 import 'widgets/movement_alert_card.dart';
 
@@ -19,7 +21,23 @@ class ProductMovementScreen extends StatefulWidget {
 }
 
 class _ProductMovementScreenState extends State<ProductMovementScreen> {
-  bool _monitoring = true;
+  late final RealtimeAlertController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = RealtimeAlertController()..addListener(_refresh);
+  }
+
+  @override
+  void dispose() {
+    _controller
+      ..removeListener(_refresh)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _refresh() => setState(() {});
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -31,9 +49,11 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
           children: [
             _MonitoringSummary(
-              monitoring: _monitoring,
-              onChanged: (value) => setState(() => _monitoring = value),
-              onMoveToHome: _moveToHousehold,
+              monitoring: _controller.monitoring,
+              onChanged: _controller.setMonitoring,
+              onMoveToHome: widget.role == AppUserRole.wife
+                  ? _moveToHousehold
+                  : null,
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
@@ -69,8 +89,12 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
-            for (final alert in MovementMockData.alerts) ...[
-              MovementAlertCard(alert: alert, onTap: () => _showAlert(alert)),
+            for (final alert in _controller.alerts) ...[
+              MovementAlertCard(
+                alert: alert,
+                reviewed: _controller.isReviewed(alert.id),
+                onTap: () => _showAlert(alert),
+              ),
               const SizedBox(height: AppSpacing.md),
             ],
           ],
@@ -90,24 +114,64 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
 
   Future<void> _showAlert(MovementAlert alert) => showModalBottomSheet<void>(
     context: context,
+    isScrollControlled: true,
     showDragHandle: true,
     builder: (context) => SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              children: [
+                Icon(
+                  alert.level == MovementAlertLevel.high
+                      ? Icons.error_outline
+                      : Icons.warning_amber_rounded,
+                  color: alert.level == MovementAlertLevel.high
+                      ? AppColors.danger
+                      : AppColors.warning,
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  alert.level == MovementAlertLevel.high ? '높은 주의' : '주의',
+                  style: Theme.of(context).textTheme.labelLarge,
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
             Text(alert.title, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: AppSpacing.md),
             Text(alert.description),
             const SizedBox(height: AppSpacing.sm),
-            Text(
-              alert.suggestion,
-              style: const TextStyle(color: AppColors.textSecondary),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(AppSpacing.lg),
+              decoration: BoxDecoration(
+                color: AppColors.warningBackground,
+                borderRadius: BorderRadius.circular(AppRadius.card),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('추천 행동', style: Theme.of(context).textTheme.titleSmall),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(alert.suggestion),
+                ],
+              ),
             ),
             const SizedBox(height: AppSpacing.lg),
             const Text('이 정보는 의료적 판단이나 통증 진단을 제공하지 않아요.'),
+            const SizedBox(height: AppSpacing.xl),
+            AppButton(
+              key: ValueKey('movement-alert-confirm-${alert.id}'),
+              label: _controller.isReviewed(alert.id) ? '확인했어요' : '확인',
+              onPressed: () {
+                _controller.acknowledge(alert.id);
+                Navigator.pop(context);
+              },
+            ),
           ],
         ),
       ),
@@ -137,12 +201,12 @@ class _MonitoringSummary extends StatelessWidget {
   });
   final bool monitoring;
   final ValueChanged<bool> onChanged;
-  final VoidCallback onMoveToHome;
+  final VoidCallback? onMoveToHome;
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(AppSpacing.pageMobile),
     decoration: BoxDecoration(
-      color: AppColors.successBackground,
+      color: monitoring ? AppColors.successBackground : AppColors.surfaceSubtle,
       borderRadius: BorderRadius.circular(AppRadius.hero),
       border: Border.all(color: AppColors.success.withValues(alpha: .2)),
     ),
@@ -150,16 +214,23 @@ class _MonitoringSummary extends StatelessWidget {
       children: [
         Row(
           children: [
-            const CircleAvatar(
-              backgroundColor: AppColors.success,
+            CircleAvatar(
+              backgroundColor: monitoring
+                  ? AppColors.success
+                  : AppColors.textTertiary,
               foregroundColor: Colors.white,
               child: Icon(Icons.camera_indoor_outlined),
             ),
             const SizedBox(width: AppSpacing.md),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [Text('홈 카메라 움직임 감지'), Text('가전 내장 카메라 · mock 인식 중')],
+                children: [
+                  const Text('홈 카메라 움직임 감지'),
+                  Text(
+                    monitoring ? '가전 내장 카메라 · mock 인식 중' : 'mock 감지가 꺼져 있어요',
+                  ),
+                ],
               ),
             ),
             Switch(
@@ -170,27 +241,32 @@ class _MonitoringSummary extends StatelessWidget {
           ],
         ),
         const SizedBox(height: AppSpacing.lg),
-        const Row(
+        Row(
           children: [
-            Expanded(child: Text('오늘 서 있거나 움직인 시간')),
-            Text('2시간 40분 / 권장 2시간'),
+            const Expanded(child: Text('오늘 서 있거나 움직인 시간')),
+            Text(monitoring ? '2시간 40분 / 권장 2시간' : '감지 중지됨'),
           ],
         ),
         const SizedBox(height: AppSpacing.sm),
-        const LinearProgressIndicator(
-          value: .8,
+        LinearProgressIndicator(
+          value: monitoring ? .8 : 0,
           color: AppColors.success,
           backgroundColor: AppColors.warningBackground,
         ),
         const SizedBox(height: AppSpacing.lg),
         Row(
           children: [
-            const Expanded(child: Text('권장보다 40분 더 움직이셨어요')),
-            OutlinedButton(
-              key: const ValueKey('movement-to-household'),
-              onPressed: onMoveToHome,
-              child: const Text('가전으로 옮기기'),
+            Expanded(
+              child: Text(
+                monitoring ? '권장보다 40분 더 움직이셨어요' : '이전에 확인한 기록은 유지돼요',
+              ),
             ),
+            if (onMoveToHome != null)
+              OutlinedButton(
+                key: const ValueKey('movement-to-household'),
+                onPressed: onMoveToHome,
+                child: const Text('가전으로 옮기기'),
+              ),
           ],
         ),
       ],

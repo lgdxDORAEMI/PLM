@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plm_frontend/features/condition/data/today_care_store.dart';
+import 'package:plm_frontend/features/condition/data/planned_activity_store.dart';
 import 'package:plm_frontend/features/condition/models/condition_draft.dart';
 import 'package:plm_frontend/features/meal/data/meal_selection_store.dart';
 import 'package:plm_frontend/routing/app_router.dart';
@@ -10,18 +11,19 @@ import 'package:plm_frontend/routing/route_names.dart';
 void main() {
   setUp(() {
     TodayCareStore.instance.clear();
+    PlannedActivityStore.instance.clear();
     MealSelectionStore.instance.clear();
   });
 
   const expectedRequirementIds = <String, String>{
     RouteNames.profileSetup: '프로필 설정',
     RouteNames.wifeProfile: '프로필 수정',
-    RouteNames.partnerInvite: 'W-INVITE-001',
-    RouteNames.wifeInvite: 'W-INVITE-001',
-    '${RouteNames.invitationEntry}?token=test-token': 'H-INVITE-001',
+    RouteNames.partnerInvite: '남편도 ThinQ에 연결해보세요',
+    RouteNames.wifeInvite: '남편도 ThinQ에 연결해보세요',
+    '${RouteNames.invitationEntry}?token=test-token': '희선님이 함께 보자고 초대했어요',
     RouteNames.condition: '오늘의 컨디션',
     '${RouteNames.condition}?mode=edit': '오늘의 컨디션',
-    RouteNames.activity: 'W-ACT-001',
+    RouteNames.activity: '오늘 할 집안일이 있나요?',
     RouteNames.wifeHome: '오늘 임신 28주차예요',
     RouteNames.mealGuide: '어떤 끼니를 볼까요?',
     RouteNames.householdGuide: '오늘은 허리 통증이 있는 날',
@@ -29,15 +31,15 @@ void main() {
     RouteNames.partnerMovement: '누적 알림 내역이에요',
     RouteNames.healthGuide: '오늘의 집중 부위',
     RouteNames.sleepGuide: '오늘은 충분한 휴식이 필요해요',
-    RouteNames.mealChat: '식사 다시 고르기',
-    '/wife/calendar/report/2026-09-16': 'W-REPORT-001',
-    RouteNames.wifeCalendar: 'W-CAL-001',
-    RouteNames.wifeSettings: 'W-SETTING-001',
-    '/partner/report/2026-09-16': 'H-REPORT-001',
-    RouteNames.partnerCalendar: 'H-CAL-001',
-    RouteNames.partnerNotifications: 'H-NOTI-001',
-    '/partner/requests/request-123': 'H-REQUEST-001',
-    RouteNames.partnerProfile: 'H-PROFILE-001',
+    RouteNames.mealChat: '아침 메뉴를 다시 고르는 중',
+    '/wife/calendar/report/2026-09-13': '오늘 루틴을 모두 마쳤어요',
+    RouteNames.wifeCalendar: '2026년 9월',
+    RouteNames.wifeSettings: '상세 요구사항이 확정될 때까지',
+    '/partner/report/2026-09-13': '희선님은 임신 28주차예요',
+    RouteNames.partnerCalendar: '2026년 9월',
+    RouteNames.partnerNotifications: '읽지 않은 알림 2개',
+    '/partner/requests/request-123': '희선님이 도움을 요청했어요',
+    RouteNames.partnerProfile: '연결된 계정과 프로필 정보를 확인',
   };
 
   testWidgets('ROUTE_MAP의 모든 내부 경로가 대응 화면을 만든다', (tester) async {
@@ -95,9 +97,14 @@ void main() {
     await tester.ensureVisible(find.text('완료하고 시작하기'));
     await tester.tap(find.text('완료하고 시작하기'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('W-INVITE-001'), findsOneWidget);
+    expect(find.text('남편도 ThinQ에 연결해보세요'), findsOneWidget);
 
-    await tester.tap(find.text('링크 보내기 또는 나중에'));
+    await tester.scrollUntilVisible(
+      find.text('나중에'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('나중에'));
     await tester.pumpAndSettle();
     expect(find.textContaining('오늘 임신 28주차예요'), findsOneWidget);
   });
@@ -191,9 +198,14 @@ void main() {
     await tester.ensureVisible(submit);
     await tester.tap(submit);
     await tester.pumpAndSettle();
-    expect(find.textContaining('W-ACT-001'), findsOneWidget);
+    expect(find.text('오늘 할 집안일이 있나요?'), findsOneWidget);
 
-    await tester.tap(find.text('루틴 생성 후 홈'));
+    await tester.scrollUntilVisible(
+      find.text('오늘 루틴 만들기'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('오늘 루틴 만들기'));
     await tester.pumpAndSettle();
     expect(TodayCareStore.instance.today?.nausea, 2);
     await tester.drag(find.byType(ListView), const Offset(0, -500));
@@ -279,6 +291,9 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     await tester.tap(alternativeEntry);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('meal-chat-prompt-속이 좀 메스꺼워요')));
     await tester.pumpAndSettle();
 
     final apply = find.byKey(const ValueKey('apply-meal-alternative'));

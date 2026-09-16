@@ -8,6 +8,10 @@ from app.utils import dates
 
 # 범위는 migration의 CHECK 제약과 동일하게 유지한다.
 POST_DUE_GRACE_DAYS = 14
+
+# 출산예정일 입력 상한. 임신 기간(280일)보다 넉넉하게 1년까지 허용한다.
+# dates.FULL_TERM_DAYS와 분리해 둔다 — 임신 주수 계산은 그대로 280일 기준이다.
+MAX_DUE_AHEAD_DAYS = 365
 MIN_HEIGHT_CM, MAX_HEIGHT_CM = 100, 250
 MIN_WEIGHT_KG, MAX_WEIGHT_KG = 30, 200
 
@@ -23,7 +27,14 @@ WeightKg = Annotated[
 
 
 class DueDateInput(BaseModel):
-    """프로필 설정 1/6. 출산예정일 또는 마지막 생리 시작일 중 하나 이상."""
+    """프로필 설정 1/6. 출산예정일이 기본 입력이고 마지막 생리 시작일은 선택이다.
+
+    출산예정일은 보통 병원에서 진단받아 오므로 그 값을 그대로 쓴다.
+    마지막 생리 시작일만 보내면 `+280일`로 출산예정일을 계산해 준다.
+    둘 다 보내면 계산값으로 덮어쓰지 않고 병원 진단값(`due_date`)을 그대로 저장한다 —
+    실제 출산예정일은 초음파 측정으로 조정되므로 `마지막 생리 시작일 + 280일`과
+    며칠 어긋나는 것이 정상이다. 예전에는 두 값이 다르면 거부했지만 그 규칙은 없앴다.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
@@ -32,23 +43,23 @@ class DueDateInput(BaseModel):
 
     @model_validator(mode="after")
     def resolve_due_date(self) -> Self:
-        if self.last_period_start is not None:
-            computed = self.last_period_start + timedelta(days=dates.FULL_TERM_DAYS)
-            if self.due_date is not None and self.due_date != computed:
-                raise ValueError(
-                    "출산예정일이 마지막 생리 시작일 + 280일과 다릅니다."
-                )
-            self.due_date = computed
+        today = dates.today_kst()
+
+        if self.last_period_start is not None and self.last_period_start > today:
+            raise ValueError("마지막 생리 시작일은 미래일 수 없습니다.")
+
+        # 출산예정일을 안 보낸 경우에만 마지막 생리 시작일로 계산한다.
+        if self.due_date is None and self.last_period_start is not None:
+            self.due_date = self.last_period_start + timedelta(days=dates.FULL_TERM_DAYS)
         if self.due_date is None:
             raise ValueError("출산예정일 또는 마지막 생리 시작일 중 하나는 필요합니다.")
 
-        today = dates.today_kst()
         earliest = today - timedelta(days=POST_DUE_GRACE_DAYS)
-        latest = today + timedelta(days=dates.FULL_TERM_DAYS)
+        latest = today + timedelta(days=MAX_DUE_AHEAD_DAYS)
         if not earliest <= self.due_date <= latest:
             raise ValueError(
                 f"출산예정일은 오늘 기준 {POST_DUE_GRACE_DAYS}일 전부터 "
-                f"{dates.FULL_TERM_DAYS}일 후까지만 가능합니다."
+                f"{MAX_DUE_AHEAD_DAYS}일 후까지만 가능합니다."
             )
         return self
 

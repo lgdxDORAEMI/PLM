@@ -120,7 +120,7 @@ LLM_API_BASE_URL=
 | 변수 | 현재 용도 |
 | --- | --- |
 | `SUPABASE_URL` | Supabase Auth 및 Database 주소 |
-| `SUPABASE_ANON_KEY` | 사용자 access token 검증용 client 구성 |
+| `SUPABASE_ANON_KEY` | Backend에서는 현재 미사용. `Settings`에 선언만 되어 있고 참조하는 코드가 없습니다(Frontend 전용 공개 키). 사용자 access token 검증은 service role client의 `auth.get_user()`로 수행합니다 |
 | `SUPABASE_SERVICE_ROLE_KEY` | 프로필 테이블 서버 접근 |
 | `LLM_API_KEY` | 향후 LLM 공급자 인증용, 현재 미사용 |
 | `LLM_API_BASE_URL` | 향후 LLM API 주소, 현재 미사용 |
@@ -145,6 +145,36 @@ LLM_API_BASE_URL=
 ```
 
 테스트는 기본 API, 프로필 검증·인증·저장 경계, 모션 WebSocket 프로토콜, origin 차단과 일일 리포트 집계를 다룹니다. 모션 API 테스트는 가짜 Pose extractor를 주입하므로 실제 카메라가 필요하지 않습니다.
+
+## 개발 이력
+
+날짜별 작업 내역입니다. 기준은 이 저장소의 커밋 로그이며, Backend 외 작업은 맥락 파악에 필요한 범위로만 적었습니다.
+
+### 2026-09-14 (월) — 프로젝트 뼈대와 기획 문서
+
+- 초기 Flutter Web + FastAPI 프로젝트 구조, 커밋 메시지 지침, `.vscode` 설정과 `guide.md`
+- 모션 분석 모듈 이식: `app/services/movement/`의 `features.py`, `pose_extractor.py`, `rule_engine.py`, `rules.yaml`과 `models/pose_landmarker_full.task`
+- PC 웹캠 검증 도구 `tools/motion_demo/` 추가
+- `app/services/supabase_service.py`와 `tests/test_app.py` 추가. 이 시점의 Backend에는 기능 라우터가 없습니다
+- 구현계획서에 누적 전방굴곡 위험 규칙 신규 문서화
+- 기능요구사항명세서 원본 추가 후 아내(W)용 우선순위를 1~10으로 세분화하고, `docs/requirements`를 기획 문서 6종으로 교체
+
+### 2026-09-15 (화) — Backend 기능 구현
+
+- 남편(H)용 기능 우선순위 조정
+- 모션 인식 API 구현: `app/api/v1/movement.py`, `app/schemas/movement.py`, `services/movement/`의 `session_manager.py`, `events.py`, `report.py`, `report_templates.yaml`, `calibration.py` 개편. 테스트는 `tests/test_movement_api.py`, `tests/test_report.py`
+- 모션 인식 실시간 화면의 카메라 lifecycle 정리
+- 임산부 프로필 1·2단계 구현: `app/api/v1/profile.py`, `app/schemas/profile.py`, `app/services/profile_service.py`, `app/utils/dates.py`. `app/core/security.py`에 Supabase access token 검증 추가
+- 프로필 migration `supabase/migrations/20260915000000_create_pregnancy_profiles.sql` 작성 및 RLS 활성화. `tests/test_profile.py` 추가
+- `docs/api.md`에 프로필 API 계약과 모션 WebSocket 프로토콜 반영
+- Frontend/문서: `DESIGN.md`, `docs/screens/**` 화면 이미지, `AGENTS.md`, `docs/development/frontend_workflow.md` 추가. 루트 `README.md`와 이 문서 작성
+
+### 2026-09-16 (수) — 현재
+
+- Frontend에 디자인 시스템(`design_system/`), 라우팅(`routing/`), 화면 스켈레톤이 추가되었습니다. Backend 코드 변경은 없습니다
+- W-PROFILE-001 출산예정일 규칙 완화: 입력 상한을 오늘 + 280일에서 **365일**로 늘리고, 마지막 생리 시작일을 선택 입력으로 명확히 했습니다. 출산예정일과 마지막 생리 시작일이 `+280일` 관계로 일치해야 하던 제약을 스키마와 DB에서 제거했습니다(`supabase/migrations/20260916000000_relax_due_date_constraint.sql`). 마지막 생리 시작일만 보내면 출산예정일은 여전히 자동 계산됩니다
+- Backend 테스트 23개 전부 통과합니다
+- 다음 작업 대상은 `docs/04_3_개발순서.md`의 2번 W-COND-001 당일 컨디션 입력입니다. 컨디션 4개 항목의 입력 척도가 기획 문서에 확정되지 않아 스키마 설계 전 확인이 필요합니다
 
 ## 관련 문서
 

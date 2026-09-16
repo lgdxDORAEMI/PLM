@@ -542,7 +542,6 @@ root
    ├─ report/:date                  # H-REPORT-001 또는 선택일 Report
    ├─ notifications                 # H-NOTI-001
    ├─ requests/:requestId           # H-REQUEST-001
-   ├─ profile                       # H-PROFILE-001
    └─ movement                      # W-MOTION-001 공용, Phase 2/노출 정책 미정
 ```
 

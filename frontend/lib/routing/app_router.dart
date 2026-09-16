@@ -13,7 +13,6 @@ import '../features/partner/screens/invitation_entry_screen.dart';
 import '../features/partner/screens/partner_calendar_screen.dart';
 import '../features/partner/screens/partner_morning_report_screen.dart';
 import '../features/partner/screens/partner_notifications_screen.dart';
-import '../features/partner/screens/partner_profile_screen.dart';
 import '../features/partner/screens/partner_request_screen.dart';
 import '../features/profile/screens/partner_invite_screen.dart';
 import '../features/profile/screens/profile_setup_screen.dart';
@@ -48,8 +47,8 @@ abstract final class AppRouter {
     RouteNames.partnerMorningReportPattern,
     RouteNames.partnerCalendar,
     RouteNames.partnerNotifications,
-    RouteNames.partnerRequestPattern,
     RouteNames.partnerProfile,
+    RouteNames.partnerRequestPattern,
   ];
 
   /// 실제 Session Adapter가 준비되면 이 결정에 인증·역할 상태를 주입한다.
@@ -130,10 +129,16 @@ abstract final class AppRouter {
     if (path == RouteNames.partnerNotifications) {
       return const PartnerNotificationsScreen();
     }
+    if (path == RouteNames.partnerProfile) {
+      return const ProductSkeletonScreen(
+        requirementIds: [],
+        title: '파트너 프로필',
+        description: '연결된 계정과 프로필 정보를 확인하는 화면입니다.',
+      );
+    }
     if (path.startsWith('/partner/requests/')) {
       return PartnerRequestScreen(requestId: _lastSegment(uri));
     }
-    if (path == RouteNames.partnerProfile) return const PartnerProfileScreen();
     return ProductSkeletonScreen(
       requirementIds: const [],
       title: '화면을 찾을 수 없습니다',
