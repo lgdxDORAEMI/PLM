@@ -50,6 +50,8 @@ Postgres enum은 값 추가마다 `ALTER TYPE`이 필요해 잦은 변경에 불
 
 권장 인덱스: `(user_id, started_at)` — 일일 리포트가 "특정 user_id, 특정 날짜 범위" 조회 위주이기 때문입니다.
 
+**저장 정책 — "위험한 순간만 저장" (2026-09-16 결정)**: 이 테이블에는 부담 라벨이 실제로 `Normal`을 넘어선 구간만 들어옵니다. `burden_label=Normal`인 행은 존재하지 않습니다 — `SessionManager`가 이벤트를 여닫는 시점에 이미 걸러내고 있고(`_track_open_event`), 유일한 예외였던 누적 전방굴곡 기록(`trigger_reason=cumulative_research_threshold`)도 연구 기반 위험 임계값을 실제로 넘긴 세션만 기록하도록 통일했습니다(`_record_cumulative_bend`, `backend/app/schemas/movement.py` 참고). 즉 이 테이블에 행이 있다는 것 자체가 "위험 순간이 감지됐다"는 뜻이며, 별도의 `is_dangerous` 플래그 컬럼은 두지 않습니다.
+
 ### RLS 정책 방향
 
 두 테이블 모두 RLS를 켜고, `auth.uid() = user_id`인 행만 select/insert 가능하도록 제한합니다.

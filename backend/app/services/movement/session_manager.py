@@ -319,24 +319,27 @@ class SessionManager:
     def _record_cumulative_bend(self, session: _Session, ended_at: datetime) -> None:
         """세션 종료 시점까지 관찰된 누적 전방굴곡 시간을 리포트용으로 기록한다.
 
+        2026-09-16 결정: DB에는 "위험한 순간"만 남기기로 해서, 연구 기반 위험
+        임계값(research_threshold_crossed)을 실제로 넘은 세션만 기록한다.
+        임계값 미달(Normal 수준) 세션은 저장하지 않는다 — 예전에는 이 경우도
+        burden_label=Normal로 기록해 리포트의 "오늘 누적 시간" 문구가 임계값과
+        무관하게 항상 뜨게 했으나, "위험 순간만 저장"이라는 새 원칙과 충돌해
+        제거했다.
+
         일부러 _update_tally()를 안 부른다 — "실시간 탭"/오버레이에는 이 개념이
         보이면 안 된다는 2026-09-15 결정 때문이다(report.py만 trigger_reason으로
         이 이벤트를 따로 골라 그날 총합을 낸다). duration_sec은 이 이벤트 "자체"의
         길이가 아니라 세션 동안 관찰된 누적 굴곡 시간을 담는 용도로 쓴다 — 다른
         이벤트들과 의미가 다르니 헷갈리지 않도록 주의.
         """
-        if session.latest_cumulative_bend_sec <= 0:
+        if not session.latest_research_threshold_crossed:
             return
         event = PostureEvent(
             event_id=uuid.uuid4(),
             user_id=session.user_id,
             session_id=session.session_id,
             posture_type=PostureType.BENDING,
-            burden_label=(
-                BurdenLabel.PROLONGED_LOAD
-                if session.latest_research_threshold_crossed
-                else BurdenLabel.NORMAL
-            ),
+            burden_label=BurdenLabel.PROLONGED_LOAD,
             started_at=session.started_at,
             ended_at=ended_at,
             duration_sec=session.latest_cumulative_bend_sec,

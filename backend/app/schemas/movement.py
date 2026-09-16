@@ -212,4 +212,11 @@ class DailyReportSummary(BaseModel):
     근거(§2.5). 2026-09-15부터 실시간 라벨에는 영향을 안 주고 이 필드로만 노출한다
     — SessionManager.end_session()이 세션별로 남긴 이벤트를 report.py가 그날치
     합산한 값이다. aggregates(자세유형×라벨 집계)에는 포함하지 않는다."""
+    bending_burden_event_count: int = 0
+    """2026-09-16 팀 결정: Bending의 Repeated Load/Prolonged Load, 그리고
+    High-load Action(Sit-to-Stand) 포착 횟수를 합쳐 리포트에서 하나의 지표로
+    강조하기로 함. High-load Action은 무릎 동작이라 실제로는 posture_type이
+    거의 항상 Standing으로 기록되므로(resolve_body_part() 참고), 이 라벨만
+    posture_type 조건 없이 포함한다 — posture_type=Bending으로 강제 태깅하면
+    body_part 분류 의미가 왜곡되기 때문에 집계 시점에서만 예외 처리한다."""
     narratives: list[str] = Field(default_factory=list)
