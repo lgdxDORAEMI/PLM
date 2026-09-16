@@ -1,0 +1,41 @@
+# 파이프라인 B ⑥ 2차 폴백: 전일 루틴도 없을 때 쓰는 기본 템플릿 (W-ROUTINE-003, NFR-016).
+# 모양은 prompt.ROUTINE_SCHEMA와 같다. 특정 재료·활동을 단정하지 않는 일반 문구만 둔다(룰 ⑥ 검증도 그대로 통과).
+meal:
+  - item_key: meal:breakfast
+    title: 가볍게 소화되는 아침
+    payload: {period: breakfast, reasonTitle: 기본 안내, reason: "AI 추천을 불러오지 못해 기본 식사 가이드를 표시합니다.", evidence: "", nutritionTags: [단백질, 섬유질], cautions: []}
+    source_ids: []
+  - item_key: meal:lunch
+    title: 채소와 단백질을 곁들인 점심
+    payload: {period: lunch, reasonTitle: 기본 안내, reason: "균형 잡힌 한 끼를 천천히 드세요.", evidence: "", nutritionTags: [철분, 단백질], cautions: []}
+    source_ids: []
+  - item_key: meal:dinner
+    title: 늦지 않게 가벼운 저녁
+    payload: {period: dinner, reasonTitle: 기본 안내, reason: "취침 3시간 전에는 식사를 마치는 것이 좋습니다.", evidence: "", nutritionTags: [칼슘], cautions: []}
+    source_ids: []
+household:
+  - item_key: household:light_only
+    title: 오늘은 가벼운 정리만 직접
+    payload: {owner: self, applianceAction: none, reason: "무거운 물건 들기와 오래 허리 숙이는 일은 피하세요."}
+    source_ids: []
+  - item_key: household:partner_share
+    title: 힘든 집안일은 가족과 나누기
+    payload: {owner: partner, applianceAction: none, reason: "기본 안내"}
+    source_ids: []
+health:
+  - item_key: health:rest
+    title: 5분 가벼운 목·어깨 이완
+    payload: {bodyArea: 전신, loads: [], guide: "의자에 앉아 천천히 목과 어깨를 돌리며 호흡합니다.", durationMin: 5, reason: "AI 추천을 불러오지 못해 기본 활동을 표시합니다."}
+    source_ids: []
+sleep:
+  item_key: sleep:main
+  title: 규칙적인 취침 시간
+  payload:
+    recommendedBedtime: "22:30"
+    environments:
+      - {type: temperature, value: "24°C", options: []}
+      - {type: light, value: "어둡게", options: []}
+      - {type: humidity, value: "50%", options: []}
+    tips: ["자기 전 스마트폰 사용을 줄여요.", "옆으로 누워 다리 사이에 쿠션을 두면 편합니다."]
+    reason: 기본 안내
+  source_ids: []

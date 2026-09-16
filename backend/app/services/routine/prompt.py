@@ -1,0 +1,129 @@
+"""파이프라인 B ④: 프롬프트 조립 + ⑤에서 강제할 출력 JSON 스키마.
+
+스키마 키는 frontend 모델·routine_items.payload(docs/DB_ERD_스키마.md §3.2)와 같다.
+OpenAI json_schema strict 규칙: 모든 객체에 additionalProperties=false, 모든 속성 required.
+"""
+
+from __future__ import annotations
+
+import json
+from typing import Any
+
+PROMPT_VERSION = "2026-09-16.1"
+
+
+def _obj(props: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "type": "object",
+        "properties": props,
+        "required": list(props),
+        "additionalProperties": False,
+    }
+
+
+def _arr(items: dict[str, Any]) -> dict[str, Any]:
+    return {"type": "array", "items": items}
+
+
+_STR = {"type": "string"}
+_INT = {"type": "integer"}
+_SOURCE_IDS = _arr(_INT)
+
+_MEAL_ITEM = _obj(
+    {
+        "item_key": _STR,
+        "title": _STR,
+        "payload": _obj(
+            {
+                "period": {"type": "string", "enum": ["breakfast", "lunch", "dinner", "snack"]},
+                "reasonTitle": _STR,
+                "reason": _STR,
+                "evidence": _STR,
+                "nutritionTags": _arr(_STR),
+                "cautions": _arr(_obj({"title": _STR, "description": _STR, "badge": _STR})),
+            }
+        ),
+        "source_ids": _SOURCE_IDS,
+    }
+)
+_HOUSEHOLD_ITEM = _obj(
+    {
+        "item_key": _STR,
+        "title": _STR,
+        "payload": _obj(
+            {
+                "owner": {"type": "string", "enum": ["self", "appliance", "partner"]},
+                "applianceAction": {"type": "string", "enum": ["now", "reserve", "night", "none"]},
+                "reason": _STR,
+            }
+        ),
+        "source_ids": _SOURCE_IDS,
+    }
+)
+_HEALTH_ITEM = _obj(
+    {
+        "item_key": _STR,
+        "title": _STR,
+        "payload": _obj(
+            {
+                "bodyArea": _STR,
+                "loads": _arr(_obj({"area": _STR, "label": _STR, "value": {"type": "number"}})),
+                "guide": _STR,
+                "durationMin": _INT,
+                "reason": _STR,
+            }
+        ),
+        "source_ids": _SOURCE_IDS,
+    }
+)
+_SLEEP = _obj(
+    {
+        "item_key": _STR,
+        "title": _STR,
+        "payload": _obj(
+            {
+                "recommendedBedtime": _STR,
+                "environments": _arr(_obj({"type": _STR, "value": _STR, "options": _arr(_STR)})),
+                "tips": _arr(_STR),
+                "reason": _STR,
+            }
+        ),
+        "source_ids": _SOURCE_IDS,
+    }
+)
+
+ROUTINE_SCHEMA: dict[str, Any] = _obj(
+    {
+        "meal": _arr(_MEAL_ITEM),
+        "household": _arr(_HOUSEHOLD_ITEM),
+        "health": _arr(_HEALTH_ITEM),
+        "sleep": _SLEEP,
+    }
+)
+
+SYSTEM_PROMPT = """당신은 임산부의 하루 생활 루틴을 설계하는 보조 도구다. 의료 진단이나 처방을 하지 않는다.
+규칙:
+- 출력은 주어진 JSON 스키마만. 한국어.
+- meal: 아침·점심·저녁 각 1개 이상. 금지(exclude) 재료는 절대 포함하지 않는다. 제한(limit)은 양을 줄이고 이유를 적는다.
+- household: 사용자가 고른 예정 활동을 각각 owner(self=직접, appliance=가전, partner=가족)로 분류한다. 금지 가사는 self로 두지 않는다.
+- health: 통증이 높은 부위 우선. 금지 활동은 넣지 않는다. 5~15분 내 활동.
+- sleep: 권장 취침 시각, 환경(조명·온도·습도·소리·공기청정기) 제안값, 팁.
+- 근거 자료(참고 문단)가 주어지면 그 내용에 기반해 작성하고, 사용한 문단의 id만 source_ids에 넣는다. 자료가 없으면 빈 배열.
+- 자료에 없는 수치·의학 주장은 만들지 않는다. 산후 관련 내용은 무시한다.
+- 응급·위험 신호 판단은 하지 않고 "이상 증상은 의료진 상담" 한 줄만 허용한다."""
+
+
+def build_user_prompt(
+    facts: dict[str, Any],
+    constraints: dict[str, list[dict[str, str]]] | None = None,
+    chunks: list[dict[str, Any]] | None = None,
+) -> str:
+    """① facts + ② constraints + ③ chunks → 사용자 메시지 1개."""
+    parts = ["## 사용자 정보(오늘)", json.dumps(facts, ensure_ascii=False)]
+    if constraints and any(constraints.values()):
+        parts += ["## 확정 규칙(반드시 준수)", json.dumps(constraints, ensure_ascii=False)]
+    if chunks:
+        lines = [f"[id={c['id']}] ({c.get('category', '')}) {c['content']}" for c in chunks]
+        parts += ["## 참고 문단", "\n\n".join(lines)]
+    parts += ["## 요청", "위 정보로 오늘의 meal·household·health·sleep 루틴을 JSON 스키마에 맞게 작성."]
+    return "\n".join(parts)

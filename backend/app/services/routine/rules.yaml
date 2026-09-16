@@ -1,0 +1,88 @@
+# AI 루틴 룰 엔진 (파이프라인 B ②). LLM을 거치지 않는 확정 규칙. 결과는 항상 같다.
+# 입력 dict 키: week, is_first_pregnancy, is_multiple_pregnancy, allergies, medical_conditions,
+#              nausea, waist_pain, pelvis_pain, leg_pain, wrist_pain, fatigue, mood, sleep_quality (컨디션 1~5)
+# when 연산자: <field>_any: [값...] (배열 교집합) / <field>_gte, <field>_lte (숫자) / <field>: 값 (같음)
+#   여러 조건은 모두 만족해야 한다(AND).
+# effect: exclude(금지) / limit(제한) / require(반드시 포함). target 형식 "종류:값". reason은 LLM에 그대로 넘긴다.
+# 규칙이 20개를 넘으면 테이블로 옮긴다(docs/ai_routine/AI_루틴_파이프라인.md §4).
+rules:
+  - category: meal
+    when: {allergies_any: [갑각류]}
+    effect: exclude
+    target: "ingredient:갑각류"
+    reason: 프로필 알레르기(갑각류)
+  - category: meal
+    when: {allergies_any: [견과류]}
+    effect: exclude
+    target: "ingredient:견과류"
+    reason: 프로필 알레르기(견과류)
+  - category: meal
+    when: {allergies_any: [우유]}
+    effect: exclude
+    target: "ingredient:우유"
+    reason: 프로필 알레르기(우유)
+  - category: meal
+    when: {allergies_any: [계란]}
+    effect: exclude
+    target: "ingredient:계란"
+    reason: 프로필 알레르기(계란)
+  - category: meal
+    when: {allergies_any: [밀]}
+    effect: exclude
+    target: "ingredient:밀"
+    reason: 프로필 알레르기(밀)
+  - category: meal
+    when: {medical_conditions_any: [임신성 당뇨 경계, 임신성 당뇨]}
+    effect: limit
+    target: "nutrient:단순당"
+    reason: 혈당 관리 진단
+  - category: meal
+    when: {medical_conditions_any: [빈혈]}
+    effect: require
+    target: "nutrient:철분"
+    reason: 빈혈 진단
+  - category: meal
+    when: {medical_conditions_any: [고혈압, 임신성 고혈압]}
+    effect: limit
+    target: "nutrient:나트륨"
+    reason: 혈압 관리 진단
+  - category: meal
+    when: {nausea_gte: 4}
+    effect: exclude
+    target: "food:기름진 음식"
+    reason: 입덧 심함
+  - category: health
+    when: {waist_pain_gte: 4}
+    effect: exclude
+    target: "activity:walk"
+    reason: 허리 통증 심함
+  - category: health
+    when: {pelvis_pain_gte: 4}
+    effect: exclude
+    target: "activity:squat"
+    reason: 골반 통증 심함
+  - category: health
+    when: {fatigue_gte: 4}
+    effect: limit
+    target: "activity:duration_over_10min"
+    reason: 피로 심함
+  - category: household
+    when: {week_gte: 28}
+    effect: exclude
+    target: "chore:heavy_lifting"
+    reason: 임신 후기 무거운 물건 들기 금지
+  - category: household
+    when: {week_gte: 20, is_multiple_pregnancy: true}
+    effect: exclude
+    target: "chore:heavy_lifting"
+    reason: 쌍태 임신 중기 이후
+  - category: household
+    when: {waist_pain_gte: 4}
+    effect: exclude
+    target: "chore:floor_cleaning"
+    reason: 허리 통증 심함, 허리 숙이는 가사 회피
+  - category: sleep
+    when: {week_gte: 20}
+    effect: require
+    target: "posture:left_side"
+    reason: 임신 20주 이후 좌측위 권장

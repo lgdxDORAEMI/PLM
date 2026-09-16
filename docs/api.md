@@ -89,6 +89,34 @@ Swagger UI: `/docs`, OpenAPI schema: `/openapi.json`.
 | 422 | 입력 검증 실패. 필드 오류는 `detail[].loc`의 마지막 값이 필드명, 본문 전체 규칙 오류(두 값 모두 누락, 미래 생리 시작일, 출산예정일 범위 초과)는 `loc`이 `["body"]` |
 | 503 | Supabase 설정 누락 또는 연결 실패 |
 
+## AI 하루 루틴 (W-ROUTINE-001/003, W-HOME-001)
+
+모든 요청에 `Authorization: Bearer <Supabase access token>`이 필요합니다. 구현: `backend/app/api/v1/routine.py`,
+파이프라인 설계: `docs/ai_routine/AI_루틴_파이프라인.md`.
+
+| Method | Path | 화면 | 성공 응답 | 설명 |
+| --- | --- | --- | --- | --- |
+| GET | /api/v1/routine/today | 홈 재진입 | 200 루틴 | 오늘(KST) 저장된 4종 가이드. 없으면 404 → 앱은 컨디션 CTA 표시 |
+| POST | /api/v1/routine/today | 예정 활동 선택 완료 직후 | 201 루틴 | 프로필·오늘 컨디션으로 AI 루틴 생성·저장. AI 실패·10초 초과 시 전일 루틴 → 기본 템플릿 순으로 폴백해 **항상 4종을 돌려준다** |
+
+응답 본문 (두 API 공통)
+
+| 필드 | 설명 |
+| --- | --- |
+| id, date, generated_at | `daily_routines` 행 |
+| source | `ai` / `fallback_prev`(전일 루틴 복사) / `fallback_template`(기본 템플릿). 폴백률(NFR-016) 측정용 |
+| model | 생성에 쓴 LLM 모델명. 폴백이면 `null` |
+| response | `{meal: [...], household: [...], health: [...], sleep: {...}}`. 각 항목 `{item_key, title, payload, source_ids}`. `payload` 모양은 `docs/DB_ERD_스키마.md` §3.2 카테고리별 정의와 같다. `source_ids`는 근거 문단 `pregnancy_knowledge.id` |
+
+| 상태 코드 | 의미 |
+| --- | --- |
+| 401 | 토큰 없음 또는 유효하지 않음 |
+| 404 | 오늘 생성된 루틴 없음 (GET) |
+| 409 | 프로필 1단계(출산예정일) 또는 오늘 컨디션이 아직 없음 (POST). `detail`에 어느 쪽인지 문구 |
+| 503 | Supabase 설정 누락 또는 연결 실패 |
+
+같은 날 다시 POST하면 `daily_routines`는 덮어쓰고 `routine_items`는 지우고 다시 넣습니다(완료 체크 유지 정책은 W-RECORD-001에서 정함).
+
 로컬 Flutter Web의 임의 개발 포트를 허용합니다.
 허용 origin은 `http://localhost[:port]`, `http://127.0.0.1[:port]`입니다.
 Authorization, Content-Type 헤더와 GET/POST/PUT/PATCH/DELETE/OPTIONS 메서드를 허용합니다.   
