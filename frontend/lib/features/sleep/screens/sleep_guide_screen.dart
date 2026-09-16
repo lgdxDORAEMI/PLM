@@ -54,7 +54,11 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: TopAppBar(title: '수면 가이드', onBack: _handleBack, wifeProfileAction: true),
+      appBar: TopAppBar(
+        title: '수면 가이드',
+        onBack: _handleBack,
+        wifeProfileAction: true,
+      ),
       body: SafeArea(
         top: false,
         child: ResponsivePageContent(child: _buildBody()),

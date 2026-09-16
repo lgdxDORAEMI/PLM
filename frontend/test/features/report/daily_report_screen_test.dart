@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plm_frontend/features/report/screens/daily_report_screen.dart';
+import 'package:plm_frontend/features/report/services/mock_record_service.dart';
 
 void main() {
+  test('MVP Mock 기록은 미연동 모션·가전 실행 횟수를 생성하지 않는다', () {
+    expect(
+      MockRecordService.records.every(
+        (record) => record.burdenCount == 0 && record.applianceCount == 0,
+      ),
+      isTrue,
+    );
+  });
   testWidgets('리포트를 공유하면 완료 안내를 표시한다', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(home: DailyReportScreen(date: '2026-09-13')),

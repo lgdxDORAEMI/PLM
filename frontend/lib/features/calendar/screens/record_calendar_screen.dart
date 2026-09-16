@@ -16,6 +16,7 @@ import '../../report/models/daily_record.dart';
 import '../../report/services/mock_record_service.dart';
 import '../../report/services/record_service.dart';
 import '../controllers/record_calendar_controller.dart';
+import '../data/calendar_selection_store.dart';
 import '../widgets/condition_calendar.dart';
 import '../widgets/record_day_summary.dart';
 
@@ -37,6 +38,8 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen> {
     super.initState();
     _controller = RecordCalendarController(
       service: widget.service ?? const MockRecordService(),
+      initialSelectedDate: CalendarSelectionStore.instance.selectedDate,
+      onSelected: CalendarSelectionStore.instance.remember,
     )..addListener(_refresh);
     unawaited(_controller.load());
   }
@@ -115,6 +118,7 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen> {
   };
 
   void _openReport(DailyRecord record) {
+    CalendarSelectionStore.instance.remember(record.date);
     final date = recordDateKey(record.date);
     final route = widget.role == AppUserRole.wife
         ? RouteNames.dailyReport(date)

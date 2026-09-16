@@ -1,8 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plm_frontend/features/profile/controllers/profile_setup_controller.dart';
+import 'package:plm_frontend/features/profile/data/profile_store.dart';
+import 'package:plm_frontend/features/profile/models/profile_draft.dart';
+import 'package:plm_frontend/features/entry/services/mock_entry_service.dart';
 import 'package:plm_frontend/routing/route_context.dart';
 
 void main() {
+  setUp(ProfileStore.instance.reset);
+
   test('필수 Profile 입력을 검증한 뒤 Summary까지 이동한다', () {
     final controller = ProfileSetupController(mode: ProfileMode.create);
     addTearDown(controller.dispose);
@@ -45,7 +50,8 @@ void main() {
     expect(controller.draft.allergies, {'없어요'});
   });
 
-  test('수정 Mode는 Mock Profile을 불러오고 이전 단계로 이동한다', () {
+  test('수정 Mode는 저장된 Profile을 불러오고 이전 단계로 이동한다', () {
+    ProfileStore.instance.save(ProfileDraft.mockEdit());
     final controller = ProfileSetupController(mode: ProfileMode.edit);
     addTearDown(controller.dispose);
 
@@ -54,6 +60,29 @@ void main() {
     expect(controller.step, 1);
     expect(controller.moveBack(), isTrue);
     expect(controller.step, 0);
+  });
+
+  test('LMP만 입력하면 예정일과 임신 주수를 산출하고 Mock 재진입에 반영한다', () async {
+    final lmp = DateTime(2026, 3, 13);
+    final controller = ProfileSetupController(mode: ProfileMode.create);
+    addTearDown(controller.dispose);
+    controller.updateDueDate(DateTime(2026, 12, 1));
+    controller.updateLastPeriodDate(lmp);
+    expect(controller.draft.dueDate, isNull);
+    expect(
+      controller.draft.effectiveDueDate,
+      lmp.add(const Duration(days: 280)),
+    );
+    expect(controller.draft.pregnancyWeekAt(DateTime(2026, 9, 17)), 26);
+    controller.updateDueDate(DateTime(2026, 12, 25));
+    expect(controller.draft.lastPeriodDate, isNull);
+    controller.updateLastPeriodDate(lmp);
+    controller.markSaved();
+    expect(ProfileStore.instance.hasProfile, isTrue);
+    expect(
+      await const MockEntryService().resolveLaunchState(),
+      AppLaunchState.wifeReady,
+    );
   });
 
   test('Summary 행 수정은 저장 후 다음 단계가 아닌 Summary로 복귀한다', () {

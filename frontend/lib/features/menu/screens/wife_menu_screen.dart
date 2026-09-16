@@ -8,6 +8,8 @@ import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_names.dart';
 import '../../invitation/data/partner_connection_store.dart';
+import '../../profile/data/profile_store.dart';
+import '../../profile/models/profile_draft.dart';
 
 class WifeMenuScreen extends StatefulWidget {
   const WifeMenuScreen({super.key, this.returnLocation});
@@ -20,16 +22,19 @@ class WifeMenuScreen extends StatefulWidget {
 
 class _WifeMenuScreenState extends State<WifeMenuScreen> {
   final _connection = PartnerConnectionStore.instance;
+  final _profileStore = ProfileStore.instance;
 
   @override
   void initState() {
     super.initState();
     _connection.addListener(_refresh);
+    _profileStore.addListener(_refresh);
   }
 
   @override
   void dispose() {
     _connection.removeListener(_refresh);
+    _profileStore.removeListener(_refresh);
     super.dispose();
   }
 
@@ -45,6 +50,7 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
           children: [
             _ProfileHeader(
+              profile: _profileStore.profile,
               onTap: () => Navigator.pushNamed(context, RouteNames.wifeProfile),
             ),
             const SizedBox(height: AppSpacing.xxl),
@@ -115,45 +121,54 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
 }
 
 class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({required this.onTap});
+  const _ProfileHeader({required this.onTap, required this.profile});
 
   final VoidCallback onTap;
+  final ProfileDraft? profile;
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    button: true,
-    label: '희선님 프로필 수정',
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            radius: 36,
-            backgroundColor: AppColors.primary100,
-            foregroundColor: AppColors.primary700,
-            child: Text('희'),
-          ),
-          const SizedBox(width: AppSpacing.lg),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('희선님', style: Theme.of(context).textTheme.headlineSmall),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  '임신 28주차 · 출산예정일 2026. 12. 20.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
+  Widget build(BuildContext context) {
+    final due = profile?.effectiveDueDate;
+    final week = profile?.pregnancyWeekAt(DateTime.now()) ?? 28;
+    final dueLabel = due == null
+        ? '2026. 12. 20.'
+        : '${due.year}. ${due.month.toString().padLeft(2, '0')}. '
+              '${due.day.toString().padLeft(2, '0')}.';
+    return Semantics(
+      button: true,
+      label: '희선님 프로필 수정',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Row(
+          children: [
+            const CircleAvatar(
+              radius: 36,
+              backgroundColor: AppColors.primary100,
+              foregroundColor: AppColors.primary700,
+              child: Text('희'),
             ),
-          ),
-        ],
+            const SizedBox(width: AppSpacing.lg),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('희선님', style: Theme.of(context).textTheme.headlineSmall),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    '임신 $week주차 · 출산예정일 $dueLabel',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _MenuRow extends StatelessWidget {

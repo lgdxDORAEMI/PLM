@@ -53,7 +53,11 @@ class _ConditionScreenState extends State<ConditionScreen> {
         if (!didPop) _handleBack();
       },
       child: Scaffold(
-        appBar: TopAppBar(title: '오늘의 컨디션', onBack: _handleBack, wifeProfileAction: true),
+        appBar: TopAppBar(
+          title: '오늘의 컨디션',
+          onBack: _handleBack,
+          wifeProfileAction: true,
+        ),
         body: SafeArea(
           top: false,
           child: ResponsivePageContent.form(

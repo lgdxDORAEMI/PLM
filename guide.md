@@ -41,11 +41,15 @@ flutter run -d chrome
 
 실행하면 `/`이 `/entry` Mock Bootstrap을 열고 기본 상태인 임산부 프로필 미완료로 분기합니다. ThinQ Host/실제 Session Adapter는 아직 없으므로 역할별 직접 URL 접근 차단이나 브라우저 재시작 후 가입 상태 복원을 보장하지 않습니다. Browser 주소의 `/wife/home`, `/wife/menu`, `/wife/report/2026-09-13`, `/partner/calendar`, `/partner/requests/demo-request`를 직접 열어 Mock UI를 확인할 수 있습니다.
 
+온보딩에서 출산예정일 또는 마지막 생리 시작일을 입력할 수 있습니다. LMP만 입력하면 예정일을 280일 뒤로 계산하고, 저장 후 앱을 새로고침하기 전까지 Home/Menu에 계산된 임신 주수를 표시합니다. 초산/경산·단태/다태는 선택해야 다음 버튼이 활성화됩니다. 프로필은 현재 메모리 기반 Mock 저장이므로 브라우저 새로고침 후에는 다시 온보딩이 나타납니다. 서버 영속 저장과 기존 계정 재진입은 아직 제공하지 않습니다.
+
 `/wife/home`의 AI Routine은 실제 AI API가 없어도 실행됩니다. 당일 컨디션 미입력 시 컨디션 CTA가 표시되고, 입력과 예정 활동 선택을 마치면 `MockRoutineService`가 식사·가사·건강·수면 가이드를 제공합니다. Service 오류 시 화면을 비우지 않고 기본 Routine과 재시도 버튼을 표시합니다.
 
 가이드 상세 화면은 `/wife/meal`, `/wife/household`, `/wife/health`, `/wife/sleep`에서 확인할 수 있습니다. Meal·Health·Sleep 데이터와 Household 공유는 local Mock 상태를 사용합니다. Household에서 공유하면 `PartnerRequestStore`에 실제 request ID가 생성되고 `/partner/requests/{requestId}` 계약으로 조회할 수 있습니다. Household의 가전 추천과 Sleep 환경 설정은 기기 실행 명령을 보내지 않으며, Sleep의 전체 수면 루틴 실행 버튼은 Phase 2 안내 상태로 비활성화됩니다.
 
 Calendar는 `/wife/calendar`과 `/partner/calendar`에서 날짜를 화면 선택 상태로 관리합니다. 선택한 기록의 상세 버튼은 같은 날짜를 `YYYY-MM-DD` 형식으로 `/wife/report/{date}` 또는 `/partner/report/{date}`에 전달합니다. 존재하지 않거나 `2026-02-31`처럼 유효하지 않은 날짜는 오늘 기록으로 대체하지 않고 빈 상태를 표시합니다. Desktop에서는 Calendar와 상세가 나란히 보이고 Mobile에서는 상세가 달력 아래에 이어집니다.
+
+Wife Report에서 `저장하고 마치기`를 누르면 Calendar로 이동하며 같은 날짜가 선택됩니다. 오늘 날짜의 Mock 리포트라면 Home의 컨디션 입력 상태도 초기화됩니다. 리포트 내용은 아직 당일 입력/완료 내역으로 생성되지 않는 샘플 기록이고 영구 저장되지 않습니다. 실제 모션·ThinQ 가전 실행 횟수는 연동 전이므로 0으로 표시합니다.
 
 Partner는 `/partner/calendar`를 시작 화면으로 사용하며 Header의 알림 버튼만 `/partner/notifications`로 연결됩니다. 알림 항목은 `/partner/report/{date}` 또는 `/partner/requests/{requestId}`로 이동합니다. Request 완료 결과의 `캘린더로 돌아가기`를 누르면 `/partner/calendar`에서 요청·확인·완료 집계가 갱신됩니다. Partner 화면에는 Bottom Navigation이나 Profile 버튼이 없으며, Phase 2 실시간 화면은 Calendar의 명시적 CTA로만 진입합니다.
 

@@ -19,6 +19,7 @@ import '../../routine/services/mock_routine_service.dart';
 import '../../routine/services/routine_service.dart';
 import '../../routine/widgets/routine_guide_card.dart';
 import '../../routine/widgets/routine_progress.dart';
+import '../../profile/data/profile_store.dart';
 import '../../report/models/daily_record.dart';
 import '../models/home_dashboard_data.dart';
 import '../widgets/pregnancy_week_hero.dart';
@@ -36,6 +37,7 @@ class WifeHomeScreen extends StatefulWidget {
 
 class _WifeHomeScreenState extends State<WifeHomeScreen> {
   final _todayCareStore = TodayCareStore.instance;
+  final _profileStore = ProfileStore.instance;
   static const _data = HomeDashboardData.mock;
   late final DailyRoutineController _routineController;
 
@@ -47,6 +49,7 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
       fallbackPlan: MockRoutineService.fallbackPlan,
     )..addListener(_refresh);
     _todayCareStore.addListener(_onTodayCareChanged);
+    _profileStore.addListener(_refresh);
     if (_todayCareStore.hasTodayCare) {
       unawaited(_routineController.loadToday());
     }
@@ -55,6 +58,7 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
   @override
   void dispose() {
     _todayCareStore.removeListener(_onTodayCareChanged);
+    _profileStore.removeListener(_refresh);
     _routineController
       ..removeListener(_refresh)
       ..dispose();
@@ -74,6 +78,9 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final hasTodayCare = _todayCareStore.hasTodayCare;
+    final pregnancyWeek =
+        _profileStore.profile?.pregnancyWeekAt(DateTime.now()) ??
+        _data.pregnancyWeek;
     return Scaffold(
       appBar: TopAppBar(
         title: '홈',
@@ -95,10 +102,7 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
           child: ListView(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
             children: [
-              PregnancyWeekHero(
-                userName: _data.userName,
-                week: _data.pregnancyWeek,
-              ),
+              PregnancyWeekHero(userName: _data.userName, week: pregnancyWeek),
               const SizedBox(height: AppSpacing.xxl),
               _TodayConditionSection(
                 hasTodayCare: hasTodayCare,
@@ -121,8 +125,13 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
               ),
               const SizedBox(height: AppSpacing.lg),
               PregnancyWeekTipCard(
-                week: _data.pregnancyWeek,
-                tips: _data.weekTips,
+                week: pregnancyWeek,
+                tips: pregnancyWeek == _data.pregnancyWeek
+                    ? _data.weekTips
+                    : const [
+                        '임신 주수에 따라 몸의 변화가 조금씩 달라질 수 있어요.',
+                        '불편함이 지속되면 진료 때 상담해 주세요.',
+                      ],
                 caution: _data.caution,
                 todayTip: _data.todayTip,
               ),

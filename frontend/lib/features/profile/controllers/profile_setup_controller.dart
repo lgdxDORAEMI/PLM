@@ -1,13 +1,14 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../routing/route_context.dart';
+import '../data/profile_store.dart';
 import '../models/profile_draft.dart';
 
 /// Profile 입력값과 Wizard 이동 규칙을 UI에서 분리해 관리한다.
 class ProfileSetupController extends ChangeNotifier {
   ProfileSetupController({required ProfileMode mode})
     : _draft = mode == ProfileMode.edit
-          ? ProfileDraft.mockEdit()
+          ? ProfileStore.instance.profile ?? ProfileDraft.mockEdit()
           : const ProfileDraft();
 
   static const int inputStepCount = 6;
@@ -26,10 +27,10 @@ class ProfileSetupController extends ChangeNotifier {
   bool get editingFromSummary => _editingFromSummary;
 
   void updateDueDate(DateTime value) =>
-      _update(_draft.copyWith(dueDate: value));
+      _update(_draft.copyWith(dueDate: value, clearLastPeriodDate: true));
 
   void updateLastPeriodDate(DateTime value) =>
-      _update(_draft.copyWith(lastPeriodDate: value));
+      _update(_draft.copyWith(lastPeriodDate: value, clearDueDate: true));
 
   void updateHeight(String value) => _update(_draft.copyWith(height: value));
 
@@ -107,6 +108,7 @@ class ProfileSetupController extends ChangeNotifier {
   }
 
   void markSaved() {
+    ProfileStore.instance.save(_draft);
     _dirty = false;
     notifyListeners();
   }

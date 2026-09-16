@@ -135,6 +135,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         validationMessage: _controller.validationMessage,
         onContinue: _continue,
         continueLabel: _continueLabel,
+        continueEnabled: _controller.draft.isFirstPregnancy != null,
         child: Column(
           children: [
             SelectionCard(
@@ -158,6 +159,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         validationMessage: _controller.validationMessage,
         onContinue: _continue,
         continueLabel: _continueLabel,
+        continueEnabled: _controller.draft.isMultiplePregnancy != null,
         child: Column(
           children: [
             SelectionCard(

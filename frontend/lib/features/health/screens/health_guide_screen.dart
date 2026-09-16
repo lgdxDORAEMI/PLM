@@ -37,7 +37,11 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: TopAppBar(title: '건강 가이드', onBack: _handleBack, wifeProfileAction: true),
+    appBar: TopAppBar(
+      title: '건강 가이드',
+      onBack: _handleBack,
+      wifeProfileAction: true,
+    ),
     body: SafeArea(
       top: false,
       child: ResponsivePageContent(

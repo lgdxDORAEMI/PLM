@@ -36,9 +36,25 @@ class ProfileDraft {
   final Set<String> medicalConditions;
   final String medicalNote;
 
+  /// 병원에서 확정한 예정일이 없을 때만 마지막 생리일+280일을 사용한다.
+  DateTime? get effectiveDueDate =>
+      dueDate ?? lastPeriodDate?.add(const Duration(days: 280));
+
+  /// 저장된 예정일을 기준으로 현재 임신 주수를 계산한다.
+  int? pregnancyWeekAt(DateTime date) {
+    final due = effectiveDueDate;
+    if (due == null) return null;
+    final dueDay = DateTime.utc(due.year, due.month, due.day);
+    final today = DateTime.utc(date.year, date.month, date.day);
+    final daysSinceLmp = 280 - dueDay.difference(today).inDays;
+    return (daysSinceLmp ~/ 7).clamp(0, 42);
+  }
+
   ProfileDraft copyWith({
     DateTime? dueDate,
     DateTime? lastPeriodDate,
+    bool clearDueDate = false,
+    bool clearLastPeriodDate = false,
     String? height,
     String? prePregnancyWeight,
     bool? isFirstPregnancy,
@@ -48,8 +64,10 @@ class ProfileDraft {
     String? medicalNote,
   }) {
     return ProfileDraft(
-      dueDate: dueDate ?? this.dueDate,
-      lastPeriodDate: lastPeriodDate ?? this.lastPeriodDate,
+      dueDate: clearDueDate ? null : dueDate ?? this.dueDate,
+      lastPeriodDate: clearLastPeriodDate
+          ? null
+          : lastPeriodDate ?? this.lastPeriodDate,
       height: height ?? this.height,
       prePregnancyWeight: prePregnancyWeight ?? this.prePregnancyWeight,
       isFirstPregnancy: isFirstPregnancy ?? this.isFirstPregnancy,

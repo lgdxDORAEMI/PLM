@@ -40,10 +40,12 @@ class MockRecordService implements RecordService {
             },
       completedRoutines: isSelectedMock ? 9 : 6 + day % 5,
       totalRoutines: 11,
-      applianceSummary: isSelectedMock ? '로봇청소기 · 건조기 · 조명 · 온도' : '조명 · 온도',
-      applianceCount: isSelectedMock ? 4 : 2,
+      applianceSummary: '실제 가전 실행 기록 없음',
+      // ThinQ 실행 연동은 MVP 범위 밖이므로 Mock 기록에도 실행 횟수를 만들지 않는다.
+      applianceCount: 0,
       burdenArea: '허리',
-      burdenCount: isSelectedMock ? 2 : 0,
+      // 모션 분석은 Phase 2이므로 MVP 기록에서 부담 초과를 생성하지 않는다.
+      burdenCount: 0,
       familyRequested: isSelectedMock ? 3 : 1,
       familyConfirmed: isSelectedMock ? 3 : 1,
       familyCompleted: isSelectedMock ? 2 : day % 2,
@@ -66,9 +68,9 @@ class MockRecordService implements RecordService {
           completedByPartner: true,
         ),
         RoutineRecord(
-          title: '로봇청소기 · 거실 25분',
+          title: '로봇청소기 · 거실 25분 제안',
           category: RecordCategory.household,
-          status: RoutineRecordStatus.completed,
+          status: RoutineRecordStatus.skipped,
         ),
         RoutineRecord(
           title: '골반 흔들기 스트레칭 5분',
@@ -76,7 +78,7 @@ class MockRecordService implements RecordService {
           status: RoutineRecordStatus.completed,
         ),
         RoutineRecord(
-          title: '수면 루틴 실행 (조명 · 온도 · 소리)',
+          title: '취침 전 환경 정리 (조명 · 온도 · 소리)',
           category: RecordCategory.sleep,
           status: RoutineRecordStatus.completed,
         ),

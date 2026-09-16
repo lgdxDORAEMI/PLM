@@ -37,7 +37,7 @@ class ProfileSummary extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xl),
             _SummaryItem(
-              label: '출산예정일 또는 마지막 생리일',
+              label: draft.dueDate == null ? '출산예정일 (마지막 생리일 기준)' : '출산예정일',
               value: _dateValue(draft),
               onTap: () => onEditStep(0),
             ),
@@ -89,7 +89,7 @@ class ProfileSummary extends StatelessWidget {
   }
 
   String _dateValue(ProfileDraft draft) {
-    final date = draft.dueDate ?? draft.lastPeriodDate;
+    final date = draft.effectiveDueDate;
     if (date == null) return '입력되지 않음';
     return '${date.year}. ${date.month.toString().padLeft(2, '0')}. '
         '${date.day.toString().padLeft(2, '0')}.';

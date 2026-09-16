@@ -2,7 +2,7 @@
 
 PLM은 임신 주수, 당일 컨디션, 예정 활동과 생활 기록을 바탕으로 임산부의 식사·가사·건강·수면 루틴을 개인화하고 가족의 돌봄 참여를 돕는 생활관리 서비스입니다.
 
-현재 저장소는 Profile Setup, 배우자 초대·수락, Home·Today Care·예정 활동·Daily Routine, Smart Meal Guide, 식사 재조정 AI Chat, 가사·건강·Sleep Care, 날짜별 Record/Calendar, 실시간 Movement, 파트너 리포트·알림·가사 요청 Flow가 실제 UI로 구현된 Flutter Web Frontend와, 프로필 일부 및 모션 인식 데모를 제공하는 FastAPI Backend로 구성됩니다. 외부 연동 전인 Routine·Chat·초대·Partner Flow와 생활 데이터는 Mock/local 상태를 사용합니다.
+현재 저장소는 Profile Setup, 배우자 초대·수락 안내, Home·Today Care·예정 활동·Daily Routine, Smart Meal Guide, 식사 재조정 AI Chat, 가사·건강·Sleep Care, 날짜별 Record/Calendar, Movement Mock, 파트너 리포트·알림·가사 요청 Flow가 UI로 구현된 Flutter Web Frontend와, 프로필 일부 및 모션 인식 데모를 제공하는 FastAPI Backend로 구성됩니다. 외부 연동 전인 Routine·Chat·초대·Partner Flow와 생활 데이터는 Mock/local 상태를 사용합니다.
 
 ## 핵심 사용자 흐름
 
@@ -24,14 +24,14 @@ MVP는 가전 자동 실행과 홈카메라 기반 실시간 위험 행동 로�
 | 영역 | 구현 상태 | 비고 |
 | --- | --- | --- |
 | Frontend 기반 | 구현 | Flutter Web 초기화, 환경설정, DESIGN.md 기반 Theme·반응형 Layout·공통 상태/Badge/Task Component |
-| Frontend 제품 UI | 부분 구현 | Profile 6단계, 초대, Home·Today Care·예정 활동, Daily Routine, Meal·Chat, 가사·건강·Sleep, Record/Calendar·Realtime, Partner Report·Inbox·Request 구현. Home은 임신 맥락 → 오늘 컨디션 → 핵심 행동 → 하루 루틴 → 진행 → 보조 정보의 단일 흐름이며, 컨디션 미입력·완료와 Routine Loading·Success·Fallback 상태를 지원. 설정·Partner Profile은 요구사항 확정 대기 |
+| Frontend 제품 UI | 부분 구현 | Profile 6단계와 LMP+280일·주수 계산, 초대 Mock, Home·Today Care·예정 활동, Daily Routine, Meal·Chat, 가사·건강·Sleep, Record/Calendar·Movement Mock, Partner Report·Inbox·Request 구현. Home은 임신 맥락 → 오늘 컨디션 → 핵심 행동 → 하루 루틴 → 진행 → 보조 정보의 단일 흐름이며, 컨디션 미입력·완료와 Routine Loading·Success·Fallback 상태를 지원. 설정·Partner Profile은 요구사항 확정 대기 |
 | 모션 인식 Web 데모 | 구현 | 브라우저 카메라 프레임 전송, 캘리브레이션, 자세 오버레이와 상태 표시 |
 | Backend 기본 API | 구현 | `/`, `/health`, 개발용 CORS |
 | 임산부 프로필 | 부분 구현 | 프로필 1/6 출산예정일(W-PROFILE-001), 2/6 신장·임신 전 체중(W-PROFILE-002) 조회·저장. 3~6단계(초산/경산·단태/쌍태·알레르기·주의 진단)와 확인·저장 단계는 미구현 |
 | 모션 분석 API | 데모 구현 | 단일 세션 WebSocket 분석, 이벤트 및 일일 집계 조회 |
 | Supabase | 부분 구현 | Auth 토큰 검증 경계와 `pregnancy_profiles` migration 2건(생성, 출산예정일 제약 완화) |
 | AI 루틴·LLM | 미구현 | 인터페이스만 존재하며 공급자 및 실제 호출 없음 |
-| 배우자 UI | 부분 구현 | 초대 수락, 공통 Calendar, 오전 리포트, 알림함, 가사 요청 확인·완료 구현. Partner Profile은 상세 요구사항 확정 대기 |
+| 배우자 UI | 부분 구현 | 초대 수락 상태 안내(Mock, 실제 수락·계정 연동 없음), 공통 Calendar, 오전 리포트, 알림함, 가사 요청 확인·완료 구현. Partner Profile은 상세 요구사항 확정 대기 |
 | ThinQ 가전 연동 | 미구현 | MVP에서는 추천까지만 제공하고 실제 제어는 제외 |
 | Android / iOS | 미지원 | 저장소에는 Web 플랫폼만 준비되어 있음 |
 
@@ -48,6 +48,8 @@ Partner 영역은 Wife UI를 복제하지 않고 상태 확인 → 행동 확인
 B-MOTION은 Phase 2 범위이므로 `/wife/movement`와 `/partner/movement` 제품 화면에서 실제 카메라·MediaPipe·실시간 센서를 실행하지 않습니다. 제품 UI는 Current state, Latest event, Today event log, Device state를 Local Mock으로만 제공하며 실제 연동 상태를 별도 표시합니다. 기존 브라우저 카메라/WebSocket 코드는 `main_movement_debug.dart`로 실행하는 독립 기술 데모에만 남아 있습니다. Wife는 하단 실시간 탭으로, Partner는 Calendar의 명시적 CTA로만 진입하며 Partner Movement에는 Bottom Navigation이 없습니다.
 
 최종 Frontend 화면 점검에서는 `/entry` Mock Bootstrap, Wife 전역 `/wife/menu`(연동 전/후), `/wife/condition`·`/wife/activity` 및 `/partner/join?token=...` canonical Route를 정리하고 Profile Summary 행 수정 시 즉시 요약으로 돌아오도록 보정했습니다. Partner Join은 실제 인증·수락이 아닌 개발 중 안내만 제공하며, ThinQ Host Entry와 실제 Session Guard도 아직 연결되지 않았습니다. Screen ID별 상태와 390/768/1280px QA 결과는 [Screen 구현 Map](docs/SCREEN_IMPLEMENTATION_MAP.md) 및 [Frontend 진행 현황](docs/FRONTEND_PROGRESS.md)을 참고하세요.
+
+요구사항 재감사 후 프로필의 예정일/LMP 기반 임신 주수 계산과 앱 실행 중 로컬 수정 반영, 필수 선택 단계의 다음 버튼 비활성, Report 저장 후 Calendar 선택일 유지 및 오늘 컨디션 초기화를 추가했습니다. 실제 가전·모션 연동이 없는 MVP Mock 리포트에서 해당 실행 횟수는 0으로 표시합니다. 프로필·리포트는 아직 서버에 영구 저장되지 않으며 샘플 기록이 실제 당일 활동을 집계하지 않습니다. 보조 텍스트 대비와 대표 화면의 200% 글자 확대를 자동 검증했지만 전체 화면의 실기기 접근성 인증은 남아 있습니다.
 
 ## 기술 구성
 
@@ -69,7 +71,7 @@ PLM/
 │   ├── 서비스흐름도/          # 사용자 흐름 Mermaid 문서
 │   ├── screens/              # 화면 정보 구조 참고 이미지
 │   ├── development/          # Frontend STEP 1~5 분석·설계 결과
-│   ├── FRONTEND_PROGRESS.md  # Skeleton 현황과 공용 파일 경계
+│   ├── FRONTEND_PROGRESS.md  # 화면 QA 결과와 남은 작업
 │   ├── movement/             # 모션 통합 설계와 검증 문서
 │   ├── architecture.md
 │   └── api.md

@@ -1,6 +1,6 @@
 # Screen Implementation Map — 최종 Frontend QA
 
-기준: `docs/requirements/04_1_기능요구사항명세서.md`, `docs/requirements/화면설계서0916.pdf`(34페이지, 각 페이지 이미지), `docs/screens/**`, `docs/development/ROUTE_MAP.md`, `DESIGN.md`, `frontend/lib/**`. 기능·권한은 requirements, 화면 전환은 ROUTE_MAP, 시각 규칙은 DESIGN.md를 우선한다. Screen ID 접미 상태는 별도 Route가 아니다.
+기준: `docs/requirements/03_유스케이스명세서.md`, `docs/requirements/04_1_기능요구사항명세서.md`, `docs/requirements/04_2_비기능요구사항명세서.md`, `docs/requirements/화면설계서0916.pdf`(34페이지, 각 페이지 이미지), `docs/screens/**`, `docs/development/ROUTE_MAP.md`, `DESIGN.md`, `frontend/lib/**`. 기능·권한은 최신 기능 요구사항, 화면 전환은 ROUTE_MAP, 시각 규칙은 DESIGN.md를 우선한다. Screen ID 접미 상태는 별도 Route가 아니다. UC1의 구형 나이 입력은 최신 FUC-W-PROFILE-002 및 DESIGN.md와 충돌하므로 복원하지 않았다.
 
 `구현`의 **MVP UI**는 실제 Flutter 화면/상태와 Mock flow가 있다는 뜻이며 서버 저장·인증·AI·ThinQ 실행을 의미하지 않는다. **부분**은 명시한 계약이 아직 미충족, **Phase 2 Mock**은 실제 분석/제어 없이 상태만 제공, **Host 대기**는 ThinQ 본체가 필요한 화면이다. `QA`의 **3폭**은 390/768/1280px 직접 URL 렌더링·overflow 검사이며 내부 상태는 해당 기능 테스트로 확인했다. 시각 평가는 PDF/PNG의 정보 구조와 DESIGN.md의 토큰·반응형 규칙을 코드 대조한 것이며 실기기 수동 시각/스크린리더 인증을 뜻하지 않는다.
 
@@ -10,17 +10,17 @@ PDF 대조 페이지: p.1 Profile 005, p.2 Motion, p.3 Entry, p.4 Calendar, p.5 
 |---|---|---|---|---|---|
 | B-ENTRY-001 | FUC-B-ENTRY-001 | `/entry` | `features/entry/screens/entry_screen.dart`, `routing/app_router.dart` | Bootstrap loading·오류·재시도·역할 분기 Mock; ThinQ 홈 배너는 Host 대기, 실제 Session Guard 미연동 | 3폭·분기 단위 |
 | B-ENTRY-001-1 | FUC-B-ENTRY-001 | `/entry` Host 메뉴 variant | 동일 | ThinQ 메뉴 행/NEW 배지는 Host 대기, 동일 Bootstrap 경로만 제공 | 경로 3폭; Host UI 미검증 |
-| W-PROFILE-001 | FUC-W-PROFILE-001 | `/onboarding/profile`, `/wife/profile` step 1 | `features/profile/screens/profile_setup_screen.dart` | 예정일/LMP picker·필수 오류·뒤로 | 3폭·Wizard |
+| W-PROFILE-001 | FUC-W-PROFILE-001 | `/onboarding/profile`, `/wife/profile` step 1 | `features/profile/screens/profile_setup_screen.dart`, `features/profile/models/profile_draft.dart` | 예정일/LMP picker·필수 오류·뒤로; LMP+280일 예정일 및 현재 임신 주수 계산 | 3폭·Wizard·계산 단위 |
 | W-PROFILE-002 | FUC-W-PROFILE-002 | 동일 step 2 | 동일 | 신장·임신 전 체중만 입력, 범위 검증; 구형 나이 입력 제거 | 3폭·Wizard |
-| W-PROFILE-003 | FUC-W-PROFILE-003 | 동일 step 3 | 동일 | 초산/경산 단일 선택·오류 | Wizard |
-| W-PROFILE-004 | FUC-W-PROFILE-004 | 동일 step 4 | 동일 | 단태/다태 단일 선택·오류 | Wizard |
+| W-PROFILE-003 | FUC-W-PROFILE-003 | 동일 step 3 | 동일 | 초산/경산 단일 선택·미선택 시 다음 버튼 비활성 | Wizard |
+| W-PROFILE-004 | FUC-W-PROFILE-004 | 동일 step 4 | 동일 | 단태/다태 단일 선택·미선택 시 다음 버튼 비활성 | Wizard |
 | W-PROFILE-005 | FUC-W-PROFILE-005 | 동일 step 5 | 동일 | 알레르기 복수 선택·없어요 상호 배타 | 단위 |
 | W-PROFILE-006 | FUC-W-PROFILE-006 | 동일 step 6 | 동일 | 진단 복수 선택·메모·미입력 통과 | Wizard |
-| W-PROFILE-007 | FUC-W-PROFILE-007/008 | 동일 Summary | `features/profile/widgets/profile_summary.dart`, `controllers/profile_setup_controller.dart` | 행 수정 → 저장 → Summary 복귀, 생성 시 Invite·수정 시 Menu; 실제 Profile 영속화 미연동 | 단위·Route |
+| W-PROFILE-007 | FUC-W-PROFILE-007/008 | 동일 Summary | `features/profile/widgets/profile_summary.dart`, `controllers/profile_setup_controller.dart`, `data/profile_store.dart` | 행 수정 → 저장 → Summary 복귀, 생성 시 Invite·수정 시 Menu; 앱 실행 중 로컬 저장 및 Home/Menu 주수 재계산, 서버·브라우저 재시작 영속화 미연동 | 단위·Route |
 | W-INVITE-001 | FUC-W-INVITE-001/002 | `/onboarding/invite`, `/wife/invite` | `features/profile/screens/partner_invite_screen.dart` | 링크 생성·복사·Mock 전송; 온보딩→Home/메뉴→Menu. 실제 OS 공유·일회성 발급 미연동 | 3폭·Route |
 | W-MENU-001 | FUC-W-MENU-001 | `/wife/menu` 미연동 | `features/menu/screens/wife_menu_screen.dart` | 프로필/초대/설정·이전 화면 복귀, 전역 Wife Header 진입 | 3폭·상태 전환 |
 | W-MENU-001-1 | FUC-W-MENU-001 | `/wife/menu` 연동 | 동일, `features/invitation/data/partner_connection_store.dart` | 초대 행 제거·연동 안내; 로컬 Mock 연동 상태(실제 인증 아님) | 상태 전환 |
-| W-HOME-001 | FUC-W-HOME-001 | `/wife/home` 미입력 | `features/home/screens/wife_home_screen.dart` | Pregnancy Context→컨디션 CTA→주차 정보, 카드 월 대신 세로 흐름 | 3폭·Flow |
+| W-HOME-001 | FUC-W-HOME-001 | `/wife/home` 미입력 | `features/home/screens/wife_home_screen.dart` | 저장된 프로필 주수→컨디션 CTA→주차 정보, 카드 월 대신 세로 흐름; 미등록 직접 URL은 시연용 주수 표시 | 3폭·Flow |
 | W-HOME-001-1 | FUC-W-HOME-001/002 | `/wife/home` 입력/루틴 | 동일, `features/routine/**` | loading·success·fallback·재시도, 4개 가이드·진행·실제 당일 날짜 Report Route; AI/리포트 자동 생성은 Mock | 상태·Flow |
 | W-COND-001 | FUC-W-COND-001/002 | `/wife/condition?mode=create\|edit` | `features/condition/screens/condition_screen.dart` | 생성/수정, 저장·이탈 확인, 예정 활동으로 이동; 서버 upsert/리포트 갱신 미연동 | 3폭·Flow |
 | W-TASK-001 | FUC-W-TASK-001 | `/wife/activity` | `features/condition/screens/activity_screen.dart` | 집안일 복수 선택/직접 입력 → Mock 루틴 → Home | 3폭·Flow |
@@ -39,9 +39,9 @@ PDF 대조 페이지: p.1 Profile 005, p.2 Motion, p.3 Entry, p.4 Calendar, p.5 
 | W-SLEEP-001-3 | FUC-W-SLEEP-001-1 | 습도 Sheet | 동일 | 직접 입력·0~100% 검증 Mock | Sheet |
 | W-SLEEP-001-4 | FUC-W-SLEEP-001-1 | 소리 Sheet | 동일 | 옵션 선택·적용 Mock | Sheet |
 | W-SLEEP-001-5 | FUC-W-SLEEP-001-1 | 공기청정기 Sheet | 동일 | 모드 선택·적용 Mock | Sheet |
-| W-REPORT-001 | FUC-W-REPORT-001; 002 Phase 2 | `/wife/report/:date` | `features/report/screens/daily_report_screen.dart` | 날짜별 조회·지표·루틴/가족 집계·저장/공유 Mock; 관절 부담 수치는 구형 Mock 데이터, 실제 모션 아님 | 3폭·상태·Flow |
+| W-REPORT-001 | FUC-W-REPORT-001; 002 Phase 2 | `/wife/report/:date` | `features/report/screens/daily_report_screen.dart` | 날짜별 Mock 조회·지표·루틴/가족 집계·저장/공유 Mock; 미연동 모션·가전 횟수 0, 저장 시 Calendar 선택일 복원 및 오늘 기록이면 Home 컨디션 초기화. 실제 당일 활동 집계·영속화는 미구현 | 3폭·상태·Flow |
 | W-REPORT-001-1 | FUC-W-REPORT-001-1 | 동일 Dialog | 동일 | 공유 성공 안내·오류 시 재시도 Mock | Flow |
-| B-CAL-001 (Wife) | FUC-B-CAL-001 | `/wife/calendar` | `features/calendar/screens/record_calendar_screen.dart` | 월→날짜 선택→상세→해당 날짜 Report; Desktop 2열/Mobile 세로 | 3폭·날짜 Route |
+| B-CAL-001 (Wife) | FUC-B-CAL-001 | `/wife/calendar` | `features/calendar/screens/record_calendar_screen.dart`, `features/calendar/data/calendar_selection_store.dart` | 월→날짜 선택→상세→해당 날짜 Report→Calendar 선택일 유지; Desktop 2열/Mobile 세로 | 3폭·날짜 Route·복귀 |
 | B-CAL-001 (Partner) | FUC-B-CAL-001 | `/partner/calendar` | 동일, `features/partner/screens/partner_calendar_screen.dart` | 공유 기록 + Partner 전용 알림/Motion CTA, 하단 메뉴·프로필 없음 | 3폭·날짜 Route |
 | B-MOTION-001 (Wife) | FUC-B-MOTION-001 | `/wife/movement` | `features/movement/product_movement_screen.dart` | Phase 2 Mock: 현재·최신 이벤트·오늘 로그·기기 상태, Wife 실시간 탭 | 3폭·Mock 상태 |
 | B-MOTION-001 (Partner) | FUC-B-MOTION-001 | `/partner/movement` | 동일 | Phase 2 Mock 공유 상태, Partner Calendar CTA만·하단 메뉴 없음 | 3폭·Mock 상태 |
@@ -62,6 +62,6 @@ PDF 대조 페이지: p.1 Profile 005, p.2 Motion, p.3 Entry, p.4 Calendar, p.5 
 ## 남은 정합성 Gap
 
 - ThinQ 홈 배너/메뉴 Entry, 세션·역할·연동 서버 상태 및 Route Guard는 Host/Auth 계약 없이 구현 불가. 현재 `/entry`는 Mock Bootstrap이고 직접 Actor URL 차단을 보장하지 않는다.
-- 프로필 저장과 초대·리포트 공유, AI 추천, 가전 제어, 실시간 모션은 실제 API를 호출하지 않는다. Menu 연동 완료 variant는 테스트용 로컬 상태이며 Partner Join에서 수락하지 않는다.
-- 달력/리포트에는 2026-09-13 중심 샘플 기록과 실행일 Mock 기록이 있고 실제 저장 이력과 완전 동기화되지는 않는다. 스크린리더 실기기·실제 브라우저의 hover/focus/시각 QA는 자동 Widget 테스트만으로 인증할 수 없다.
+- 프로필은 앱 실행 중 메모리에만 저장되며 브라우저 새로고침 후 복원되지 않는다. 초대·리포트 공유, AI 추천, 가전 제어, 실시간 모션도 실제 API를 호출하지 않는다. Menu 연동 완료 variant는 테스트용 로컬 상태이며 Partner Join에서 수락하지 않는다.
+- 달력/리포트에는 2026-09-13 중심 샘플 기록과 실행일 Mock 기록이 있고 실제 루틴 완료/저장 이력과 동기화되지 않는다. 리포트의 미연동 모션·가전 실행 횟수는 0으로 표시한다. NFR-022 대비 토큰 자동 검사는 통과했지만 모든 개별 조합·도구 검사 100% 인증은 아니며, NFR-025의 200% 확대도 대표 5개 Route만 자동 확인했다. 스크린리더 실기기·실제 브라우저 hover/focus/시각 QA는 별도다.
 - PDF p.3/4/17/19 및 Screen PNG는 콘텐츠·정보 구조의 참조이며 ThinQ Host 배너의 원본 시각 스타일은 PLM 화면에 복제하지 않는다.

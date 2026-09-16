@@ -1,10 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plm_frontend/features/report/screens/daily_report_screen.dart';
+import 'package:plm_frontend/features/calendar/data/calendar_selection_store.dart';
+import 'package:plm_frontend/features/condition/data/today_care_store.dart';
+import 'package:plm_frontend/features/condition/models/condition_draft.dart';
+import 'package:plm_frontend/features/report/models/daily_record.dart';
 import 'package:plm_frontend/routing/app_router.dart';
 import 'package:plm_frontend/routing/route_names.dart';
 
 void main() {
+  setUp(() {
+    CalendarSelectionStore.instance.reset();
+    TodayCareStore.instance.clear();
+  });
+
+  testWidgets('오늘 리포트 저장은 Home을 초기화하고 Calendar 선택 날짜를 보존한다', (tester) async {
+    final today = DateTime.now();
+    final date = recordDateKey(today);
+    TodayCareStore.instance.save(const ConditionDraft());
+    await tester.pumpWidget(
+      MaterialApp(
+        initialRoute: RouteNames.dailyReport(date),
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        onGenerateInitialRoutes: AppRouter.onGenerateInitialRoutes,
+      ),
+    );
+    await tester.pumpAndSettle();
+    final saveButton = find.byKey(const ValueKey('report-save-button'));
+    await tester.scrollUntilVisible(
+      saveButton,
+      300,
+      scrollable: find
+          .descendant(
+            of: find.byType(ListView),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.ensureVisible(saveButton);
+    await tester.pumpAndSettle();
+    await tester.tap(saveButton);
+    await tester.pumpAndSettle();
+    expect(TodayCareStore.instance.hasTodayCare, isFalse);
+    expect(recordDateKey(CalendarSelectionStore.instance.selectedDate!), date);
+    expect(find.text('${today.year}년 ${today.month}월'), findsOneWidget);
+  });
+
   testWidgets('날짜를 선택해 해당 Daily Report로 이동한다', (tester) async {
     await tester.pumpWidget(
       MaterialApp(

@@ -14,6 +14,8 @@ import '../../../design_system/tokens/app_radius.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_names.dart';
 import '../controllers/daily_report_controller.dart';
+import '../../calendar/data/calendar_selection_store.dart';
+import '../../condition/data/today_care_store.dart';
 import '../models/daily_record.dart';
 import '../services/mock_record_service.dart';
 import '../services/record_service.dart';
@@ -123,6 +125,11 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
 
   Future<void> _save() async {
     if (await _controller.save() && mounted) {
+      final savedDate = _controller.record!.date;
+      CalendarSelectionStore.instance.remember(savedDate);
+      if (recordDateKey(savedDate) == recordDateKey(DateTime.now())) {
+        TodayCareStore.instance.finishDay();
+      }
       Navigator.pushReplacementNamed(context, RouteNames.wifeCalendar);
     }
   }

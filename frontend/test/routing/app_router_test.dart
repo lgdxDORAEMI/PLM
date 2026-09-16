@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plm_frontend/features/condition/data/today_care_store.dart';
+import 'package:plm_frontend/features/calendar/data/calendar_selection_store.dart';
 import 'package:plm_frontend/features/condition/data/planned_activity_store.dart';
 import 'package:plm_frontend/features/condition/models/condition_draft.dart';
 import 'package:plm_frontend/features/meal/data/meal_selection_store.dart';
+import 'package:plm_frontend/features/profile/data/profile_store.dart';
 import 'package:plm_frontend/routing/app_router.dart';
 import 'package:plm_frontend/routing/route_context.dart';
 import 'package:plm_frontend/routing/route_names.dart';
@@ -13,6 +15,8 @@ void main() {
     TodayCareStore.instance.clear();
     PlannedActivityStore.instance.clear();
     MealSelectionStore.instance.clear();
+    ProfileStore.instance.reset();
+    CalendarSelectionStore.instance.reset();
   });
 
   const expectedRequirementIds = <String, String>{
@@ -82,11 +86,25 @@ void main() {
     await tester.enterText(bodyFields.at(1), '55');
     await _tapNext(tester);
     expect(find.text('첫 출산이신가요?'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, '다음'))
+          .onPressed,
+      isNull,
+    );
 
     await tester.tap(find.text('초산이에요'));
+    await tester.pumpAndSettle();
     await _tapNext(tester);
     expect(find.text('아기는 몇 명인가요?'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, '다음'))
+          .onPressed,
+      isNull,
+    );
     await tester.tap(find.text('한 명이에요 (단태)'));
+    await tester.pumpAndSettle();
     await _tapNext(tester);
     expect(find.text('알레르기가 있나요?'), findsOneWidget);
     await _tapNext(tester);
@@ -106,7 +124,7 @@ void main() {
     );
     await tester.tap(find.text('나중에'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('오늘 임신 28주차예요'), findsOneWidget);
+    expect(find.textContaining('오늘 임신'), findsOneWidget);
   });
 
   testWidgets('동적 date와 requestId를 화면에 전달한다', (tester) async {

@@ -55,7 +55,11 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: TopAppBar(title: '식사 가이드', onBack: _handleBack, wifeProfileAction: true),
+      appBar: TopAppBar(
+        title: '식사 가이드',
+        onBack: _handleBack,
+        wifeProfileAction: true,
+      ),
       body: SafeArea(
         top: false,
         child: ResponsivePageContent(

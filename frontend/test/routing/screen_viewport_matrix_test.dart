@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plm_frontend/features/invitation/data/partner_connection_store.dart';
+import 'package:plm_frontend/features/calendar/data/calendar_selection_store.dart';
+import 'package:plm_frontend/features/profile/data/profile_store.dart';
 import 'package:plm_frontend/routing/app_router.dart';
 import 'package:plm_frontend/routing/route_names.dart';
 
@@ -40,6 +42,8 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
       PartnerConnectionStore.instance.reset();
+      CalendarSelectionStore.instance.reset();
+      ProfileStore.instance.reset();
 
       // 직접 URL 복원을 함께 검사해 얕은 화면 진입 누락을 찾는다.
       for (final route in routes) {
@@ -98,5 +102,36 @@ void main() {
     await tester.tap(find.text('희선님'));
     await tester.pumpAndSettle();
     expect(find.text('출산예정일을 알려주세요'), findsOneWidget);
+  });
+
+  testWidgets('주요 화면은 390px·200% 글자 확대에서 렌더링된다', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(390, 900);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    for (final route in [
+      RouteNames.wifeHome,
+      RouteNames.wifeMenu,
+      RouteNames.wifeCalendar,
+      RouteNames.partnerCalendar,
+      RouteNames.partnerRequest('demo-request'),
+    ]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          key: ValueKey('scaled:$route'),
+          initialRoute: route,
+          onGenerateRoute: AppRouter.onGenerateRoute,
+          onGenerateInitialRoutes: AppRouter.onGenerateInitialRoutes,
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull, reason: route);
+    }
   });
 }

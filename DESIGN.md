@@ -105,7 +105,7 @@ ThinQ와의 일관성은 브랜드 색상 복제가 아닌 다음 특성으로 �
 | `surface-raised` | `#FFFFFF` | 부유 패널, 선택 상세 |
 | `text-primary` | `#202624` | 제목, 핵심 수치 |
 | `text-secondary` | `#58615D` | 본문, 설명 |
-| `text-tertiary` | `#7B827E` | 메타 정보, placeholder |
+| `text-tertiary` | `#68716C` | 메타 정보, placeholder. 밝은 canvas에서 일반 텍스트 4.5:1 이상 확보 |
 | `border-subtle` | `#DEDCD4` | 카드와 구획 경계 |
 | `border-strong` | `#C7C9C1` | 입력, 선택 경계 |
 | `primary` | `#3D7165` | Primary CTA, 선택, 현재 위치 |
@@ -722,4 +722,3 @@ UI animation은 상태 변화의 원인을 설명하는 데만 사용한다.
 - [ ] icon button, badge, live state에 semantic label이 있는가?
 - [ ] 200% text scaling과 reduced motion에서 사용할 수 있는가?
 - [ ] chart와 색상 상태에 비시각적 대안이 있는가?
-

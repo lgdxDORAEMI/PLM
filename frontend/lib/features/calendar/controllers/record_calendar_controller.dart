@@ -6,12 +6,21 @@ import '../../report/services/record_service.dart';
 enum RecordCalendarViewState { loading, ready, error }
 
 class RecordCalendarController extends ChangeNotifier {
-  RecordCalendarController({required this.service});
+  RecordCalendarController({
+    required this.service,
+    DateTime? initialSelectedDate,
+    this.onSelected,
+  }) : _visibleMonth = DateTime(
+         initialSelectedDate?.year ?? 2026,
+         initialSelectedDate?.month ?? 9,
+       ),
+       _selectedDate = initialSelectedDate ?? DateTime(2026, 9, 13);
 
   final RecordService service;
+  final ValueChanged<DateTime>? onSelected;
   RecordCalendarViewState _state = RecordCalendarViewState.loading;
-  DateTime _visibleMonth = DateTime(2026, 9);
-  DateTime _selectedDate = DateTime(2026, 9, 13);
+  DateTime _visibleMonth;
+  DateTime _selectedDate;
   List<DailyRecord> _records = const [];
 
   RecordCalendarViewState get state => _state;
@@ -28,7 +37,8 @@ class RecordCalendarController extends ChangeNotifier {
     return null;
   }
 
-  Future<void> load() => _loadMonth(_visibleMonth, preferredDay: 13);
+  Future<void> load() =>
+      _loadMonth(_visibleMonth, preferredDay: _selectedDate.day);
 
   Future<void> previousMonth() async {
     await _loadMonth(DateTime(_visibleMonth.year, _visibleMonth.month - 1));
@@ -42,6 +52,7 @@ class RecordCalendarController extends ChangeNotifier {
   void selectDate(DateTime date) {
     if (recordFor(date) == null) return;
     _selectedDate = date;
+    onSelected?.call(date);
     notifyListeners();
   }
 

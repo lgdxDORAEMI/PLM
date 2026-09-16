@@ -44,7 +44,11 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: TopAppBar(title: '오늘 예정 활동', onBack: _handleBack, wifeProfileAction: true),
+    appBar: TopAppBar(
+      title: '오늘 예정 활동',
+      onBack: _handleBack,
+      wifeProfileAction: true,
+    ),
     body: SafeArea(
       top: false,
       child: ResponsivePageContent(

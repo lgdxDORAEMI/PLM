@@ -18,9 +18,14 @@ class TodayCareStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  @visibleForTesting
-  void clear() {
+  /// 오늘 리포트를 저장하고 마칠 때 Home을 미입력 상태로 되돌린다.
+  void finishDay() {
     _today = null;
     notifyListeners();
+  }
+
+  @visibleForTesting
+  void clear() {
+    finishDay();
   }
 }

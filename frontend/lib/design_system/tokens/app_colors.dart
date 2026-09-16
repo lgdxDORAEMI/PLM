@@ -12,7 +12,7 @@ abstract final class AppColors {
 
   static const textPrimary = Color(0xFF202624);
   static const textSecondary = Color(0xFF58615D);
-  static const textTertiary = Color(0xFF7B827E);
+  static const textTertiary = Color(0xFF68716C);
   static const textInverse = Color(0xFFFFFFFF);
   static const textDisabled = Color(0xFF8A908D);
 

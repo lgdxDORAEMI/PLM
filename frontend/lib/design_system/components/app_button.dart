@@ -40,7 +40,7 @@ class AppButton extends StatelessWidget {
         else if (icon != null)
           Icon(icon),
         if (loading || icon != null) const SizedBox(width: AppSpacing.sm),
-        Text(label),
+        Flexible(child: Text(label, textAlign: TextAlign.center)),
       ],
     );
     final style = ButtonStyle(
