@@ -1,0 +1,262 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+
+import '../../../design_system/components/app_button.dart';
+import '../../../design_system/components/app_state_view.dart';
+import '../../../design_system/components/bottom_navigation.dart';
+import '../../../design_system/components/responsive_page_content.dart';
+import '../../../design_system/components/top_app_bar.dart';
+import '../../../design_system/tokens/app_colors.dart';
+import '../../../design_system/tokens/app_spacing.dart';
+import '../../../routing/route_context.dart';
+import '../../../routing/route_names.dart';
+import '../../report/models/daily_record.dart';
+import '../../report/services/mock_record_service.dart';
+import '../../report/services/record_service.dart';
+import '../controllers/record_calendar_controller.dart';
+import '../widgets/condition_calendar.dart';
+import '../widgets/record_day_summary.dart';
+
+class RecordCalendarScreen extends StatefulWidget {
+  const RecordCalendarScreen({super.key, required this.role, this.service});
+
+  final AppUserRole role;
+  final RecordService? service;
+
+  @override
+  State<RecordCalendarScreen> createState() => _RecordCalendarScreenState();
+}
+
+class _RecordCalendarScreenState extends State<RecordCalendarScreen> {
+  late final RecordCalendarController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = RecordCalendarController(
+      service: widget.service ?? const MockRecordService(),
+    )..addListener(_refresh);
+    unawaited(_controller.load());
+  }
+
+  @override
+  void dispose() {
+    _controller
+      ..removeListener(_refresh)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _refresh() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) {
+    final isWife = widget.role == AppUserRole.wife;
+    return Scaffold(
+      appBar: TopAppBar(
+        title: '컨디션 캘린더',
+        showBack: false,
+        actions: isWife ? null : _partnerActions(),
+      ),
+      body: SafeArea(
+        top: false,
+        child: ResponsivePageContent(child: _buildBody()),
+      ),
+      bottomNavigationBar: isWife
+          ? AppBottomNavigation(
+              currentIndex: 3,
+              items: const [
+                NavigationDestination(
+                  icon: Icon(Icons.home_outlined),
+                  label: '홈',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.monitor_heart_outlined),
+                  label: '실시간',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.chat_bubble_outline),
+                  label: '챗봇',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.calendar_month_outlined),
+                  label: '캘린더',
+                ),
+              ],
+              onSelected: _openWifeTab,
+            )
+          : AppBottomNavigation(
+              currentIndex: 0,
+              items: const [
+                NavigationDestination(
+                  icon: Icon(Icons.calendar_month_outlined),
+                  label: '캘린더',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.monitor_heart_outlined),
+                  label: '실시간',
+                ),
+              ],
+              onSelected: _openPartnerTab,
+            ),
+    );
+  }
+
+  List<Widget> _partnerActions() => [
+    IconButton(
+      tooltip: '알림',
+      onPressed: () =>
+          Navigator.pushNamed(context, RouteNames.partnerNotifications),
+      icon: const Icon(Icons.notifications_outlined),
+    ),
+    IconButton(
+      tooltip: '프로필',
+      onPressed: () => Navigator.pushNamed(context, RouteNames.partnerProfile),
+      icon: const Icon(Icons.account_circle_outlined),
+    ),
+  ];
+
+  Widget _buildBody() => switch (_controller.state) {
+    RecordCalendarViewState.loading => const AppLoadingState(
+      message: '기록을 불러오고 있어요',
+    ),
+    RecordCalendarViewState.error => AppErrorState(
+      title: '기록을 불러오지 못했어요',
+      message: '잠시 후 다시 시도해 주세요.',
+      onRetry: _controller.load,
+    ),
+    RecordCalendarViewState.ready => _CalendarContent(
+      controller: _controller,
+      role: widget.role,
+      onOpenReport: _openReport,
+    ),
+  };
+
+  void _openReport(DailyRecord record) {
+    final date = recordDateKey(record.date);
+    final route = widget.role == AppUserRole.wife
+        ? RouteNames.dailyReport(date)
+        : RouteNames.partnerMorningReport(date);
+    Navigator.pushNamed(context, route);
+  }
+
+  void _openWifeTab(int index) {
+    final route = [
+      RouteNames.wifeHome,
+      RouteNames.wifeMovement,
+      RouteNames.mealChat,
+      RouteNames.wifeCalendar,
+    ][index];
+    if (index != 3) Navigator.pushReplacementNamed(context, route);
+  }
+
+  void _openPartnerTab(int index) {
+    if (index == 1) {
+      Navigator.pushReplacementNamed(context, RouteNames.partnerMovement);
+    }
+  }
+}
+
+class _CalendarContent extends StatelessWidget {
+  const _CalendarContent({
+    required this.controller,
+    required this.role,
+    required this.onOpenReport,
+  });
+  final RecordCalendarController controller;
+  final AppUserRole role;
+  final ValueChanged<DailyRecord> onOpenReport;
+
+  @override
+  Widget build(BuildContext context) {
+    final selected = controller.selectedRecord;
+    final month = controller.visibleMonth;
+    return ListView(
+      key: const ValueKey('record-calendar-content'),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                '${month.year}년 ${month.month}월',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+            ),
+            IconButton(
+              key: const ValueKey('calendar-previous-month'),
+              tooltip: '이전 달',
+              onPressed: controller.previousMonth,
+              icon: const Icon(Icons.chevron_left),
+            ),
+            IconButton(
+              key: const ValueKey('calendar-next-month'),
+              tooltip: '다음 달',
+              onPressed: controller.canGoNext ? controller.nextMonth : null,
+              icon: const Icon(Icons.chevron_right),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        ConditionCalendar(
+          month: month,
+          records: controller.records,
+          selectedDate: controller.selectedDate,
+          onSelected: controller.selectDate,
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        const ConditionLegend(),
+        const SizedBox(height: AppSpacing.xl),
+        if (selected == null)
+          const AppEmptyState(
+            title: '이 달에는 기록이 없어요',
+            message: '기록이 있는 달만 조회할 수 있어요.',
+          )
+        else ...[
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _koreanDate(selected.date),
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              Text(
+                '임신 ${selected.pregnancyWeek}주차',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleSmall?.copyWith(color: AppColors.primary600),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          RecordDaySummary(record: selected),
+          const SizedBox(height: AppSpacing.lg),
+          AppButton(
+            key: const ValueKey('calendar-open-report'),
+            label: role == AppUserRole.wife
+                ? '이 날 리포트 자세히 보기'
+                : '이 날 아침 리포트 보기',
+            variant: AppButtonVariant.secondary,
+            onPressed: () => onOpenReport(selected),
+          ),
+          if (role == AppUserRole.partner) ...[
+            const SizedBox(height: AppSpacing.md),
+            AppButton(
+              label: '실시간 홈캠 신체 정보 보기',
+              variant: AppButtonVariant.secondary,
+              onPressed: () =>
+                  Navigator.pushNamed(context, RouteNames.partnerMovement),
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+
+  static String _koreanDate(DateTime date) {
+    const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
+    return '${date.month}월 ${date.day}일 (${weekdays[date.weekday - 1]})';
+  }
+}

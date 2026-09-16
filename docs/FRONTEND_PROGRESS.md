@@ -25,20 +25,20 @@
 | W-ROUTINE-001 | 통합 홈 | IMPLEMENTED |
 | W-MEAL-001 | 식사 가이드 | IMPLEMENTED |
 | W-HOUSE-001 | 가사 가이드 | IMPLEMENTED |
-| W-MOTION-001 | 실시간 모션 | IMPLEMENTED / MOCK UI |
+| B-MOTION-001 | 실시간 모션·상태 알림 | IMPLEMENTED / MOCK UI |
 | W-HEALTH-001 | 건강 가이드 | IMPLEMENTED |
 | W-SLEEP-001 | 수면 가이드 | IMPLEMENTED / MOCK DEVICE |
 | W-CHAT-001 | 식사 재조정 채팅 | IMPLEMENTED |
-| W-REPORT-001 | Daily 리포트 | SKELETON |
-| W-CAL-001 | 컨디션 캘린더 | SKELETON |
+| W-REPORT-001 | Daily 리포트 | IMPLEMENTED / MOCK DATA |
+| B-CAL-001 | 컨디션 캘린더 | IMPLEMENTED / WIFE·PARTNER SHARED |
 | W-SETTING-001 | 설정 | SKELETON / BLOCKED PHASE 2 |
 | H-REPORT-001 | 파트너 아침 리포트 | SKELETON |
-| H-CAL-001 | 파트너 캘린더 | SKELETON |
+| H-CAL-001 | 파트너 캘린더 | IMPLEMENTED / B-CAL-001 VARIANT |
 | H-NOTI-001 | 알림 | SKELETON |
 | H-REQUEST-001 | 파트너 가사 요청 | SKELETON |
 | H-PROFILE-001 | 파트너 프로필 | SKELETON |
 
-`W-MOTION-001`·`H-MOTION-001`은 하나의 공유 제품 UI이며 현재 움직임 감지와 알림 데이터는 mock이다. `W-SLEEP-002`의 수면 환경 실행도 local mock이며 ThinQ Device API를 호출하지 않는다. 기존 모션 데모 구현은 별도로 보존한다. `W-SETTING-001`은 요구사항이 확정되기 전까지 임의 설정 항목을 추가하지 않는다.
+`B-MOTION-001`은 역할별 Route가 공유하는 제품 UI이며 움직임 감지, severity, 알림과 확인 상태는 mock이다. `W-SLEEP-002`의 수면 환경 실행과 Record/Calendar의 날짜별 기록·저장·공유도 local mock이며 외부 API를 호출하지 않는다. 기존 모션 데모 구현은 별도로 보존한다. `W-SETTING-001`은 요구사항이 확정되기 전까지 임의 설정 항목을 추가하지 않는다.
 
 ## Route Contract
 

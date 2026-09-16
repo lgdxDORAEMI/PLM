@@ -1,7 +1,9 @@
 import '../models/meal_guide.dart';
+import '../models/meal_chat_message.dart';
+import 'meal_chat_service.dart';
 import 'meal_service.dart';
 
-class MockMealService implements MealService {
+class MockMealService implements MealService, MealChatService {
   const MockMealService();
 
   static const _cautions = [
@@ -108,4 +110,19 @@ class MockMealService implements MealService {
     required MealRecommendation current,
     required String request,
   }) async => alternative;
+
+  @override
+  Future<MealChatReply> sendMessage({
+    required MealRecommendation current,
+    required String message,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 350));
+    final normalized = message.replaceAll(' ', '');
+    final response = normalized.contains('냄새') || normalized.contains('메스꺼')
+        ? '냄새 때문에 속이 불편하셨군요. 조리 냄새가 거의 없고 더 담백한 메뉴로 다시 골라봤어요.'
+        : normalized.contains('부드') || normalized.contains('식감')
+        ? '부드럽게 먹을 수 있고 속에 부담이 적은 메뉴로 다시 골라봤어요.'
+        : '말씀해 주신 내용을 오늘 컨디션에 반영해, 부담이 적은 메뉴로 다시 골라봤어요.';
+    return MealChatReply(message: response, recommendation: alternative);
+  }
 }

@@ -26,7 +26,7 @@
 - `IMPLEMENTED`: 요구 UI와 Interaction 구현 완료
 - `VERIFIED`: 분석·테스트·시각 QA·접근성 검증 완료
 
-현재 `W-PROFILE-001`, `W-COND-001`, `W-ROUTINE-001`, `W-MEAL-001`, `W-HOUSE-001`, `W-MOTION-001`, `W-HEALTH-001`, `W-SLEEP-001`, `W-CHAT-001`은 `IMPLEMENTED`이며, 나머지 11개 제품 화면은 `SKELETON`이다.
+현재 Profile, Today Care, Home, Meal, Household, Movement, Health, Sleep, Chat, Daily Report와 아내·파트너 공통 Calendar는 `IMPLEMENTED`이며, 나머지 8개 제품 화면은 `SKELETON`이다.
 
 ## 3. Source 충돌 및 확인 필요 항목
 
@@ -41,7 +41,7 @@
 | C-05 | `12_chat.png`는 식사 외 건강 질문과 가사 이동 제안까지 포함하지만 MVP/Route 계약은 식사 재조정 Chat으로 제한한다. | W-CHAT-001 | 일반 Chat 확장 여부가 확정될 때까지 식사 범위만 구현할지 확인 |
 | C-06 | 가사·수면 PNG에는 실제 ThinQ 가전 실행 Action이 있으나 MVP는 실제 기기 제어를 제외한다. | W-HOUSE-001, W-SLEEP-001 | 사용자 지시에 따라 추천·선택·Mock 완료 상태만 구현 |
 | C-07 | Daily 리포트 PNG에는 가전 자동 실행과 관절 부담 데이터가 있으나 MVP에서 제외되거나 Phase 2에 종속된다. | W-REPORT-001 | MVP에서 숨길 Metric 범위 확인 |
-| C-08 | 실시간 PNG는 완성된 제품 로그 화면이지만 Route Map은 Phase 2 Placeholder로 분류한다. | W-MOTION-001 | Phase 2 시작 전 상세 UI 구현 금지 여부 확인 |
+| C-08 | 실시간 PNG는 완성된 제품 로그 화면이지만 실제 카메라 분석은 Phase 2다. | B-MOTION-001 | 사용자 지시에 따라 제품 UI와 mock interaction만 구현하고 실제 감지는 제외 |
 | C-09 | 프로필 요약 PNG 안에 배우자 초대 Card가 있지만 Route Map은 배우자 초대를 별도 Route로 둔다. | W-PROFILE-001, W-INVITE-001 | 요약 Card는 별도 Route 진입점으로만 사용할지 확인 |
 | C-10 | 이미지가 없는 Partner 화면과 예정 활동·설정 화면이 존재한다. | H-* 및 W-ACT-001, W-SETTING-001 | 요구사항 기반으로 설계할지 별도 시안 제공 여부 확인 |
 
@@ -187,18 +187,18 @@
 
 | 항목 | 내용 |
 | --- | --- |
-| Screen ID | `W-MOTION-001` |
+| Screen ID | `B-MOTION-001` |
 | 이미지 파일 | `11_realtime.png` |
 | Flutter 파일 | `frontend/lib/features/movement/product_movement_screen.dart` |
 | Route | `/wife/movement`, `/partner/movement` |
 | Feature | `movement` |
 | 구현 상태 | `IMPLEMENTED` |
 | 사용해야 하는 공용 컴포넌트 | `TopAppBar`, `AppBottomNavigation`, `AppCard` |
-| 추가로 필요한 컴포넌트 | `MovementStatusPanel`, `RealtimeAlertCard`, 상태 Toggle, 위험도 Badge, Empty/Error/동의 상태 |
+| 추가로 필요한 컴포넌트 | 구현 완료: `RealtimeAlertController`, `MovementAlertCard`, 상태 Toggle, severity 표시, Alert 상세 Bottom Sheet |
 | 이전 화면 | 역할별 하단 Navigation의 이전 Tab |
 | 다음 화면 | 역할별 Home 또는 Calendar Tab |
-| Interaction | 당일 위험 로그 조회, 센서 연결 상태, 동의/미연결/오류, 로그 선택, 자정 초기화 안내 |
-| 비고 | 관련 ID: `W-MOTION-001`, `H-MOTION-001`. 기존 `MovementScreen` 데모와 별도이며 제품 화면의 감지·로그는 local mock |
+| Interaction | mock 감지 ON/OFF, severity별 로그 선택, 추천 행동 확인, Alert 확인 처리, 아내의 가사 Routine 이동 |
+| 비고 | 최신 공통 ID `B-MOTION-001`. 기존 `MovementScreen` 카메라 데모와 별도이며 감지·판정·로그·확인 상태는 local mock |
 
 ### 4.10 건강 가이드
 
@@ -226,7 +226,7 @@
 | Flutter 파일 | `frontend/lib/features/sleep/screens/sleep_guide_screen.dart` |
 | Route | `/wife/home/sleep` |
 | Feature | `sleep` |
-| 구현 상태 | `SKELETON` |
+| 구현 상태 | `IMPLEMENTED` |
 | 사용해야 하는 공용 컴포넌트 | `TopAppBar`, `AppBottomNavigation`, `AppCard`, `AppButton`, `SelectionCard` |
 | 추가로 필요한 컴포넌트 | 구현 완료: `SleepEnvironmentCard`, `SleepGuideController`, `SleepService`, `MockSleepService`, 설정 Bottom Sheet |
 | 이전 화면 | `/wife/home` |
@@ -260,30 +260,30 @@
 | Flutter 파일 | `frontend/lib/features/report/screens/daily_report_screen.dart` |
 | Route | `/wife/calendar/report/:date` |
 | Feature | `report` |
-| 구현 상태 | `SKELETON` |
+| 구현 상태 | `IMPLEMENTED` |
 | 사용해야 하는 공용 컴포넌트 | `TopAppBar`, `AppBottomNavigation`, `AppCard`, `AppButton` |
-| 추가로 필요한 컴포넌트 | `DailyReportSummary`, `MetricCard`, `RoutineRecordList`, `FamilyParticipationSummary`, `StatusBadge`, 공유 결과 Dialog |
+| 추가로 필요한 컴포넌트 | 구현 완료: `ReportMetricCard`, `RoutineRecordCard`, `DailyReportController`, `RecordService`, `MockRecordService`, 공유 결과 Dialog |
 | 이전 화면 | Home 하루 끝내기 또는 Wife Calendar 날짜 선택 |
 | 다음 화면 | `/wife/calendar` 또는 공유 결과 Modal 후 현재 화면 |
 | Interaction | 날짜별 기록 조회, 영역별 상태 확인, 저장·마치기, 파트너 공유, Loading/Empty/Error |
-| 비고 | 관련 ID: `W-REPORT-001`, `W-REPORT-002`. C-04, C-07 확인 필요 |
+| 비고 | 관련 ID: `W-REPORT-001`, `W-REPORT-002`. DB 저장·실제 공유 없이 날짜별 Mock Record와 local feedback 사용 |
 
 ### 4.14 컨디션 캘린더
 
 | 항목 | 내용 |
 | --- | --- |
-| Screen ID | `W-CAL-001` |
+| Screen ID | `B-CAL-001` |
 | 이미지 파일 | `13_condition_calendar.png` |
 | Flutter 파일 | `frontend/lib/features/calendar/screens/wife_calendar_screen.dart` |
 | Route | `/wife/calendar` |
 | Feature | `report` |
-| 구현 상태 | `SKELETON` |
+| 구현 상태 | `IMPLEMENTED` |
 | 사용해야 하는 공용 컴포넌트 | `TopAppBar`, `AppBottomNavigation`, `AppCard` |
-| 추가로 필요한 컴포넌트 | `ConditionCalendar`, Calendar legend, 선택일 Summary, Keyboard Grid navigation, Loading/Empty/Error |
+| 추가로 필요한 컴포넌트 | 구현 완료: `ConditionCalendar`, `ConditionLegend`, `RecordDaySummary`, `RecordCalendarController` |
 | 이전 화면 | Wife Calendar Tab 또는 Daily 리포트 |
 | 다음 화면 | `/wife/calendar/report/:date` |
 | Interaction | 월 이동, 날짜 선택, Keyboard 탐색, 상태 legend 확인, 선택 날짜 리포트 이동 |
-| 비고 | `DESIGN.md`에 따라 다수 fill 대신 dot/ring/tint를 사용할지 C-01의 적용 원칙 확인 필요 |
+| 비고 | 최신 요구사항 `B-CAL-001`을 아내·파트너 Route가 공유. Material Grid를 사용해 대형 Calendar dependency를 추가하지 않음 |
 
 ### 4.15 설정
 
@@ -323,18 +323,18 @@
 
 | 항목 | 내용 |
 | --- | --- |
-| Screen ID | `H-CAL-001` |
+| Screen ID | `B-CAL-001` Partner Variant |
 | 이미지 파일 | 없음; `13_condition_calendar.png`의 구조만 읽기 전용 Variant 참고 가능 |
 | Flutter 파일 | `frontend/lib/features/partner/screens/partner_calendar_screen.dart` |
 | Route | `/partner/calendar` |
 | Feature | `report` |
-| 구현 상태 | `SKELETON` |
+| 구현 상태 | `IMPLEMENTED` |
 | 사용해야 하는 공용 컴포넌트 | `TopAppBar`, `AppBottomNavigation`, `AppCard` |
-| 추가로 필요한 컴포넌트 | `ConditionCalendar.partnerReadOnly`, 선택일 Summary, 연결 전/Empty/Error 상태 |
+| 추가로 필요한 컴포넌트 | 아내 화면과 동일한 `RecordCalendarScreen`, `ConditionCalendar`, `RecordDaySummary` 재사용 |
 | 이전 화면 | 계정 연동 완료 또는 Partner Bootstrap |
 | 다음 화면 | 아침 리포트, 알림, 가사 요청, 파트너 프로필 |
 | Interaction | 월 이동, 날짜 선택, 읽기 전용 기록 조회, Header 알림·프로필 진입 |
-| 비고 | Partner Main 화면. C-10: 전용 이미지 없음 |
+| 비고 | Partner Main 화면. `13_condition_calendar.png` 구조를 공유하고 알림·프로필·실시간 진입만 역할별로 추가 |
 
 ### 4.18 파트너 알림
 
@@ -403,7 +403,7 @@
 
 프로필, 컨디션, Home, 식사, 가사, 건강, 수면, 리포트, 모션, Partner 전용 Component는 각 Domain 상태가 확정되는 실제 Screen 구현 시 해당 Feature의 `widgets/`에 추가한다. 상세 판단은 `docs/development/06_common_ui_gap_analysis.md`를 따른다.
 
-공통 기반 준비 이후 `W-PROFILE-001`, `W-COND-001`, `W-ROUTINE-001`, `W-MEAL-001`, `W-HOUSE-001`, `W-MOTION-001`, `W-HEALTH-001`, `W-SLEEP-001`, `W-CHAT-001`을 실제 UI로 구현했으며, 그 외 제품 화면은 `SKELETON`으로 유지한다.
+공통 기반 준비 이후 Profile, Today Care, Home, Meal, Household, `B-MOTION-001`, Health, Sleep, Chat, Daily Report와 `B-CAL-001` 역할별 Calendar를 실제 UI로 구현했으며, 그 외 제품 화면은 `SKELETON`으로 유지한다.
 
 ## 6. 구현 순서
 

@@ -15,7 +15,7 @@
 - Source of Truth는 `docs/requirements/04_1_기능요구사항명세서.md`의 기능 요구사항 ID다.
 - 별도 Screen ID는 정의하지 않는다. Route와 화면은 관련 `W-*`·`H-*` ID를 하나 이상 연결해 추적한다.
 - 하나의 화면이 여러 기능을 담당하면 관련 요구사항 ID를 모두 기록하고, 표의 첫 ID만 대표 ID로 사용한다.
-- 공유 실시간 화면은 역할에 따라 `W-MOTION-001`과 `H-MOTION-001`을 함께 연결한다.
+- 공유 실시간 화면은 공통 요구사항 `B-MOTION-001`을 역할별 Route에 연결한다.
 
 ## 2. Bootstrap 계약
 
@@ -42,15 +42,15 @@
 | W-ROUTINE-001<br>W-ROUTINE-002<br>W-ROUTINE-003 | 통합 홈 | `/wife/home` | Bootstrap, 초대 종료, 활동 저장 | Guide, Report, Calendar, 전역 메뉴 | 당일 컨디션 local Store, `MockRoutineService` | IMPLEMENTED |
 | W-MEAL-001<br>W-MEAL-002<br>W-MEAL-003<br>W-MEAL-004<br>W-RECORD-001 | 식사 가이드 | `/wife/home/meal` | Home 식사 영역 | W-CHAT-001 또는 Home | 끼니·적용 추천은 `MealSelectionStore` | IMPLEMENTED |
 | W-HOUSE-001<br>W-HOUSE-002<br>W-HOUSE-003<br>W-RECORD-002 | 가사 가이드 | `/wife/home/household` | Home 가사 영역, 실시간의 가전 전환 CTA | 요청 전송 결과 후 현재 화면/Home | 요청·가전 실행은 local mock 상태, 남편 화면 직접 이동 금지 | IMPLEMENTED |
-| W-MOTION-001<br>H-MOTION-001 | 공유 실시간 모션 | `/wife/movement`, `/partner/movement` | 역할별 하단 실시간 Tab만 | 아내는 가사 가이드 또는 역할별 이전 Tab | 제품 UI의 감지·로그는 local mock, 실제 계정 연동·동의 Guard TODO | IMPLEMENTED / MOCK UI |
+| B-MOTION-001 | 공유 실시간 모션 | `/wife/movement`, `/partner/movement` | 아내 하단 실시간 Tab, 파트너 Calendar 또는 Partner Tab | 아내는 가사 가이드, 역할별 Calendar | 감지 Toggle·severity·Alert 확인은 local mock, 실제 계정 연동·동의 Guard TODO | IMPLEMENTED / MOCK UI |
 | W-HEALTH-001<br>W-HEALTH-002<br>W-RECORD-001 | 건강 가이드 | `/wife/home/health` | Home 건강 영역 | 완료 후 현재 화면/Home | 완료 상태는 화면 Controller의 local State | IMPLEMENTED |
 | W-SLEEP-001<br>W-SLEEP-002<br>W-RECORD-001 | 수면 가이드 | `/wife/home/sleep` | Home 수면 영역 | 설정 Bottom Sheet 후 현재 화면, 완료 후 현재 화면/Home | 선택·설정·실행 결과는 local State, 실제 ThinQ 실행 없음 | IMPLEMENTED / MOCK DEVICE |
 | W-MEAL-002<br>W-CHAT-001 | 식사 재조정 채팅 | `/wife/meal-chat` | 식사 가이드 또는 Wife Chat Tab | 적용 시 W-MEAL-001 | Meal Context/Draft는 Feature State | IMPLEMENTED; W-CHAT-002 Phase 2 제외 |
-| W-REPORT-001<br>W-REPORT-002 | Daily 리포트 | `/wife/calendar/report/:date` | 하루 끝내기 또는 Wife Calendar | W-CAL-001/공유 Modal | `date` 필수 | SKELETON |
-| W-CAL-001 | 컨디션 캘린더 | `/wife/calendar` | Wife Calendar Tab 또는 Report | 선택 날짜 W-REPORT-001 | 선택 날짜는 URL 이동 시 `date`로 전달 | SKELETON |
+| W-REPORT-001<br>W-REPORT-002 | Daily 리포트 | `/wife/calendar/report/:date` | 하루 끝내기 또는 Wife Calendar | B-CAL-001/공유 Modal | `date` 필수, 기록·저장·공유는 mock | IMPLEMENTED |
+| B-CAL-001 | 컨디션 캘린더(아내) | `/wife/calendar` | Wife Calendar Tab 또는 Report | 선택 날짜 W-REPORT-001 | 선택 날짜를 ISO `date`로 전달, 공통 Mock Record 사용 | IMPLEMENTED |
 | W-SETTING-001 | 설정 | `/wife/settings` | Wife 전역 프로필 메뉴 | 이전 화면 | 상세 설정 요구사항 없음 | BLOCKED / PHASE 2 |
 | H-REPORT-001 | 파트너 아침 리포트 | `/partner/report/:date` | 알림 또는 Partner Calendar | H-REQUEST-001 또는 이전 화면 | `date` 필수 | SKELETON |
-| H-CAL-001 | 파트너 캘린더 | `/partner/calendar` | Bootstrap/연동 완료 | Report, Notification, Request, Profile | 선택 날짜는 Report `date`로 전달 | SKELETON |
+| B-CAL-001 | 컨디션 캘린더(파트너) | `/partner/calendar` | Bootstrap/연동 완료 | H-REPORT-001, Notification, Profile, Movement | 선택 날짜를 H-REPORT-001의 ISO `date`로 전달 | IMPLEMENTED |
 | H-NOTI-001 | 파트너 알림 | `/partner/notifications` | Partner 전역 Bell | H-REPORT-001 또는 H-REQUEST-001 | 앱 내 Mock Inbox | SKELETON |
 | H-REQUEST-001<br>H-REQUEST-002<br>H-REQUEST-003 | 파트너 가사 요청 | `/partner/requests/:requestId` | 알림, 리포트, 캘린더 | 상태 처리 후 Detail 유지/이전 화면 | `requestId` 필수 | SKELETON |
 | H-PROFILE-001 | 파트너 프로필 | `/partner/profile` | Partner 전역 Profile Button | 이전 화면 | 조회 전용 | SKELETON |
@@ -100,10 +100,10 @@ flowchart TD
   PRT --> PR
   PC --> PP[H-PROFILE-001 Partner Profile]
 
-  WH -. Wife Bottom Tab .-> WMO[W-MOTION-001 Wife Movement]
+  WH -. Wife Bottom Tab .-> WMO[B-MOTION-001 Wife Movement]
   WH -. Wife Bottom Tab .-> WCHAT
   WH -. Wife Bottom Tab .-> WCA
-  PC -. Partner Bottom Tab .-> PMO[H-MOTION-001 Partner Movement]
+  PC -. Partner Bottom Tab .-> PMO[B-MOTION-001 Partner Movement]
 ```
 
 ## 5. Route Context 계약
