@@ -25,7 +25,7 @@
 - 이벤트는 프레임별 스냅샷이 아니라 **구간형**(시작~종료)으로 저장한다.
 - 시각은 세션 상대초가 아니라 **절대 UTC datetime**(`started_at`/`ended_at`)으로 저장한다.
 - 실시간 상태(`PostureFrameState`)에는 골격 오버레이를 그릴 수 있도록 **33개 landmark 좌표를 포함**한다.
-- Supabase 인증이 붙기 전까지 `user_id`는 파일 상단의 **`DEMO_USER_ID` 고정값**을 쓴다. 인증 연동 시 각 호출부의 값만 실제 user_id로 교체하고 이 상수는 제거할 것.
+- ~~Supabase 인증이 붙기 전까지 `user_id`는 파일 상단의 `DEMO_USER_ID` 고정값을 쓴다.~~ **2026-09-16 완료**: 인증 연동 후 이 상수는 제거했고, 모든 호출부(`movement.py` 라우터)가 `get_current_user`로 얻은 실제 user_id를 명시적으로 넘긴다.
 
 **설계 결정 (2026-09-15 팀 논의, `docs/requirements/` 정합성 점검 반영)**
 
@@ -34,7 +34,7 @@
   루틴 반영, 즉각 개입 없음")을 근거로, 실시간 기능은 풀 방식(`LiveAccumulatedState`)으로만 제공한다.
 - Flutter Web 브라우저 카메라 연동은 **데모 전용**이다. 시연 때 모니터로 모션 인식 동작을 보여주기
   위한 것이며, 실제 서비스 전환 시 프라이버시 이슈를 감안해 재검토한다는 것을 문서에 명시한다
-  (`구현계획서_v3.md` §4 참고).
+  (`구현계획서_v3.md` §3 참고).
 - "휴식 부족" 감지(W-MOTION-001의 4항목 중 하나)는 이번 범위에서 **제외**한다.
 - 리포트는 관절 좌우 구분 없이 **부위(허리·몸통 / 무릎) 단위**로 집계한다 (`resolve_body_part()`).
 - NFR-008/011/012/014(암호화, 영상 보관기한, 동의 철회, 최소 데이터 전달)는 **지금은 코드 주석으로만
@@ -47,11 +47,11 @@
 
 **다음에 이 스키마를 쓰게 될 곳**
 
-- `backend/app/api/v1/movement.py` — 라우터 + `WS /live/stream` 작성 완료(B-1/B-3, 2026-09-15). `/live`·`/events`·`/report/daily` 전부 실제 값을 반환한다(목업 없음)
-- `supabase/migrations/` — 컬럼 설계는 [supabase/README.md](../../../supabase/README.md)에 문서화 완료, 실제 `.sql` 마이그레이션은 인증 연동 시점에 작성 예정
-- `backend/app/services/movement/events.py` — `EventStore` 저장소 작성 완료(`InMemoryEventStore`), `WS /live/stream`이 실제로 기록
+- `backend/app/api/v1/movement.py` — 라우터 + `WS /live/stream` 작성 완료(B-1/B-3, 2026-09-15). `/live`·`/events`·`/report/daily` 전부 실제 값을 반환한다(목업 없음). **2026-09-16 추가**: 전부 로그인 필요로 전환 — REST는 `get_current_user`(profile.py와 동일), WS는 `?token=` 쿼리 파라미터(`get_user_from_token`). `_calibration_store`/`_event_store` 싱글턴도 Supabase 구현체로 교체 완료
+- `supabase/migrations/` — [20260916000000_create_movement_tables.sql](../../../supabase/migrations/20260916000000_create_movement_tables.sql) 작성·적용 완료(`mekqbjztmsbebtqybtuc` 프로젝트, 프로필과 같은 프로젝트로 통합)
+- `backend/app/services/movement/events.py` — `EventStore` 저장소 작성 완료(`InMemoryEventStore`, 테스트 전용으로 유지), `WS /live/stream`이 실제로 기록. **2026-09-16 추가**: `SupabaseEventStore` 구현체로 실제 API 라우터에 연결 완료(`posture_events` 테이블 사용)
 - `backend/app/services/movement/session_manager.py` — `SessionManager` 작성 완료(B-2, 2026-09-15), `WS /live/stream`이 실제로 호출한다
-- `backend/app/services/movement/calibration.py` — `CalibrationStore`(`LocalFileCalibrationStore`) + `CalibrationCollector`(비동기 프레임 스트림용 누산기, B-1/B-3) 작성 완료
+- `backend/app/services/movement/calibration.py` — `CalibrationStore`(`LocalFileCalibrationStore`, 테스트 전용으로 유지) + `CalibrationCollector`(비동기 프레임 스트림용 누산기, B-1/B-3) 작성 완료. **2026-09-16 추가**: `SupabaseCalibrationStore` 구현체로 실제 API 라우터에 연결 완료(`posture_calibration_profiles` 테이블 사용)
 - `backend/app/services/movement/report.py` — `PostureAggregate`/`DailyReportSummary` 생성 로직 작성 완료(2026-09-15). `top_burdened_body_part`는 `count × 라벨 심각도`로 계산(지속시간 합이면 항상 `duration_sec=0`인 Sit-to-Stand가 1위가 될 수 없어서)
 
-관련 문서: [구현계획서 v3](../../../docs/movement/구현계획서_v3.md) (§2.4~§2.7 판정 로직 근거), [모션 통합 문서](../../../docs/movement/README.md) (분석 모듈 배치 현황)
+관련 문서: [구현계획서 v3](../../../docs/movement/구현계획서_v3.md) (§2 판정 로직 근거), [모션 통합 문서](../../../docs/movement/README.md) (분석 모듈 배치 현황)

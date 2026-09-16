@@ -7,7 +7,7 @@ import 'movement_controller.dart';
 import 'movement_overlay_painter.dart';
 
 /// 모션 인식 데모 화면 (B-4). 카메라를 켜서 캘리브레이션 후 실시간 자세/부담
-/// 라벨을 보여준다. 데모 전용이며(구현계획서_v3.md §4), 실제 브라우저 카메라
+/// 라벨을 보여준다. 데모 전용이며(구현계획서_v3.md §3), 실제 브라우저 카메라
 /// 동작은 이 화면에서 `flutter run -d chrome`으로 수동 확인이 필요하다.
 ///
 /// movement_controller.dart와 마찬가지로 dart:html 기반 구현(Browser*)을 직접

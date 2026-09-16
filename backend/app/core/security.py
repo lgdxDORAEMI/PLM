@@ -34,12 +34,19 @@ def get_current_user(
 ) -> CurrentUser:
     if credentials is None:
         raise _unauthorized()
+    return get_user_from_token(credentials.credentials, supabase)
+
+
+def get_user_from_token(token: str, supabase: SupabaseService) -> CurrentUser:
+    """access token 하나로 사용자를 확인한다. get_current_user()가 이걸 감싼 것이고,
+    HTTP Authorization 헤더를 못 쓰는 곳(예: movement WebSocket — 토큰을 쿼리
+    파라미터로 받는다, 2026-09-16 결정)에서 직접 재사용한다."""
     try:
         client = supabase.client
     except ValueError as error:  # Supabase 환경변수 누락
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, AUTH_UNAVAILABLE) from error
     try:
-        response = client.auth.get_user(credentials.credentials)
+        response = client.auth.get_user(token)
     except (AuthRetryableError, httpx.HTTPError) as error:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, AUTH_UNAVAILABLE) from error
     except AuthError as error:

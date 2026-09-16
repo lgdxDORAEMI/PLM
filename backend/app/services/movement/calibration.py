@@ -5,26 +5,35 @@
 학습이 아니라 단순 평균값 저장이며, 근거는 계획서 §2.3 참고.
 
 저장 방식(CalibrationStore)은 이 파일에서 함께 정의하되 `CalibrationProfile`
-자체와는 분리했다 (B-5, 2026-09-15). 지금은 로컬 파일 구현체
-(`LocalFileCalibrationStore`)만 있지만, 나중에 Supabase 구현체로 교체할 때
-`run_calibration()`이나 호출부를 건드리지 않고 store 인스턴스만 바꾸면 된다.
-컬럼 설계는 `supabase/README.md`의 `posture_calibration_profiles` 참고.
+자체와는 분리했다 (B-5, 2026-09-15). 로컬 파일 구현체(`LocalFileCalibrationStore`)와
+Supabase 구현체(`SupabaseCalibrationStore`, 2026-09-16 추가) 둘 다 있고,
+`run_calibration()`이나 호출부는 store 인스턴스만 바꾸면 그대로 재사용된다.
+컬럼 설계는 `supabase/README.md`와
+`supabase/migrations/20260916000000_create_movement_tables.sql`의
+`posture_calibration_profiles` 참고.
 """
 
 from __future__ import annotations
 
 import json
+import logging
 import time
 from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Protocol
+from typing import Any, Protocol
 from uuid import UUID
 
+import httpx
 import numpy as np
 import yaml
+from postgrest.exceptions import APIError
 
+from ..supabase_service import SupabaseService
 from .features import FrameFeatures, compute_features
 from .pose_extractor import PoseExtractor
+
+logger = logging.getLogger(__name__)
 
 CONFIG_PATH = Path(__file__).resolve().parent / "config.yaml"
 DEFAULT_STORE_DIR = Path(__file__).resolve().parents[3] / ".local" / "motion_demo" / "calibration"
@@ -90,6 +99,87 @@ class LocalFileCalibrationStore:
         if not path.exists():
             return None
         return CalibrationProfile(**json.loads(path.read_text(encoding="utf-8")))
+
+
+class CalibrationStorageError(Exception):
+    """DB 저장 또는 조회에 실패했다."""
+
+
+class SupabaseCalibrationStore:
+    """Supabase(Postgres) 기반 CalibrationStore 구현체 (2026-09-16 추가).
+
+    profile_service.ProfileService와 같은 쿼리 패턴을 따르되, 생성자는 Client가
+    아니라 SupabaseService를 받는다 — 이 store는 ProfileService처럼 요청마다
+    새로 만드는 게 아니라 `movement.py`가 앱 시작 시점에 한 번만 만드는
+    singleton이라, `.client`(실제 연결)를 생성자에서 바로 만들면 SUPABASE_*
+    환경변수가 없을 때 앱 자체가 기동 실패한다. SupabaseService.client는
+    지연 프로퍼티라, 실제 DB 요청이 오는 시점에야 연결을 만들고 그때
+    실패하면 여기서 CalibrationStorageError로 감싼다.
+
+    재캘리브레이션을 여러 번 할 수 있으므로 user_id에 unique 제약을 두지
+    않고(supabase/README.md 참고) save()는 항상 새 행을 insert, load()는
+    captured_at 기준 가장 최근 행 하나를 가져온다.
+
+    TODO (NFR-008, 2026-09-15 결정 — 지금은 주석만): 여기 저장되는 각도
+    데이터도 민감정보로 분류되므로, 컬럼 단위 암호화 적용이 필요할 수 있다
+    (지금은 미구현).
+    """
+
+    TABLE = "posture_calibration_profiles"
+
+    def __init__(self, supabase: SupabaseService) -> None:
+        self.supabase = supabase
+
+    def save(self, user_id: UUID, profile: CalibrationProfile) -> None:
+        row = {
+            "user_id": str(user_id),
+            "baseline_trunk_flexion": profile.baseline_trunk_flexion,
+            "baseline_knee_angle": profile.baseline_knee_angle,
+            "frame_count": profile.frame_count,
+            "captured_at": _epoch_to_iso(profile.captured_at),
+        }
+        self._run(lambda: self._client().table(self.TABLE).insert(row).execute())
+
+    def load(self, user_id: UUID) -> CalibrationProfile | None:
+        rows = self._run(
+            lambda: self._client()
+            .table(self.TABLE)
+            .select("baseline_trunk_flexion", "baseline_knee_angle", "frame_count", "captured_at")
+            .eq("user_id", str(user_id))
+            .order("captured_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if not rows:
+            return None
+        row = rows[0]
+        return CalibrationProfile(
+            baseline_trunk_flexion=row["baseline_trunk_flexion"],
+            baseline_knee_angle=row["baseline_knee_angle"],
+            frame_count=row["frame_count"],
+            captured_at=_iso_to_epoch(row["captured_at"]),
+        )
+
+    def _client(self) -> Any:
+        try:
+            return self.supabase.client
+        except ValueError as error:  # SUPABASE_* 환경변수 누락
+            raise CalibrationStorageError from error
+
+    def _run(self, request: Any) -> list[dict]:
+        try:
+            return request().data
+        except (APIError, httpx.HTTPError) as error:
+            logger.exception("캘리브레이션 DB 요청 실패")
+            raise CalibrationStorageError from error
+
+
+def _epoch_to_iso(value: float) -> str:
+    return datetime.fromtimestamp(value, tz=timezone.utc).isoformat()
+
+
+def _iso_to_epoch(value: str) -> float:
+    return datetime.fromisoformat(str(value).replace("Z", "+00:00")).timestamp()
 
 
 class CalibrationCollector:

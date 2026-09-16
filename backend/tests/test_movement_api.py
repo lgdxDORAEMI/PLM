@@ -9,21 +9,49 @@ judgement 로직 자체(각도 임계값, 지속시간 규칙)는 이미
 tools/motion_demo/test_motion.py의 SessionManagerTest에서 합성 dev 값으로
 검증했으므로 여기서 다시 검증하지 않는다. 여기서는 Sit-to-Stand처럼 실제
 경과시간이 1초 남짓만 필요한 시나리오로 "이 배선이 실제로 동작하는가"만 확인한다.
+
+2026-09-16부터 movement.py의 _calibration_store/_event_store는 Supabase 구현체라
+실제 네트워크가 필요하다. 그래서 이 테스트에서는 SessionManager/EventStore를
+InMemory/로컬 파일 기반으로 오버라이드하고(get_session_manager, get_event_store),
+인증도 실제 Supabase 대신 가짜로 오버라이드한다(get_current_user, get_supabase_service)
+— test_profile.py의 오버라이드 패턴과 동일하다. get_current_user 자체의
+401/503 처리는 test_profile.py의 CurrentUserTest에서 이미 검증했으므로 여기서는
+다시 검증하지 않고, WebSocket 전용 토큰 검증 경로만 추가로 확인한다.
 """
 
 import time
 import unittest
+import uuid
+from types import SimpleNamespace
 
 import cv2
 import numpy as np
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
-from app.api.v1.movement import _calibration_store, get_pose_extractor
+from app.api.v1.movement import get_event_store, get_pose_extractor, get_session_manager
+from app.core.security import CurrentUser, get_current_user
 from app.main import app
-from app.schemas.movement import DEMO_USER_ID
-from app.services.movement.calibration import _capture_frames_setting
+from app.services.movement.calibration import LocalFileCalibrationStore, _capture_frames_setting
+from app.services.movement.events import InMemoryEventStore
 from app.services.movement.pose_extractor import PoseResult
+from app.services.movement.session_manager import SessionManager
+from app.services.supabase_service import get_supabase_service
+
+_TEST_USER_ID = "11111111-1111-1111-1111-111111111111"
+_VALID_TOKEN = "test-token"
+
+
+def _fake_supabase_service(user_id: str) -> SimpleNamespace:
+    """SupabaseService 대역. .client.auth.get_user(token)만 흉내 낸다
+    (test_profile.py의 supabase_with()와 동일한 duck-typing 방식)."""
+
+    def get_user(token: str):
+        if token != _VALID_TOKEN:
+            return None
+        return SimpleNamespace(user=SimpleNamespace(id=user_id))
+
+    return SimpleNamespace(client=SimpleNamespace(auth=SimpleNamespace(get_user=get_user)))
 
 
 def _world(overrides: dict[int, tuple[float, float, float]]) -> np.ndarray:
@@ -56,6 +84,7 @@ _BLANK_JPEG = cv2.imencode(".jpg", np.zeros((240, 320, 3), dtype=np.uint8))[1].t
 
 # 실제 브라우저가 보내는 것과 같은 형태(로컬 Flutter Web 개발 포트)의 Origin.
 _ALLOWED_ORIGIN_HEADERS = {"origin": "http://localhost:5173"}
+_STREAM_URL = f"/api/v1/movement/live/stream?token={_VALID_TOKEN}"
 
 
 class FakePoseExtractor:
@@ -82,27 +111,38 @@ class MovementWebSocketTest(unittest.TestCase):
     def setUp(self) -> None:
         self.fake_extractor = FakePoseExtractor()
 
-        def override():
+        def override_extractor():
             yield self.fake_extractor
 
-        app.dependency_overrides[get_pose_extractor] = override
+        # 실제 Supabase 없이 배선만 검증하기 위해 인메모리/로컬 파일 저장소로
+        # 이 테스트 전용 SessionManager를 만든다 (movement.py의 모듈 싱글턴은
+        # 이제 Supabase 구현체라 여기서는 안 쓴다).
+        self.event_store = InMemoryEventStore()
+        self.calibration_store = LocalFileCalibrationStore()
+        self.session_manager = SessionManager(
+            calibration_store=self.calibration_store, event_store=self.event_store
+        )
+
+        app.dependency_overrides[get_pose_extractor] = override_extractor
+        app.dependency_overrides[get_session_manager] = lambda: self.session_manager
+        app.dependency_overrides[get_event_store] = lambda: self.event_store
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=_TEST_USER_ID)
+        app.dependency_overrides[get_supabase_service] = lambda: _fake_supabase_service(_TEST_USER_ID)
+
         self.client = TestClient(app)
-        # _calibration_store는 모듈 전역 싱글턴이라 로컬 파일(.local/motion_demo/)에
-        # 실제로 남는다. 이전 테스트 실행이 남긴 기록 때문에 "이미 캘리브레이션
-        # 있음"으로 스킵되지 않도록 매 테스트 전/후로 지운다.
-        self._calibration_path = _calibration_store._path(DEMO_USER_ID)
+        # 이전 테스트 실행이 남긴 기록 때문에 "이미 캘리브레이션 있음"으로
+        # 스킵되지 않도록 매 테스트 전/후로 지운다.
+        self._calibration_path = self.calibration_store._path(uuid.UUID(_TEST_USER_ID))
         self._calibration_path.unlink(missing_ok=True)
 
     def tearDown(self) -> None:
-        app.dependency_overrides.pop(get_pose_extractor, None)
+        app.dependency_overrides.clear()
         self._calibration_path.unlink(missing_ok=True)
 
     def test_calibration_then_sit_to_stand_event_is_recorded(self) -> None:
         num_frames = _capture_frames_setting()
 
-        with self.client.websocket_connect(
-            "/api/v1/movement/live/stream", headers=_ALLOWED_ORIGIN_HEADERS
-        ) as ws:
+        with self.client.websocket_connect(_STREAM_URL, headers=_ALLOWED_ORIGIN_HEADERS) as ws:
             # 캘리브레이션 단계: 서 있는 자세로 num_frames번 보낸다.
             for i in range(num_frames):
                 ws.send_bytes(_BLANK_JPEG)
@@ -163,7 +203,7 @@ class MovementWebSocketTest(unittest.TestCase):
     def test_disallowed_origin_is_rejected(self) -> None:
         with self.assertRaises(WebSocketDisconnect):
             with self.client.websocket_connect(
-                "/api/v1/movement/live/stream",
+                _STREAM_URL,
                 headers={"origin": "https://evil.example.com"},
             ):
                 pass
@@ -172,7 +212,22 @@ class MovementWebSocketTest(unittest.TestCase):
         # 실제 브라우저는 항상 Origin을 보내지만, Origin이 없는 요청까지도
         # "허용된 곳에서 온 게 확인되지 않았다"고 보고 막아야 더 안전하다.
         with self.assertRaises(WebSocketDisconnect):
-            with self.client.websocket_connect("/api/v1/movement/live/stream"):
+            with self.client.websocket_connect(_STREAM_URL):
+                pass
+
+    def test_missing_token_is_rejected(self) -> None:
+        with self.assertRaises(WebSocketDisconnect):
+            with self.client.websocket_connect(
+                "/api/v1/movement/live/stream", headers=_ALLOWED_ORIGIN_HEADERS
+            ):
+                pass
+
+    def test_invalid_token_is_rejected(self) -> None:
+        with self.assertRaises(WebSocketDisconnect):
+            with self.client.websocket_connect(
+                "/api/v1/movement/live/stream?token=wrong-token",
+                headers=_ALLOWED_ORIGIN_HEADERS,
+            ):
                 pass
 
 
