@@ -54,7 +54,9 @@ class MovementOverlayPainter extends CustomPainter {
       final la = byName[a];
       final lb = byName[b];
       if (la == null || lb == null) continue;
-      if (la.visibility < _minVisibility || lb.visibility < _minVisibility) continue;
+      if (la.visibility < _minVisibility || lb.visibility < _minVisibility) {
+        continue;
+      }
       canvas.drawLine(
         Offset(la.x * scaleX, la.y * scaleY),
         Offset(lb.x * scaleX, lb.y * scaleY),
@@ -67,7 +69,11 @@ class MovementOverlayPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
     for (final landmark in landmarks) {
       if (landmark.visibility < _minVisibility) continue;
-      canvas.drawCircle(Offset(landmark.x * scaleX, landmark.y * scaleY), 4, dotPaint);
+      canvas.drawCircle(
+        Offset(landmark.x * scaleX, landmark.y * scaleY),
+        4,
+        dotPaint,
+      );
     }
   }
 

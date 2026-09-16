@@ -10,7 +10,6 @@ import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_names.dart';
 import '../controllers/partner_notification_controller.dart';
 import '../models/partner_notification.dart';
-import '../widgets/partner_bottom_navigation.dart';
 
 class PartnerNotificationsScreen extends StatefulWidget {
   const PartnerNotificationsScreen({super.key});
@@ -76,17 +75,17 @@ class _PartnerNotificationsScreenState
         ),
       ),
     ),
-    bottomNavigationBar: const PartnerBottomNavigation(),
   );
 
   void _open(PartnerNotificationItem item) {
     _controller.markRead(item.id);
     final route = switch (item.type) {
-      PartnerNotificationType.morningReport =>
-        item.id.endsWith('2026-09-12')
-            ? RouteNames.partnerMorningReport('2026-09-12')
-            : RouteNames.partnerMorningReport('2026-09-13'),
-      PartnerNotificationType.householdRequest => RouteNames.partnerRequestDemo,
+      PartnerNotificationType.morningReport => RouteNames.partnerMorningReport(
+        item.reportDate!,
+      ),
+      PartnerNotificationType.householdRequest => RouteNames.partnerRequest(
+        item.requestId!,
+      ),
     };
     Navigator.pushNamed(context, route);
   }

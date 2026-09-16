@@ -1,5 +1,11 @@
 # Movement
 
+## 제품 화면과 기술 데모 경계
+
+`ProductMovementScreen`은 B-MOTION-001의 Phase 2 화면 구성을 확인하기 위한 Local Mock입니다. `/wife/movement`는 Wife 하단 실시간 탭, `/partner/movement`는 Partner Calendar CTA에서만 진입하며, 제품 화면은 카메라 권한·MediaPipe·WebSocket·실시간 센서를 사용하지 않습니다.
+
+아래 카메라/분석 구현은 `main_movement_debug.dart`로만 실행하는 독립 기술 데모입니다. 일반 `main.dart`와 `AppRouter`에서는 `MovementScreen`, `BrowserCameraFrameSource`, `BrowserLiveTransport`를 생성하지 않습니다.
+
 Flutter Web 카메라로 `WS /api/v1/movement/live/stream`(백엔드 B-1/B-3)에 프레임을 보내고,
 캘리브레이션 진행 상황과 실시간 자세/부담 라벨을 보여주는 데모 화면입니다(B-4, 2026-09-15).
 데모 전용이며, 실제 서비스 전환 시 재검토 대상입니다(`docs/movement/구현계획서_v3.md` §3 참고).

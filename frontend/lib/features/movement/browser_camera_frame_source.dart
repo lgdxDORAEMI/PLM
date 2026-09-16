@@ -21,7 +21,10 @@ class BrowserCameraFrameSource implements CameraFrameSource {
     this.captureInterval = const Duration(milliseconds: 200),
     this.jpegQuality = 0.6,
   }) : viewType = 'plm-movement-camera-${_nextViewId++}' {
-    ui_web.platformViewRegistry.registerViewFactory(viewType, (int _) => _video);
+    ui_web.platformViewRegistry.registerViewFactory(
+      viewType,
+      (int _) => _video,
+    );
   }
 
   static int _nextViewId = 0;
@@ -49,7 +52,8 @@ class BrowserCameraFrameSource implements CameraFrameSource {
   html.MediaStream? _stream;
   html.CanvasElement? _canvas;
   Timer? _timer;
-  final StreamController<Uint8List> _controller = StreamController<Uint8List>.broadcast();
+  final StreamController<Uint8List> _controller =
+      StreamController<Uint8List>.broadcast();
 
   @override
   Stream<Uint8List> get frames => _controller.stream;

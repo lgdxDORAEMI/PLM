@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import '../features/calendar/screens/wife_calendar_screen.dart';
 import '../features/condition/screens/activity_screen.dart';
 import '../features/condition/screens/condition_screen.dart';
+import '../features/entry/screens/entry_screen.dart';
 import '../features/health/screens/health_guide_screen.dart';
 import '../features/home/screens/wife_home_screen.dart';
 import '../features/household/screens/household_guide_screen.dart';
 import '../features/meal/screens/meal_chat_screen.dart';
 import '../features/meal/screens/meal_guide_screen.dart';
+import '../features/menu/screens/wife_menu_screen.dart';
 import '../features/movement/product_movement_screen.dart';
 import '../features/partner/screens/invitation_entry_screen.dart';
 import '../features/partner/screens/partner_calendar_screen.dart';
@@ -26,11 +28,12 @@ import 'route_names.dart';
 abstract final class AppRouter {
   /// ROUTE_MAP의 화면 계약을 테스트하기 위한 정적 path/template 목록이다.
   static const productRoutes = <String>[
+    RouteNames.entry,
     RouteNames.profileSetup,
     RouteNames.wifeProfile,
     RouteNames.partnerInvite,
     RouteNames.wifeInvite,
-    RouteNames.invitationEntry,
+    RouteNames.partnerJoin,
     RouteNames.condition,
     RouteNames.activity,
     RouteNames.wifeHome,
@@ -43,19 +46,26 @@ abstract final class AppRouter {
     RouteNames.mealChat,
     RouteNames.dailyReportPattern,
     RouteNames.wifeCalendar,
+    RouteNames.wifeMenu,
     RouteNames.wifeSettings,
     RouteNames.partnerMorningReportPattern,
     RouteNames.partnerCalendar,
     RouteNames.partnerNotifications,
-    RouteNames.partnerProfile,
     RouteNames.partnerRequestPattern,
   ];
 
   /// 실제 Session Adapter가 준비되면 이 결정에 인증·역할 상태를 주입한다.
-  static String resolveLaunchRoute(AppLaunchState state) {
+  static String resolveLaunchRoute(
+    AppLaunchState state, {
+    String? invitationToken,
+  }) {
     return switch (state) {
       AppLaunchState.wifeNeedsProfile => RouteNames.profileSetup,
       AppLaunchState.wifeReady => RouteNames.wifeHome,
+      AppLaunchState.partnerNeedsLink =>
+        invitationToken == null
+            ? RouteNames.partnerJoin
+            : RouteNames.invitation(token: invitationToken),
       AppLaunchState.partnerLinked => RouteNames.partnerCalendar,
     };
   }
@@ -81,7 +91,10 @@ abstract final class AppRouter {
 
   static Widget _screenFor(Uri uri) {
     final path = uri.path;
-    if (path == RouteNames.root || path == RouteNames.profileSetup) {
+    if (path == RouteNames.root || path == RouteNames.entry) {
+      return EntryScreen(invitationToken: uri.queryParameters['token']);
+    }
+    if (path == RouteNames.profileSetup) {
       return ProfileSetupScreen(mode: ProfileMode.create);
     }
     if (path == RouteNames.wifeProfile) {
@@ -93,7 +106,7 @@ abstract final class AppRouter {
     if (path == RouteNames.wifeInvite) {
       return PartnerInviteScreen(entryContext: InviteEntryContext.profileMenu);
     }
-    if (path == RouteNames.invitationEntry) {
+    if (path == RouteNames.partnerJoin) {
       return InvitationEntryScreen(token: uri.queryParameters['token']);
     }
     if (path == RouteNames.condition) {
@@ -115,12 +128,17 @@ abstract final class AppRouter {
     if (path == RouteNames.healthGuide) return const HealthGuideScreen();
     if (path == RouteNames.sleepGuide) return const SleepGuideScreen();
     if (path == RouteNames.mealChat) return const MealChatScreen();
-    if (path.startsWith('/wife/calendar/report/')) {
+    if (_matchesDetailPath(uri, actor: 'wife', resource: 'report')) {
       return DailyReportScreen(date: _lastSegment(uri));
     }
     if (path == RouteNames.wifeCalendar) return const WifeCalendarScreen();
+    if (path == RouteNames.wifeMenu) {
+      return WifeMenuScreen(
+        returnLocation: uri.queryParameters['returnLocation'],
+      );
+    }
     if (path == RouteNames.wifeSettings) return const WifeSettingsScreen();
-    if (path.startsWith('/partner/report/')) {
+    if (_matchesDetailPath(uri, actor: 'partner', resource: 'report')) {
       return PartnerMorningReportScreen(date: _lastSegment(uri));
     }
     if (path == RouteNames.partnerCalendar) {
@@ -129,14 +147,7 @@ abstract final class AppRouter {
     if (path == RouteNames.partnerNotifications) {
       return const PartnerNotificationsScreen();
     }
-    if (path == RouteNames.partnerProfile) {
-      return const ProductSkeletonScreen(
-        requirementIds: [],
-        title: '파트너 프로필',
-        description: '연결된 계정과 프로필 정보를 확인하는 화면입니다.',
-      );
-    }
-    if (path.startsWith('/partner/requests/')) {
+    if (_matchesDetailPath(uri, actor: 'partner', resource: 'requests')) {
       return PartnerRequestScreen(requestId: _lastSegment(uri));
     }
     return ProductSkeletonScreen(
@@ -144,12 +155,25 @@ abstract final class AppRouter {
       title: '화면을 찾을 수 없습니다',
       description: '등록되지 않은 경로입니다: $path',
       actions: const [
-        SkeletonAction('프로필 시작으로 이동', RouteNames.profileSetup, replace: true),
+        SkeletonAction('처음으로 이동', RouteNames.entry, replace: true),
       ],
     );
   }
 
   static String _lastSegment(Uri uri) {
     return uri.pathSegments.isEmpty ? '' : uri.pathSegments.last;
+  }
+
+  /// 상세 Route는 정확히 `/{actor}/{resource}/{parameter}` 구조일 때만 연다.
+  static bool _matchesDetailPath(
+    Uri uri, {
+    required String actor,
+    required String resource,
+  }) {
+    final segments = uri.pathSegments;
+    return segments.length == 3 &&
+        segments[0] == actor &&
+        segments[1] == resource &&
+        segments[2].isNotEmpty;
   }
 }

@@ -30,7 +30,8 @@ class MovementScreen extends StatefulWidget {
   State<MovementScreen> createState() => _MovementScreenState();
 }
 
-class _MovementScreenState extends State<MovementScreen> with WidgetsBindingObserver {
+class _MovementScreenState extends State<MovementScreen>
+    with WidgetsBindingObserver {
   late final MovementController _controller;
 
   @override
@@ -54,12 +55,14 @@ class _MovementScreenState extends State<MovementScreen> with WidgetsBindingObse
   // 일으키므로 제외했다.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
       if (_isRunning) _controller.stop();
     }
   }
 
-  bool get _isRunning => _controller.state != MovementConnectionState.idle &&
+  bool get _isRunning =>
+      _controller.state != MovementConnectionState.idle &&
       _controller.state != MovementConnectionState.error &&
       _controller.state != MovementConnectionState.disconnected;
 
@@ -102,7 +105,10 @@ class _MovementScreenState extends State<MovementScreen> with WidgetsBindingObse
         clipBehavior: Clip.antiAlias,
         child: viewType == null
             ? const Center(
-                child: Text('카메라가 꺼져 있습니다', style: TextStyle(color: Colors.white70)),
+                child: Text(
+                  '카메라가 꺼져 있습니다',
+                  style: TextStyle(color: Colors.white70),
+                ),
               )
             : LayoutBuilder(
                 builder: (context, constraints) {
@@ -112,7 +118,9 @@ class _MovementScreenState extends State<MovementScreen> with WidgetsBindingObse
                       HtmlElementView(viewType: viewType),
                       CustomPaint(
                         painter: MovementOverlayPainter(
-                          landmarks: _controller.latestFrame?.landmarks ?? const <Landmark>[],
+                          landmarks:
+                              _controller.latestFrame?.landmarks ??
+                              const <Landmark>[],
                           sourceWidth: 640,
                           sourceHeight: 480,
                         ),
@@ -134,7 +142,9 @@ class _MovementScreenState extends State<MovementScreen> with WidgetsBindingObse
       case MovementConnectionState.calibrating:
         final collected = _controller.calibrationCollected;
         final target = _controller.calibrationTarget;
-        final label = target > 0 ? '캘리브레이션 중... $collected/$target' : '캘리브레이션 준비 중...';
+        final label = target > 0
+            ? '캘리브레이션 중... $collected/$target'
+            : '캘리브레이션 준비 중...';
         return Column(
           children: [
             Text(label),

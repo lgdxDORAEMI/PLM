@@ -42,9 +42,8 @@ class ProfileSummary extends StatelessWidget {
               onTap: () => onEditStep(0),
             ),
             _SummaryItem(
-              label: '나이 · 신장 · 체중 (임신 전)',
-              value:
-                  '${draft.age}세 · ${draft.height}cm · ${draft.prePregnancyWeight}kg',
+              label: '신장 · 체중 (임신 전)',
+              value: '${draft.height}cm · ${draft.prePregnancyWeight}kg',
               onTap: () => onEditStep(1),
             ),
             _SummaryItem(

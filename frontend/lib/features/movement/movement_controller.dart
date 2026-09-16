@@ -11,7 +11,14 @@ import 'live_transport.dart';
 import 'models/live_message.dart';
 import 'models/posture_frame_state.dart';
 
-enum MovementConnectionState { idle, connecting, calibrating, live, disconnected, error }
+enum MovementConnectionState {
+  idle,
+  connecting,
+  calibrating,
+  live,
+  disconnected,
+  error,
+}
 
 /// 카메라 캡처 + `/api/v1/movement/live/stream` WebSocket 연동 상태를 관리한다.
 ///
@@ -66,13 +73,17 @@ class MovementController extends ChangeNotifier {
       final transport = await _transportFactory(_wsUri);
       _transport = transport;
 
-      _messageSub = transport.messages.listen(_handleMessage, onError: _handleError);
+      _messageSub = transport.messages.listen(
+        _handleMessage,
+        onError: _handleError,
+      );
       _frameSub = camera.frames.listen(transport.sendFrame);
 
       _setState(MovementConnectionState.calibrating);
       unawaited(
         transport.onClose.then((_) {
-          if (state != MovementConnectionState.idle && state != MovementConnectionState.error) {
+          if (state != MovementConnectionState.idle &&
+              state != MovementConnectionState.error) {
             _setState(MovementConnectionState.disconnected);
           }
         }),
@@ -94,7 +105,10 @@ class MovementController extends ChangeNotifier {
     }
 
     switch (message) {
-      case CalibrationProgress(collected: final collected, target: final target):
+      case CalibrationProgress(
+        collected: final collected,
+        target: final target,
+      ):
         calibrationCollected = collected;
         calibrationTarget = target;
         _setState(MovementConnectionState.calibrating);

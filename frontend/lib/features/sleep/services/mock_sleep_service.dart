@@ -13,36 +13,31 @@ class MockSleepService implements SleepService {
         type: SleepEnvironmentType.light,
         label: '조명',
         value: '은은하게',
-        options: ['아주 어둡게', '은은하게', '독서등'],
-        selected: true,
+        options: ['은은하게', '밝게', '어둡게', '취침등만 켜기', '끄기'],
       ),
       SleepEnvironmentSetting(
         type: SleepEnvironmentType.temperature,
         label: '온도',
         value: '24°C',
-        options: ['22°C', '23°C', '24°C'],
-        selected: true,
+        options: ['22°C', '23°C', '24°C', '25°C'],
       ),
       SleepEnvironmentSetting(
         type: SleepEnvironmentType.humidity,
         label: '습도',
         value: '55%',
         options: ['45%', '50%', '55%', '60%'],
-        selected: false,
       ),
       SleepEnvironmentSetting(
         type: SleepEnvironmentType.sound,
         label: '소리',
         value: '잔잔한 빗소리',
-        options: ['끄기', '잔잔한 빗소리', '백색 소음'],
-        selected: true,
+        options: ['잔잔한 빗소리', '백색 소음', '파도 소리', '숲속 소리', '끄기'],
       ),
       SleepEnvironmentSetting(
         type: SleepEnvironmentType.purifier,
         label: '공기청정기',
         value: '조용 모드',
-        options: ['끄기', '조용 모드', '자동 모드'],
-        selected: true,
+        options: ['조용 모드', '자동', '강풍', '취침 예약', '끄기'],
       ),
     ],
     tips: [
@@ -55,9 +50,4 @@ class MockSleepService implements SleepService {
 
   @override
   Future<SleepGuideData> fetchGuide() async => guide;
-
-  @override
-  Future<void> startRoutine(List<SleepEnvironmentSetting> environments) async {
-    await Future<void>.delayed(const Duration(milliseconds: 250));
-  }
 }

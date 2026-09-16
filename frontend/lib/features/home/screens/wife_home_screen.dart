@@ -18,9 +18,12 @@ import '../../routine/models/daily_routine.dart';
 import '../../routine/services/mock_routine_service.dart';
 import '../../routine/services/routine_service.dart';
 import '../../routine/widgets/routine_guide_card.dart';
+import '../../routine/widgets/routine_progress.dart';
+import '../../report/models/daily_record.dart';
 import '../models/home_dashboard_data.dart';
 import '../widgets/pregnancy_week_hero.dart';
 import '../widgets/pregnancy_week_tip_card.dart';
+import '../widgets/today_condition_summary.dart';
 
 class WifeHomeScreen extends StatefulWidget {
   const WifeHomeScreen({super.key, this.routineService});
@@ -76,21 +79,13 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
         title: '홈',
         showBack: false,
         actions: [
-          PopupMenuButton<String>(
+          IconButton(
             tooltip: '메뉴',
-            icon: const Icon(Icons.menu),
-            onSelected: (route) => Navigator.pushNamed(context, route),
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: RouteNames.wifeProfile,
-                child: Text('프로필 수정'),
-              ),
-              PopupMenuItem(
-                value: RouteNames.wifeInvite,
-                child: Text('배우자 초대'),
-              ),
-              PopupMenuItem(value: RouteNames.wifeSettings, child: Text('설정')),
-            ],
+            icon: const Icon(Icons.account_circle_outlined),
+            onPressed: () => Navigator.pushNamed(
+              context,
+              RouteNames.menu(returnLocation: RouteNames.wifeHome),
+            ),
           ),
         ],
       ),
@@ -100,29 +95,37 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
           child: ListView(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
             children: [
-              Text(
-                '${_data.userName}님,\n오늘 임신 ${_data.pregnancyWeek}주차예요',
-                style: Theme.of(context).textTheme.headlineMedium,
+              PregnancyWeekHero(
+                userName: _data.userName,
+                week: _data.pregnancyWeek,
               ),
-              if (hasTodayCare && _routineController.plan != null) ...[
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  _routineController.plan!.updatedLabel,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textTertiary,
-                  ),
-                ),
-              ],
               const SizedBox(height: AppSpacing.xxl),
-              Center(child: PregnancyWeekHero(week: _data.pregnancyWeek)),
+              _TodayConditionSection(
+                hasTodayCare: hasTodayCare,
+                summary: hasTodayCare
+                    ? TodayConditionSummary(
+                        condition: _todayCareStore.today!,
+                        onEdit: _editCondition,
+                      )
+                    : null,
+              ),
               const SizedBox(height: AppSpacing.xxl),
+              if (!hasTodayCare)
+                ..._todayCarePrompt()
+              else
+                ..._routineContent(),
+              const SizedBox(height: AppSpacing.huge),
+              const SectionHeader(
+                title: '이번 주에 알아두세요',
+                description: '임신 주차와 오늘 상태를 바탕으로 확인하는 보조 정보예요.',
+              ),
+              const SizedBox(height: AppSpacing.lg),
               PregnancyWeekTipCard(
                 week: _data.pregnancyWeek,
                 tips: _data.weekTips,
                 caution: _data.caution,
+                todayTip: _data.todayTip,
               ),
-              const SizedBox(height: AppSpacing.xxl),
-              if (hasTodayCare) ..._routineContent() else ..._todayCarePrompt(),
             ],
           ),
         ),
@@ -148,43 +151,61 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
 
   List<Widget> _todayCarePrompt() {
     return [
-      Text('오늘의 상태를 알려주세요', style: Theme.of(context).textTheme.titleLarge),
-      const SizedBox(height: AppSpacing.sm),
-      Text(
-        '컨디션을 입력하면 오늘 몸 상태에 맞는 루틴을 준비해 드려요.',
-        style: Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-      ),
-      const SizedBox(height: AppSpacing.lg),
       AppButton(
         key: const ValueKey('home-today-care-button'),
         label: '오늘의 컨디션 체크하러 가기',
         onPressed: () => Navigator.pushNamed(context, RouteNames.condition),
+      ),
+      const SizedBox(height: AppSpacing.sm),
+      Text(
+        '10초면 끝나요 · 입력 후 식사·가사·건강·수면 가이드를 준비해요.',
+        textAlign: TextAlign.center,
+        style: Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(color: AppColors.textTertiary),
       ),
     ];
   }
 
   List<Widget> _routineContent() {
     final plan = _routineController.plan;
-    if (plan == null) {
-      return const [AppLoadingState(message: '오늘의 루틴을 준비하고 있어요')];
+    if (_routineController.state == RoutineViewState.loading || plan == null) {
+      return const [_RoutineLoadingSection()];
     }
     return [
+      Semantics(
+        liveRegion: true,
+        label: _routineController.isFallback ? '기본 루틴 준비 완료' : '맞춤 루틴 준비 완료',
+        child: Text(
+          plan.updatedLabel,
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppColors.textTertiary),
+        ),
+      ),
+      const SizedBox(height: AppSpacing.lg),
       if (_routineController.isFallback) ...[
-        const InfoBanner(
+        InfoBanner(
+          key: const ValueKey('home-routine-fallback'),
           title: '기본 루틴을 보여드리고 있어요',
           message: '맞춤 루틴을 불러오지 못해 오늘 컨디션에 맞는 기본 가이드를 준비했어요.',
           tone: InfoBannerTone.warning,
         ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            key: const ValueKey('home-routine-retry'),
+            onPressed: _routineController.loadToday,
+            icon: const Icon(Icons.refresh),
+            label: const Text('맞춤 루틴 다시 시도'),
+          ),
+        ),
         const SizedBox(height: AppSpacing.xl),
       ],
       SectionHeader(
+        key: const ValueKey('home-routine-success'),
         title: '오늘의 하루 루틴',
         description: '오늘 컨디션을 반영한 맞춤 가이드예요.',
-        actionLabel: '컨디션 다시 입력',
-        onAction: () =>
-            Navigator.pushNamed(context, '${RouteNames.condition}?mode=edit'),
       ),
       const SizedBox(height: AppSpacing.lg),
       for (final item in plan.items) ...[
@@ -195,11 +216,15 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
         ),
         const SizedBox(height: AppSpacing.md),
       ],
-      const SizedBox(height: AppSpacing.sm),
+      const SizedBox(height: AppSpacing.xl),
+      RoutineProgress(items: plan.items),
+      const SizedBox(height: AppSpacing.xl),
       AppButton(
         label: '오늘의 일정 마치기',
-        onPressed: () =>
-            Navigator.pushNamed(context, RouteNames.dailyReportToday),
+        onPressed: () => Navigator.pushNamed(
+          context,
+          RouteNames.dailyReport(recordDateKey(DateTime.now())),
+        ),
       ),
     ];
   }
@@ -213,6 +238,10 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
     };
   }
 
+  void _editCondition() {
+    Navigator.pushNamed(context, '${RouteNames.condition}?mode=edit');
+  }
+
   /// Home은 목적지만 선택하고 각 Feature의 로직은 해당 Route가 담당한다.
   void _openBottomDestination(int index) {
     final route = switch (index) {
@@ -222,5 +251,60 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
       _ => null,
     };
     if (route != null) Navigator.pushReplacementNamed(context, route);
+  }
+}
+
+class _TodayConditionSection extends StatelessWidget {
+  const _TodayConditionSection({required this.hasTodayCare, this.summary});
+
+  final bool hasTodayCare;
+  final Widget? summary;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      key: ValueKey(
+        hasTodayCare ? 'home-condition-entered' : 'home-condition-missing',
+      ),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SectionHeader(
+          title: '오늘 컨디션',
+          description: hasTodayCare
+              ? '저장한 상태를 오늘 루틴에 반영했어요.'
+              : '아직 오늘 상태를 입력하지 않았어요.',
+        ),
+        if (summary != null) ...[
+          const SizedBox(height: AppSpacing.lg),
+          summary!,
+        ],
+      ],
+    );
+  }
+}
+
+class _RoutineLoadingSection extends StatelessWidget {
+  const _RoutineLoadingSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      liveRegion: true,
+      label: '오늘의 맞춤 루틴을 만드는 중',
+      child: Column(
+        key: const ValueKey('home-routine-loading'),
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const AppLoadingState(message: '오늘의 맞춤 루틴을 만들고 있어요', compact: true),
+          const SizedBox(height: AppSpacing.lg),
+          Text('오늘의 하루 루틴', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: AppSpacing.lg),
+          for (var index = 0; index < 4; index += 1) ...[
+            const AppSkeleton(height: 96),
+            if (index < 3) const SizedBox(height: AppSpacing.md),
+          ],
+        ],
+      ),
+    );
   }
 }

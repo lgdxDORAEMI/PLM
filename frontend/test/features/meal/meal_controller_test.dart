@@ -24,6 +24,11 @@ void main() {
     expect(controller.state, MealGuideViewState.ready);
     expect(controller.showDetails, isTrue);
     expect(controller.selectedRecommendation?.title, '연어구이 + 현미밥 + 나물');
+
+    controller.acceptSelected();
+    controller.shareSelected();
+    expect(controller.selectedDecision, MealDecision.accepted);
+    expect(controller.selectedIsShared, isTrue);
   });
 
   test('대체 메뉴를 적용하면 Meal Store에 선택 결과를 보관한다', () async {

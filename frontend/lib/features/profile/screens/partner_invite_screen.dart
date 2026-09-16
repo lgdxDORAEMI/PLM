@@ -55,7 +55,11 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: TopAppBar(title: '남편 초대하기', onBack: _handleBack),
+    appBar: TopAppBar(
+      title: '남편 초대하기',
+      onBack: _handleBack,
+      wifeProfileAction: true,
+    ),
     body: SafeArea(
       top: false,
       child: ResponsivePageContent(child: _buildBody()),
@@ -183,7 +187,7 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
     } else if (Navigator.canPop(context)) {
       Navigator.pop(context);
     } else {
-      Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
+      Navigator.pushReplacementNamed(context, RouteNames.wifeMenu);
     }
   }
 

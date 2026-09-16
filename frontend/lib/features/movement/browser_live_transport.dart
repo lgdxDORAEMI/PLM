@@ -37,7 +37,8 @@ class BrowserLiveTransport implements LiveTransport {
   }
 
   @override
-  Stream<String> get messages => _socket.onMessage.map((event) => event.data as String);
+  Stream<String> get messages =>
+      _socket.onMessage.map((event) => event.data as String);
 
   @override
   Future<void> get onClose => _closeCompleter.future;

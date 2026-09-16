@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../design_system/components/app_badge.dart';
-import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_card.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/info_banner.dart';
@@ -16,7 +15,6 @@ import '../../report/controllers/daily_report_controller.dart';
 import '../../report/models/daily_record.dart';
 import '../../report/services/mock_record_service.dart';
 import '../../report/services/record_service.dart';
-import '../widgets/partner_bottom_navigation.dart';
 
 class PartnerMorningReportScreen extends StatefulWidget {
   const PartnerMorningReportScreen({
@@ -40,9 +38,7 @@ class _PartnerMorningReportScreenState
   @override
   void initState() {
     super.initState();
-    final date = widget.date == 'today'
-        ? DateTime(2026, 9, 13)
-        : DateTime.tryParse(widget.date) ?? DateTime(2026, 9, 13);
+    final date = _parseRouteDate(widget.date);
     _controller = DailyReportController(
       service: widget.service ?? const MockRecordService(),
       date: date,
@@ -60,6 +56,13 @@ class _PartnerMorningReportScreenState
 
   void _refresh() => setState(() {});
 
+  /// 잘못된 날짜 parameter가 오늘 데이터로 조용히 대체되지 않도록 검증한다.
+  static DateTime _parseRouteDate(String value) {
+    final parsed = DateTime.tryParse(value);
+    if (parsed == null || recordDateKey(parsed) != value) return DateTime(1);
+    return parsed;
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: TopAppBar(
@@ -75,7 +78,6 @@ class _PartnerMorningReportScreenState
       ],
     ),
     body: SafeArea(top: false, child: ResponsivePageContent(child: _body())),
-    bottomNavigationBar: const PartnerBottomNavigation(),
   );
 
   Widget _body() => switch (_controller.state) {
@@ -171,15 +173,6 @@ class _PartnerReportContent extends StatelessWidget {
         title: '수면',
         value: '조명과 온도를 낮춘 수면 루틴',
       ),
-      if (record.familyRequested > 0) ...[
-        const SizedBox(height: AppSpacing.xl),
-        AppButton(
-          key: const ValueKey('report-open-request'),
-          label: '도움 요청 확인하기',
-          onPressed: () =>
-              Navigator.pushNamed(context, RouteNames.partnerRequestDemo),
-        ),
-      ],
       const SizedBox(height: AppSpacing.md),
       const Text(
         '공유에 동의한 요약 정보만 표시됩니다.',

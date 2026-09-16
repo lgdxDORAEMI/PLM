@@ -24,7 +24,7 @@ MVP는 가전 자동 실행과 홈카메라 기반 실시간 위험 행동 로�
 | 영역 | 구현 상태 | 비고 |
 | --- | --- | --- |
 | Frontend 기반 | 구현 | Flutter Web 초기화, 환경설정, DESIGN.md 기반 Theme·반응형 Layout·공통 상태/Badge/Task Component |
-| Frontend 제품 UI | 부분 구현 | Profile 6단계, 초대, Home·Today Care·예정 활동, Daily Routine, Meal·Chat, 가사·건강·Sleep, Record/Calendar·Realtime, Partner Report·Inbox·Request 구현. 설정·Partner Profile은 요구사항 확정 대기 |
+| Frontend 제품 UI | 부분 구현 | Profile 6단계, 초대, Home·Today Care·예정 활동, Daily Routine, Meal·Chat, 가사·건강·Sleep, Record/Calendar·Realtime, Partner Report·Inbox·Request 구현. Home은 임신 맥락 → 오늘 컨디션 → 핵심 행동 → 하루 루틴 → 진행 → 보조 정보의 단일 흐름이며, 컨디션 미입력·완료와 Routine Loading·Success·Fallback 상태를 지원. 설정·Partner Profile은 요구사항 확정 대기 |
 | 모션 인식 Web 데모 | 구현 | 브라우저 카메라 프레임 전송, 캘리브레이션, 자세 오버레이와 상태 표시 |
 | Backend 기본 API | 구현 | `/`, `/health`, 개발용 CORS |
 | 임산부 프로필 | 부분 구현 | 프로필 1/6 출산예정일(W-PROFILE-001), 2/6 신장·임신 전 체중(W-PROFILE-002) 조회·저장. 3~6단계(초산/경산·단태/쌍태·알레르기·주의 진단)와 확인·저장 단계는 미구현 |
@@ -36,6 +36,18 @@ MVP는 가전 자동 실행과 홈카메라 기반 실시간 위험 행동 로�
 | Android / iOS | 미지원 | 저장소에는 Web 플랫폼만 준비되어 있음 |
 
 Frontend 제품 UI 작업은 Backend 구현과 분리합니다. Backend가 준비되지 않은 화면은 Mock Data와 Mock Service를 사용하고, 향후 Service 구현 교체만으로 실제 API에 연결할 수 있도록 설계합니다.
+
+Home의 AI Routine 영역은 `RoutineService` 경계를 통해 데이터를 받고, 현재는 `MockRoutineService`를 사용합니다. 따라서 실제 AI API 없이도 컨디션 입력 → 예정 활동 선택 → 생성 상태 → 4종 가이드 또는 기본 폴백의 UI Flow를 확인할 수 있으며, API 연결 시 화면을 수정하지 않고 Service 구현을 교체할 수 있습니다.
+
+4종 상세 가이드는 하나의 Dashboard Template을 복제하지 않습니다. Meal은 끼니별 추천·근거·수락/재조정/공유, Household는 직접 수행·가전 추천·가족 위임과 Partner Request 상태, Health는 부담 부위 우선순위와 활동 완료, Sleep은 취침 맥락·환경 항목별 설정·수면 팁에 각각 최적화되어 있습니다. ThinQ 기기 실행은 MVP 밖이므로 Household와 Sleep에서 실제 제어를 제공하지 않으며, 추천값과 local Mock 상태만 확인할 수 있습니다.
+
+Chat은 임신 주차·주의 진단·당일 컨디션을 유지하는 식사 재조정 대화에 집중하고, Report는 핵심 결과 → 실행 루틴 → 하루 인사이트와 가족 참여 순으로 결과 위계를 제공합니다. Calendar는 날짜 선택 → 선택일 기록 → `/wife/report/:date` 또는 `/partner/report/:date` 상세 흐름으로 연결됩니다. Mobile에서는 세로 흐름을 유지하고 Desktop에서는 Calendar와 선택일 상세를 7:5 2-column으로 동시에 표시합니다.
+
+Partner 영역은 Wife UI를 복제하지 않고 상태 확인 → 행동 확인 → 요청 처리 흐름으로 구성됩니다. `/partner/calendar`의 알림 진입점에서 Notification을 열면 날짜가 일치하는 오전 Report 또는 실제 request ID의 가사 Request로 이동합니다. Request는 항목별로 확인·완료하며 처리 결과는 Wife Household 상태와 Partner Calendar의 가족 분담 집계에 함께 반영됩니다. 최신 Route 계약에 따라 Partner 전용 Bottom Navigation과 Profile 버튼은 제공하지 않습니다.
+
+B-MOTION은 Phase 2 범위이므로 `/wife/movement`와 `/partner/movement` 제품 화면에서 실제 카메라·MediaPipe·실시간 센서를 실행하지 않습니다. 제품 UI는 Current state, Latest event, Today event log, Device state를 Local Mock으로만 제공하며 실제 연동 상태를 별도 표시합니다. 기존 브라우저 카메라/WebSocket 코드는 `main_movement_debug.dart`로 실행하는 독립 기술 데모에만 남아 있습니다. Wife는 하단 실시간 탭으로, Partner는 Calendar의 명시적 CTA로만 진입하며 Partner Movement에는 Bottom Navigation이 없습니다.
+
+최종 Frontend 화면 점검에서는 `/entry` Mock Bootstrap, Wife 전역 `/wife/menu`(연동 전/후), `/wife/condition`·`/wife/activity` 및 `/partner/join?token=...` canonical Route를 정리하고 Profile Summary 행 수정 시 즉시 요약으로 돌아오도록 보정했습니다. Partner Join은 실제 인증·수락이 아닌 개발 중 안내만 제공하며, ThinQ Host Entry와 실제 Session Guard도 아직 연결되지 않았습니다. Screen ID별 상태와 390/768/1280px QA 결과는 [Screen 구현 Map](docs/SCREEN_IMPLEMENTATION_MAP.md) 및 [Frontend 진행 현황](docs/FRONTEND_PROGRESS.md)을 참고하세요.
 
 ## 기술 구성
 

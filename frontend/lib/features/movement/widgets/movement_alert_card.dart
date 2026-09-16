@@ -11,16 +11,18 @@ class MovementAlertCard extends StatelessWidget {
     required this.alert,
     required this.reviewed,
     required this.onTap,
+    this.interactionKey,
   });
   final MovementAlert alert;
   final bool reviewed;
   final VoidCallback onTap;
+  final Key? interactionKey;
   @override
   Widget build(BuildContext context) {
     final high = alert.level == MovementAlertLevel.high;
     final color = high ? AppColors.danger : AppColors.warning;
     return InkWell(
-      key: ValueKey('movement-alert-${alert.id}'),
+      key: interactionKey ?? ValueKey('movement-alert-${alert.id}'),
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.card),
       child: Ink(

@@ -16,20 +16,20 @@ class ProfileSetupController extends ChangeNotifier {
   int _step = 0;
   String? _validationMessage;
   bool _dirty = false;
+  bool _editingFromSummary = false;
 
   ProfileDraft get draft => _draft;
   int get step => _step;
   bool get isSummary => _step == inputStepCount;
   bool get isDirty => _dirty;
   String? get validationMessage => _validationMessage;
+  bool get editingFromSummary => _editingFromSummary;
 
   void updateDueDate(DateTime value) =>
       _update(_draft.copyWith(dueDate: value));
 
   void updateLastPeriodDate(DateTime value) =>
       _update(_draft.copyWith(lastPeriodDate: value));
-
-  void updateAge(String value) => _update(_draft.copyWith(age: value));
 
   void updateHeight(String value) => _update(_draft.copyWith(height: value));
 
@@ -73,13 +73,25 @@ class ProfileSetupController extends ChangeNotifier {
       return false;
     }
     _validationMessage = null;
-    _step += 1;
+    if (_editingFromSummary) {
+      _step = inputStepCount;
+      _editingFromSummary = false;
+    } else {
+      _step += 1;
+    }
     notifyListeners();
     return true;
   }
 
   bool moveBack() {
     if (_step == 0) return false;
+    if (_editingFromSummary) {
+      _step = inputStepCount;
+      _editingFromSummary = false;
+      _validationMessage = null;
+      notifyListeners();
+      return true;
+    }
     _step -= 1;
     _validationMessage = null;
     notifyListeners();
@@ -89,6 +101,7 @@ class ProfileSetupController extends ChangeNotifier {
   void editStep(int step) {
     assert(step >= 0 && step < inputStepCount);
     _step = step;
+    _editingFromSummary = true;
     _validationMessage = null;
     notifyListeners();
   }
@@ -112,12 +125,8 @@ class ProfileSetupController extends ChangeNotifier {
           return '출산예정일 또는 마지막 생리 시작일을 입력해 주세요.';
         }
       case 1:
-        final age = int.tryParse(_draft.age ?? '');
         final height = double.tryParse(_draft.height ?? '');
         final weight = double.tryParse(_draft.prePregnancyWeight ?? '');
-        if (age == null || age < 15 || age > 60) {
-          return '나이를 15세에서 60세 사이로 입력해 주세요.';
-        }
         if (height == null || height < 100 || height > 220) {
           return '키를 100cm에서 220cm 사이로 입력해 주세요.';
         }

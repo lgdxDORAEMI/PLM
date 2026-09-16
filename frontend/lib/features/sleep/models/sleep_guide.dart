@@ -6,22 +6,19 @@ class SleepEnvironmentSetting {
     required this.label,
     required this.value,
     required this.options,
-    required this.selected,
   });
 
   final SleepEnvironmentType type;
   final String label;
   final String value;
   final List<String> options;
-  final bool selected;
 
-  SleepEnvironmentSetting copyWith({String? value, bool? selected}) {
+  SleepEnvironmentSetting copyWith({String? value}) {
     return SleepEnvironmentSetting(
       type: type,
       label: label,
       value: value ?? this.value,
       options: options,
-      selected: selected ?? this.selected,
     );
   }
 }

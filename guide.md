@@ -39,9 +39,19 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 flutter run -d chrome
 ```
 
-실행하면 실제 Session Adapter가 없는 Skeleton 기본값으로 `/`이 임산부 프로필 설정에 연결됩니다. Browser 주소에 내부 경로를 직접 입력해도 중앙 Router가 Placeholder를 복원합니다. 예를 들어 `/wife/home`, `/wife/calendar/report/2026-09-16`, `/partner/calendar`, `/partner/requests/demo-request`을 확인할 수 있습니다.
+실행하면 `/`이 `/entry` Mock Bootstrap을 열고 기본 상태인 임산부 프로필 미완료로 분기합니다. ThinQ Host/실제 Session Adapter는 아직 없으므로 역할별 직접 URL 접근 차단이나 브라우저 재시작 후 가입 상태 복원을 보장하지 않습니다. Browser 주소의 `/wife/home`, `/wife/menu`, `/wife/report/2026-09-13`, `/partner/calendar`, `/partner/requests/demo-request`를 직접 열어 Mock UI를 확인할 수 있습니다.
 
-초대 수락 내부 경로는 `/invitation-entry?token={token}` 형식이지만 실제 초대 Domain, 앱 설치 이동, 로그인/가입 후 복귀 URL은 아직 계약되지 않았습니다. 개발용 로그나 화면 문구에 실제 Token을 출력하지 않습니다.
+`/wife/home`의 AI Routine은 실제 AI API가 없어도 실행됩니다. 당일 컨디션 미입력 시 컨디션 CTA가 표시되고, 입력과 예정 활동 선택을 마치면 `MockRoutineService`가 식사·가사·건강·수면 가이드를 제공합니다. Service 오류 시 화면을 비우지 않고 기본 Routine과 재시도 버튼을 표시합니다.
+
+가이드 상세 화면은 `/wife/meal`, `/wife/household`, `/wife/health`, `/wife/sleep`에서 확인할 수 있습니다. Meal·Health·Sleep 데이터와 Household 공유는 local Mock 상태를 사용합니다. Household에서 공유하면 `PartnerRequestStore`에 실제 request ID가 생성되고 `/partner/requests/{requestId}` 계약으로 조회할 수 있습니다. Household의 가전 추천과 Sleep 환경 설정은 기기 실행 명령을 보내지 않으며, Sleep의 전체 수면 루틴 실행 버튼은 Phase 2 안내 상태로 비활성화됩니다.
+
+Calendar는 `/wife/calendar`과 `/partner/calendar`에서 날짜를 화면 선택 상태로 관리합니다. 선택한 기록의 상세 버튼은 같은 날짜를 `YYYY-MM-DD` 형식으로 `/wife/report/{date}` 또는 `/partner/report/{date}`에 전달합니다. 존재하지 않거나 `2026-02-31`처럼 유효하지 않은 날짜는 오늘 기록으로 대체하지 않고 빈 상태를 표시합니다. Desktop에서는 Calendar와 상세가 나란히 보이고 Mobile에서는 상세가 달력 아래에 이어집니다.
+
+Partner는 `/partner/calendar`를 시작 화면으로 사용하며 Header의 알림 버튼만 `/partner/notifications`로 연결됩니다. 알림 항목은 `/partner/report/{date}` 또는 `/partner/requests/{requestId}`로 이동합니다. Request 완료 결과의 `캘린더로 돌아가기`를 누르면 `/partner/calendar`에서 요청·확인·완료 집계가 갱신됩니다. Partner 화면에는 Bottom Navigation이나 Profile 버튼이 없으며, Phase 2 실시간 화면은 Calendar의 명시적 CTA로만 진입합니다.
+
+`/wife/movement`와 `/partner/movement`는 Phase 2 화면 구성 확인용 Local Mock입니다. 일반 `flutter run`에서는 카메라 권한 요청, MediaPipe 분석, WebSocket 또는 실시간 센서 연결이 발생하지 않습니다. 별도 기술 데모가 필요한 경우에만 `flutter run -d chrome -t lib/main_movement_debug.dart`를 사용하며, 이 진입점은 제품 Router와 연결되지 않습니다.
+
+초대 수락 내부 경로는 `/partner/join?token={token}`입니다. 유효/만료/중복 Token 상태를 Mock으로 표시하지만 실제 수락·연동 버튼은 제공하지 않습니다. 초대 링크는 현재 내부 상대 경로를 복사하는 Mock이며 외부 공유용 Domain, 앱 설치 이동, 로그인/가입 후 복귀 URL 및 OS 공유 시트는 미연동입니다. 개발용 로그나 화면 문구에 실제 Token을 출력하지 않습니다.
 
 편집기의 SDK 경로 설정은 Windows PATH 자체를 변경하지 않습니다. PATH 설정 전에는 `& '본인의 SDK 경로/bin/flutter.bat' pub get`처럼 전체 경로로 실행할 수 있습니다.
 

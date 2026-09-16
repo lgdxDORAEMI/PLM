@@ -25,23 +25,4 @@ class InvitationEntryController extends ChangeNotifier {
     }
     notifyListeners();
   }
-
-  Future<bool> accept() async {
-    final value = token;
-    if (value == null || _tokenStatus != InvitationTokenStatus.valid) {
-      return false;
-    }
-    _state = InvitationActionState.submitting;
-    notifyListeners();
-    try {
-      await service.accept(value);
-      _state = InvitationActionState.success;
-      notifyListeners();
-      return true;
-    } on Object {
-      _state = InvitationActionState.error;
-      notifyListeners();
-      return false;
-    }
-  }
 }

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_card.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/info_banner.dart';
@@ -10,7 +9,6 @@ import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_spacing.dart';
-import '../../../routing/route_names.dart';
 import '../../invitation/controllers/invitation_entry_controller.dart';
 import '../../invitation/models/invitation.dart';
 import '../../invitation/services/invitation_service.dart';
@@ -101,22 +99,13 @@ class _InvitationEntryScreenState extends State<InvitationEntryScreen> {
           tone: InfoBannerTone.info,
         ),
         const SizedBox(height: AppSpacing.xl),
-        AppButton(
-          key: const ValueKey('accept-invitation-button'),
-          label: _controller.state == InvitationActionState.submitting
-              ? '연결하는 중…'
-              : 'ThinQ 로그인하고 연결하기',
-          onPressed: _controller.state == InvitationActionState.submitting
-              ? null
-              : _accept,
+        const InfoBanner(
+          title: '초대 수락은 개발 중입니다',
+          message: 'ThinQ 가입·로그인 및 실제 계정 연결은 아직 제공되지 않아요.',
+          tone: InfoBannerTone.warning,
         ),
       ],
     );
-  }
-
-  Future<void> _accept() async {
-    if (!await _controller.accept() || !mounted) return;
-    Navigator.pushReplacementNamed(context, RouteNames.partnerCalendar);
   }
 }
 

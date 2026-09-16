@@ -6,7 +6,8 @@ import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_card.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/bottom_navigation.dart';
-import '../../../design_system/components/responsive_page_content.dart';
+import '../../../design_system/components/content_frame.dart';
+import '../../../design_system/components/responsive_split_view.dart';
 import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_radius.dart';
@@ -35,9 +36,7 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
   @override
   void initState() {
     super.initState();
-    final date = widget.date == 'today'
-        ? DateTime(2026, 9, 13)
-        : DateTime.tryParse(widget.date) ?? DateTime(2026, 9, 13);
+    final date = _parseRouteDate(widget.date);
     _controller = DailyReportController(
       service: widget.service ?? const MockRecordService(),
       date: date,
@@ -57,10 +56,14 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: TopAppBar(title: '오늘의 기록', onBack: _handleBack),
+    appBar: TopAppBar(
+      title: 'Daily 리포트',
+      onBack: _handleBack,
+      wifeProfileAction: true,
+    ),
     body: SafeArea(
       top: false,
-      child: ResponsivePageContent(child: _buildBody()),
+      child: ContentFrame(maxWidth: 1200, child: _buildBody()),
     ),
     bottomNavigationBar: AppBottomNavigation(
       currentIndex: 3,
@@ -82,6 +85,15 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
       onSelected: _openTab,
     ),
   );
+
+  /// Route의 날짜가 실제 달력 날짜와 정확히 일치하지 않으면 빈 결과로 처리한다.
+  static DateTime _parseRouteDate(String value) {
+    final parsed = DateTime.tryParse(value);
+    if (parsed == null || recordDateKey(parsed) != value) {
+      return DateTime(1);
+    }
+    return parsed;
+  }
 
   Widget _buildBody() => switch (_controller.state) {
     DailyReportViewState.loading => const AppLoadingState(
@@ -200,24 +212,75 @@ class _DailyReportContent extends StatelessWidget {
         ],
       ),
       const SizedBox(height: AppSpacing.xxl),
+      ResponsiveSplitView(
+        primaryFlex: 7,
+        secondaryFlex: 5,
+        gap: AppSpacing.xxl,
+        primary: _RoutineResults(record: record),
+        secondary: _ReportInsights(
+          record: record,
+          busy: busy,
+          onSave: onSave,
+          onShare: onShare,
+        ),
+      ),
+    ],
+  );
+}
+
+class _RoutineResults extends StatelessWidget {
+  const _RoutineResults({required this.record});
+
+  final DailyRecord record;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
       Text('오늘 실행한 루틴', style: Theme.of(context).textTheme.titleLarge),
       const SizedBox(height: AppSpacing.lg),
       for (final routine in record.routines) ...[
         RoutineRecordCard(record: routine),
         const SizedBox(height: AppSpacing.sm),
       ],
+    ],
+  );
+}
+
+class _ReportInsights extends StatelessWidget {
+  const _ReportInsights({
+    required this.record,
+    required this.busy,
+    required this.onSave,
+    required this.onShare,
+  });
+
+  final DailyRecord record;
+  final bool busy;
+  final VoidCallback onSave;
+  final VoidCallback onShare;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Text('하루 인사이트', style: Theme.of(context).textTheme.titleLarge),
       const SizedBox(height: AppSpacing.lg),
       AppCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '가장 무리한 관절 — ${record.burdenArea}',
+              record.burdenCount == 0
+                  ? '관절 부담 기록 없음'
+                  : '가장 무리한 관절 — ${record.burdenArea}',
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              '부담 기준을 ${record.burdenCount}회 넘겼어요 · 내일은 가전 이관을 늘릴게요',
+              record.burdenCount == 0
+                  ? '모션 기반 부담 분석은 Phase 2에서 제공됩니다.'
+                  : '부담 기준을 ${record.burdenCount}회 넘겼어요 · 내일은 가전 이관을 늘릴게요',
               style: const TextStyle(color: AppColors.textSecondary),
             ),
           ],
@@ -226,25 +289,17 @@ class _DailyReportContent extends StatelessWidget {
       const SizedBox(height: AppSpacing.lg),
       _FamilySummary(record: record),
       const SizedBox(height: AppSpacing.xl),
-      Row(
-        children: [
-          Expanded(
-            child: AppButton(
-              key: const ValueKey('report-save-button'),
-              label: busy ? '처리 중…' : '저장하고 마치기',
-              onPressed: busy ? null : onSave,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: AppButton(
-              key: const ValueKey('report-share-button'),
-              label: '남편에게 공유',
-              variant: AppButtonVariant.secondary,
-              onPressed: busy ? null : onShare,
-            ),
-          ),
-        ],
+      AppButton(
+        key: const ValueKey('report-save-button'),
+        label: busy ? '처리 중…' : '저장하고 마치기',
+        onPressed: busy ? null : onSave,
+      ),
+      const SizedBox(height: AppSpacing.md),
+      AppButton(
+        key: const ValueKey('report-share-button'),
+        label: '남편에게 공유',
+        variant: AppButtonVariant.secondary,
+        onPressed: busy ? null : onShare,
       ),
     ],
   );

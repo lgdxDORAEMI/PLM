@@ -8,6 +8,7 @@ class MovementAlert {
     required this.suggestion,
     required this.time,
     required this.level,
+    this.isToday = true,
   });
   final String id;
   final String title;
@@ -15,6 +16,7 @@ class MovementAlert {
   final String suggestion;
   final String time;
   final MovementAlertLevel level;
+  final bool isToday;
 }
 
 abstract final class MovementMockData {
@@ -50,6 +52,28 @@ abstract final class MovementMockData {
       suggestion: '누적 시 허리 통증으로 이어질 수 있어요.',
       time: '어제 오후 07:41',
       level: MovementAlertLevel.high,
+      isToday: false,
     ),
   ];
+
+  static const device = MovementDeviceState(
+    source: 'Local Mock Data',
+    camera: '연결하지 않음',
+    analysis: 'MediaPipe 실행 안 함',
+    sensor: '실시간 센서 실행 안 함',
+  );
+}
+
+class MovementDeviceState {
+  const MovementDeviceState({
+    required this.source,
+    required this.camera,
+    required this.analysis,
+    required this.sensor,
+  });
+
+  final String source;
+  final String camera;
+  final String analysis;
+  final String sensor;
 }

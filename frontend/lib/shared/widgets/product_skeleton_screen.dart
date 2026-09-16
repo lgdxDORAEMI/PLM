@@ -204,7 +204,7 @@ class ProductSkeletonScreen extends StatelessWidget {
     if (route == RouteNames.wifeMovement) return 1;
     if (route == RouteNames.mealChat) return 2;
     if (route == RouteNames.wifeCalendar ||
-        route?.startsWith('/wife/calendar/report/') == true) {
+        route?.startsWith('/wife/report/') == true) {
       return 3;
     }
     return 0;

@@ -2,7 +2,13 @@ import '../models/daily_routine.dart';
 import 'routine_service.dart';
 
 class MockRoutineService implements RoutineService {
-  const MockRoutineService();
+  const MockRoutineService({
+    this.delay = const Duration(milliseconds: 320),
+    this.shouldFail = false,
+  });
+
+  final Duration delay;
+  final bool shouldFail;
 
   static final todayPlan = DailyRoutinePlan(
     date: DateTime(2026, 9, 16),
@@ -46,5 +52,9 @@ class MockRoutineService implements RoutineService {
   );
 
   @override
-  Future<DailyRoutinePlan> fetchToday() async => todayPlan;
+  Future<DailyRoutinePlan> fetchToday() async {
+    await Future<void>.delayed(delay);
+    if (shouldFail) throw StateError('Mock Routine 생성 실패');
+    return todayPlan;
+  }
 }

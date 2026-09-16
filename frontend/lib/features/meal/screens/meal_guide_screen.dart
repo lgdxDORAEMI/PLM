@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../design_system/components/app_state_view.dart';
+import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/bottom_navigation.dart';
+import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/components/section_header.dart';
 import '../../../design_system/components/top_app_bar.dart';
@@ -53,7 +55,7 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: TopAppBar(title: '식사 가이드', onBack: _handleBack),
+      appBar: TopAppBar(title: '식사 가이드', onBack: _handleBack, wifeProfileAction: true),
       body: SafeArea(
         top: false,
         child: ResponsivePageContent(
@@ -135,6 +137,14 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
         const SizedBox(height: AppSpacing.lg),
         MealRecommendationCard(recommendation: recommendation),
         const SizedBox(height: AppSpacing.lg),
+        _RecommendationActions(
+          decision: _controller.selectedDecision,
+          shared: _controller.selectedIsShared,
+          onAccept: _controller.acceptSelected,
+          onAdjust: _openRejectedMealChat,
+          onShare: _controller.shareSelected,
+        ),
+        const SizedBox(height: AppSpacing.lg),
         _MealAdjustmentEntry(onTap: _openMealChat),
         const SizedBox(height: AppSpacing.xxxl),
         MealInfoSection(items: recommendation.cautions),
@@ -155,6 +165,11 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
   Future<void> _openMealChat() async {
     await Navigator.pushNamed(context, RouteNames.mealChat);
     if (mounted) _controller.showAppliedRecommendation();
+  }
+
+  Future<void> _openRejectedMealChat() async {
+    _controller.rejectSelected();
+    await _openMealChat();
   }
 
   void _handleBack() {
@@ -178,6 +193,69 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
       _ => RouteNames.wifeHome,
     };
     Navigator.pushReplacementNamed(context, route);
+  }
+}
+
+class _RecommendationActions extends StatelessWidget {
+  const _RecommendationActions({
+    required this.decision,
+    required this.shared,
+    required this.onAccept,
+    required this.onAdjust,
+    required this.onShare,
+  });
+
+  final MealDecision decision;
+  final bool shared;
+  final VoidCallback onAccept;
+  final VoidCallback onAdjust;
+  final VoidCallback onShare;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (decision == MealDecision.accepted) ...[
+          const InfoBanner(
+            title: '오늘 메뉴로 선택했어요',
+            message: '선택 결과는 다음 추천을 위한 Mock 이력에 반영돼요.',
+            tone: InfoBannerTone.success,
+          ),
+          const SizedBox(height: AppSpacing.md),
+        ],
+        Row(
+          children: [
+            Expanded(
+              child: AppButton(
+                key: const ValueKey('meal-accept-button'),
+                label: decision == MealDecision.accepted
+                    ? '선택 완료'
+                    : '이 메뉴로 할게요',
+                onPressed: decision == MealDecision.accepted ? null : onAccept,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: AppButton(
+                key: const ValueKey('meal-adjust-button'),
+                label: '다른 메뉴 보기',
+                variant: AppButtonVariant.secondary,
+                onPressed: onAdjust,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        AppButton(
+          key: const ValueKey('meal-share-button'),
+          label: shared ? '남편에게 공유했어요' : '남편에게 메뉴 공유',
+          icon: shared ? Icons.check : Icons.share_outlined,
+          variant: AppButtonVariant.tertiary,
+          onPressed: shared ? null : onShare,
+        ),
+      ],
+    );
   }
 }
 

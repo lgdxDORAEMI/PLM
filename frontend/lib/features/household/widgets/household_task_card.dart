@@ -12,12 +12,14 @@ class HouseholdTaskCard extends StatelessWidget {
     this.onTap,
     this.actionLabel,
     this.onAction,
+    this.trailingLabel,
   });
 
   final HouseholdTask task;
   final VoidCallback? onTap;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final String? trailingLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +59,13 @@ class HouseholdTaskCard extends StatelessWidget {
             ),
             if (actionLabel != null)
               OutlinedButton(onPressed: onAction, child: Text(actionLabel!))
+            else if (trailingLabel != null)
+              Text(
+                trailingLabel!,
+                style: Theme.of(
+                  context,
+                ).textTheme.labelMedium?.copyWith(color: visual.foreground),
+              )
             else if (onTap != null)
               Icon(
                 task.selected ? Icons.check_box : Icons.check_box_outline_blank,

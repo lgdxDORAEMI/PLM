@@ -1,177 +1,67 @@
-# PLM Screen Implementation Map
+# Screen Implementation Map — 최종 Frontend QA
 
-## 1. 목적과 판정 기준
+기준: `docs/requirements/04_1_기능요구사항명세서.md`, `docs/requirements/화면설계서0916.pdf`(34페이지, 각 페이지 이미지), `docs/screens/**`, `docs/development/ROUTE_MAP.md`, `DESIGN.md`, `frontend/lib/**`. 기능·권한은 requirements, 화면 전환은 ROUTE_MAP, 시각 규칙은 DESIGN.md를 우선한다. Screen ID 접미 상태는 별도 Route가 아니다.
 
-이 문서는 최신 Requirement, `화면설계서0916.pdf`, 실제 `docs/screens/**` Screen ID, `docs/development/ROUTE_MAP.md`, 현재 Flutter 구현을 연결하는 화면 단위 추적 문서다.
+`구현`의 **MVP UI**는 실제 Flutter 화면/상태와 Mock flow가 있다는 뜻이며 서버 저장·인증·AI·ThinQ 실행을 의미하지 않는다. **부분**은 명시한 계약이 아직 미충족, **Phase 2 Mock**은 실제 분석/제어 없이 상태만 제공, **Host 대기**는 ThinQ 본체가 필요한 화면이다. `QA`의 **3폭**은 390/768/1280px 직접 URL 렌더링·overflow 검사이며 내부 상태는 해당 기능 테스트로 확인했다. 시각 평가는 PDF/PNG의 정보 구조와 DESIGN.md의 토큰·반응형 규칙을 코드 대조한 것이며 실기기 수동 시각/스크린리더 인증을 뜻하지 않는다.
 
-우선순위는 다음과 같다.
+PDF 대조 페이지: p.1 Profile 005, p.2 Motion, p.3 Entry, p.4 Calendar, p.5 Invite, p.6 Sleep, p.7·26 Report, p.8~10 Profile Summary/006, p.11 Chat, p.12 Health, p.13·16 Home, p.14 Condition, p.15 Activity, p.17 Sleep Sheets, p.18 Fallback, p.19 Menu, p.20 Household, p.21 Notifications, p.22 Partner Report, p.23~25 Partner Request, p.28~30 Meal, p.31~34 Profile 001~004. p.27에는 화면 내용이 없다.
 
-1. `docs/requirements/04_1_기능요구사항명세서.md`
-2. `docs/requirements/03_유스케이스명세서.md`
-3. `docs/requirements/화면설계서0916.pdf`
-4. `docs/screens/**`
-5. `DESIGN.md`
-6. `docs/development/ROUTE_MAP.md`
-7. `frontend/lib/**`
+| Screen ID | Requirement | Route / 상태 | 구현 파일 | 구현 · UI / Interaction | QA |
+|---|---|---|---|---|---|
+| B-ENTRY-001 | FUC-B-ENTRY-001 | `/entry` | `features/entry/screens/entry_screen.dart`, `routing/app_router.dart` | Bootstrap loading·오류·재시도·역할 분기 Mock; ThinQ 홈 배너는 Host 대기, 실제 Session Guard 미연동 | 3폭·분기 단위 |
+| B-ENTRY-001-1 | FUC-B-ENTRY-001 | `/entry` Host 메뉴 variant | 동일 | ThinQ 메뉴 행/NEW 배지는 Host 대기, 동일 Bootstrap 경로만 제공 | 경로 3폭; Host UI 미검증 |
+| W-PROFILE-001 | FUC-W-PROFILE-001 | `/onboarding/profile`, `/wife/profile` step 1 | `features/profile/screens/profile_setup_screen.dart` | 예정일/LMP picker·필수 오류·뒤로 | 3폭·Wizard |
+| W-PROFILE-002 | FUC-W-PROFILE-002 | 동일 step 2 | 동일 | 신장·임신 전 체중만 입력, 범위 검증; 구형 나이 입력 제거 | 3폭·Wizard |
+| W-PROFILE-003 | FUC-W-PROFILE-003 | 동일 step 3 | 동일 | 초산/경산 단일 선택·오류 | Wizard |
+| W-PROFILE-004 | FUC-W-PROFILE-004 | 동일 step 4 | 동일 | 단태/다태 단일 선택·오류 | Wizard |
+| W-PROFILE-005 | FUC-W-PROFILE-005 | 동일 step 5 | 동일 | 알레르기 복수 선택·없어요 상호 배타 | 단위 |
+| W-PROFILE-006 | FUC-W-PROFILE-006 | 동일 step 6 | 동일 | 진단 복수 선택·메모·미입력 통과 | Wizard |
+| W-PROFILE-007 | FUC-W-PROFILE-007/008 | 동일 Summary | `features/profile/widgets/profile_summary.dart`, `controllers/profile_setup_controller.dart` | 행 수정 → 저장 → Summary 복귀, 생성 시 Invite·수정 시 Menu; 실제 Profile 영속화 미연동 | 단위·Route |
+| W-INVITE-001 | FUC-W-INVITE-001/002 | `/onboarding/invite`, `/wife/invite` | `features/profile/screens/partner_invite_screen.dart` | 링크 생성·복사·Mock 전송; 온보딩→Home/메뉴→Menu. 실제 OS 공유·일회성 발급 미연동 | 3폭·Route |
+| W-MENU-001 | FUC-W-MENU-001 | `/wife/menu` 미연동 | `features/menu/screens/wife_menu_screen.dart` | 프로필/초대/설정·이전 화면 복귀, 전역 Wife Header 진입 | 3폭·상태 전환 |
+| W-MENU-001-1 | FUC-W-MENU-001 | `/wife/menu` 연동 | 동일, `features/invitation/data/partner_connection_store.dart` | 초대 행 제거·연동 안내; 로컬 Mock 연동 상태(실제 인증 아님) | 상태 전환 |
+| W-HOME-001 | FUC-W-HOME-001 | `/wife/home` 미입력 | `features/home/screens/wife_home_screen.dart` | Pregnancy Context→컨디션 CTA→주차 정보, 카드 월 대신 세로 흐름 | 3폭·Flow |
+| W-HOME-001-1 | FUC-W-HOME-001/002 | `/wife/home` 입력/루틴 | 동일, `features/routine/**` | loading·success·fallback·재시도, 4개 가이드·진행·실제 당일 날짜 Report Route; AI/리포트 자동 생성은 Mock | 상태·Flow |
+| W-COND-001 | FUC-W-COND-001/002 | `/wife/condition?mode=create\|edit` | `features/condition/screens/condition_screen.dart` | 생성/수정, 저장·이탈 확인, 예정 활동으로 이동; 서버 upsert/리포트 갱신 미연동 | 3폭·Flow |
+| W-TASK-001 | FUC-W-TASK-001 | `/wife/activity` | `features/condition/screens/activity_screen.dart` | 집안일 복수 선택/직접 입력 → Mock 루틴 → Home | 3폭·Flow |
+| W-CALLBACK-001 | FUC-W-CALLBACK-001 | Home 등 AI 결과 내부 상태 | `features/routine/controllers/daily_routine_controller.dart` | 오류 시 기본 루틴·다시 시도; 다른 AI 영역은 각 Mock service의 오류 상태 사용, 공통 Backend 로깅 미연동 | 상태 테스트 |
+| W-MEAL-001 | FUC-W-MEAL-001 | `/wife/meal` 선택 | `features/meal/screens/meal_guide_screen.dart` | 끼니 추천 요약·현재 끼니·상세 선택 | 3폭·Flow |
+| W-MEAL-002 | FUC-W-MEAL-002/004/005 | `/wife/meal` 상세 | 동일, `features/meal/widgets/**` | 추천·이유·주의/허용량·대안; 수락/공유는 로컬 Mock | 상태·Flow |
+| W-MEAL-003 | FUC-W-MEAL-003 | `/wife/chat` 재추천 | `features/meal/screens/meal_chat_screen.dart` | Mock 대화→대안 적용·다시 추천 | Flow |
+| W-CHAT-001 | FUC-W-CHAT-001; 002 Phase 2 | `/wife/chat` | 동일 | 메시지 누적·전송/응답/오류, 식사 재조정만 활성 | 3폭·대화 테스트 |
+| W-HOUSE-001 | FUC-W-HOUSE-001/002/003 | `/wife/household` | `features/household/screens/household_guide_screen.dart` | 직접/가전/분담 3분류, 요청 생성; 실제 가전 제어 Phase 2 | 3폭·Partner Flow |
+| W-HOUSE-001-1 | FUC-W-HOUSE-003-1 | 동일 Dialog | 동일 | 전송 결과/재시도 안내 Mock | Flow |
+| W-HOUSE-001-2 | FUC-W-HOUSE-003, FUC-W-RECORD-002 | 동일 상태 | 동일 | Partner 확인·완료 로컬 상태 반영 | Flow |
+| W-HEALTH-001 | FUC-W-HEALTH-001/002 | `/wife/health` | `features/health/screens/health_guide_screen.dart` | 부위 우선 활동·완료 체크; 모션 근거 Phase 2 | 3폭·상태 |
+| W-SLEEP-001 | FUC-W-SLEEP-001/002 | `/wife/sleep` | `features/sleep/screens/sleep_guide_screen.dart` | 기록·자세·환경 다섯 항목·팁, 실제 루틴 실행 Phase 2 | 3폭·Sheet 테스트 |
+| W-SLEEP-001-1 | FUC-W-SLEEP-001-1 | 조명 Sheet | 동일 | 권장 선택·변경·적용 Mock | Sheet |
+| W-SLEEP-001-2 | FUC-W-SLEEP-001-1 | 온도 Sheet | 동일 | 직접 입력·0~40°C 검증 Mock | Sheet |
+| W-SLEEP-001-3 | FUC-W-SLEEP-001-1 | 습도 Sheet | 동일 | 직접 입력·0~100% 검증 Mock | Sheet |
+| W-SLEEP-001-4 | FUC-W-SLEEP-001-1 | 소리 Sheet | 동일 | 옵션 선택·적용 Mock | Sheet |
+| W-SLEEP-001-5 | FUC-W-SLEEP-001-1 | 공기청정기 Sheet | 동일 | 모드 선택·적용 Mock | Sheet |
+| W-REPORT-001 | FUC-W-REPORT-001; 002 Phase 2 | `/wife/report/:date` | `features/report/screens/daily_report_screen.dart` | 날짜별 조회·지표·루틴/가족 집계·저장/공유 Mock; 관절 부담 수치는 구형 Mock 데이터, 실제 모션 아님 | 3폭·상태·Flow |
+| W-REPORT-001-1 | FUC-W-REPORT-001-1 | 동일 Dialog | 동일 | 공유 성공 안내·오류 시 재시도 Mock | Flow |
+| B-CAL-001 (Wife) | FUC-B-CAL-001 | `/wife/calendar` | `features/calendar/screens/record_calendar_screen.dart` | 월→날짜 선택→상세→해당 날짜 Report; Desktop 2열/Mobile 세로 | 3폭·날짜 Route |
+| B-CAL-001 (Partner) | FUC-B-CAL-001 | `/partner/calendar` | 동일, `features/partner/screens/partner_calendar_screen.dart` | 공유 기록 + Partner 전용 알림/Motion CTA, 하단 메뉴·프로필 없음 | 3폭·날짜 Route |
+| B-MOTION-001 (Wife) | FUC-B-MOTION-001 | `/wife/movement` | `features/movement/product_movement_screen.dart` | Phase 2 Mock: 현재·최신 이벤트·오늘 로그·기기 상태, Wife 실시간 탭 | 3폭·Mock 상태 |
+| B-MOTION-001 (Partner) | FUC-B-MOTION-001 | `/partner/movement` | 동일 | Phase 2 Mock 공유 상태, Partner Calendar CTA만·하단 메뉴 없음 | 3폭·Mock 상태 |
+| H-REPORT-001 | FUC-H-REPORT-001 | `/partner/report/:date` | `features/partner/screens/partner_morning_report_screen.dart` | 아침 컨디션/행동 요약 읽기 전용, 로딩·빈값·오류 | 3폭·날짜 Route |
+| H-NOTI-001 | FUC-H-NOTI-001 | `/partner/notifications` | `features/partner/screens/partner_notifications_screen.dart` | 읽음/안 읽음·빈값·리포트 날짜/요청 ID 이동; Push Phase 2 | 3폭·Flow |
+| H-REQUEST-001 | FUC-H-REQUEST-001/002 | `/partner/requests/:requestId` | `features/partner/screens/partner_request_screen.dart` | 요청자·사유·작업별 확인·완료, 잘못된 ID 빈값 | 3폭·Flow |
+| H-REQUEST-001-1 | FUC-H-REQUEST-002 | 동일 확인 Dialog | 동일 | 아직이에요/완료했어요 분기 | Flow |
+| H-REQUEST-001-2 | FUC-H-REQUEST-002 | 동일 진행 상태 | 동일 | 요청/확인/완료 개별 상태 | Flow |
+| H-REQUEST-002 | FUC-H-REQUEST-003 | 동일 완료 결과 | 동일 | 반영 위치·분담 집계·Calendar 복귀 | Flow |
 
-PNG는 정보 구조와 콘텐츠 배치 참고자료이며, 최종 시각 규칙은 `DESIGN.md`를 따른다. 현재 코드에 화면이 존재한다는 이유만으로 구현 완료로 판정하지 않는다. Requirement, 화면설계서, Route, Actor Navigation, 상태 전이가 모두 맞아야 `MATCH`다.
+## PNG가 없는 Route와 보류 계약
 
-### 구현 상태
-
-| 상태 | 의미 |
-|---|---|
-| `MATCH` | 최신 기능·구조·흐름과 현재 구현이 유지 가능한 수준으로 일치 |
-| `STYLE_UPDATE` | 기능·흐름은 유지 가능하고 Design System 중심 시각 보정 필요 |
-| `LAYOUT_UPDATE` | 기능은 있으나 정보 구조, 배치, Modal/Sheet 표현 변경 필요 |
-| `FLOW_UPDATE` | 화면은 있으나 canonical Route, 이전/다음 화면, Actor Navigation 또는 상태 전이 변경 필요 |
-| `REBUILD` | 기존 구현 재사용 범위가 작아 화면/상태 구조를 다시 구성해야 함 |
-| `NEW` | 현재 Flutter 구현에 없는 신규 화면 또는 상태 |
-| `REMOVE_OR_DISABLE` | 현재 구현은 있으나 최신 범위에서 제거하거나 비활성화해야 함 |
-| `PHASE_2` | 최신 요구사항에서 Phase 2로 명시된 범위 |
-
-## 2. 화면설계서 페이지 인덱스
-
-`화면설계서0916.pdf`는 기능 순서로 정렬되어 있지 않으므로 실제 페이지를 기준으로 참조한다.
-
-| 페이지 | Screen ID / 내용 |
-|---|---|
-| 1 | `W-PROFILE-005` |
-| 2 | `B-MOTION-001` |
-| 3 | `B-ENTRY-001` 및 두 Entry variant |
-| 4 | `B-CAL-001` Wife/Partner 공통 구조 |
-| 5 | `W-INVITE-001` |
-| 6 | `W-SLEEP-001` |
-| 7 | `W-REPORT-001`, 공유 완료 popup inset |
-| 8~9 | `W-PROFILE-007`, 최초 등록/수정 Summary variant |
-| 10 | `W-PROFILE-006` |
-| 11 | `W-CHAT-001` |
-| 12 | `W-HEALTH-001` |
-| 13 | `W-HOME-001` 컨디션 입력 전 |
-| 14 | `W-COND-001` |
-| 15 | `W-TASK-001` |
-| 16 | `W-HOME-001` 루틴 생성 후 |
-| 17 | `W-SLEEP-001-1` 환경 설정 Bottom Sheet 공통 구조 |
-| 18 | `W-CALLBACK-001` |
-| 19 | `W-MENU-001` 연동 전/후 |
-| 20 | `W-HOUSE-001`, 공유 완료·진행 상태 inset |
-| 21 | `H-NOTI-001` |
-| 22 | `H-REPORT-001` |
-| 23~25 | `H-REQUEST-001` 확인/진행/완료 상태 |
-| 26 | `W-REPORT-001-1` 보조 표기 페이지 |
-| 27 | 내용 없음 |
-| 28 | `W-MEAL-001` |
-| 29 | `W-MEAL-002` |
-| 30 | `W-MEAL-003` |
-| 31~34 | `W-PROFILE-001`~`W-PROFILE-004` |
-
-## 3. Screen ID별 구현 매핑
-
-### 3.1 Entry, Profile, Invite, Menu
-
-| Screen ID | Requirement ID | Actor | Screen image | 화면설계서 참조 | Route | Flutter Feature | 현재 Flutter 파일 | UI Pattern | 공통 컴포넌트 | Feature 컴포넌트 | State | Interaction | MVP / Phase2 | 구현 상태 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `B-ENTRY-001` | `FUC-B-ENTRY-001` | Both | `docs/screens/B-ENTRY-001.png` | p.3, ThinQ 홈 배너 | `/entry` | `entry`, `routing` | 전용 파일 없음; `frontend/lib/app.dart`, `frontend/lib/routing/app_router.dart` | Host banner entry | 신규 Host banner/Bootstrap shell | `EntryResolver`, session/role adapter 필요 | loading, role unknown, resolved, recoverable error | 배너 선택 → 역할·Profile·연동 상태 분기 | MVP | `NEW` |
-| `B-ENTRY-001-1` | `FUC-B-ENTRY-001` | Both | `docs/screens/B-ENTRY-001-1.png` | p.3, ThinQ 메뉴 Entry | `/entry` 내부 host state | `entry`, `routing` | 전용 파일 없음 | Host menu entry | 신규 Host menu row | `EntryResolver` 공유 | 노출/미노출, NEW badge | 메뉴 선택 → 동일 Bootstrap 분기 | MVP | `NEW` |
-| `W-PROFILE-001` | `FUC-W-PROFILE-001` | Wife | `docs/screens/W-PROFILE-001.png` | p.31 | `/onboarding/profile`, `/wife/profile` 내부 step 1 | `profile` | `frontend/lib/features/profile/screens/profile_setup_screen.dart` | 6-step form, date picker | `TopAppBar`, `AppButton`, form layout | `ProfileWizardFrame`, `ProfileDateField`, `ProfileProgress` | empty, valid, validation error | 출산예정일 또는 LMP 선택 → step 2 | MVP | `MATCH` |
-| `W-PROFILE-002` | `FUC-W-PROFILE-002` | Wife | `docs/screens/W-PROFILE-002.png` | p.32 | 동일 Profile Route 내부 step 2 | `profile` | `frontend/lib/features/profile/screens/profile_setup_screen.dart` | numeric form | `TopAppBar`, `AppInput`, `AppButton` | `_BodyFields`, `ProfileUnitInput` | empty, valid, range error | 임신 전 신장·체중 입력 → step 3 | MVP | `REBUILD` |
-| `W-PROFILE-003` | `FUC-W-PROFILE-003` | Wife | `docs/screens/W-PROFILE-003.png` | p.33 | 동일 Profile Route 내부 step 3 | `profile` | `frontend/lib/features/profile/screens/profile_setup_screen.dart` | single-select cards | `SelectionCard`, `AppButton` | `ProfileWizardFrame` | unselected, selected | 초산/경산 선택; 미선택 시 다음 비활성 | MVP | `MATCH` |
-| `W-PROFILE-004` | `FUC-W-PROFILE-004` | Wife | `docs/screens/W-PROFILE-004.png` | p.34 | 동일 Profile Route 내부 step 4 | `profile` | `frontend/lib/features/profile/screens/profile_setup_screen.dart` | single-select cards | `SelectionCard`, `AppButton` | `ProfileWizardFrame` | unselected, selected | 단태/다태 선택; 미선택 시 다음 비활성 | MVP | `MATCH` |
-| `W-PROFILE-005` | `FUC-W-PROFILE-005` | Wife | `docs/screens/W-PROFILE-005.png` | p.1 | 동일 Profile Route 내부 step 5 | `profile` | `frontend/lib/features/profile/screens/profile_setup_screen.dart` | multi-select chip grid | `SelectionCard`, `AppButton` | `ProfileChoiceGrid` | none/later, multi-selected, 없음 | 알레르기 복수 선택; 없음은 다른 선택 해제 | MVP | `MATCH` |
-| `W-PROFILE-006` | `FUC-W-PROFILE-006` | Wife | `docs/screens/W-PROFILE-006.png` | p.10 | 동일 Profile Route 내부 step 6 | `profile` | `frontend/lib/features/profile/screens/profile_setup_screen.dart` | multi-select + free text | `AppInput`, `AppButton` | `ProfileChoiceGrid`, `ProfileWizardFrame` | optional empty, selected, note entered | 진단 복수 선택·자유 입력 → Summary | MVP | `MATCH` |
-| `W-PROFILE-007` | `FUC-W-PROFILE-007`, `FUC-W-PROFILE-008` | Wife | `docs/screens/W-PROFILE-007.png` | pp.8~9 | Profile Route 내부 Summary state | `profile` | `frontend/lib/features/profile/widgets/profile_summary.dart`, `controllers/profile_setup_controller.dart` | editable summary list | `InfoBanner`, `AppCard`, `AppButton` | `ProfileSummary`, `_SummaryItem` | complete/incomplete, create/edit | 행 선택 → 해당 step; 해당 step 저장 → Summary; 최종 저장 → Invite 또는 Menu | MVP | `FLOW_UPDATE` |
-| `W-INVITE-001` | `FUC-W-INVITE-001`, `FUC-W-INVITE-002` | Wife | `docs/screens/W-INVITE-001.png` | p.5 | `/onboarding/invite`, `/wife/invite` | `profile`, `invitation` | `frontend/lib/features/profile/screens/partner_invite_screen.dart`; `features/invitation/**` | benefit cards + invite link/action | `TopAppBar`, `AppCard`, `AppButton`, state views | `PartnerInviteController`, `InvitationService` | idle, generating, ready, sharing, error | 링크 생성·복사·OS 공유; 온보딩은 Home, Menu 진입은 Menu 복귀 | MVP | `FLOW_UPDATE` |
-| `W-MENU-001` | `FUC-W-MENU-001` | Wife | `docs/screens/W-MENU-001.png` | p.19, 연동 전 | `/wife/menu` | `menu`, `profile` | 전용 화면 없음; `wife_home_screen.dart`와 `product_skeleton_screen.dart`의 popup만 존재 | full-page menu/list | `TopAppBar`, `AppCard`, `InfoBanner` | `ProfileHeader`, `MenuRow`, `PartnerLinkRow` 필요 | partner unlinked | 프로필 수정·초대·설정 진입, 뒤로 returnLocation | MVP | `NEW` |
-| `W-MENU-001-1` | `FUC-W-MENU-001` | Wife | `docs/screens/W-MENU-001-1.png` | p.19, 연동 후 | `/wife/menu` 내부 linked state | `menu`, `profile` | 전용 파일 없음 | conditional menu state | `InfoBanner`, `AppBadge` | `PartnerLinkRow` 필요 | partner linked | 초대 Action 제거, 연동됨 안내 표시 | MVP | `NEW` |
-
-`W-PROFILE-002`의 현재 구현에는 최신 Requirement에 없는 나이 입력과 필수 검증이 포함되어 있어 재구성이 필요하다. `W-PROFILE-007`은 Summary 행에서 편집한 뒤 곧바로 Summary로 돌아와야 하지만 현재 Controller는 다음 step으로 순차 진행한다.
-
-### 3.2 Wife Home, Condition, Activity, Callback
-
-| Screen ID | Requirement ID | Actor | Screen image | 화면설계서 참조 | Route | Flutter Feature | 현재 Flutter 파일 | UI Pattern | 공통 컴포넌트 | Feature 컴포넌트 | State | Interaction | MVP / Phase2 | 구현 상태 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `W-HOME-001` | `FUC-W-HOME-001` | Wife | `docs/screens/W-HOME-001.png` | p.13 | `/wife/home` | `home`, `routine` | `frontend/lib/features/home/screens/wife_home_screen.dart`; `features/routine/**` | welcome + week guide + conditional CTA | `TopAppBar`, `InfoBanner`, `AppButton`, `AppBottomNavigation` | `PregnancyWeekHero`, `PregnancyWeekTipCard`, `DailyRoutineController` | condition missing | 컨디션 CTA → `/wife/condition`; Header profile → `/wife/menu` | MVP | `FLOW_UPDATE` |
-| `W-HOME-001-1` | `FUC-W-HOME-001`, `FUC-W-HOME-002` | Wife | `docs/screens/W-HOME-001-1.png` | p.16 | `/wife/home` 내부 ready state | `home`, `routine` | 동일 | scrollable 4-guide dashboard | `SectionHeader`, `AppButton`, `AppBottomNavigation` | `RoutineGuideCard`, `DailyRoutinePlan` | loading, ready, fallback, last-updated | 4종 Guide 진입; 일정 마치기 → `/wife/report/{actualDate}` | MVP | `FLOW_UPDATE` |
-| `W-COND-001` | `FUC-W-COND-001`, `FUC-W-COND-002` | Wife | `docs/screens/W-COND-001.png` | p.14 | `/wife/condition?mode=create\|edit` | `condition` | `frontend/lib/features/condition/screens/condition_screen.dart`; `controllers/today_care_controller.dart` | segmented condition form | `TopAppBar`, `AppButton`, state feedback | `ConditionMetric`, `PainMetricCard`, `TodayCareStore` | create/edit, dirty, saving, error | 1일 1건 upsert; 저장 → `/wife/activity`; report trigger 실패는 저장 성공 유지 | MVP | `FLOW_UPDATE` |
-| `W-TASK-001` | `FUC-W-TASK-001` | Wife | `docs/screens/W-TASK-001.png` | p.15 | `/wife/activity` | `condition` | `frontend/lib/features/condition/screens/activity_screen.dart`; `planned_activity_controller.dart` | 3×3 multi-select grid + custom input | `TopAppBar`, `AppInput`, `AppButton` | `_ActivityCard`, `PlannedActivityStore` | none/multi-selected, custom items, generating | 선택·직접 추가 → AI Routine 요청 → `/wife/home` | MVP | `FLOW_UPDATE` |
-| `W-CALLBACK-001` | `FUC-W-CALLBACK-001` | Wife | `docs/screens/W-CALLBACK-001.png` | p.18 | 별도 Route 없음; AI 호출 Route 내부 state | `routine`, `meal`, `health`, `sleep`, `chat` | `frontend/lib/features/routine/controllers/daily_routine_controller.dart`; `mock_routine_service.dart` | inline loading/error/fallback pattern | `AppLoadingState`, `AppErrorState`, `InfoBanner` | 공통 `AiFallbackView` 필요 | timeout, error, retrying, fallback-ready | 재시도 또는 전일 루틴/기본 템플릿 유지; 화면 이동 없음 | MVP | `LAYOUT_UPDATE` |
-
-### 3.3 Meal, Chat, Household, Health, Sleep
-
-| Screen ID | Requirement ID | Actor | Screen image | 화면설계서 참조 | Route | Flutter Feature | 현재 Flutter 파일 | UI Pattern | 공통 컴포넌트 | Feature 컴포넌트 | State | Interaction | MVP / Phase2 | 구현 상태 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `W-MEAL-001` | `FUC-W-MEAL-001` | Wife | `docs/screens/W-MEAL-001.png` | p.28 | `/wife/meal` 내부 meal-selection state | `meal` | `frontend/lib/features/meal/screens/meal_guide_screen.dart` | meal-period selector/list | `TopAppBar`, `AppCard`, `AppBadge`, `AppBottomNavigation` | `MealPeriodCard`, `MealGuideController` | loading, ready, error, current period | 현재 끼니 강조; 다른 끼니 선택 → 상세 갱신 | MVP | `FLOW_UPDATE` |
-| `W-MEAL-002` | `FUC-W-MEAL-002`, `FUC-W-MEAL-004`, `FUC-W-MEAL-005` | Wife | `docs/screens/W-MEAL-002.png` | p.29 | `/wife/meal` 내부 detail state | `meal` | `frontend/lib/features/meal/screens/meal_guide_screen.dart`; `widgets/meal_recommendation_card.dart` | recommendation detail + evidence/caution | `InfoBanner`, `AppCard`, `AppBadge` | `MealRecommendationCard`, `MealInfoSection`, `MealSelectionStore` | recommendation, accepted/rejected, sharing, fallback | 재조정 바 → `/wife/chat`; 수락/거절 이력; Partner 공유 | MVP | `FLOW_UPDATE` |
-| `W-MEAL-003` | `FUC-W-MEAL-003` | Wife | `docs/screens/W-MEAL-003.png` | p.30 | `/wife/chat` 내부 `source=meal` context | `meal`, `chat` | `frontend/lib/features/meal/screens/meal_chat_screen.dart` | contextual chat + recommendation card | `TopAppBar`, `AppInput`, `AppButton`, `AppBottomNavigation` | `MealChatBubble`, `MealRecommendationCard`, `MealChatController` | composing, waiting, result, retry/error | 이걸로 할게요 → Meal 교체; 다른 메뉴 보기 → 재추천 | MVP | `FLOW_UPDATE` |
-| `W-CHAT-001` | `FUC-W-CHAT-001`; `FUC-W-CHAT-002`는 Phase 2 | Wife | `docs/screens/W-CHAT-001.png` | p.11 | `/wife/chat` | `chat`, `meal` | `frontend/lib/features/meal/screens/meal_chat_screen.dart` | persistent-context conversational screen | `TopAppBar`, `AppInput`, `AppButton`, `AppBottomNavigation` | `MealChatBubble`, `_MealChatContext`, `_SuggestedPrompts` | idle, responding, error, applied | 식사 재조정만 허용; 가사·건강·수면 재조정은 비활성 | MVP / 전체 루틴 Chat Phase 2 | `FLOW_UPDATE` |
-| `W-HOUSE-001` | `FUC-W-HOUSE-001`~`003` | Wife | `docs/screens/W-HOUSE-001.png` | p.20, main | `/wife/household` | `household` | `frontend/lib/features/household/screens/household_guide_screen.dart` | 3-section task groups + share selector | `TopAppBar`, `AppCard`, `AppButton`, `AppBottomNavigation` | `HouseholdTaskCard`, `HouseholdGuideController` | planned, selected, sharing | 직접/가전/가족 분담 확인; Partner 공유 | MVP; 실제 가전 실행 Phase 2 | `FLOW_UPDATE` |
-| `W-HOUSE-001-1` | `FUC-W-HOUSE-003-1` | Wife | `docs/screens/W-HOUSE-001-1.png` | p.20, 6-1 inset | `/wife/household` 내부 Modal | `household` | `frontend/lib/features/household/screens/household_guide_screen.dart` | dimmed result dialog | `AlertDialog`, `AppButton` | 공유 결과 Dialog | success, resend/error | 확인 → Modal 닫기; 요청 카드 진행 상태 반영 | MVP | `STYLE_UPDATE` |
-| `W-HOUSE-001-2` | `FUC-W-HOUSE-003` | Wife | `docs/screens/W-HOUSE-001-2.png` | p.20, 6-2 inset | `/wife/household` 내부 content state | `household` | 동일 | status-aware task cards | `AppBadge`, `InfoBanner` | `HouseholdTaskCard`, `_LiveStatusBanner` | shared, confirmed, done | 상태 갱신·가족 분담 기록 표시 | MVP | `MATCH` |
-| `W-HEALTH-001` | `FUC-W-HEALTH-001`, `FUC-W-HEALTH-002` | Wife | `docs/screens/W-HEALTH-001.png` | p.12 | `/wife/health` | `health` | `frontend/lib/features/health/screens/health_guide_screen.dart`; `widgets/movement_guide_card.dart` | priority body-load + activity cards | `TopAppBar`, `AppCard`, `InfoBanner`, `AppBottomNavigation` | `_BodySummary`, `_BodyLoadCard`, `MovementGuideCard`, `BodyCareController` | loading, ready, selected body part, completed, fallback | 대표/보조 활동 조회·완료 체크; 기록 반영 | MVP; Motion 기반 고도화 Phase 2 | `FLOW_UPDATE` |
-| `W-SLEEP-001` | `FUC-W-SLEEP-001`, `FUC-W-SLEEP-002` | Wife | `docs/screens/W-SLEEP-001.png` | p.6 | `/wife/sleep` | `sleep` | `frontend/lib/features/sleep/screens/sleep_guide_screen.dart` | evidence banner + 5 environment tiles + tips | `TopAppBar`, `AppCard`, `AppButton`, `AppBottomNavigation` | `SleepEnvironmentCard`, `SleepGuideController` | loading, ready, error, settings changed | 각 타일 → 개별 Sheet; 전체 수면 루틴 실행은 Phase 2 | Main MVP / 실행 Phase 2 | `REBUILD` |
-| `W-SLEEP-001-1` | `FUC-W-SLEEP-001-1` | Wife | `docs/screens/W-SLEEP-001-1.png` | p.17, 조명 variant | `/wife/sleep` 내부 Bottom Sheet | `sleep` | `frontend/lib/features/sleep/screens/sleep_guide_screen.dart` | single-setting option sheet | Modal Bottom Sheet, `AppButton` | 전용 `SleepSettingSheet` 필요 | recommended selected, changed | 조명 선택·적용 | MVP UI; 실제 가전 적용 Phase 2 | `REBUILD` |
-| `W-SLEEP-001-2` | `FUC-W-SLEEP-001-1` | Wife | `docs/screens/W-SLEEP-001-2.png` | p.17 공통 구조, 온도 variant | 동일 | `sleep` | 동일 | single-setting input/option sheet | Modal Bottom Sheet, `AppInput`, `AppButton` | `SleepSettingSheet.temperature` 필요 | recommended, direct input, range error | 0~40°C 검증·적용 | MVP UI; 실제 가전 적용 Phase 2 | `REBUILD` |
-| `W-SLEEP-001-3` | `FUC-W-SLEEP-001-1` | Wife | `docs/screens/W-SLEEP-001-3.png` | p.17 공통 구조, 습도 variant | 동일 | `sleep` | 동일 | single-setting input/option sheet | Modal Bottom Sheet, `AppInput`, `AppButton` | `SleepSettingSheet.humidity` 필요 | recommended, direct input, range error | 0~100% 검증·적용 | MVP UI; 실제 가전 적용 Phase 2 | `REBUILD` |
-| `W-SLEEP-001-4` | `FUC-W-SLEEP-001-1` | Wife | `docs/screens/W-SLEEP-001-4.png` | p.17 공통 구조, 소리 variant | 동일 | `sleep` | 동일 | single-setting option sheet | Modal Bottom Sheet, `AppButton` | `SleepSettingSheet.sound` 필요 | recommended, selected | 소리 선택·적용 | MVP UI; 실제 가전 적용 Phase 2 | `REBUILD` |
-| `W-SLEEP-001-5` | `FUC-W-SLEEP-001-1` | Wife | `docs/screens/W-SLEEP-001-5.png` | p.17 공통 구조, 공기청정기 variant | 동일 | `sleep` | 동일 | single-setting option sheet | Modal Bottom Sheet, `AppButton` | `SleepSettingSheet.airPurifier` 필요 | recommended, selected | 운전 모드 선택·적용 | MVP UI; 실제 가전 적용 Phase 2 | `REBUILD` |
-
-현재 Sleep 구현은 다섯 설정을 한 Sheet의 Dropdown으로 동시에 편집하고 별도 “설정 직접 변경하기” 버튼을 사용한다. 최신 계약은 각 환경 타일을 탭해 항목별 Bottom Sheet를 여는 구조이므로 Main과 Sheet를 함께 재구성해야 한다.
-
-### 3.4 Report, Calendar, Motion
-
-| Screen ID | Requirement ID | Actor | Screen image | 화면설계서 참조 | Route | Flutter Feature | 현재 Flutter 파일 | UI Pattern | 공통 컴포넌트 | Feature 컴포넌트 | State | Interaction | MVP / Phase2 | 구현 상태 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `W-REPORT-001` | `FUC-W-REPORT-001`; `FUC-W-REPORT-002`는 Phase 2 | Wife | `docs/screens/W-REPORT-001.png` | p.7 | `/wife/report/:date` | `report` | `frontend/lib/features/report/screens/daily_report_screen.dart` | metrics + routine list + family summary | `TopAppBar`, `AppCard`, `AppButton`, `AppBottomNavigation`, state views | `ReportMetricCard`, `RoutineRecordCard`, `DailyReportController` | loading, empty, error, saving, sharing | 실제 date 조회; 저장 → Calendar + Home 초기화; 공유 → Modal | MVP / Motion 통계 Phase 2 | `FLOW_UPDATE` |
-| `W-REPORT-001-1` | `FUC-W-REPORT-001-1` | Wife | `docs/screens/W-REPORT-001-1.png` | p.7 inset, p.26 보조 표기 | `/wife/report/:date` 내부 Modal | `report` | `frontend/lib/features/report/screens/daily_report_screen.dart` | dimmed completion dialog | `AlertDialog`, `AppButton` | 공유 결과 Dialog | success, retry/error | 확인 → Report 유지; 저장하고 마치기 → Calendar | MVP | `STYLE_UPDATE` |
-| `B-CAL-001` | `FUC-B-CAL-001` | Wife | `docs/screens/B-CAL-001.png` | p.4, Wife variant | `/wife/calendar` | `calendar`, `report` | `frontend/lib/features/calendar/screens/wife_calendar_screen.dart`; `record_calendar_screen.dart` | month calendar + selected-day summary | `TopAppBar`, `AppCard`, `AppBottomNavigation`, state views | `ConditionCalendar`, `ConditionLegend`, `RecordDaySummary`, `RecordCalendarController` | loading, error, selected date, no record, future disabled | 월 이동·날짜 선택·리포트 → `/wife/report/:date` | MVP | `FLOW_UPDATE` |
-| `B-CAL-001` | `FUC-B-CAL-001` | Partner | `docs/screens/B-CAL-001.png` | p.4, Partner-only actions 6~7 | `/partner/calendar` | `calendar`, `partner` | `frontend/lib/features/partner/screens/partner_calendar_screen.dart`; `calendar/screens/record_calendar_screen.dart` | Partner root calendar, no bottom navigation | `TopAppBar`, `AppCard`, state views | Calendar 공통 컴포넌트 + notification/movement actions | loading, error, selected date, unread notification | 알림 → Notifications; 리포트; Motion CTA; Bottom Nav/Profile 없음 | MVP; Motion CTA 대상 Phase 2 | `REBUILD` |
-| `B-MOTION-001` | `FUC-B-MOTION-001` | Wife | `docs/screens/B-MOTION-001.png` | p.2 | `/wife/movement` | `movement` | `frontend/lib/features/movement/product_movement_screen.dart`; `controllers/realtime_alert_controller.dart` | detection toggle + progress + alert log | `TopAppBar`, `AppCard`, `AppBottomNavigation`, `InfoBanner` | `MovementAlertCard`, `RealtimeAlertController` | off/on, empty, warning, severe, acknowledged | Wife Realtime tab; 가전으로 옮기기 → Household | Phase 2 | `PHASE_2` |
-| `B-MOTION-001` | `FUC-B-MOTION-001` | Partner | `docs/screens/B-MOTION-001.png` | p.2 | `/partner/movement` | `movement`, `partner` | `frontend/lib/features/movement/product_movement_screen.dart`; `product_skeleton_screen.dart` | same shared log, no bottom navigation | `TopAppBar`, `AppCard`, `InfoBanner` | `MovementAlertCard`, `RealtimeAlertController` | shared read state | Partner Calendar CTA에서만 진입·뒤로 Calendar | Phase 2 | `PHASE_2` |
-
-### 3.5 Partner Report, Notification, Request
-
-| Screen ID | Requirement ID | Actor | Screen image | 화면설계서 참조 | Route | Flutter Feature | 현재 Flutter 파일 | UI Pattern | 공통 컴포넌트 | Feature 컴포넌트 | State | Interaction | MVP / Phase2 | 구현 상태 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `H-REPORT-001` | `FUC-H-REPORT-001` | Partner | `docs/screens/H-REPORT-001.png` | p.22 | `/partner/report/:date` | `partner`, `report` | `frontend/lib/features/partner/screens/partner_morning_report_screen.dart` | read-only morning summary | `TopAppBar`, `AppCard`, state views | `_PartnerReportContent`, `_GuideSummary`, `DailyReportController` 재사용 | loading, empty, error, ready | Calendar/리포트 알림에서 실제 date로 진입; 뒤로 원 진입점 | MVP | `FLOW_UPDATE` |
-| `H-NOTI-001` | `FUC-H-NOTI-001` | Partner | `docs/screens/H-NOTI-001.png` | p.21 | `/partner/notifications` | `partner`, `notification` | `frontend/lib/features/partner/screens/partner_notifications_screen.dart` | chronological inbox list | `TopAppBar`, `AppCard`, `AppBadge`, empty state | `_NotificationCard`, `PartnerNotificationController` | unread/read, empty, loading/error 필요 | 리포트 알림 → date Report; 요청 알림 → 실제 requestId | MVP; push infrastructure Phase 2 | `FLOW_UPDATE` |
-| `H-REQUEST-001` | `FUC-H-REQUEST-001`, `FUC-H-REQUEST-002` | Partner | `docs/screens/H-REQUEST-001.png` | p.24 | `/partner/requests/:requestId` | `partner`, `household` | `frontend/lib/features/partner/screens/partner_request_screen.dart` | requester/reason + per-task cards | `TopAppBar`, `AppCard`, `AppButton`, `AppBadge` | `PartnerRequestController`, `PartnerRequestStore`, `_StatusBadge` | requested, confirmed, completed, not-found/forbidden 필요 | 실제 requestId 조회; 카드별 확인·완료 | MVP | `FLOW_UPDATE` |
-| `H-REQUEST-001-1` | `FUC-H-REQUEST-002` | Partner | `docs/screens/H-REQUEST-001-1.png` | p.23, 3-1 inset | 동일 Request Route 내부 Modal | `partner`, `household` | `frontend/lib/features/partner/screens/partner_request_screen.dart` | completion confirmation dialog | `AlertDialog`, `AppButton` | 완료 확인 Dialog | confirm/cancel | 아직이에요 → confirmed 유지; 완료했어요 → 완료 처리 | MVP | `LAYOUT_UPDATE` |
-| `H-REQUEST-001-2` | `FUC-H-REQUEST-002` | Partner | `docs/screens/H-REQUEST-001-2.png` | p.23, main | 동일 Request Route 내부 content state | `partner`, `household` | 동일 | per-card progress/status | `AppBadge`, `InfoBanner` | request task state card | mixed requested/confirmed/completed | 카드별 상태 전이, 미완료 요청 유지 | MVP | `FLOW_UPDATE` |
-| `H-REQUEST-002` | `FUC-H-REQUEST-003` | Partner | `docs/screens/H-REQUEST-002.png` | p.25 | 동일 Request Route 내부 completion state | `partner`, `household` | `frontend/lib/features/partner/screens/partner_request_screen.dart` | full completion result overlay/content | `AppCard`, `AppButton`, `InfoBanner` | `RequestCompletionView` 필요 | completed result | 반영 위치·가족 분담 요약; Calendar로 돌아가기 | MVP | `LAYOUT_UPDATE` |
-
-Partner 화면의 현재 `PartnerBottomNavigation`, `/partner/profile`, `demo-request`, `today` 별칭은 최신 계약과 충돌한다. Report·Notification·Request 화면에서 Partner Bottom Navigation을 제거하고 Calendar/Notification 기반 흐름으로 통일해야 한다.
-
-## 4. PNG가 없는 Requirement 화면
-
-| Screen ID | Requirement ID | Actor | Screen image | 화면설계서 참조 | Route | Flutter Feature | 현재 Flutter 파일 | UI Pattern | 공통 컴포넌트 | Feature 컴포넌트 | State | Interaction | MVP / Phase2 | 구현 상태 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 없음 | `FUC-W-SETTING-001` | Wife | 없음 | 전용 페이지 없음; p.19 Menu의 설정 행만 참조 | `/wife/settings` | `settings` | `frontend/lib/features/settings/screens/wife_settings_screen.dart` | placeholder page | `TopAppBar`, `AppCard` | 상세 컴포넌트 정의 금지 | development placeholder | Menu에서 진입·뒤로 Menu; 임의 설정 항목 추가 금지 | Phase 2 placeholder | `PHASE_2` |
-| 없음 | `FUC-H-INVITE-001` | Partner | 없음 | 전용 페이지 없음 | `/partner/join?token=...` | `partner`, `invitation` | `frontend/lib/features/partner/screens/invitation_entry_screen.dart`; `features/invitation/controllers/invitation_entry_controller.dart` | development placeholder only | `TopAppBar`, `InfoBanner` | 기존 Join workflow 비활성화 필요 | token missing/valid/expired 안내, development placeholder | token 확인 후 “개발중입니다”만 표시; 실제 수락·연동 금지 | MVP Entry only | `REMOVE_OR_DISABLE` |
-
-## 5. 최신 범위에서 제거하거나 비활성화할 구현
-
-| 대상 | 현재 위치 | 판단 | 필요한 처리 |
-|---|---|---|---|
-| Partner Profile 화면/Route | `frontend/lib/routing/route_names.dart`, `app_router.dart`, `record_calendar_screen.dart` | 최신 Requirement에 Partner Profile이 없고 Partner Header는 Notification 전용 | `/partner/profile`과 Profile Action 제거 |
-| Partner Bottom Navigation | `frontend/lib/features/partner/widgets/partner_bottom_navigation.dart`, Partner screens | Partner는 Bottom Navigation을 사용하지 않음 | 화면 부착과 컴포넌트 사용 제거; Calendar를 안전한 기준 화면으로 사용 |
-| 실제 Join mock workflow | `invitation_entry_screen.dart`, `invitation_entry_controller.dart` | MVP는 진입점과 개발 중 안내만 허용 | token 상태 표시는 유지 가능하나 설치/로그인/수락/연동 Action 비활성화 |
-| Movement debug 초기 진입 | `frontend/lib/app.dart`, `features/movement/movement_debug_screen.dart` | 제품 Bootstrap은 `/entry`; debug 화면은 제품 Route가 아님 | 기본 initial route에서 제거하고 개발용 진입으로 격리 |
-| `today`, `demo-request` 경로 | `frontend/lib/routing/route_names.dart`, Partner/Report 화면 | 실제 `YYYY-MM-DD`, 실제 `requestId`만 허용 | 별칭과 고정 데모 ID 제거 |
-
-## 6. 공통 컴포넌트 영향
-
-| 영역 | 유지 가능한 공통 컴포넌트 | 보완/신규 필요 |
+| Requirement | Route | 상태 |
 |---|---|---|
-| Layout/Navigation | `TopAppBar`, `ResponsivePageContent`, `AppBottomNavigation` | Wife 전용 Shell, Partner no-bottom-nav shell, `/entry` Bootstrap shell |
-| Action/Form | `AppButton`, `AppInput`, `SelectionCard` | Profile step 저장/요약 복귀 mode, 범위 입력 공통 검증 |
-| Card/Status | `AppCard`, `InfoBanner`, `AppBadge`, `GuideTaskCard` | 연결 상태 Menu row, request completion view |
-| Async | `AppLoadingState`, `AppEmptyState`, `AppErrorState` | AI 공통 fallback view, parameter Not Found/Forbidden state |
-| Overlay | 기본 `AlertDialog`, `showModalBottomSheet` | Design System 기반 공통 result dialog, 항목별 `SleepSettingSheet` |
+| FUC-W-SETTING-001 | `/wife/settings` | 상세 항목 미확정: 요구사항 없는 설정을 만들지 않는 Placeholder. Menu 뒤로 복귀는 앱 스택에서 동작하나 직접 URL의 뒤로 계약은 미완성. |
+| FUC-H-INVITE-001 | `/partner/join?token=...` | Token 유효/만료/중복·오류 UI 및 개발 중 안내. 가입/로그인/실제 수락/계정 연동은 의도적으로 비활성. |
 
-## 7. 구현 우선순위
+## 남은 정합성 Gap
 
-1. `NEW`: `/entry`, Wife Menu와 연동 전/후 상태.
-2. `REMOVE_OR_DISABLE`: Partner Profile/Bottom Navigation, 실제 Join mock Action, debug initial route, demo aliases.
-3. `FLOW_UPDATE`: canonical Route 전환, Profile Summary 복귀, Wife/Partner Navigation, 실제 date/requestId 전달.
-4. `REBUILD`: Profile step 2, Sleep Main과 다섯 개 설정 Sheet, Partner Calendar shell.
-5. `LAYOUT_UPDATE`·`STYLE_UPDATE`: AI fallback, 공유/완료 Modal과 Request 완료 결과.
-6. `PHASE_2`: Motion과 실제 가전 제어·push·전체 루틴 Chat을 MVP 동작에서 분리.
+- ThinQ 홈 배너/메뉴 Entry, 세션·역할·연동 서버 상태 및 Route Guard는 Host/Auth 계약 없이 구현 불가. 현재 `/entry`는 Mock Bootstrap이고 직접 Actor URL 차단을 보장하지 않는다.
+- 프로필 저장과 초대·리포트 공유, AI 추천, 가전 제어, 실시간 모션은 실제 API를 호출하지 않는다. Menu 연동 완료 variant는 테스트용 로컬 상태이며 Partner Join에서 수락하지 않는다.
+- 달력/리포트에는 2026-09-13 중심 샘플 기록과 실행일 Mock 기록이 있고 실제 저장 이력과 완전 동기화되지는 않는다. 스크린리더 실기기·실제 브라우저의 hover/focus/시각 QA는 자동 Widget 테스트만으로 인증할 수 없다.
+- PDF p.3/4/17/19 및 Screen PNG는 콘텐츠·정보 구조의 참조이며 ThinQ Host 배너의 원본 시각 스타일은 PLM 화면에 복제하지 않는다.

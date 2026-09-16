@@ -19,7 +19,6 @@ class SleepEnvironmentCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      selected: setting.selected,
       label: '${setting.label} ${setting.value}',
       child: InkWell(
         key: ValueKey('sleep-environment-${setting.type.name}'),
@@ -28,52 +27,43 @@ class SleepEnvironmentCard extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
-            color: setting.selected
-                ? AppColors.categorySleepBackground
-                : AppColors.surface,
-            border: Border.all(
-              color: setting.selected
-                  ? AppColors.categorySleep
-                  : AppColors.borderSubtle,
-            ),
+            color: AppColors.categorySleepBackground,
+            border: Border.all(color: AppColors.borderSubtle),
             borderRadius: BorderRadius.circular(AppRadius.card),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    setting.selected
-                        ? Icons.check_box
-                        : Icons.check_box_outline_blank,
-                    color: setting.selected
-                        ? AppColors.categorySleep
-                        : AppColors.borderStrong,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 92),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: _iconBackground(setting.type),
+                      foregroundColor: AppColors.categorySleep,
+                      child: Icon(_icon(setting.type), size: 20),
+                    ),
+                    const Spacer(),
+                    const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.textTertiary,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  setting.label,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
                   ),
-                  const Spacer(),
-                  CircleAvatar(
-                    backgroundColor: _iconBackground(setting.type),
-                    foregroundColor: AppColors.categorySleep,
-                    child: Icon(_icon(setting.type), size: 20),
-                  ),
-                ],
-              ),
-              const Spacer(),
-              Text(
-                setting.label,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: AppSpacing.xs),
-              Text(
-                setting.value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-            ],
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  setting.value,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+              ],
+            ),
           ),
         ),
       ),

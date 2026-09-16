@@ -20,26 +20,26 @@ void main() {
     RouteNames.wifeProfile: '프로필 수정',
     RouteNames.partnerInvite: '남편도 ThinQ에 연결해보세요',
     RouteNames.wifeInvite: '남편도 ThinQ에 연결해보세요',
-    '${RouteNames.invitationEntry}?token=test-token': '희선님이 함께 보자고 초대했어요',
+    '${RouteNames.partnerJoin}?token=test-token': '희선님이 함께 보자고 초대했어요',
+    RouteNames.wifeMenu: '남편 초대하기',
     RouteNames.condition: '오늘의 컨디션',
     '${RouteNames.condition}?mode=edit': '오늘의 컨디션',
     RouteNames.activity: '오늘 할 집안일이 있나요?',
     RouteNames.wifeHome: '오늘 임신 28주차예요',
     RouteNames.mealGuide: '어떤 끼니를 볼까요?',
     RouteNames.householdGuide: '오늘은 허리 통증이 있는 날',
-    RouteNames.wifeMovement: '누적 알림 내역이에요',
-    RouteNames.partnerMovement: '누적 알림 내역이에요',
+    RouteNames.wifeMovement: 'Phase 2 기능 미리보기',
+    RouteNames.partnerMovement: 'Phase 2 기능 미리보기',
     RouteNames.healthGuide: '오늘의 집중 부위',
     RouteNames.sleepGuide: '오늘은 충분한 휴식이 필요해요',
     RouteNames.mealChat: '아침 메뉴를 다시 고르는 중',
-    '/wife/calendar/report/2026-09-13': '오늘 루틴을 모두 마쳤어요',
+    '/wife/report/2026-09-13': '오늘 루틴을 모두 마쳤어요',
     RouteNames.wifeCalendar: '2026년 9월',
     RouteNames.wifeSettings: '상세 요구사항이 확정될 때까지',
     '/partner/report/2026-09-13': '희선님은 임신 28주차예요',
     RouteNames.partnerCalendar: '2026년 9월',
     RouteNames.partnerNotifications: '읽지 않은 알림 2개',
     '/partner/requests/request-123': '희선님이 도움을 요청했어요',
-    RouteNames.partnerProfile: '연결된 계정과 프로필 정보를 확인',
   };
 
   testWidgets('ROUTE_MAP의 모든 내부 경로가 대응 화면을 만든다', (tester) async {
@@ -64,6 +64,7 @@ void main() {
   testWidgets('최초 프로필 등록은 초대를 거쳐 홈으로 이동한다', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
+        initialRoute: RouteNames.profileSetup,
         onGenerateRoute: AppRouter.onGenerateRoute,
         onGenerateInitialRoutes: AppRouter.onGenerateInitialRoutes,
       ),
@@ -74,12 +75,11 @@ void main() {
     await tester.tap(find.text('OK'));
     await tester.pumpAndSettle();
     await _tapNext(tester);
-    expect(find.textContaining('나이와 임신 전'), findsOneWidget);
+    expect(find.textContaining('임신 전 신장·체중'), findsOneWidget);
 
     final bodyFields = find.byType(TextField);
-    await tester.enterText(bodyFields.at(0), '32');
-    await tester.enterText(bodyFields.at(1), '165');
-    await tester.enterText(bodyFields.at(2), '55');
+    await tester.enterText(bodyFields.at(0), '165');
+    await tester.enterText(bodyFields.at(1), '55');
     await _tapNext(tester);
     expect(find.text('첫 출산이신가요?'), findsOneWidget);
 
@@ -124,6 +124,7 @@ void main() {
   testWidgets('Profile 단계의 Back은 이전 입력 단계로 이동한다', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
+        initialRoute: RouteNames.profileSetup,
         onGenerateRoute: AppRouter.onGenerateRoute,
         onGenerateInitialRoutes: AppRouter.onGenerateInitialRoutes,
       ),
@@ -141,7 +142,7 @@ void main() {
     expect(find.text('출산예정일을 알려주세요'), findsOneWidget);
   });
 
-  testWidgets('프로필 수정 직접 URL은 저장 후 안전한 Home으로 복귀한다', (tester) async {
+  testWidgets('프로필 수정 직접 URL은 저장 후 Menu로 복귀한다', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         initialRoute: RouteNames.wifeProfile,
@@ -156,7 +157,7 @@ void main() {
     await tester.ensureVisible(find.text('수정 완료'));
     await tester.tap(find.text('수정 완료'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('오늘 임신 28주차예요'), findsOneWidget);
+    expect(find.text('남편 초대하기'), findsOneWidget);
   });
 
   testWidgets('아내 Shell은 서비스 흐름의 네 가지 하단 탭을 제공한다', (tester) async {
@@ -208,7 +209,9 @@ void main() {
     await tester.tap(find.text('오늘 루틴 만들기'));
     await tester.pumpAndSettle();
     expect(TodayCareStore.instance.today?.nausea, 2);
-    await tester.drag(find.byType(ListView), const Offset(0, -500));
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('home-routine-success')),
+    );
     await tester.pumpAndSettle();
     expect(find.text('오늘의 하루 루틴'), findsOneWidget);
     expect(find.text('식사 가이드'), findsOneWidget);
@@ -240,7 +243,8 @@ void main() {
         300,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.drag(find.byType(Scrollable).first, const Offset(0, -120));
+      // 하단 Navigation에 가리지 않도록 카드 중심을 안전 영역 안으로 옮긴다.
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, -60));
       await tester.pumpAndSettle();
       await tester.tap(card);
       await tester.pumpAndSettle();
@@ -272,8 +276,6 @@ void main() {
       300,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, -120));
-    await tester.pumpAndSettle();
     await tester.tap(mealCard);
     await tester.pumpAndSettle();
     expect(find.text('어떤 끼니를 볼까요?'), findsOneWidget);
@@ -290,6 +292,8 @@ void main() {
       250,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.drag(find.byType(Scrollable).first, const Offset(0, -80));
+    await tester.pumpAndSettle();
     await tester.tap(alternativeEntry);
     await tester.pumpAndSettle();
 

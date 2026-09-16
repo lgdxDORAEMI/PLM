@@ -25,4 +25,20 @@ void main() {
     );
     expect(find.text('찐 감자 + 플레인 요거트'), findsOneWidget);
   });
+
+  testWidgets('가사·건강·수면 재조정은 Phase 2 안내만 대화에 남긴다', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: MealChatScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('meal-chat-input')),
+      '오늘 청소 루틴을 줄여줘',
+    );
+    await tester.tap(find.byTooltip('보내기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('오늘 청소 루틴을 줄여줘'), findsOneWidget);
+    expect(find.textContaining('현재는 식사 가이드 재조정만'), findsOneWidget);
+    expect(find.byKey(const ValueKey('meal-alternative-card')), findsNothing);
+  });
 }

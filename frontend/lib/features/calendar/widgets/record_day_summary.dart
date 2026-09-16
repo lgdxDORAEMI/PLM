@@ -21,6 +21,12 @@ class RecordDaySummary extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.md),
         _SummaryRow(label: '가전 자동 실행', value: record.applianceSummary),
+        const SizedBox(height: AppSpacing.md),
+        _SummaryRow(
+          label: '가족 분담',
+          value:
+              '요청 ${record.familyRequested} · 확인 ${record.familyConfirmed} · 완료 ${record.familyCompleted}',
+        ),
         if (record.burdenCount > 0) ...[
           const SizedBox(height: AppSpacing.md),
           _SummaryRow(

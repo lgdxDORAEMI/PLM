@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../design_system/components/app_bottom_sheet.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/bottom_navigation.dart';
@@ -17,6 +18,7 @@ import '../models/sleep_guide.dart';
 import '../services/mock_sleep_service.dart';
 import '../services/sleep_service.dart';
 import '../widgets/sleep_environment_card.dart';
+import '../widgets/sleep_environment_sheet.dart';
 
 class SleepGuideScreen extends StatefulWidget {
   const SleepGuideScreen({super.key, this.service});
@@ -52,7 +54,7 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: TopAppBar(title: '수면 가이드', onBack: _handleBack),
+      appBar: TopAppBar(title: '수면 가이드', onBack: _handleBack, wifeProfileAction: true),
       body: SafeArea(
         top: false,
         child: ResponsivePageContent(child: _buildBody()),
@@ -89,14 +91,21 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
         message: '잠시 후 다시 시도해 주세요.',
         onRetry: _controller.load,
       ),
-      _ => _SleepContent(
+      SleepGuideViewState.ready => _SleepContent(
         guide: _controller.guide!,
-        state: _controller.state,
-        onToggle: _controller.toggleEnvironment,
-        onEdit: _showSettings,
-        onStart: _controller.startRoutine,
+        onEnvironmentTap: _showEnvironmentSheet,
       ),
     };
+  }
+
+  Future<void> _showEnvironmentSheet(SleepEnvironmentSetting setting) {
+    return showAppBottomSheet<void>(
+      context: context,
+      builder: (context) => SleepEnvironmentSheet(
+        setting: setting,
+        onApply: (value) => _controller.updateValue(setting.type, value),
+      ),
+    );
   }
 
   void _handleBack() {
@@ -116,86 +125,16 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
     ][index];
     Navigator.pushReplacementNamed(context, route);
   }
-
-  Future<void> _showSettings() {
-    final environments = _controller.guide!.environments;
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: EdgeInsets.only(
-            left: AppSpacing.xl,
-            right: AppSpacing.xl,
-            bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpacing.xl,
-          ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text('수면 환경 설정', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  '변경한 값은 이 기기의 local 상태에만 반영돼요.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                for (final item in environments) ...[
-                  DropdownButtonFormField<String>(
-                    key: ValueKey('sleep-setting-${item.type.name}'),
-                    initialValue: item.value,
-                    decoration: InputDecoration(labelText: item.label),
-                    items: [
-                      for (final option in item.options)
-                        DropdownMenuItem(value: option, child: Text(option)),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) {
-                        _controller.updateValue(item.type, value);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                ],
-                AppButton(
-                  label: '변경 완료',
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _SleepContent extends StatelessWidget {
-  const _SleepContent({
-    required this.guide,
-    required this.state,
-    required this.onToggle,
-    required this.onEdit,
-    required this.onStart,
-  });
+  const _SleepContent({required this.guide, required this.onEnvironmentTap});
 
   final SleepGuideData guide;
-  final SleepGuideViewState state;
-  final ValueChanged<SleepEnvironmentType> onToggle;
-  final VoidCallback onEdit;
-  final Future<void> Function() onStart;
+  final ValueChanged<SleepEnvironmentSetting> onEnvironmentTap;
 
   @override
   Widget build(BuildContext context) {
-    final selectedCount = guide.environments
-        .where((item) => item.selected)
-        .length;
-    final running = state == SleepGuideViewState.running;
-    final completed = state == SleepGuideViewState.completed;
     return ListView(
       key: const ValueKey('sleep-guide-content'),
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
@@ -212,7 +151,7 @@ class _SleepContent extends StatelessWidget {
               ),
             ),
             Text(
-              '선택한 항목만 실행돼요',
+              '탭하면 변경',
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
@@ -220,7 +159,10 @@ class _SleepContent extends StatelessWidget {
           ],
         ),
         const SizedBox(height: AppSpacing.lg),
-        _EnvironmentGrid(environments: guide.environments, onToggle: onToggle),
+        _EnvironmentGrid(
+          environments: guide.environments,
+          onTap: onEnvironmentTap,
+        ),
         const SizedBox(height: AppSpacing.xxl),
         Text('오늘의 수면 팁', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: AppSpacing.lg),
@@ -229,31 +171,17 @@ class _SleepContent extends StatelessWidget {
           const SizedBox(height: AppSpacing.md),
         ],
         const SizedBox(height: AppSpacing.xl),
-        if (completed) ...[
-          InfoBanner(
-            title: '$selectedCount개 환경 설정을 적용했어요',
-            message: '실제 가전은 제어하지 않았으며 mock 완료 상태만 기록했어요.',
-            tone: InfoBannerTone.success,
-          ),
-          const SizedBox(height: AppSpacing.lg),
-        ],
-        AppButton(
-          key: const ValueKey('sleep-start-button'),
-          label: running
-              ? '수면 환경 설정 중…'
-              : completed
-              ? '수면 루틴 시작됨'
-              : '수면 루틴 시작하기',
-          onPressed: running || completed || selectedCount == 0
-              ? null
-              : onStart,
+        const InfoBanner(
+          title: '수면 환경은 추천값으로만 제공돼요',
+          message: '실제 조명·에어컨·공기청정기 실행은 MVP 범위에 포함되지 않아요.',
+          tone: InfoBannerTone.neutral,
         ),
-        const SizedBox(height: AppSpacing.md),
-        AppButton(
-          key: const ValueKey('sleep-edit-button'),
-          label: '설정 직접 변경하기',
-          variant: AppButtonVariant.secondary,
-          onPressed: running ? null : onEdit,
+        const SizedBox(height: AppSpacing.lg),
+        const AppButton(
+          key: ValueKey('sleep-start-button'),
+          label: '수면 루틴 실행은 준비 중이에요',
+          onPressed: null,
+          icon: Icons.lock_clock_outlined,
         ),
       ],
     );
@@ -262,6 +190,7 @@ class _SleepContent extends StatelessWidget {
 
 class _SleepSummary extends StatelessWidget {
   const _SleepSummary({required this.guide});
+
   final SleepGuideData guide;
 
   @override
@@ -322,27 +251,31 @@ class _SleepSummary extends StatelessWidget {
 }
 
 class _EnvironmentGrid extends StatelessWidget {
-  const _EnvironmentGrid({required this.environments, required this.onToggle});
+  const _EnvironmentGrid({required this.environments, required this.onTap});
+
   final List<SleepEnvironmentSetting> environments;
-  final ValueChanged<SleepEnvironmentType> onToggle;
+  final ValueChanged<SleepEnvironmentSetting> onTap;
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: environments.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        crossAxisSpacing: AppSpacing.md,
-        mainAxisSpacing: AppSpacing.md,
-        childAspectRatio: .95,
-      ),
-      itemBuilder: (context, index) {
-        final item = environments[index];
-        return SleepEnvironmentCard(
-          setting: item,
-          onTap: () => onToggle(item.type),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final columns = constraints.maxWidth >= 600 ? 3 : 2;
+        final itemWidth =
+            (constraints.maxWidth - AppSpacing.md * (columns - 1)) / columns;
+        return Wrap(
+          spacing: AppSpacing.md,
+          runSpacing: AppSpacing.md,
+          children: [
+            for (final item in environments)
+              SizedBox(
+                width: itemWidth,
+                child: SleepEnvironmentCard(
+                  setting: item,
+                  onTap: () => onTap(item),
+                ),
+              ),
+          ],
         );
       },
     );
@@ -351,6 +284,7 @@ class _EnvironmentGrid extends StatelessWidget {
 
 class _SleepTip extends StatelessWidget {
   const _SleepTip({required this.text});
+
   final String text;
 
   @override

@@ -63,7 +63,7 @@ class _MealChatScreenState extends State<MealChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: TopAppBar(title: '챗봇', onBack: _handleBack),
+      appBar: TopAppBar(title: '챗봇', onBack: _handleBack, wifeProfileAction: true),
       body: SafeArea(
         top: false,
         child: ResponsivePageContent(
@@ -244,6 +244,13 @@ class _MealChatContext extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xs),
             const Text('식사 가이드에서 이어짐 · 임당 경계 · 입덧 반영'),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'MVP에서는 식사 가이드 재조정 대화만 지원해요.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+            ),
           ],
         ),
       ),

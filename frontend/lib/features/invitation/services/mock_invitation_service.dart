@@ -1,4 +1,5 @@
 import '../models/invitation.dart';
+import '../../../routing/route_names.dart';
 import 'invitation_service.dart';
 
 class MockInvitationService implements InvitationService {
@@ -7,7 +8,7 @@ class MockInvitationService implements InvitationService {
   @override
   Future<String> createLink() async {
     await Future<void>.delayed(const Duration(milliseconds: 180));
-    return 'thinq.lge.com/invite/HS-28W';
+    return RouteNames.invitation(token: 'HS-28W');
   }
 
   @override

@@ -12,8 +12,10 @@ enum PostureType {
   const PostureType(this.value);
   final String value;
 
-  static PostureType fromJson(String value) =>
-      PostureType.values.firstWhere((e) => e.value == value, orElse: () => PostureType.unknown);
+  static PostureType fromJson(String value) => PostureType.values.firstWhere(
+    (e) => e.value == value,
+    orElse: () => PostureType.unknown,
+  );
 }
 
 /// rule_engine.py의 부담 라벨 문자열과 동일하다.
@@ -26,8 +28,10 @@ enum BurdenLabel {
   const BurdenLabel(this.value);
   final String value;
 
-  static BurdenLabel fromJson(String value) =>
-      BurdenLabel.values.firstWhere((e) => e.value == value, orElse: () => BurdenLabel.normal);
+  static BurdenLabel fromJson(String value) => BurdenLabel.values.firstWhere(
+    (e) => e.value == value,
+    orElse: () => BurdenLabel.normal,
+  );
 }
 
 class Landmark {
@@ -68,13 +72,14 @@ class PostureFrameState {
   final double cumulativeBendSec;
   final List<Landmark> landmarks;
 
-  factory PostureFrameState.fromJson(Map<String, dynamic> json) => PostureFrameState(
-    posture: PostureType.fromJson(json['posture'] as String),
-    burdenLabel: BurdenLabel.fromJson(json['burden_label'] as String),
-    stateDurationSec: (json['state_duration_sec'] as num).toDouble(),
-    cumulativeBendSec: (json['cumulative_bend_sec'] as num).toDouble(),
-    landmarks: (json['landmarks'] as List<dynamic>)
-        .map((e) => Landmark.fromJson(e as Map<String, dynamic>))
-        .toList(),
-  );
+  factory PostureFrameState.fromJson(Map<String, dynamic> json) =>
+      PostureFrameState(
+        posture: PostureType.fromJson(json['posture'] as String),
+        burdenLabel: BurdenLabel.fromJson(json['burden_label'] as String),
+        stateDurationSec: (json['state_duration_sec'] as num).toDouble(),
+        cumulativeBendSec: (json['cumulative_bend_sec'] as num).toDouble(),
+        landmarks: (json['landmarks'] as List<dynamic>)
+            .map((e) => Landmark.fromJson(e as Map<String, dynamic>))
+            .toList(),
+      );
 }

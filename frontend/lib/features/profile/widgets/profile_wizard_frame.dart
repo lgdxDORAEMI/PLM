@@ -17,6 +17,7 @@ class ProfileWizardFrame extends StatelessWidget {
     required this.child,
     required this.onContinue,
     this.validationMessage,
+    this.continueLabel = '다음',
   });
 
   final int step;
@@ -25,6 +26,7 @@ class ProfileWizardFrame extends StatelessWidget {
   final Widget child;
   final VoidCallback onContinue;
   final String? validationMessage;
+  final String continueLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +57,7 @@ class ProfileWizardFrame extends StatelessWidget {
               ),
             ],
             const SizedBox(height: AppSpacing.xxxl),
-            AppButton(label: '다음', onPressed: onContinue),
+            AppButton(label: continueLabel, onPressed: onContinue),
             const SizedBox(height: AppSpacing.xl),
           ],
         ),

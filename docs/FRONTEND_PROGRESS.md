@@ -1,80 +1,26 @@
-# Frontend Status
+# Frontend 진행 상태 — Screen ID별 최종 QA
 
-이 문서는 다음 개발자가 Placeholder를 실제 UI로 교체할 때의 현재 상태와 공용 파일 경계를 기록한다.
+세부 43개 Screen ID/Actor variant의 Requirement·Route·구현 파일·상태·검증은 [SCREEN_IMPLEMENTATION_MAP.md](SCREEN_IMPLEMENTATION_MAP.md)를 따른다. 기준: 최신 requirements, `화면설계서0916.pdf`, `docs/screens/**`, `ROUTE_MAP.md`, `DESIGN.md`, `frontend/lib/**`.
 
-## Foundation
+| 영역 | 실제 상태 |
+|---|---|
+| Design System / 공통 컴포넌트 | 토큰·Theme·Form·상태·AppBar·Wife 하단 Navigation 적용. Partner는 하단 Navigation/프로필 버튼 없음. |
+| `/entry` | Mock EntryService가 loading/오류/재시도와 상태별 출발 경로 제공. ThinQ Host 배너/메뉴, 실제 세션·역할 Guard는 미연동. |
+| Wife Onboarding/Menu | 6단계 Profile·수정 Summary 복귀, Invite Mock, 연동 전/후 Menu, Header 진입·이전 화면 복귀. 프로필 영속화/실제 초대 전송 미연동. |
+| Wife Home/Condition/Routine | 컨디션 전/후·loading/success/fallback, 네 가이드, 실제 실행일 Report 경로. 저장/AI/리포트 생성은 Mock. |
+| Meal/Household/Health/Sleep/Chat | 기능별 다른 콘텐츠 구조와 선택·완료·요청·Sheet·대화 상태. 실제 가전 제어/AI는 미연동. |
+| Report/Calendar | 날짜 Parameter·선택 날짜 연계, Mobile 세로/Tablet·Desktop split, loading/empty/error. Mock 기록 기반. |
+| Partner | Calendar→알림/날짜 Report/요청 상세→완료→Calendar. Join은 개발 중 안내만, 실제 수락/연동 없음. |
+| Motion | Wife 실시간 탭 / Partner Calendar CTA, 현재·최신 이벤트·오늘 로그·기기 상태의 공유 Local Mock. Camera/MediaPipe/Sensor Phase 2. |
+| Settings | 요구사항 상세 미확정: Placeholder만 제공. |
 
-| 영역 | 상태 | 비고 |
-| --- | --- | --- |
-| Design System | DONE | Color, spacing, radius, typography token |
-| Theme | DONE | `AppTheme.light`를 최상위 `MaterialApp`에 적용 |
-| Shared Components | DONE | Button, Input, Card, SelectionCard, TopAppBar, BottomNavigation |
-| Routing | PARTIAL | 중앙 Path·동적 Parameter·Bootstrap Resolver 계약 구현, 실제 Session Guard TODO |
-| Navigation | DONE | 역할별 Header, Wife 4개/Partner 2개 Tab과 서비스 흐름 연결 |
-| Backend 연동용 상태/Service | TODO | 이번 Skeleton 범위에서 제외 |
+## 검증 범위
 
-## Screens
+- `test/routing/screen_viewport_matrix_test.dart`: 23개 직접 Route를 각 390×900, 768×900, 1280×900에서 렌더링해 overflow/예외, Partner Navigation 분리 검사. Profile/Invite/Sleep/Dialog 같은 내부 상태는 각 기능 테스트로 검증.
+- 기능·상태·Interaction: Profile Wizard 수정/검증, Home→Condition→Activity→Routine, 4 Guide, Chat 재추천, Household→Partner Request, Calendar 날짜→Report, Notifications→상세, Sleep 다섯 Sheet, Motion Mock/Actor 분리.
+- 접근성: 상태 텍스트/아이콘 중복 전달, Semantics label/live region, Header action tooltip과 기본 touch target 등 코드를 점검. 스크린리더 실기기·브라우저 전체 키보드 탐색·디자인 픽셀 비교는 자동 검증 범위 밖이다.
+- 필수 실행 결과: `flutter analyze` 이슈 0개, `flutter test` 66개 통과, `flutter build web` 성공. 390/768/1280px Route 매트릭스 포함.
 
-| 대표 요구사항 ID | 화면 | 상태 |
-| --- | --- | --- |
-| W-PROFILE-001 | 임산부 프로필 설정/수정 | IMPLEMENTED |
-| W-INVITE-001 | 배우자 초대 | IMPLEMENTED / MOCK SHARE |
-| H-INVITE-001 | 초대 수락 | IMPLEMENTED / MOCK AUTH |
-| W-COND-001 | 오늘의 컨디션 | IMPLEMENTED |
-| W-TASK-001 | 오늘 예정 활동 | IMPLEMENTED / LOCAL STATE |
-| W-ROUTINE-001 | 통합 홈 | IMPLEMENTED |
-| W-MEAL-001 | 식사 가이드 | IMPLEMENTED |
-| W-HOUSE-001 | 가사 가이드 | IMPLEMENTED |
-| B-MOTION-001 | 실시간 모션·상태 알림 | IMPLEMENTED / MOCK UI |
-| W-HEALTH-001 | 건강 가이드 | IMPLEMENTED |
-| W-SLEEP-001 | 수면 가이드 | IMPLEMENTED / MOCK DEVICE |
-| W-CHAT-001 | 식사 재조정 채팅 | IMPLEMENTED / MOCK CHAT |
-| W-REPORT-001 | Daily 리포트 | IMPLEMENTED / MOCK DATA |
-| B-CAL-001 | 컨디션 캘린더 | IMPLEMENTED / WIFE·PARTNER SHARED |
-| 요구사항 ID 미정 | 설정 | SKELETON / BLOCKED PHASE 2 |
-| H-REPORT-001 | 파트너 아침 리포트 | IMPLEMENTED / MOCK DATA |
-| B-CAL-001 | 파트너 캘린더 | IMPLEMENTED / PARTNER VARIANT |
-| H-NOTI-001 | 알림 | IMPLEMENTED / MOCK INBOX |
-| H-REQUEST-001 | 파트너 가사 요청 | IMPLEMENTED / LOCAL STATE |
-| 요구사항 ID 미정 | 파트너 프로필 | SKELETON / BLOCKED REQUIREMENT |
+## 남은 외부 연동 / 알려진 한계
 
-`B-MOTION-001`은 역할별 Route가 공유하는 제품 UI이며 움직임 감지, severity, 알림과 확인 상태는 mock이다. 초대 링크 공유·Token 검증·계정 연동, Partner Inbox·Report·Request도 local/mock이며 실제 인증·Push·공유 API를 호출하지 않는다. `W-CHAT-001`은 메시지 모델과 Chat Service 경계를 분리한 누적 대화 UI이지만 응답은 local mock이며 식사 재조정으로 제한한다. 설정과 Partner Profile은 최신 기능 요구사항에 정식 ID·상세 항목이 없어 임의 구현하지 않는다.
-
-## Route Contract
-
-- 프로필: `/onboarding/profile`(최초), `/wife/profile`(수정)
-- 배우자 초대: `/onboarding/invite`(온보딩), `/wife/invite`(수동 재진입)
-- 초대 수락: `/invitation-entry?token={token}`
-- 리포트/요청: `:date`, `:requestId`를 화면에 전달
-- 공유 실시간: `/wife/movement`, `/partner/movement`
-- 실제 인증·역할 Redirect와 외부 Deep Link Domain은 아직 연결 대상이 아님
-
-## Shared Files
-
-다음 파일은 여러 개발자가 동시에 수정하면 충돌 가능성이 높은 공용 영역이다. 화면 작업자는 가급적 자신의 `features/<feature>/screens` 내부만 수정하고 공용 변경은 Integration Owner와 조율한다.
-
-```text
-lib/app.dart
-lib/routing/*
-lib/design_system/*
-lib/shared/widgets/product_skeleton_screen.dart
-```
-
-## Backend Integration
-
-다음 항목은 Frontend Skeleton 완료 여부와 무관하며 아직 제품 화면에 연결하지 않았다.
-
-- FastAPI 제품 API
-- Supabase 제품 데이터
-- 외부 LLM API
-- 실제 사용자 데이터
-- 실제 Authentication 흐름
-- 실제 API 통신
-- ThinQ 가전 제어
-
-## 검증
-
-- `flutter analyze`: 통과
-- `flutter test`: 51개 통과 (초대·예정 활동·Partner Report/Inbox/Request와 기존 Frontend 전체 회귀 테스트)
-- `flutter build web`: 통과
-- Router test: 전체 내부 경로, Profile 6단계·Back·온보딩 흐름, Home→Today Care→Activity→Home local 상태 흐름, Routine 4종 Detail 이동, Routine→Meal→Chat 재추천 적용→Routine 복귀, 동적 date/requestId/token, 역할별 Navigation, Bootstrap Resolver, 404 처리 확인
+ThinQ Host Entry와 사용자 Session/Role Guard, 프로필·캘린더 서버 저장, 공유/알림 Push, 실제 LLM, ThinQ 제어, 모션 분석은 이 Frontend Mock 범위를 넘어선다. `/entry`의 기본 Mock 상태는 아내 프로필 미완료이며 브라우저를 새로 열어도 영구 로그인/프로필 상태를 복원하지 않는다. 직접 `/wife/**`·`/partner/**` URL의 권한 검증은 실제 세션 Adapter 통합 이후 적용해야 한다. 데모 기록은 샘플 날짜 중심이며 실제 오늘 데이터를 대체하지 않는다.

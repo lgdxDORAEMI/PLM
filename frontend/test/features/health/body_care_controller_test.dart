@@ -8,5 +8,8 @@ void main() {
     expect(controller.isCompleted('pelvis'), isTrue);
     controller.toggleCompleted('pelvis');
     expect(controller.isCompleted('pelvis'), isFalse);
+
+    controller.selectArea('골반');
+    expect(controller.selectedArea, '골반');
   });
 }

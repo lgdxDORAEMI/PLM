@@ -1,4 +1,9 @@
-enum AppLaunchState { wifeNeedsProfile, wifeReady, partnerLinked }
+enum AppLaunchState {
+  wifeNeedsProfile,
+  wifeReady,
+  partnerNeedsLink,
+  partnerLinked,
+}
 
 enum ProfileMode { create, edit }
 

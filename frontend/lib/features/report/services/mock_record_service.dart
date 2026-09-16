@@ -1,3 +1,4 @@
+import '../../partner/data/partner_request_store.dart';
 import '../models/daily_record.dart';
 import 'record_service.dart';
 
@@ -7,9 +8,17 @@ class MockRecordService implements RecordService {
   static final List<DailyRecord> records = [
     for (var day = 1; day <= 13; day++) _recordFor(day),
     _recordFor(29, month: 8),
+    if (DateTime.now().year != 2026 ||
+        DateTime.now().month != 9 ||
+        DateTime.now().day > 13)
+      _recordFor(
+        DateTime.now().day,
+        month: DateTime.now().month,
+        year: DateTime.now().year,
+      ),
   ];
 
-  static DailyRecord _recordFor(int day, {int month = 9}) {
+  static DailyRecord _recordFor(int day, {int month = 9, int year = 2026}) {
     final level = switch (day % 4) {
       0 => ConditionLevel.difficult,
       1 => ConditionLevel.normal,
@@ -18,7 +27,7 @@ class MockRecordService implements RecordService {
     };
     final isSelectedMock = day == 13 && month == 9;
     return DailyRecord(
-      date: DateTime(2026, month, day),
+      date: DateTime(year, month, day),
       pregnancyWeek: month == 9 ? 28 : 26,
       conditionLevel: isSelectedMock ? ConditionLevel.difficult : level,
       conditionSummary: isSelectedMock
@@ -86,6 +95,7 @@ class MockRecordService implements RecordService {
         (record) =>
             record.date.year == month.year && record.date.month == month.month,
       )
+      .map(_withPartnerSummary)
       .toList(growable: false);
 
   @override
@@ -93,7 +103,7 @@ class MockRecordService implements RecordService {
     final normalized = date.year == 0 ? DateTime(2026, 9, 13) : date;
     for (final record in records) {
       if (recordDateKey(record.date) == recordDateKey(normalized)) {
-        return record;
+        return _withPartnerSummary(record);
       }
     }
     return null;
@@ -107,5 +117,18 @@ class MockRecordService implements RecordService {
   @override
   Future<void> shareRecord(DailyRecord record) async {
     await Future<void>.delayed(const Duration(milliseconds: 150));
+  }
+
+  /// Partner Request 처리 상태를 Calendar와 Report의 가족 분담 집계에 합성한다.
+  DailyRecord _withPartnerSummary(DailyRecord record) {
+    final summary = PartnerRequestStore.instance.summaryFor(
+      recordDateKey(record.date),
+    );
+    if (summary == null) return record;
+    return record.copyWithFamilySummary(
+      requested: summary.requested,
+      confirmed: summary.confirmed,
+      completed: summary.completed,
+    );
   }
 }

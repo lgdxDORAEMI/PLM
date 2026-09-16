@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/bottom_navigation.dart';
-import '../../../design_system/components/responsive_page_content.dart';
+import '../../../design_system/components/content_frame.dart';
+import '../../../design_system/components/responsive_split_view.dart';
 import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_spacing.dart';
@@ -58,11 +59,9 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen> {
         title: '컨디션 캘린더',
         showBack: false,
         actions: isWife ? null : _partnerActions(),
+        wifeProfileAction: isWife,
       ),
-      body: SafeArea(
-        top: false,
-        child: ResponsivePageContent(child: _buildBody()),
-      ),
+      body: SafeArea(top: false, child: ContentFrame(child: _buildBody())),
       bottomNavigationBar: isWife
           ? AppBottomNavigation(
               currentIndex: 3,
@@ -86,20 +85,7 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen> {
               ],
               onSelected: _openWifeTab,
             )
-          : AppBottomNavigation(
-              currentIndex: 0,
-              items: const [
-                NavigationDestination(
-                  icon: Icon(Icons.calendar_month_outlined),
-                  label: '캘린더',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.monitor_heart_outlined),
-                  label: '실시간',
-                ),
-              ],
-              onSelected: _openPartnerTab,
-            ),
+          : null,
     );
   }
 
@@ -109,11 +95,6 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen> {
       onPressed: () =>
           Navigator.pushNamed(context, RouteNames.partnerNotifications),
       icon: const Icon(Icons.notifications_outlined),
-    ),
-    IconButton(
-      tooltip: '프로필',
-      onPressed: () => Navigator.pushNamed(context, RouteNames.partnerProfile),
-      icon: const Icon(Icons.account_circle_outlined),
     ),
   ];
 
@@ -150,12 +131,6 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen> {
     ][index];
     if (index != 3) Navigator.pushReplacementNamed(context, route);
   }
-
-  void _openPartnerTab(int index) {
-    if (index == 1) {
-      Navigator.pushReplacementNamed(context, RouteNames.partnerMovement);
-    }
-  }
 }
 
 class _CalendarContent extends StatelessWidget {
@@ -176,81 +151,30 @@ class _CalendarContent extends StatelessWidget {
       key: const ValueKey('record-calendar-content'),
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                '${month.year}년 ${month.month}월',
-                style: Theme.of(context).textTheme.headlineSmall,
-              ),
-            ),
-            IconButton(
-              key: const ValueKey('calendar-previous-month'),
-              tooltip: '이전 달',
-              onPressed: controller.previousMonth,
-              icon: const Icon(Icons.chevron_left),
-            ),
-            IconButton(
-              key: const ValueKey('calendar-next-month'),
-              tooltip: '다음 달',
-              onPressed: controller.canGoNext ? controller.nextMonth : null,
-              icon: const Icon(Icons.chevron_right),
-            ),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        ConditionCalendar(
-          month: month,
-          records: controller.records,
-          selectedDate: controller.selectedDate,
-          onSelected: controller.selectDate,
+        Text(
+          '날짜를 선택하면 그날의 기록을 바로 확인할 수 있어요.',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
         ),
         const SizedBox(height: AppSpacing.xl),
-        const ConditionLegend(),
-        const SizedBox(height: AppSpacing.xl),
-        if (selected == null)
-          const AppEmptyState(
-            title: '이 달에는 기록이 없어요',
-            message: '기록이 있는 달만 조회할 수 있어요.',
-          )
-        else ...[
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  _koreanDate(selected.date),
-                  style: Theme.of(context).textTheme.titleLarge,
+        ResponsiveSplitView(
+          key: const ValueKey('calendar-detail-layout'),
+          primaryFlex: 7,
+          secondaryFlex: 5,
+          gap: AppSpacing.xxl,
+          primary: _CalendarPanel(controller: controller, month: month),
+          secondary: selected == null
+              ? const AppEmptyState(
+                  title: '이 달에는 기록이 없어요',
+                  message: '기록이 있는 달만 조회할 수 있어요.',
+                )
+              : _SelectedDayDetail(
+                  record: selected,
+                  role: role,
+                  onOpenReport: () => onOpenReport(selected),
                 ),
-              ),
-              Text(
-                '임신 ${selected.pregnancyWeek}주차',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleSmall?.copyWith(color: AppColors.primary600),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          RecordDaySummary(record: selected),
-          const SizedBox(height: AppSpacing.lg),
-          AppButton(
-            key: const ValueKey('calendar-open-report'),
-            label: role == AppUserRole.wife
-                ? '이 날 리포트 자세히 보기'
-                : '이 날 아침 리포트 보기',
-            variant: AppButtonVariant.secondary,
-            onPressed: () => onOpenReport(selected),
-          ),
-          if (role == AppUserRole.partner) ...[
-            const SizedBox(height: AppSpacing.md),
-            AppButton(
-              label: '실시간 홈캠 신체 정보 보기',
-              variant: AppButtonVariant.secondary,
-              onPressed: () =>
-                  Navigator.pushNamed(context, RouteNames.partnerMovement),
-            ),
-          ],
-        ],
+        ),
       ],
     );
   }
@@ -259,4 +183,104 @@ class _CalendarContent extends StatelessWidget {
     const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
     return '${date.month}월 ${date.day}일 (${weekdays[date.weekday - 1]})';
   }
+}
+
+class _CalendarPanel extends StatelessWidget {
+  const _CalendarPanel({required this.controller, required this.month});
+
+  final RecordCalendarController controller;
+  final DateTime month;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    key: const ValueKey('calendar-month-panel'),
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Row(
+        children: [
+          Expanded(
+            child: Text(
+              '${month.year}년 ${month.month}월',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+          ),
+          IconButton(
+            key: const ValueKey('calendar-previous-month'),
+            tooltip: '이전 달',
+            onPressed: controller.previousMonth,
+            icon: const Icon(Icons.chevron_left),
+          ),
+          IconButton(
+            key: const ValueKey('calendar-next-month'),
+            tooltip: '다음 달',
+            onPressed: controller.canGoNext ? controller.nextMonth : null,
+            icon: const Icon(Icons.chevron_right),
+          ),
+        ],
+      ),
+      const SizedBox(height: AppSpacing.lg),
+      ConditionCalendar(
+        month: month,
+        records: controller.records,
+        selectedDate: controller.selectedDate,
+        onSelected: controller.selectDate,
+      ),
+      const SizedBox(height: AppSpacing.xl),
+      const ConditionLegend(),
+    ],
+  );
+}
+
+class _SelectedDayDetail extends StatelessWidget {
+  const _SelectedDayDetail({
+    required this.record,
+    required this.role,
+    required this.onOpenReport,
+  });
+
+  final DailyRecord record;
+  final AppUserRole role;
+  final VoidCallback onOpenReport;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    key: ValueKey('calendar-detail-${recordDateKey(record.date)}'),
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Row(
+        children: [
+          Expanded(
+            child: Text(
+              _CalendarContent._koreanDate(record.date),
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+          ),
+          Text(
+            '임신 ${record.pregnancyWeek}주차',
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(color: AppColors.primary600),
+          ),
+        ],
+      ),
+      const SizedBox(height: AppSpacing.lg),
+      RecordDaySummary(record: record),
+      const SizedBox(height: AppSpacing.lg),
+      AppButton(
+        key: const ValueKey('calendar-open-report'),
+        label: role == AppUserRole.wife ? '이 날 리포트 자세히 보기' : '이 날 아침 리포트 보기',
+        variant: AppButtonVariant.secondary,
+        onPressed: onOpenReport,
+      ),
+      if (role == AppUserRole.partner) ...[
+        const SizedBox(height: AppSpacing.md),
+        AppButton(
+          label: '실시간 홈캠 신체 정보 보기',
+          variant: AppButtonVariant.secondary,
+          onPressed: () =>
+              Navigator.pushNamed(context, RouteNames.partnerMovement),
+        ),
+      ],
+    ],
+  );
 }

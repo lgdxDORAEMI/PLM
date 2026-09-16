@@ -14,7 +14,6 @@ void main() {
     expect(controller.continueToNextStep(), isTrue);
 
     controller
-      ..updateAge('32')
       ..updateHeight('165')
       ..updateWeight('55');
     expect(controller.continueToNextStep(), isTrue);
@@ -50,10 +49,23 @@ void main() {
     final controller = ProfileSetupController(mode: ProfileMode.edit);
     addTearDown(controller.dispose);
 
-    expect(controller.draft.age, '32');
+    expect(controller.draft.height, '165');
     expect(controller.continueToNextStep(), isTrue);
     expect(controller.step, 1);
     expect(controller.moveBack(), isTrue);
     expect(controller.step, 0);
+  });
+
+  test('Summary 행 수정은 저장 후 다음 단계가 아닌 Summary로 복귀한다', () {
+    final controller = ProfileSetupController(mode: ProfileMode.edit);
+    addTearDown(controller.dispose);
+    for (var step = 0; step < 6; step += 1) {
+      expect(controller.continueToNextStep(), isTrue);
+    }
+    controller.editStep(1);
+    controller.updateHeight('168');
+    expect(controller.continueToNextStep(), isTrue);
+    expect(controller.isSummary, isTrue);
+    expect(controller.draft.height, '168');
   });
 }

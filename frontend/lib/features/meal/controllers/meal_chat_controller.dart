@@ -53,7 +53,35 @@ class MealChatController extends ChangeNotifier {
         text: normalized,
       ),
     );
+    if (_isDeferredRoutineRequest(normalized)) {
+      _proposal = null;
+      _messages.add(
+        MealChatMessage(
+          id: 'assistant-${_messages.length}',
+          author: MealChatAuthor.assistant,
+          text: '현재는 식사 가이드 재조정만 도와드릴 수 있어요. 가사·건강·수면 대화는 Phase 2에서 제공할 예정이에요.',
+        ),
+      );
+      notifyListeners();
+      return;
+    }
     await _requestReply(currentMeal, normalized);
+  }
+
+  /// MVP 밖인 전체 루틴 요청을 식사 추천으로 잘못 해석하지 않도록 경계를 둔다.
+  bool _isDeferredRoutineRequest(String message) {
+    const deferredKeywords = [
+      '가사',
+      '청소',
+      '빨래',
+      '집안일',
+      '건강',
+      '운동',
+      '스트레칭',
+      '수면',
+      '잠',
+    ];
+    return deferredKeywords.any(message.contains);
   }
 
   /// 현재 요청을 유지한 채 다른 식사 후보만 다시 받는다.

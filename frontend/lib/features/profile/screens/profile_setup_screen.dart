@@ -23,7 +23,6 @@ class ProfileSetupScreen extends StatefulWidget {
 
 class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   late final ProfileSetupController _controller;
-  late final TextEditingController _ageController;
   late final TextEditingController _heightController;
   late final TextEditingController _weightController;
   late final TextEditingController _medicalNoteController;
@@ -37,7 +36,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     _controller = ProfileSetupController(mode: widget.mode)
       ..addListener(_onControllerChanged);
     final draft = _controller.draft;
-    _ageController = TextEditingController(text: draft.age);
     _heightController = TextEditingController(text: draft.height);
     _weightController = TextEditingController(text: draft.prePregnancyWeight);
     _medicalNoteController = TextEditingController(text: draft.medicalNote);
@@ -48,7 +46,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     _controller
       ..removeListener(_onControllerChanged)
       ..dispose();
-    _ageController.dispose();
     _heightController.dispose();
     _weightController.dispose();
     _medicalNoteController.dispose();
@@ -70,6 +67,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           title: widget.mode == ProfileMode.create ? '프로필 설정' : '프로필 수정',
           showBack: showBack,
           onBack: _handleBack,
+          wifeProfileAction: widget.mode == ProfileMode.edit,
         ),
         body: SafeArea(
           top: false,
@@ -96,6 +94,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         description: '입력한 정보는 언제든 수정할 수 있어요.',
         validationMessage: _controller.validationMessage,
         onContinue: _continue,
+        continueLabel: _continueLabel,
         child: Column(
           children: [
             ProfileDateField(
@@ -117,15 +116,14 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       ),
       1 => ProfileWizardFrame(
         step: 1,
-        title: '나이와 임신 전 신장·체중을 알려주세요',
+        title: '임신 전 신장·체중을 알려주세요',
         description: '관절 부담 기준과 맞춤 가이드를 계산할 때 사용해요.',
         validationMessage: _controller.validationMessage,
         onContinue: _continue,
+        continueLabel: _continueLabel,
         child: _BodyFields(
-          ageController: _ageController,
           heightController: _heightController,
           weightController: _weightController,
-          onAgeChanged: _controller.updateAge,
           onHeightChanged: _controller.updateHeight,
           onWeightChanged: _controller.updateWeight,
         ),
@@ -136,6 +134,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         description: '경산이면 회복 속도와 부담 기준이 달라져요.',
         validationMessage: _controller.validationMessage,
         onContinue: _continue,
+        continueLabel: _continueLabel,
         child: Column(
           children: [
             SelectionCard(
@@ -158,6 +157,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         description: '다태 임신이면 체중 부담 기준을 더 낮게 잡아요.',
         validationMessage: _controller.validationMessage,
         onContinue: _continue,
+        continueLabel: _continueLabel,
         child: Column(
           children: [
             SelectionCard(
@@ -180,6 +180,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         description: '식사 가이드에서 해당 재료를 빼고 추천해요.',
         validationMessage: _controller.validationMessage,
         onContinue: _continue,
+        continueLabel: _continueLabel,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -205,6 +206,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         description: '혈당·혈압에 맞춰 메뉴와 활동을 조정해요.',
         validationMessage: _controller.validationMessage,
         onContinue: _continue,
+        continueLabel: _continueLabel,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -241,6 +243,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     _controller.continueToNextStep();
   }
 
+  String get _continueLabel => _controller.editingFromSummary ? '저장' : '다음';
+
   /// 날짜 종류에 맞는 범위를 제한해 논리적으로 잘못된 값을 방지한다.
   Future<void> _selectDate({required bool isDueDate}) async {
     final today = DateUtils.dateOnly(DateTime.now());
@@ -272,7 +276,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
     } else {
-      Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
+      Navigator.pushReplacementNamed(
+        context,
+        widget.mode == ProfileMode.edit
+            ? RouteNames.wifeMenu
+            : RouteNames.entry,
+      );
     }
   }
 
@@ -306,78 +315,46 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
     } else {
-      Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
+      Navigator.pushReplacementNamed(context, RouteNames.wifeMenu);
     }
   }
 }
 
 class _BodyFields extends StatelessWidget {
   const _BodyFields({
-    required this.ageController,
     required this.heightController,
     required this.weightController,
-    required this.onAgeChanged,
     required this.onHeightChanged,
     required this.onWeightChanged,
   });
 
-  final TextEditingController ageController;
   final TextEditingController heightController;
   final TextEditingController weightController;
-  final ValueChanged<String> onAgeChanged;
   final ValueChanged<String> onHeightChanged;
   final ValueChanged<String> onWeightChanged;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final age = ProfileUnitInput(
-          label: '나이',
-          unit: '세',
-          controller: ageController,
-          onChanged: onAgeChanged,
-        );
-        final height = ProfileUnitInput(
-          label: '신장',
-          unit: 'cm',
-          controller: heightController,
-          onChanged: onHeightChanged,
-        );
-        final weight = ProfileUnitInput(
-          label: '체중 (임신 전)',
-          unit: 'kg',
-          controller: weightController,
-          textInputAction: TextInputAction.done,
-          onChanged: onWeightChanged,
-        );
-        if (constraints.maxWidth >= 520) {
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: age),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(child: height),
-              const SizedBox(width: AppSpacing.md),
-              Expanded(child: weight),
-            ],
-          );
-        }
-        return Column(
-          children: [
-            age,
-            const SizedBox(height: AppSpacing.lg),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: height),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(child: weight),
-              ],
-            ),
-          ],
-        );
-      },
+    final height = ProfileUnitInput(
+      label: '신장',
+      unit: 'cm',
+      controller: heightController,
+      onChanged: onHeightChanged,
+    );
+    final weight = ProfileUnitInput(
+      label: '체중 (임신 전)',
+      unit: 'kg',
+      controller: weightController,
+      textInputAction: TextInputAction.done,
+      onChanged: onWeightChanged,
+    );
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: height),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(child: weight),
+      ],
     );
   }
 }

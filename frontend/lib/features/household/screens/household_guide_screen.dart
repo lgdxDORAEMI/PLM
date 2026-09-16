@@ -1,18 +1,24 @@
 import 'package:flutter/material.dart';
 
 import '../../../design_system/components/app_button.dart';
+import '../../../design_system/components/app_dialog.dart';
 import '../../../design_system/components/bottom_navigation.dart';
+import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_page_content.dart';
+import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_radius.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_names.dart';
 import '../controllers/household_guide_controller.dart';
 import '../models/household_task.dart';
+import '../services/household_request_service.dart';
 import '../widgets/household_task_card.dart';
 
 class HouseholdGuideScreen extends StatefulWidget {
-  const HouseholdGuideScreen({super.key});
+  const HouseholdGuideScreen({super.key, this.requestService});
+
+  final HouseholdRequestService? requestService;
   @override
   State<HouseholdGuideScreen> createState() => _HouseholdGuideScreenState();
 }
@@ -23,7 +29,9 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
   @override
   void initState() {
     super.initState();
-    _controller = HouseholdGuideController()..addListener(_refresh);
+    _controller = HouseholdGuideController(
+      requestService: widget.requestService,
+    )..addListener(_refresh);
   }
 
   @override
@@ -39,7 +47,7 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('가사 가이드')),
+      appBar: TopAppBar(title: '가사 가이드', onBack: _handleBack, wifeProfileAction: true),
       body: SafeArea(
         top: false,
         child: ResponsivePageContent(
@@ -59,10 +67,15 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
               const _SectionTitle(
                 number: 2,
                 title: '가전이 대신합니다',
-                label: '3개 이동됨',
+                label: '추천 3개',
               ),
               const SizedBox(height: AppSpacing.md),
               ..._taskCards(HouseholdTaskOwner.appliance),
+              const InfoBanner(
+                title: '가전 실행은 아직 지원하지 않아요',
+                message: 'MVP에서는 부담을 줄일 수 있는 가전 수행 방법만 추천해요.',
+                tone: InfoBannerTone.neutral,
+              ),
               const SizedBox(height: AppSpacing.xl),
               _SectionTitle(
                 number: 3,
@@ -71,12 +84,34 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
               ),
               const SizedBox(height: AppSpacing.md),
               ..._taskCards(HouseholdTaskOwner.partner, selectable: true),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                '함께 부탁할 항목을 골라주세요',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: AppSpacing.md),
               ..._taskCards(HouseholdTaskOwner.self, selectable: true),
+              if (_controller.shareError != null) ...[
+                const SizedBox(height: AppSpacing.md),
+                InfoBanner(
+                  title: '공유하지 못했어요',
+                  message: _controller.shareError,
+                  tone: InfoBannerTone.danger,
+                ),
+              ],
               const SizedBox(height: AppSpacing.md),
               AppButton(
                 key: const ValueKey('household-share-button'),
-                label: _controller.shared ? '남편에게 공유했어요' : '남편에게 공유하기',
-                onPressed: _controller.selectedCount == 0 || _controller.shared
+                label: _controller.sharing
+                    ? '요청 보내는 중…'
+                    : _controller.shared
+                    ? '남편에게 공유했어요'
+                    : '남편에게 공유하기',
+                loading: _controller.sharing,
+                onPressed:
+                    _controller.selectedCount == 0 ||
+                        _controller.shared ||
+                        _controller.sharing
                     ? null
                     : _share,
               ),
@@ -98,49 +133,40 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
         HouseholdTaskCard(
           task: task,
           onTap: selectable ? () => _controller.toggleSelection(task.id) : null,
-          actionLabel: owner == HouseholdTaskOwner.appliance
-              ? _applianceLabel(task)
-              : null,
-          onAction: owner == HouseholdTaskOwner.appliance
-              ? () => _runAppliance(task)
-              : null,
+          trailingLabel: owner == HouseholdTaskOwner.appliance ? '가전 추천' : null,
         ),
         const SizedBox(height: AppSpacing.sm),
       ],
     ];
   }
 
-  String _applianceLabel(HouseholdTask task) => switch (task.status) {
-    HouseholdTaskStatus.running => '실행 중',
-    HouseholdTaskStatus.reserved => '예약됨',
-    _ => switch (task.id) {
-      'vacuum' => '지금 시작',
-      'laundry' => '예약하기',
-      _ => '야간 실행',
-    },
-  };
-
-  void _runAppliance(HouseholdTask task) {
-    _controller.runAppliance(task.id);
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('실제 가전 제어 없이 화면 상태만 변경했어요.')));
-  }
-
   Future<void> _share() async {
-    _controller.shareSelected();
-    await showDialog<void>(
+    await _controller.shareSelected();
+    if (!mounted || !_controller.shared) return;
+    final requestRoute = RouteNames.partnerRequest(_controller.lastRequestId!);
+    await showAppDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        icon: const Icon(
-          Icons.check_circle,
-          color: AppColors.categorySleep,
-          size: 52,
+      builder: (context) => AppDialog(
+        icon: Icons.check_circle,
+        iconColor: AppColors.success,
+        title: '남편에게 공유했어요',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('선택한 ${_controller.selectedCount}개 항목을 요청 카드로 보냈어요.'),
+            const SizedBox(height: AppSpacing.md),
+            Semantics(
+              label: '파트너 요청 경로 $requestRoute',
+              child: const InfoBanner(
+                title: '남편 요청함에 도착했어요',
+                message: '확인과 완료 상태는 이 화면에 다시 반영돼요.',
+                tone: InfoBannerTone.info,
+              ),
+            ),
+          ],
         ),
-        title: const Text('남편에게 공유했어요'),
-        content: Text('선택한 ${_controller.selectedCount}개 항목이 실시간 탭에 도착했어요.'),
         actions: [
-          AppButton(label: '확인', onPressed: () => Navigator.pop(context)),
+          AppDialogAction(label: '확인', onPressed: () => Navigator.pop(context)),
         ],
       ),
     );
@@ -154,6 +180,14 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
       RouteNames.wifeCalendar,
     ][index];
     Navigator.pushReplacementNamed(context, route);
+  }
+
+  void _handleBack() {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
+    }
   }
 }
 
@@ -221,7 +255,7 @@ class _LiveStatusBanner extends StatelessWidget {
       children: [
         Icon(Icons.check_circle_outline, color: AppColors.info),
         SizedBox(width: AppSpacing.md),
-        Expanded(child: Text('남편의 확인·완료 상태가 이 화면에 반영돼요')),
+        Expanded(child: Text('남편의 확인·완료 상태가 요청 Route를 통해 이 화면에 반영돼요')),
       ],
     ),
   );

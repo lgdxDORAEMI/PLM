@@ -59,14 +59,20 @@ void main() {
     });
 
     test('unknown type throws FormatException', () {
-      expect(() => LiveMessage.fromJson({'type': 'nope'}), throwsFormatException);
+      expect(
+        () => LiveMessage.fromJson({'type': 'nope'}),
+        throwsFormatException,
+      );
     });
   });
 
   group('PostureType/BurdenLabel fromJson', () {
-    test('falls back to unknown/normal for unrecognized values instead of throwing', () {
-      expect(PostureType.fromJson('Cartwheel'), PostureType.unknown);
-      expect(BurdenLabel.fromJson('Cartwheel'), BurdenLabel.normal);
-    });
+    test(
+      'falls back to unknown/normal for unrecognized values instead of throwing',
+      () {
+        expect(PostureType.fromJson('Cartwheel'), PostureType.unknown);
+        expect(BurdenLabel.fromJson('Cartwheel'), BurdenLabel.normal);
+      },
+    );
   });
 }

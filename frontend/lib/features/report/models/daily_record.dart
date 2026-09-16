@@ -50,6 +50,27 @@ class DailyRecord {
   final int familyCompleted;
   final String burdenArea;
   final int burdenCount;
+
+  DailyRecord copyWithFamilySummary({
+    required int requested,
+    required int confirmed,
+    required int completed,
+  }) => DailyRecord(
+    date: date,
+    pregnancyWeek: pregnancyWeek,
+    conditionLevel: conditionLevel,
+    conditionSummary: conditionSummary,
+    completedRoutines: completedRoutines,
+    totalRoutines: totalRoutines,
+    applianceSummary: applianceSummary,
+    applianceCount: applianceCount,
+    routines: routines,
+    familyRequested: requested,
+    familyConfirmed: confirmed,
+    familyCompleted: completed,
+    burdenArea: burdenArea,
+    burdenCount: burdenCount,
+  );
 }
 
 String recordDateKey(DateTime date) =>

@@ -1,5 +1,7 @@
 enum MealPeriod { breakfast, lunch, dinner, snack }
 
+enum MealDecision { undecided, accepted, rejected }
+
 class MealPeriodSummary {
   const MealPeriodSummary({
     required this.period,

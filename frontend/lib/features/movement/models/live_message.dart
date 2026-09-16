@@ -14,7 +14,9 @@ sealed class LiveMessage {
       case 'calibration_done':
         return const CalibrationDone();
       case 'frame':
-        return FrameUpdate(PostureFrameState.fromJson(json['data'] as Map<String, dynamic>));
+        return FrameUpdate(
+          PostureFrameState.fromJson(json['data'] as Map<String, dynamic>),
+        );
       default:
         throw FormatException('알 수 없는 메시지 type: ${json['type']}');
     }

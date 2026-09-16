@@ -10,11 +10,13 @@ class PregnancyWeekTipCard extends StatelessWidget {
     required this.week,
     required this.tips,
     required this.caution,
+    required this.todayTip,
   });
 
   final int week;
   final List<String> tips;
   final String caution;
+  final String todayTip;
 
   @override
   Widget build(BuildContext context) {
@@ -61,6 +63,15 @@ class PregnancyWeekTipCard extends StatelessWidget {
               style: Theme.of(
                 context,
               ).textTheme.labelLarge?.copyWith(color: AppColors.primary700),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Text('오늘 시도해보세요', style: Theme.of(context).textTheme.labelLarge),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              todayTip,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
             ),
           ],
         ),
