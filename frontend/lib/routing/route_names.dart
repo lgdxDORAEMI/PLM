@@ -27,7 +27,6 @@ abstract final class RouteNames {
   static const partnerNotifications = '/partner/notifications';
   static const partnerRequestPattern = '/partner/requests/:requestId';
   static const partnerRequestDemo = '/partner/requests/demo-request';
-  static const partnerProfile = '/partner/profile';
 
   static String dailyReport(String date) =>
       '/wife/calendar/report/${Uri.encodeComponent(date)}';

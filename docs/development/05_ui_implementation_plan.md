@@ -1251,7 +1251,7 @@ Partner AppShell
 - 초대 연결 완료 후 Partner Main
 - 리포트 → H-REPORT-001
 - 요청 → H-REQUEST-001
-- 알림 → H-NOTI-001, Profile → H-PROFILE-001
+- 알림 → H-NOTI-001
 
 ## Responsive
 
@@ -1419,74 +1419,6 @@ Partner Page
 - 3단계 상태 전환과 오류 재시도가 Mock으로 동작한다.
 - 완료가 Wife Routine/Report 재조회에 반영된다.
 - 허용되지 않은 상태 전환 Action은 노출하지 않는다.
-
-# H-PROFILE-001 — 파트너 프로필
-
-## 대표 요구사항 ID
-
-`H-PROFILE-001`
-
-## Screen Name
-
-파트너 프로필 조회
-
-## Purpose
-
-파트너가 자신의 기본 Profile과 연결 상태를 읽기 전용으로 확인한다.
-
-## User Goal
-
-현재 계정과 연결 관계를 확인한다.
-
-## Layout
-
-```text
-Page
-├─ AppTopBar
-└─ ResponsivePageContent(form)
-   ├─ profile summary
-   └─ connection status
-```
-
-## Components
-
-`AppTopBar`, `ResponsivePageContent`, `ProfileSummary(readOnlyPartner)`, `StatusBadge`, `LoadingState`, `ErrorState`
-
-## Data
-
-- Mock 파트너 기본 Profile과 연결 상태
-- 문서에 정의되지 않은 수정 Field는 추가하지 않는다.
-
-## UI State
-
-- Loading: Profile 조회
-- Empty: 연결/정보 없음
-- Error: 조회 실패
-- Disabled: 모든 Profile Field 읽기 전용
-
-## Interaction
-
-- Tap/Keyboard: Back만, 정의된 추가 Action 없음
-
-## Navigation
-
-- 모든 Partner 화면의 우측 상단 Profile Button에서 직접 진입
-- Back → 이전 화면
-
-## Responsive
-
-- 모든 폭에서 최대 560px
-
-## Accessibility
-
-- Focus: Back과 읽기 순서
-- Semantics: 읽기 전용과 연결 상태 명시
-
-## Definition of Done
-
-- 조회/빈 상태/오류가 구현된다.
-- Profile 수정 UI를 제공하지 않는다.
-- Profile Menu 단계를 거치지 않고 직접 진입한다.
 
 # H-INVITE-001 — 초대 수락
 
@@ -1690,16 +1622,6 @@ Standalone Page
 - **Validation:** 요청됨→확인됨→완료 Contract/Widget Test
 - **Definition of Done:** 상태가 Wife 화면과 Report용 Mock Store에 일관되게 반영
 
-## UI-013
-
-- **Goal:** 파트너 읽기 전용 Profile 구현
-- **Related Screen:** H-PROFILE-001
-- **Components:** ProfileSummary(readOnlyPartner)
-- **Files:** Profile Partner Page/State
-- **Dependencies:** UI-001 공통 Profile Model, UI-003 연결 상태
-- **Validation:** Loading/Empty/Error와 수정 Action 부재 Test
-- **Definition of Done:** 전역 Button에서 직접 진입하고 읽기 전용 Semantics 제공
-
 ## UI-014
 
 - **Goal:** 앱 내 파트너 알림 목록 구현
@@ -1777,7 +1699,7 @@ Standalone Page
 - UI-001~005: 입력 기반을 각각 완료·검토한 뒤 Home으로 진행한다.
 - UI-006: Home의 모든 상태가 검증된 뒤 Guide Task를 하나씩 시작한다.
 - UI-007~012: 식사 → 채팅 → 건강 → 수면 → 가사 → 파트너 요청 순으로 독립 완료한다.
-- UI-013~018: 파트너 조회·알림과 Report/Calendar를 기존 Mock Store 위에 추가한다.
+- UI-014~018: 파트너 조회·알림과 Report/Calendar를 기존 Mock Store 위에 추가한다.
 - UI-019~020: Phase 2 요구사항과 미정 정책이 확정되기 전 시작하지 않는다.
 - 각 Task 종료 시 `flutter analyze`, 관련 `flutter test`, 주요 Viewport/Keyboard/200% Text 수동 검증을 수행한다.
 - 화면별 검토가 끝나기 전 다음 Screen 묶음을 대량 구현하지 않는다.

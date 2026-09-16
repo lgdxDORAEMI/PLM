@@ -22,7 +22,6 @@
 | UI-010 | W-SLEEP-001 수면 가이드 | sleep | Unassigned | Todo | - | `/wife/home/sleep` | SKELETON |
 | UI-011 | W-HOUSE-001 가사 가이드 | household | Unassigned | Todo | - | `/wife/home/household` | SKELETON; Partner 화면 직접 이동 제거 |
 | UI-012 | H-REQUEST-001 파트너 가사 요청 | household | Unassigned | Todo | - | `/partner/requests/:requestId` | SKELETON; requestId 전달 구현 |
-| UI-013 | H-PROFILE-001 파트너 프로필 | profile | Unassigned | Todo | - | `/partner/profile` | SKELETON |
 | UI-014 | H-NOTI-001 알림 | notification | Unassigned | Todo | - | `/partner/notifications` | SKELETON; Push 제외 |
 | UI-015 | W-REPORT-001 Daily 리포트 | report | Unassigned | Todo | - | `/wife/calendar/report/:date` | SKELETON; date 전달 구현 |
 | UI-016 | W-CAL-001 컨디션 캘린더 | report | Unassigned | Todo | - | `/wife/calendar` | SKELETON |
@@ -128,8 +127,6 @@ flowchart LR
   U2 --> U11[UI-011 Household]
   U6 --> U11
   U11 --> U12[UI-012 Partner Request]
-  U1 --> U13[UI-013 Partner Profile]
-  U3 --> U13
   U3 --> U14[UI-014 Notifications]
   U12 --> U14
   U7 --> U15[UI-015 Daily Report]
@@ -156,7 +153,7 @@ Foundation은 별도 화면 Task가 아니라 UI-001 착수 전 Integration Owne
 | 0 | Foundation / Route skeleton | 두 작업자가 나누지 않고 Integration Owner가 순차 확정 |
 | 1 | UI-002와 UI-004 | UI-001 완료 후 서로 다른 Feature에서 진행 |
 | 2 | UI-003와 UI-005 | 각각 UI-002, UI-004 완료 후 진행 |
-| 3 | UI-007, UI-009, UI-010, UI-011, UI-013 | UI-006 완료 및 공통 Component API Freeze 후 Feature별 병렬 진행 |
+| 3 | UI-007, UI-009, UI-010, UI-011 | UI-006 완료 및 공통 Component API Freeze 후 Feature별 병렬 진행 |
 | 4 | UI-008와 UI-012 | 각각 UI-007, UI-011 완료 후 병렬 진행 |
 | 5 | UI-014와 UI-015 | UI-014용 Report Route Placeholder 계약을 Integration Owner가 먼저 제공 |
 | 6 | UI-016과 UI-017 | UI-015 완료 후 Wife/Partner Report Slice로 병렬 진행 |
@@ -183,7 +180,6 @@ Foundation은 별도 화면 Task가 아니라 UI-001 착수 전 Integration Owne
 - UI-004 Condition
 - UI-005 Planned Activity
 - UI-006 Home 및 Navigation Integration
-- UI-013 Partner Profile
 - 공통 파일: `app.dart`, Router, `app_dependencies.dart`, `pubspec.yaml`
 
 ### Developer B — Care & Record Vertical Slices
