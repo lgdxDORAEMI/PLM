@@ -6,8 +6,8 @@ import 'package:plm_frontend/routing/route_names.dart';
 
 void main() {
   const expectedRequirementIds = <String, String>{
-    RouteNames.profileSetup: 'W-PROFILE-001',
-    RouteNames.wifeProfile: 'W-PROFILE-001',
+    RouteNames.profileSetup: '프로필 설정',
+    RouteNames.wifeProfile: '프로필 수정',
     RouteNames.partnerInvite: 'W-INVITE-001',
     RouteNames.wifeInvite: 'W-INVITE-001',
     '${RouteNames.invitationEntry}?token=test-token': 'H-INVITE-001',
@@ -59,7 +59,33 @@ void main() {
       ),
     );
 
-    await tester.tap(find.text('프로필 입력 완료'));
+    await tester.tap(find.byKey(const Key('due-date-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    await _tapNext(tester);
+    expect(find.textContaining('나이와 임신 전'), findsOneWidget);
+
+    final bodyFields = find.byType(TextField);
+    await tester.enterText(bodyFields.at(0), '32');
+    await tester.enterText(bodyFields.at(1), '165');
+    await tester.enterText(bodyFields.at(2), '55');
+    await _tapNext(tester);
+    expect(find.text('첫 출산이신가요?'), findsOneWidget);
+
+    await tester.tap(find.text('초산이에요'));
+    await _tapNext(tester);
+    expect(find.text('아기는 몇 명인가요?'), findsOneWidget);
+    await tester.tap(find.text('한 명이에요 (단태)'));
+    await _tapNext(tester);
+    expect(find.text('알레르기가 있나요?'), findsOneWidget);
+    await _tapNext(tester);
+    expect(find.text('병원에서 주의받은 게 있나요?'), findsOneWidget);
+    await _tapNext(tester);
+    expect(find.text('입력한 내용을 확인해 주세요'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('완료하고 시작하기'));
+    await tester.tap(find.text('완료하고 시작하기'));
     await tester.pumpAndSettle();
     expect(find.textContaining('W-INVITE-001'), findsOneWidget);
 
@@ -80,6 +106,26 @@ void main() {
     expect(find.textContaining('request-123'), findsOneWidget);
   });
 
+  testWidgets('Profile 단계의 Back은 이전 입력 단계로 이동한다', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        onGenerateInitialRoutes: AppRouter.onGenerateInitialRoutes,
+      ),
+    );
+
+    await tester.tap(find.byKey(const Key('due-date-field')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    await _tapNext(tester);
+
+    await tester.tap(find.byTooltip('뒤로 가기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('출산예정일을 알려주세요'), findsOneWidget);
+  });
+
   testWidgets('프로필 수정 직접 URL은 저장 후 안전한 Home으로 복귀한다', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
@@ -89,7 +135,11 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('수정 저장 후 이전 화면'));
+    for (var step = 0; step < 6; step += 1) {
+      await _tapNext(tester);
+    }
+    await tester.ensureVisible(find.text('수정 완료'));
+    await tester.tap(find.text('수정 완료'));
     await tester.pumpAndSettle();
     expect(find.textContaining('W-ROUTINE-001'), findsOneWidget);
   });
@@ -135,4 +185,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.textContaining('등록되지 않은 경로입니다: /missing'), findsOneWidget);
   });
+}
+
+Future<void> _tapNext(WidgetTester tester) async {
+  final button = find.text('다음');
+  await tester.ensureVisible(button);
+  await tester.tap(button);
+  await tester.pumpAndSettle();
 }

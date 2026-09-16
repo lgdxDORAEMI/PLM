@@ -6,11 +6,13 @@ class TopAppBar extends StatelessWidget implements PreferredSizeWidget {
     super.key,
     required this.title,
     this.showBack = true,
+    this.onBack,
     this.actions,
   });
 
   final String title;
   final bool showBack;
+  final VoidCallback? onBack;
   final List<Widget>? actions;
 
   @override
@@ -29,7 +31,7 @@ class TopAppBar extends StatelessWidget implements PreferredSizeWidget {
       leading: showBack
           ? IconButton(
               tooltip: '뒤로 가기',
-              onPressed: () => Navigator.maybePop(context),
+              onPressed: onBack ?? () => Navigator.maybePop(context),
               icon: const Icon(Icons.arrow_back),
             )
           : null,

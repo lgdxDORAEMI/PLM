@@ -17,7 +17,7 @@
 
 | 대표 요구사항 ID | 화면 | 상태 |
 | --- | --- | --- |
-| W-PROFILE-001 | 임산부 프로필 설정 | SKELETON |
+| W-PROFILE-001 | 임산부 프로필 설정/수정 | IMPLEMENTED |
 | W-INVITE-001 | 배우자 초대 | SKELETON |
 | H-INVITE-001 | 초대 수락 | SKELETON |
 | W-COND-001 | 오늘의 컨디션 | SKELETON |
@@ -75,6 +75,6 @@ lib/shared/widgets/product_skeleton_screen.dart
 ## 검증
 
 - `flutter analyze`: 통과
-- `flutter test`: 20개 통과
+- `flutter test`: 28개 통과 (Profile UI·Controller와 기존 회귀 테스트)
 - `flutter build web`: 통과
-- Router test: 20개 화면의 재사용 경로, 온보딩 흐름, 동적 date/requestId/token, 역할별 Navigation, Bootstrap Resolver, 404 처리 확인
+- Router test: 20개 화면의 재사용 경로, Profile 6단계·Back·온보딩 흐름, 동적 date/requestId/token, 역할별 Navigation, Bootstrap Resolver, 404 처리 확인

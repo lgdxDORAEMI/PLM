@@ -4,7 +4,7 @@
 
 이 문서는 `docs/서비스흐름도/01~09`, `docs/requirements/01_MVP.md`, `01_PRD.md`, `03_유스케이스명세서.md`, `04_1_기능요구사항명세서.md`를 다시 대조해 생성한 Frontend 내부 Route 계약이다.
 
-- 제품 화면 20개와 재사용 진입 경로가 Flutter 기본 `Navigator` 기반 Skeleton Router에 등록되어 있다.
+- 제품 화면 20개와 재사용 진입 경로가 Flutter 기본 `Navigator` 기반 Router에 등록되어 있으며, Profile Setup Flow는 실제 UI로 구현되어 있다.
 - 아래 Path는 Frontend 내부 경로다. 외부 초대 Domain, ThinQ 인증 복귀 URL, Backend Endpoint 계약이 아니다.
 - 날짜·요청 ID·초대 Token은 URL에서 보존하고 화면 생성자에 전달한다.
 - 인증·Session Adapter가 없어 실제 자동 Redirect와 권한 Guard는 `PARTIAL`이다.
@@ -23,7 +23,7 @@
 
 | 상태 | 시작 경로 | 현재 구현 |
 | --- | --- | --- |
-| 아내, 프로필 없음 | `/onboarding/profile` | Resolver 계약 구현, `/`의 Skeleton 기본값 |
+| 아내, 프로필 없음 | `/onboarding/profile` | Resolver 계약과 local Profile Wizard 구현, `/`의 기본값 |
 | 아내, 프로필 있음 | `/wife/home` | Resolver 계약 구현, 실제 Session 연결 TODO |
 | 남편, 계정 연동 완료 | `/partner/calendar` | Resolver 계약 구현, 실제 Session 연결 TODO |
 | 남편, 초대 링크 진입 | `/invitation-entry?token={token}` | Token 파싱 구현, 검증/인증 복귀 TODO |
@@ -34,7 +34,7 @@
 
 | 관련 요구사항 ID | 화면 | 내부 Route | 진입 | 다음 경로 | Context/Parameter | 상태 |
 | --- | --- | --- | --- | --- | --- | --- |
-| W-PROFILE-001<br>W-PROFILE-002<br>W-PROFILE-003 | 임산부 프로필 설정/수정 | `/onboarding/profile`, `/wife/profile` | Bootstrap 또는 전역 프로필 메뉴 | 최초 등록은 W-INVITE-001, 수정은 이전 화면 | Path로 `ProfileMode` 구분 | SKELETON |
+| W-PROFILE-001<br>W-PROFILE-002<br>W-PROFILE-003 | 임산부 프로필 설정/수정 | `/onboarding/profile`, `/wife/profile` | Bootstrap 또는 전역 프로필 메뉴 | 최초 등록은 W-INVITE-001, 수정은 이전 화면 | Path로 `ProfileMode` 구분 | IMPLEMENTED |
 | W-INVITE-001<br>W-INVITE-002 | 배우자 초대 | `/onboarding/invite`, `/wife/invite` | 최초 등록 완료 또는 미연동 전역 메뉴 | 온보딩은 W-ROUTINE-001, 수동 진입은 이전 화면 | Path로 `InviteEntryContext` 구분 | SKELETON |
 | H-INVITE-001 | 초대 수락 | `/invitation-entry?token={token}` | 외부 초대 Link Adapter | 성공 시 H-CAL-001 | `token`; 외부 Domain/인증 복귀 TBD | SKELETON |
 | W-COND-001<br>W-COND-002 | 오늘의 컨디션 | `/wife/home/condition?mode=create|edit` | Home CTA 또는 수정 Action | 최초 입력은 W-ACT-001, 수정은 W-ROUTINE-001 | `mode`, 당일 날짜는 State/Service | SKELETON |
@@ -185,7 +185,7 @@ Partner의 추가 하단 Tab은 문서에 정의되지 않았으므로 임의 �
 | 항목 | 상태 | 후속 작업 |
 | --- | --- | --- |
 | 중앙 Path 등록 | DONE | 화면 상세 구현 시 계약 유지 |
-| 프로필/초대 진입 맥락 | DONE (Skeleton) | 실제 Controller State 연결 |
+| 프로필/초대 진입 맥락 | PARTIAL | Profile local Controller 연결 완료, 초대는 Skeleton |
 | `date`, `requestId`, `token` 파싱 | DONE (Skeleton) | 유효성 검증과 Store 조회 연결 |
 | Wife/Partner Navigation | DONE (Skeleton) | Host Shell 연동 시 자체 Navigation 대체 가능 |
 | 역할별 Header 진입점 | DONE (Skeleton) | 실제 연동 상태·Badge 주입 |
