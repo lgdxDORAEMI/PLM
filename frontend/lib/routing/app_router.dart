@@ -47,6 +47,7 @@ abstract final class AppRouter {
     RouteNames.partnerMorningReportPattern,
     RouteNames.partnerCalendar,
     RouteNames.partnerNotifications,
+    RouteNames.partnerProfile,
     RouteNames.partnerRequestPattern,
   ];
 
@@ -127,6 +128,13 @@ abstract final class AppRouter {
     }
     if (path == RouteNames.partnerNotifications) {
       return const PartnerNotificationsScreen();
+    }
+    if (path == RouteNames.partnerProfile) {
+      return const ProductSkeletonScreen(
+        requirementIds: ['H-PROFILE-001'],
+        title: '파트너 프로필',
+        description: '연결된 계정과 프로필 정보를 확인하는 화면입니다.',
+      );
     }
     if (path.startsWith('/partner/requests/')) {
       return PartnerRequestScreen(requestId: _lastSegment(uri));

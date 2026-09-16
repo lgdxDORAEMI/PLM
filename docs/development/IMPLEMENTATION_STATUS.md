@@ -17,7 +17,7 @@
 | UI-005 | W-ACT-001 오늘 예정 활동 | condition | Unassigned | Todo | - | `/wife/home/activity` | SKELETON |
 | UI-006 | W-ROUTINE-001 통합 홈 | routine | Unassigned | Todo | - | `/wife/home` | SKELETON; Wife Shell 연결 |
 | UI-007 | W-MEAL-001 식사 가이드 | meal | Unassigned | Todo | - | `/wife/home/meal` | SKELETON |
-| UI-008 | W-CHAT-001 식사 재조정 채팅 | meal | Unassigned | Todo | - | `/wife/meal-chat` | SKELETON; Wife Chat Tab 연결 |
+| UI-008 | W-CHAT-001 식사 재조정 채팅 | meal | Codex | Done | - | `/wife/meal-chat` | 누적 메시지·추천 프롬프트·Mock AI 응답·Meal 적용 Flow 구현 |
 | UI-009 | W-HEALTH-001 건강 가이드 | health | Unassigned | Todo | - | `/wife/home/health` | SKELETON |
 | UI-010 | W-SLEEP-001 수면 가이드 | sleep | Unassigned | Todo | - | `/wife/home/sleep` | SKELETON |
 | UI-011 | W-HOUSE-001 가사 가이드 | household | Unassigned | Todo | - | `/wife/home/household` | SKELETON; Partner 화면 직접 이동 제거 |

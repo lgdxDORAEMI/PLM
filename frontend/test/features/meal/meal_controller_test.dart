@@ -36,9 +36,11 @@ void main() {
     )..initialize(current);
     addTearDown(controller.dispose);
 
-    await controller.requestAlternative('속이 좀 메스꺼워요');
+    await controller.sendMessage('속이 좀 메스꺼워요');
     controller.applyProposal();
 
+    expect(controller.messages, hasLength(3));
+    expect(controller.messages[1].text, '속이 좀 메스꺼워요');
     expect(store.selectedPeriod, MealPeriod.breakfast);
     expect(store.appliedRecommendation?.title, '찐 감자 + 플레인 요거트');
   });

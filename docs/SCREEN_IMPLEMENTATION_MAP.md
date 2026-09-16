@@ -245,10 +245,10 @@
 | Feature | `meal` |
 | 구현 상태 | `IMPLEMENTED` |
 | 사용해야 하는 공용 컴포넌트 | `TopAppBar`, `AppBottomNavigation`, `ResponsivePageContent`, `AppInput`, `AppButton` |
-| 추가로 필요한 컴포넌트 | 구현 완료: `MealChatBubble`, 재사용 `MealRecommendationCard`, `MealChatController`, 식사 Context Composer |
+| 추가로 필요한 컴포넌트 | 구현 완료: `MealChatBubble`, 재사용 `MealRecommendationCard`, `MealChatMessage`, `MealChatController`, `MealChatService`, `MockMealService`, 식사 Context Composer |
 | 이전 화면 | 식사 가이드 또는 Wife Chat Tab |
 | 다음 화면 | 추천 적용 시 `/wife/home/meal` |
-| Interaction | 메시지 작성·전송, 빠른 답변, 응답 대기·실패, 재추천 반복, 추천 적용, Draft 이탈 확인 |
+| Interaction | 키보드 메시지 작성·전송, 추천 프롬프트, 메시지 누적·자동 스크롤, Mock 응답 대기·실패/재시도, 재추천 반복, 추천 적용 후 Meal 복귀 |
 | 비고 | 관련 ID: `W-MEAL-002`, `W-CHAT-001`. C-05에 따라 `12_chat.png`의 식사 외 건강·가사 대화는 제외하고 `12_1_chat_meal_rechoose.png`의 Meal 재추천 범위만 구현. `W-CHAT-002`는 Phase 2 유지 |
 
 ### 4.13 Daily 리포트

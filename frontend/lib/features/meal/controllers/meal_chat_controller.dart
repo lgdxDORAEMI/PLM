@@ -25,11 +25,7 @@ class MealChatController extends ChangeNotifier {
   bool get responding => _responding;
   String? get errorMessage => _errorMessage;
 
-  static const suggestedPrompts = [
-    '속이 좀 메스꺼워요',
-    '냄새가 부담스러워요',
-    '부드러운 음식이 좋아요',
-  ];
+  static const suggestedPrompts = ['속이 좀 메스꺼워요', '냄새가 부담스러워요', '부드러운 음식이 좋아요'];
 
   void initialize(MealRecommendation fallback) {
     _current = store.appliedRecommendation ?? fallback;
@@ -81,6 +77,7 @@ class MealChatController extends ChangeNotifier {
   ) async {
     _responding = true;
     _errorMessage = null;
+    _proposal = null;
     notifyListeners();
     try {
       final reply = await service.sendMessage(

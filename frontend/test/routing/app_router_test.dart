@@ -29,7 +29,7 @@ void main() {
     RouteNames.partnerMovement: '누적 알림 내역이에요',
     RouteNames.healthGuide: '오늘의 집중 부위',
     RouteNames.sleepGuide: '오늘은 충분한 휴식이 필요해요',
-    RouteNames.mealChat: '식사 다시 고르기',
+    RouteNames.mealChat: '아침 메뉴를 다시 고르는 중',
     '/wife/calendar/report/2026-09-13': '오늘 루틴을 모두 마쳤어요',
     RouteNames.wifeCalendar: '2026년 9월',
     RouteNames.wifeSettings: 'W-SETTING-001',
@@ -279,6 +279,9 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     await tester.tap(alternativeEntry);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('meal-chat-prompt-속이 좀 메스꺼워요')));
     await tester.pumpAndSettle();
 
     final apply = find.byKey(const ValueKey('apply-meal-alternative'));
