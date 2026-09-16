@@ -6,17 +6,23 @@ import 'app_button.dart';
 
 /// 비동기 화면의 Loading 상태를 일관된 크기와 접근성 문구로 표시한다.
 class AppLoadingState extends StatelessWidget {
-  const AppLoadingState({super.key, this.message = '불러오는 중이에요'});
+  const AppLoadingState({
+    super.key,
+    this.message = '불러오는 중이에요',
+    this.compact = false,
+  });
 
   final String message;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     return _AppStateView(
       semanticLabel: message,
-      icon: const SizedBox.square(
-        dimension: 32,
-        child: CircularProgressIndicator(strokeWidth: 3),
+      compact: compact,
+      icon: SizedBox.square(
+        dimension: compact ? 24 : 32,
+        child: CircularProgressIndicator(strokeWidth: compact ? 2 : 3),
       ),
       title: message,
     );
@@ -92,6 +98,7 @@ class _AppStateView extends StatelessWidget {
     this.message,
     this.actionLabel,
     this.onAction,
+    this.compact = false,
   });
 
   final String semanticLabel;
@@ -100,6 +107,7 @@ class _AppStateView extends StatelessWidget {
   final String? message;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +116,7 @@ class _AppStateView extends StatelessWidget {
       label: semanticLabel,
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
+          padding: EdgeInsets.all(compact ? AppSpacing.lg : AppSpacing.xl),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -139,6 +147,70 @@ class _AppStateView extends StatelessWidget {
                 ),
               ],
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 최종 콘텐츠의 크기를 유지해 layout shift를 줄이는 공통 skeleton이다.
+class AppSkeleton extends StatefulWidget {
+  const AppSkeleton({
+    super.key,
+    required this.height,
+    this.width = double.infinity,
+    this.radius = 12,
+  });
+
+  final double height;
+  final double width;
+  final double radius;
+
+  @override
+  State<AppSkeleton> createState() => _AppSkeletonState();
+}
+
+class _AppSkeletonState extends State<AppSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ExcludeSemantics(
+      child: FadeTransition(
+        opacity: Tween<double>(begin: .55, end: 1).animate(_controller),
+        child: Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            color: AppColors.surfaceSubtle,
+            borderRadius: BorderRadius.circular(widget.radius),
           ),
         ),
       ),

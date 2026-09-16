@@ -2,47 +2,68 @@ import 'package:flutter/material.dart';
 
 /// DESIGN.md의 제품 색상을 한 곳에서 관리한다.
 abstract final class AppColors {
-  static const canvas = Color(0xFFF8F7F5);
-  static const surface = Color(0xFFFFFFFF);
-  static const surfaceSubtle = Color(0xFFF5F3F1);
-  static const surfaceElevated = Color(0xFFFFFFFF);
+  static const canvas = Color(0xFFF6F4EF);
+  static const surface = Color(0xFFFFFEFB);
+  static const surfaceSubtle = Color(0xFFF0EEE8);
+  static const surfaceRaised = Color(0xFFFFFFFF);
 
-  static const textPrimary = Color(0xFF1F1F1F);
-  static const textSecondary = Color(0xFF65615F);
-  static const textTertiary = Color(0xFF8A8582);
+  /// 기존 화면의 API 호환을 위한 별칭이다.
+  static const surfaceElevated = surfaceRaised;
+
+  static const textPrimary = Color(0xFF202624);
+  static const textSecondary = Color(0xFF58615D);
+  static const textTertiary = Color(0xFF7B827E);
   static const textInverse = Color(0xFFFFFFFF);
-  static const textDisabled = Color(0xFFAAA6A3);
+  static const textDisabled = Color(0xFF8A908D);
 
-  static const borderSubtle = Color(0xFFE9E5E2);
-  static const borderDefault = Color(0xFFDDD8D5);
-  static const borderStrong = Color(0xFFC9C3BF);
+  static const borderSubtle = Color(0xFFDEDCD4);
+  static const borderDefault = borderSubtle;
+  static const borderStrong = Color(0xFFC7C9C1);
 
-  static const primary50 = Color(0xFFFFF2F5);
-  static const primary100 = Color(0xFFFCE4EA);
-  static const primary200 = Color(0xFFF6C6D2);
-  static const primary300 = Color(0xFFEFA2B5);
-  static const primary400 = Color(0xFFE47A98);
-  static const primary500 = Color(0xFFD95B7F);
-  static const primary600 = Color(0xFFC6426A);
-  static const primary700 = Color(0xFFA93257);
-  static const primary800 = Color(0xFF842642);
-  static const primary900 = Color(0xFF621C31);
+  // PLM 고유 mineral teal palette. 외부 브랜드 color token을 사용하지 않는다.
+  static const primary50 = Color(0xFFEDF5F2);
+  static const primary100 = Color(0xFFE4F0EC);
+  static const primary200 = Color(0xFFB7D4CB);
+  static const primary300 = Color(0xFF8FBBAE);
+  static const primary400 = Color(0xFF679F90);
+  static const primary500 = Color(0xFF4E8779);
+  static const primary600 = Color(0xFF3D7165);
+  static const primary700 = Color(0xFF315C53);
+  static const primary800 = Color(0xFF284A43);
+  static const primary900 = Color(0xFF213D38);
 
-  static const success = Color(0xFF357861);
-  static const successBackground = Color(0xFFEDF6F1);
-  static const warning = Color(0xFF9A6A17);
-  static const warningBackground = Color(0xFFFBF5E8);
-  static const danger = Color(0xFFB64048);
-  static const dangerBackground = Color(0xFFFBEEEE);
-  static const info = Color(0xFF416C8A);
-  static const infoBackground = Color(0xFFEEF4F8);
+  static const accentWarm = Color(0xFF8A684F);
+  static const accentWarmBackground = Color(0xFFF4EEE8);
+  static const focusRing = Color(0xFF5E9185);
+  static const scrim = Color(0x99202624);
 
-  static const categoryMeal = Color(0xFF5F846A);
-  static const categoryMealBackground = Color(0xFFEEF5EF);
-  static const categoryHome = Color(0xFFA85B70);
-  static const categoryHomeBackground = Color(0xFFFAF0F3);
-  static const categoryBody = Color(0xFF5C7191);
-  static const categoryBodyBackground = Color(0xFFEEF2F8);
-  static const categorySleep = Color(0xFF7560A3);
-  static const categorySleepBackground = Color(0xFFF2EFF8);
+  static const success = Color(0xFF39715C);
+  static const successBackground = Color(0xFFEAF4EF);
+  static const warning = Color(0xFF8B6728);
+  static const warningBackground = Color(0xFFF7F1E4);
+  static const danger = Color(0xFFA54742);
+  static const dangerBackground = Color(0xFFF8ECEA);
+  static const info = Color(0xFF496F8A);
+  static const infoBackground = Color(0xFFEAF1F5);
+  static const disabled = Color(0xFF8A908D);
+  static const disabledBackground = Color(0xFFECECE8);
+
+  static const categoryMeal = Color(0xFF657A50);
+  static const categoryMealBackground = Color(0xFFF0F3EA);
+  static const categoryHousehold = Color(0xFF8A684F);
+  static const categoryHouseholdBackground = Color(0xFFF4EEE8);
+  static const categoryHealth = Color(0xFF526F88);
+  static const categoryHealthBackground = Color(0xFFECF1F5);
+  static const categorySleep = Color(0xFF696787);
+  static const categorySleepBackground = Color(0xFFEFEEF5);
+  static const categoryAi = primary600;
+  static const categoryAiBackground = primary100;
+  static const categoryPartner = Color(0xFF596D76);
+  static const categoryPartnerBackground = Color(0xFFEDF1F2);
+
+  /// 기존 Feature 명칭과의 호환 별칭. 신규 코드는 의미 기반 명칭을 사용한다.
+  static const categoryHome = categoryHousehold;
+  static const categoryHomeBackground = categoryHouseholdBackground;
+  static const categoryBody = categoryHealth;
+  static const categoryBodyBackground = categoryHealthBackground;
 }

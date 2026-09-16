@@ -11,17 +11,22 @@ class SelectionCard extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.description,
+    this.leading,
   });
 
   final String label;
   final bool selected;
   final VoidCallback? onTap;
+  final String? description;
+  final Widget? leading;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
       selected: selected,
+      enabled: onTap != null,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.button),
@@ -33,7 +38,11 @@ class SelectionCard extends StatelessWidget {
             vertical: AppSpacing.md,
           ),
           decoration: BoxDecoration(
-            color: selected ? AppColors.primary50 : AppColors.surface,
+            color: onTap == null
+                ? AppColors.disabledBackground
+                : selected
+                ? AppColors.primary50
+                : AppColors.surface,
             border: Border.all(
               color: selected ? AppColors.primary400 : AppColors.borderDefault,
             ),
@@ -41,7 +50,27 @@ class SelectionCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              Expanded(child: Text(label)),
+              if (leading != null) ...[
+                leading!,
+                const SizedBox(width: AppSpacing.md),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label),
+                    if (description != null) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        description!,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
               if (selected)
                 const Icon(Icons.check_circle, color: AppColors.primary600),
             ],

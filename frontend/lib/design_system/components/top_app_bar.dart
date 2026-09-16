@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../tokens/app_colors.dart';
+
 /// 44px 이상의 뒤로가기 hit area를 보장하는 공통 AppBar다.
 class TopAppBar extends StatelessWidget implements PreferredSizeWidget {
   const TopAppBar({
@@ -28,6 +30,8 @@ class TopAppBar extends StatelessWidget implements PreferredSizeWidget {
         ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
       ),
       automaticallyImplyLeading: false,
+      backgroundColor: AppColors.canvas,
+      surfaceTintColor: Colors.transparent,
       leading: showBack
           ? IconButton(
               tooltip: '뒤로 가기',

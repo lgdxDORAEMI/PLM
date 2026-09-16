@@ -12,9 +12,13 @@ enum AppBadgeTone {
   warning,
   danger,
   meal,
+  household,
+  health,
   home,
   body,
   sleep,
+  ai,
+  partner,
 }
 
 /// Category와 Status label에 공통으로 쓰되 의미 Mapping은 Feature가 결정한다.
@@ -95,6 +99,14 @@ class AppBadge extends StatelessWidget {
         AppColors.categoryMealBackground,
         AppColors.categoryMeal,
       ),
+      AppBadgeTone.household => const _BadgeColors(
+        AppColors.categoryHouseholdBackground,
+        AppColors.categoryHousehold,
+      ),
+      AppBadgeTone.health => const _BadgeColors(
+        AppColors.categoryHealthBackground,
+        AppColors.categoryHealth,
+      ),
       AppBadgeTone.home => const _BadgeColors(
         AppColors.categoryHomeBackground,
         AppColors.categoryHome,
@@ -106,6 +118,14 @@ class AppBadge extends StatelessWidget {
       AppBadgeTone.sleep => const _BadgeColors(
         AppColors.categorySleepBackground,
         AppColors.categorySleep,
+      ),
+      AppBadgeTone.ai => const _BadgeColors(
+        AppColors.categoryAiBackground,
+        AppColors.categoryAi,
+      ),
+      AppBadgeTone.partner => const _BadgeColors(
+        AppColors.categoryPartnerBackground,
+        AppColors.categoryPartner,
       ),
     };
   }

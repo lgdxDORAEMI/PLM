@@ -9,4 +9,13 @@ abstract final class AppSpacing {
   static const double xxl = 32;
   static const double xxxl = 40;
   static const double huge = 48;
+  static const double massive = 64;
+
+  static const double pageTablet = 32;
+  static const double pageDesktop = 48;
+  static const double pageWide = 64;
+  static const double gutterMobile = 16;
+  static const double gutterTablet = 24;
+  static const double gutterDesktop = 24;
+  static const double gutterWide = 32;
 }

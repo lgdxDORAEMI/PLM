@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../tokens/app_colors.dart';
+import '../tokens/app_spacing.dart';
+
 /// label과 semantic 의미를 유지하는 공통 입력 필드다.
 class AppInput extends StatelessWidget {
   const AppInput({
@@ -41,25 +44,36 @@ class AppInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      enabled: enabled,
-      readOnly: readOnly,
-      keyboardType: keyboardType,
-      textInputAction: textInputAction,
-      onChanged: onChanged,
-      onSubmitted: onSubmitted,
-      onTap: onTap,
-      maxLines: maxLines,
-      autofillHints: autofillHints,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hintText,
-        helperText: helperText,
-        errorText: errorText,
-        prefixIcon: prefixIcon,
-        suffixIcon: suffixIcon,
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: enabled ? AppColors.textPrimary : AppColors.textDisabled,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        TextField(
+          controller: controller,
+          enabled: enabled,
+          readOnly: readOnly,
+          keyboardType: keyboardType,
+          textInputAction: textInputAction,
+          onChanged: onChanged,
+          onSubmitted: onSubmitted,
+          onTap: onTap,
+          maxLines: maxLines,
+          autofillHints: autofillHints,
+          decoration: InputDecoration(
+            hintText: hintText,
+            helperText: helperText,
+            errorText: errorText,
+            prefixIcon: prefixIcon,
+            suffixIcon: suffixIcon,
+          ),
+        ),
+      ],
     );
   }
 }
