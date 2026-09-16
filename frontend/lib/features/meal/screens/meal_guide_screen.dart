@@ -1,0 +1,13 @@
+import '../../../routing/route_names.dart';
+import '../../../shared/widgets/product_skeleton_screen.dart';
+
+class MealGuideScreen extends ProductSkeletonScreen {
+  const MealGuideScreen({super.key})
+    : super(
+        screenId: 'SCR-W-05',
+        title: '식사 가이드',
+        description: '오늘의 식사 추천과 추천 근거가 들어갈 화면입니다.',
+        shell: SkeletonShell.wife,
+        actions: const [SkeletonAction('식사 다시 추천받기', RouteNames.mealChat)],
+      );
+}

@@ -1,6 +1,6 @@
 # PLM Frontend
 
-PLM Frontend는 임산부와 배우자의 생활관리 경험을 제공하기 위한 Flutter Web 앱입니다. 현재 제품 화면은 구현 전이며, 초기 실행 화면과 Web 전용 모션 인식 데모가 동작합니다. 요구사항 분석, Architecture, Design System, Component System과 화면 구현 계획은 STEP 1~5까지 완료되었습니다.
+PLM Frontend는 임산부와 배우자의 생활관리 경험을 제공하기 위한 Flutter Web 앱입니다. 현재 DESIGN.md 기반 공통 UI와 ROUTE_MAP의 전체 제품 화면·이동 관계가 Frontend Skeleton으로 구현되어 있습니다. 각 화면은 상세 UI가 아닌 Placeholder이며, 기존 Web 전용 모션 인식 데모 코드는 별도로 보존합니다.
 
 ## 지원 플랫폼
 
@@ -18,13 +18,16 @@ PLM Frontend는 임산부와 배우자의 생활관리 경험을 제공하기 �
 
 - `.env` 로딩과 `BACKEND_URL` 설정
 - Supabase URL과 anon key가 모두 존재할 때만 Flutter client 초기화
-- Material 3 기반 초기 실행 확인 화면
-- 임시 버튼을 통한 모션 인식 데모 진입
+- DESIGN.md 기반 Theme와 공통 Design Token
+- Button, Input, Card, SelectionCard, TopAppBar, BottomNavigation
+- ROUTE_MAP의 20개 제품 화면 Skeleton과 중앙 Router
+- 온보딩, Wife Home·가이드·기록, Partner 화면의 Navigation 연결
+- 직접 URL과 동적 report/request 경로 복원, 404 화면
 - 브라우저 카메라 프레임 캡처 및 WebSocket 전송
 - 캘리브레이션 진행률, 실시간 자세·부담 상태와 landmark 오버레이 표시
 - 카메라와 WebSocket을 추상화한 Controller 단위 테스트
 
-### 설계 완료, 구현 전
+### Skeleton 완료, 상세 UI 구현 전
 
 - 임산부 프로필과 배우자 초대
 - 오늘의 컨디션 및 예정 활동 입력
@@ -32,10 +35,10 @@ PLM Frontend는 임산부와 배우자의 생활관리 경험을 제공하기 �
 - 식사 재조정 채팅
 - 루틴 완료 기록, Daily 리포트와 캘린더
 - 배우자용 리포트, 요청, 알림, 프로필 화면
-- Design Token과 공통/Feature Component
-- Routing, 전역 상태와 Mock Service 구조
+- 화면별 실제 콘텐츠·상태·접근성 세부 구현
+- Feature Controller와 Mock Service
 
-화면 구현은 [화면 구현 계획](../docs/development/05_ui_implementation_plan.md)의 `UI-001`부터 한 화면씩 진행합니다. 실제 API가 없는 기능은 다음 의존 방향을 유지합니다.
+화면 구현은 [화면 구현 계획](../docs/development/05_ui_implementation_plan.md)의 `UI-001`부터 Placeholder를 한 화면씩 교체합니다. 전체 현황과 공용 파일 경계는 [Frontend 진행 현황](../docs/FRONTEND_PROGRESS.md)을 확인합니다. 실제 API가 없는 기능은 다음 의존 방향을 유지합니다.
 
 ```text
 Page
@@ -50,6 +53,10 @@ Page
 ```text
 lib/
 ├── core/config/app_config.dart
+├── design_system/            # token, theme, 공통 component
+├── routing/                  # 중앙 route 이름과 생성기
+├── shared/widgets/           # 공통 Skeleton layout
+├── features/*/screens/       # 화면별 독립 Placeholder
 ├── features/movement/
 │   ├── models/
 │   ├── browser_camera_frame_source.dart
@@ -57,13 +64,12 @@ lib/
 │   ├── movement_controller.dart
 │   ├── movement_overlay_painter.dart
 │   └── movement_screen.dart
-├── app.dart
+├── app.dart                  # Theme과 Router 조립
 └── main.dart
 
-test/features/movement/
-├── models/live_message_test.dart
-├── movement_controller_test.dart
-└── fakes.dart
+test/
+├── features/movement/
+└── routing/app_router_test.dart
 ```
 
 향후 Feature 구조는 기존 폴더를 유지하면서 필요한 영역만 추가합니다. 확정된 제안은 [Frontend Architecture](../docs/development/02_frontend_architecture.md)를 참고하세요.
@@ -99,7 +105,7 @@ SDK 탐색이나 VS Code 실행 문제가 있으면 [개발 환경 및 실행 �
 
 1. Backend를 `localhost:8000`에서 실행합니다.
 2. Frontend를 Chrome에서 실행합니다.
-3. 초기 화면의 **모션 인식 데모 보기**를 선택합니다.
+3. 현재 제품 Router에는 Phase 2 실시간 모션 Placeholder만 노출됩니다. 기존 데모를 다시 제품 UI에 연결할 때는 개인정보 동의와 노출 정책을 먼저 확정합니다.
 4. 브라우저 카메라 권한을 허용하고 캘리브레이션과 실시간 상태를 확인합니다.
 
 현재 데모는 Backend의 `WS /api/v1/movement/live/stream`에 JPEG 프레임을 약 5fps로 전송합니다. WebSocket은 로컬 `localhost` 또는 `127.0.0.1` origin만 허용합니다.
@@ -133,3 +139,4 @@ flutter build web
 - [Design System](../docs/development/03_design_system.md)
 - [Component System](../docs/development/04_component_system.md)
 - [UI 구현 계획](../docs/development/05_ui_implementation_plan.md)
+- [Frontend 진행 현황](../docs/FRONTEND_PROGRESS.md)

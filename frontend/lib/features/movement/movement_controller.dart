@@ -1,3 +1,6 @@
+// 기존 public 생성자 parameter 이름을 유지하면서 private field에 주입한다.
+// ignore_for_file: prefer_initializing_formals
+
 import 'dart:async';
 import 'dart:convert';
 

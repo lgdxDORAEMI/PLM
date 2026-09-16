@@ -27,7 +27,9 @@ class BrowserLiveTransport implements LiveTransport {
       }
     });
     socket.onClose.first.then((_) {
-      if (!transport._closeCompleter.isCompleted) transport._closeCompleter.complete();
+      if (!transport._closeCompleter.isCompleted) {
+        transport._closeCompleter.complete();
+      }
     });
 
     await openOrError.future;

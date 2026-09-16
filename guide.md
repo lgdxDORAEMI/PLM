@@ -39,7 +39,11 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 flutter run -d chrome
 ```
 
+실행하면 `/`은 임산부 프로필 설정 Skeleton으로 연결됩니다. Browser 주소에 내부 경로를 직접 입력해도 중앙 Router가 해당 Placeholder를 복원합니다. 예를 들어 `/wife/home`, `/wife/calendar`, `/partner/calendar`을 확인할 수 있습니다. 이 경로는 Skeleton 검증용 내부 경로이며 외부 Deep Link 계약으로 확정된 값은 아닙니다.
+
 편집기의 SDK 경로 설정은 Windows PATH 자체를 변경하지 않습니다. PATH 설정 전에는 `& '본인의 SDK 경로/bin/flutter.bat' pub get`처럼 전체 경로로 실행할 수 있습니다.
+
+SDK가 저장소 밖에 있고 제한된 실행 환경에서 `bin/cache/lockfile` 접근 오류가 발생하면, SDK 폴더에 현재 사용자의 쓰기 권한이 있는 일반 터미널에서 Flutter 명령을 실행합니다. 프로젝트 파일 권한 문제가 아니라 Flutter 도구가 SDK cache를 갱신하는 과정에서 발생할 수 있습니다.
 
 ## 버튼이나 기기가 보이지 않을 때
 
