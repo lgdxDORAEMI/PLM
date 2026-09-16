@@ -13,6 +13,7 @@ class PLMApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       onGenerateRoute: AppRouter.onGenerateRoute,
+      onGenerateInitialRoutes: AppRouter.onGenerateInitialRoutes,
     );
   }
 }

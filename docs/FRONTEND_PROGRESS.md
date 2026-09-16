@@ -9,8 +9,8 @@
 | Design System | DONE | Color, spacing, radius, typography token |
 | Theme | DONE | `AppTheme.light`를 최상위 `MaterialApp`에 적용 |
 | Shared Components | DONE | Button, Input, Card, SelectionCard, TopAppBar, BottomNavigation |
-| Routing | DONE | Flutter 기본 Navigator 기반 중앙 route 생성 |
-| Navigation | DONE | ROUTE_MAP의 전체 화면 진입 및 주요 이동 관계 연결 |
+| Routing | PARTIAL | 중앙 Path·동적 Parameter·Bootstrap Resolver 계약 구현, 실제 Session Guard TODO |
+| Navigation | DONE | 역할별 Header, Wife 4개/Partner 2개 Tab과 서비스 흐름 연결 |
 | Backend 연동용 상태/Service | TODO | 이번 Skeleton 범위에서 제외 |
 
 ## Screens
@@ -40,6 +40,15 @@
 
 `SCR-W-07`은 제품용 Placeholder이며 기존 모션 데모 구현을 삭제하지 않는다. `SCR-W-13`은 요구사항이 확정되기 전까지 임의 설정 항목을 추가하지 않는다.
 
+## Route Contract
+
+- 프로필: `/onboarding/profile`(최초), `/wife/profile`(수정)
+- 배우자 초대: `/onboarding/invite`(온보딩), `/wife/invite`(수동 재진입)
+- 초대 수락: `/invitation-entry?token={token}`
+- 리포트/요청: `:date`, `:requestId`를 화면에 전달
+- 공유 실시간: `/wife/movement`, `/partner/movement`
+- 실제 인증·역할 Redirect와 외부 Deep Link Domain은 아직 연결 대상이 아님
+
 ## Shared Files
 
 다음 파일은 여러 개발자가 동시에 수정하면 충돌 가능성이 높은 공용 영역이다. 화면 작업자는 가급적 자신의 `features/<feature>/screens` 내부만 수정하고 공용 변경은 Integration Owner와 조율한다.
@@ -66,6 +75,6 @@ lib/shared/widgets/product_skeleton_screen.dart
 ## 검증
 
 - `flutter analyze`: 통과
-- `flutter test`: 17개 통과
+- `flutter test`: 20개 통과
 - `flutter build web`: 통과
-- Router test: 전체 20개 제품 경로, 핵심 온보딩 흐름, 동적 report/request 경로, 404 처리 확인
+- Router test: 20개 화면의 재사용 경로, 온보딩 흐름, 동적 date/requestId/token, 역할별 Navigation, Bootstrap Resolver, 404 처리 확인

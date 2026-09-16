@@ -8,6 +8,9 @@ class MealGuideScreen extends ProductSkeletonScreen {
         title: '식사 가이드',
         description: '오늘의 식사 추천과 추천 근거가 들어갈 화면입니다.',
         shell: SkeletonShell.wife,
-        actions: const [SkeletonAction('식사 다시 추천받기', RouteNames.mealChat)],
+        actions: const [
+          SkeletonAction('추천 수락 후 홈', RouteNames.wifeHome, replace: true),
+          SkeletonAction('식사 다시 추천받기', RouteNames.mealChat),
+        ],
       );
 }

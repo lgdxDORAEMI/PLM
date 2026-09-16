@@ -7,6 +7,7 @@ class MealChatScreen extends ProductSkeletonScreen {
         screenId: 'SCR-W-10',
         title: '식사 재조정 채팅',
         description: '선택한 식사 맥락 안에서 대체 식사를 고르는 화면입니다.',
+        shell: SkeletonShell.wife,
         actions: const [
           SkeletonAction('대체 식사 적용', RouteNames.mealGuide, replace: true),
         ],

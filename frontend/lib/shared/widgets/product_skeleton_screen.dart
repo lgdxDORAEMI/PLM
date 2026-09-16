@@ -9,11 +9,17 @@ import '../../design_system/tokens/app_spacing.dart';
 import '../../routing/route_names.dart';
 
 class SkeletonAction {
-  const SkeletonAction(this.label, this.route, {this.replace = false});
+  const SkeletonAction(
+    this.label,
+    this.route, {
+    this.replace = false,
+    this.pop = false,
+  });
 
   final String label;
   final String route;
   final bool replace;
+  final bool pop;
 }
 
 enum SkeletonShell { none, wife, partner }
@@ -29,6 +35,7 @@ class ProductSkeletonScreen extends StatelessWidget {
     this.showBack = true,
     this.shell = SkeletonShell.none,
     this.statusLabel = 'SKELETON',
+    this.partnerLinked = false,
   });
 
   final String screenId;
@@ -38,11 +45,16 @@ class ProductSkeletonScreen extends StatelessWidget {
   final bool showBack;
   final SkeletonShell shell;
   final String statusLabel;
+  final bool partnerLinked;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: TopAppBar(title: title, showBack: showBack),
+      appBar: TopAppBar(
+        title: title,
+        showBack: showBack,
+        actions: _buildHeaderActions(context),
+      ),
       body: SafeArea(
         child: Center(
           child: ConstrainedBox(
@@ -96,8 +108,18 @@ class ProductSkeletonScreen extends StatelessWidget {
                       variant: index == 0
                           ? AppButtonVariant.primary
                           : AppButtonVariant.secondary,
-                      onPressed: () {
+                      onPressed: () async {
                         final action = actions[index];
+                        if (action.pop) {
+                          final didPop = await Navigator.maybePop(context);
+                          if (!didPop && context.mounted) {
+                            Navigator.pushReplacementNamed(
+                              context,
+                              action.route,
+                            );
+                          }
+                          return;
+                        }
                         if (action.replace) {
                           Navigator.pushReplacementNamed(context, action.route);
                         } else {
@@ -130,38 +152,104 @@ class ProductSkeletonScreen extends StatelessWidget {
             label: '홈',
           ),
           NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            label: '캘린더',
-          ),
-          NavigationDestination(
             icon: Icon(Icons.monitor_heart_outlined),
             label: '실시간',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.chat_bubble_outline),
+            label: '챗봇',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.calendar_month_outlined),
+            label: '캘린더',
           ),
         ],
         onSelected: (index) => _replaceRoot(
           context,
           [
             RouteNames.wifeHome,
+            RouteNames.wifeMovement,
+            RouteNames.mealChat,
             RouteNames.wifeCalendar,
-            RouteNames.movement,
           ][index],
         ),
       );
     }
     return AppBottomNavigation(
-      currentIndex: 0,
+      currentIndex:
+          ModalRoute.of(context)?.settings.name == RouteNames.partnerMovement
+          ? 1
+          : 0,
       items: const [
-        NavigationDestination(icon: Icon(Icons.calendar_month), label: '캘린더'),
+        NavigationDestination(
+          icon: Icon(Icons.calendar_month_outlined),
+          label: '캘린더',
+        ),
+        NavigationDestination(
+          icon: Icon(Icons.monitor_heart_outlined),
+          label: '실시간',
+        ),
       ],
-      onSelected: (_) => _replaceRoot(context, RouteNames.partnerCalendar),
+      onSelected: (index) => _replaceRoot(
+        context,
+        [RouteNames.partnerCalendar, RouteNames.partnerMovement][index],
+      ),
     );
   }
 
   int _wifeIndex(BuildContext context) {
     final route = ModalRoute.of(context)?.settings.name;
-    if (route == RouteNames.wifeCalendar) return 1;
-    if (route == RouteNames.movement) return 2;
+    if (route == RouteNames.wifeMovement) return 1;
+    if (route == RouteNames.mealChat) return 2;
+    if (route == RouteNames.wifeCalendar ||
+        route?.startsWith('/wife/calendar/report/') == true) {
+      return 3;
+    }
     return 0;
+  }
+
+  List<Widget>? _buildHeaderActions(BuildContext context) {
+    if (shell == SkeletonShell.wife) {
+      return [
+        PopupMenuButton<String>(
+          tooltip: '프로필 메뉴',
+          icon: const Icon(Icons.account_circle_outlined),
+          onSelected: (route) => Navigator.pushNamed(context, route),
+          itemBuilder: (_) => [
+            const PopupMenuItem(
+              value: RouteNames.wifeProfile,
+              child: Text('프로필 수정'),
+            ),
+            if (!partnerLinked)
+              const PopupMenuItem(
+                value: RouteNames.wifeInvite,
+                child: Text('배우자 초대'),
+              ),
+            const PopupMenuItem(
+              value: RouteNames.wifeSettings,
+              child: Text('설정'),
+            ),
+          ],
+        ),
+      ];
+    }
+    if (shell == SkeletonShell.partner) {
+      return [
+        IconButton(
+          tooltip: '알림',
+          onPressed: () =>
+              Navigator.pushNamed(context, RouteNames.partnerNotifications),
+          icon: const Icon(Icons.notifications_outlined),
+        ),
+        IconButton(
+          tooltip: '프로필',
+          onPressed: () =>
+              Navigator.pushNamed(context, RouteNames.partnerProfile),
+          icon: const Icon(Icons.account_circle_outlined),
+        ),
+      ];
+    }
+    return null;
   }
 
   /// Tab 전환은 중복 push를 막기 위해 현재 shell route를 교체한다.

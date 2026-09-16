@@ -505,9 +505,9 @@ Package 추가가 승인되지 않으면 같은 Controller/Service Contract를 �
 
 ## Routing 전략
 
-Flutter Web URL, Browser Back/Forward, 초대 Deep Link, 역할별 Navigation Shell, 온보딩 Redirect가 필요하므로 `go_router`를 Package 후보로 권장한다. STEP 2에서는 설치하거나 Route 코드를 구현하지 않는다.
+Flutter Web URL, Browser Back/Forward, 초대 Deep Link, 역할별 Navigation Shell, 온보딩 Redirect가 필요하므로 장기적으로 `go_router`를 Package 후보로 유지한다. 현재 Frontend Skeleton은 추가 Package 없이 `MaterialApp.onGenerateRoute`와 중앙 `AppRouter`를 구현했으며, 실제 인증 Guard나 중첩 Shell 요구가 복잡해질 때 마이그레이션을 재평가한다.
 
-`Navigator.push`를 Page 곳곳에서 직접 호출하지 않고 Route 이름과 전환 규칙을 `core/navigation`에 모은다. Route Path는 Frontend 내부 식별자이며 실제 Backend Endpoint가 아니다.
+`Navigator.push`를 Page 곳곳에서 직접 호출하지 않고 Route 이름과 전환 규칙을 `lib/routing`에 모은다. Route Path는 Frontend 내부 식별자이며 실제 Backend Endpoint가 아니다. 현재 계약은 `ROUTE_MAP.md`를 따른다.
 
 ## Route Tree 제안
 
@@ -567,8 +567,8 @@ Session 확인 전          → bootstrap/loading
 
 - 실제 Login/Signup 화면은 문서에 없으므로 Route를 임의로 추가하지 않는다.
 - 초대 Link의 Token 형식, 외부 Domain과 인증 복귀 URL은 향후 계약으로 남긴다.
-- 파트너 하단 Navigation 구조는 미정이므로 Route만 독립적으로 설계하고 Shell의 Tab 목록은 STEP 5 전 확정한다.
-- 실시간 탭은 MVP 포함 여부가 충돌하므로 Router에서 Phase 2 Route로 격리하고 노출 정책은 확정 전 고정하지 않는다.
+- 파트너 하단 Navigation은 서비스 문서에 명시된 Calendar/Realtime 최소 항목만 제공하고 추가 항목은 확정하지 않는다.
+- 실시간 탭은 MVP 제외이므로 Wife/Partner Route에 Phase 2 Placeholder만 등록한다.
 - `StatefulShellRoute` 또는 동등한 구조를 사용하더라도 비활성 Movement Tab의 카메라·WebSocket을 반드시 중지해야 한다.
 
 # Architecture Rules
@@ -636,4 +636,3 @@ Session 확인 전          → bootstrap/loading
 38. 기존 `movement` 코드는 Phase 2 작업 전 불필요하게 이동하거나 전면 Refactor하지 않는다.
 39. Package 추가는 목적과 대안, 영향 범위를 문서화하고 승인된 구현 단계에서만 수행한다.
 40. Architecture 변경이 기능 설명이나 실행 방법에 영향을 줄 때만 `README.md`와 `guide.md`를 함께 갱신한다.
-

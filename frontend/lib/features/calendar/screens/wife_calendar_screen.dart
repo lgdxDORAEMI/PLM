@@ -9,6 +9,6 @@ class WifeCalendarScreen extends ProductSkeletonScreen {
         description: '날짜별 컨디션과 루틴 기록을 탐색할 화면입니다.',
         showBack: false,
         shell: SkeletonShell.wife,
-        actions: const [SkeletonAction('선택 날짜 리포트', RouteNames.dailyReport)],
+        actions: const [SkeletonAction('선택 날짜 리포트', RouteNames.dailyReportToday)],
       );
 }

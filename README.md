@@ -24,7 +24,7 @@ MVP는 가전 자동 실행과 홈카메라 기반 실시간 위험 행동 로�
 | 영역 | 구현 상태 | 비고 |
 | --- | --- | --- |
 | Frontend 기반 | 구현 | Flutter Web 초기화, 환경설정, DESIGN.md 기반 Theme·공통 Component |
-| Frontend 제품 UI | Skeleton 완료 | ROUTE_MAP 전체 20개 화면과 Navigation 연결, 상세 UI는 구현 전 |
+| Frontend 제품 UI | Skeleton 완료 | 서비스 흐름 기반 20개 화면, 역할별 Navigation과 동적 Route Parameter 연결 |
 | 모션 인식 Web 데모 | 구현 | 브라우저 카메라 프레임 전송, 캘리브레이션, 자세 오버레이와 상태 표시 |
 | Backend 기본 API | 구현 | `/`, `/health`, 개발용 CORS |
 | 임산부 프로필 | 부분 구현 | 프로필 1/6 출산예정일, 2/6 신장·임신 전 체중 조회·저장 |

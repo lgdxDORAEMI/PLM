@@ -5,7 +5,8 @@
 - 모든 화면은 Page → Feature Widget → Controller/State → Service Interface → Mock Service 방향을 유지한다.
 - Mock Data는 Widget에 직접 작성하지 않고 Feature의 Mock Service와 Fixture에서 제공한다.
 - 한 번에 전체 화면을 구현하지 않고 Foundation과 Shared Component를 검증한 뒤 Task 단위로 진행한다.
-- Partner Navigation, 인증 화면, 실시간 탭 노출, 수면 가전 실행처럼 미정인 사항은 임의로 확정하지 않는다.
+- Screen ID는 `docs/requirements/메뉴구조도.md`에 정의된 값을 그대로 사용하며 개발 편의를 위한 새 ID나 역할별 별칭을 만들지 않는다.
+- Partner Navigation은 Route Map에 명시된 Calendar/Realtime 최소 항목만 사용하고, 인증 Redirect·실시간 기능 노출·수면 가전 실행처럼 미정인 동작은 임의로 확정하지 않는다.
 
 # SCR-W-01 — 임산부 프로필 설정
 
@@ -1266,7 +1267,7 @@ Partner AppShell
 
 - Partner Main, 월 이동, 날짜 선택, 읽기 전용 상세가 동작한다.
 - Wife Calendar Component를 Variant로 재사용한다.
-- 미정인 Partner Bottom Navigation 항목을 코드에 고정하지 않는다.
+- Partner Bottom Navigation은 문서에 명시된 Calendar/Realtime만 사용하고 추가 항목을 임의로 고정하지 않는다.
 
 # SCR-H-03 — 알림
 
@@ -1566,7 +1567,7 @@ Standalone Page
 
 - STEP 3의 Design Token과 Theme
 - STEP 4의 Foundation 및 필요한 Shared Component
-- `provider`, `go_router` 도입은 STEP 2 권고에 대한 승인 후 구현 단계에서만 설치
+- 현재 Flutter 기본 Navigator 기반 Skeleton Router 계약을 유지한다. `provider`, `go_router` 추가 도입은 별도 승인 후 진행한다.
 - 각 Task는 관련 Mock Model/Service/Controller와 화면 Widget Test만 포함하며 Backend를 구현하지 않음
 
 ## UI-001
@@ -1791,3 +1792,13 @@ docs/development/frontend_workflow.md
 ```
 
 Flutter Page, Component, Mock Service, Package는 생성하거나 수정하지 않는다.
+
+# STEP 6 Skeleton 반영 기록
+
+STEP 5 이후 별도 Skeleton 구현 작업으로 Design Token/Theme 최소 기반, 공통 Navigation Component, 제품 화면 20개와 중앙 Router가 생성되었다. 상세 화면 Task의 `Todo` 상태는 유지하며, 구현자는 새 Route를 만들지 않고 최신 `ROUTE_MAP.md`의 확정된 내부 Path와 Context 계약을 사용한다.
+
+- 프로필·배우자 초대: 최초/수정 및 온보딩/수동 진입 Path 분리
+- 동적 Parameter: `date`, `requestId`, `token` 전달
+- Wife Shell: Home, Realtime, Chat, Calendar
+- Partner Shell: 문서에 명시된 Calendar, Realtime 최소 항목
+- 인증·Session Guard, 외부 Deep Link Domain, Feature Mock Service: 후속 구현

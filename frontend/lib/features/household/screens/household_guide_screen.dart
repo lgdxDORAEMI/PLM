@@ -9,7 +9,7 @@ class HouseholdGuideScreen extends ProductSkeletonScreen {
         description: '직접 수행·가전 추천·가족 분담을 구분할 화면입니다.',
         shell: SkeletonShell.wife,
         actions: const [
-          SkeletonAction('파트너 요청 상태 보기', RouteNames.partnerRequest),
+          SkeletonAction('요청 전송 후 홈', RouteNames.wifeHome, replace: true),
         ],
       );
 }

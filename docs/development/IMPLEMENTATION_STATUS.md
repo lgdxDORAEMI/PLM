@@ -2,7 +2,7 @@
 
 ## Summary
 
-현재 Flutter Frontend에는 앱 초기화 화면과 Web 전용 모션 인식 데모만 구현되어 있다. 제품 UI는 STEP 1~5에서 요구사항, Architecture, Design System, Component System, 화면별 구현 계획까지 문서화되었으며 실제 Page, 공통 Component, Design Token, Router, Mock Service는 아직 없다.
+현재 Flutter Frontend에는 Design Token, Theme, 공통 Skeleton Component, 제품 화면 20개와 서비스 흐름 기반 Router가 구현되어 있다. 각 제품 화면은 실제 UI가 아닌 `SKELETON` 상태이며 Mock Service와 Feature Controller는 아직 없다. 기존 Web 전용 모션 인식 데모는 제품용 Phase 2 Placeholder와 분리해 보존한다.
 
 이 문서는 제품 UI Task의 상태판이다. 작업자는 시작할 때 `Owner`, `Status`, `Branch`를 갱신하고 Handoff 시 해당 Task 문서의 `Handoff Output`을 작성한다. Status는 `Todo`, `Doing`, `Review`, `Done`, `Blocked` 중 하나만 사용한다.
 
@@ -10,42 +10,42 @@
 
 | Task | Screen | Feature | Owner | Status | Branch | Route | Notes |
 |---|---|---|---|---|---|---|---|
-| UI-001 | SCR-W-01 임산부 프로필 설정 | profile | Unassigned | Todo | - | TBD (`/onboarding/profile`, `/wife/profile` 후보) | Not Implemented |
-| UI-002 | SCR-W-14 배우자 초대 | invitation | Unassigned | Todo | - | TBD (`/onboarding/invite`, `/wife/invite` 후보) | Not Implemented |
-| UI-003 | SCR-H-06 초대 수락 | invitation | Unassigned | Todo | - | TBD (`/invitation-entry` 후보) | Not Implemented; 외부 Deep Link 계약 미정 |
-| UI-004 | SCR-W-02 오늘의 컨디션 | condition | Unassigned | Todo | - | TBD (`/wife/home/condition` 후보) | Not Implemented |
-| UI-005 | SCR-W-03 오늘 예정 활동 | condition | Unassigned | Todo | - | TBD (`/wife/home/activity` 후보) | Not Implemented |
-| UI-006 | SCR-W-04 통합 홈 | routine | Unassigned | Todo | - | TBD (`/wife/home` 후보) | Not Implemented; Router/Shell 통합 Task |
-| UI-007 | SCR-W-05 식사 가이드 | meal | Unassigned | Todo | - | TBD (`/wife/home/meal` 후보) | Not Implemented |
-| UI-008 | SCR-W-10 식사 재조정 채팅 | meal | Unassigned | Todo | - | TBD (`/wife/meal-chat` 후보) | Not Implemented |
-| UI-009 | SCR-W-08 건강 가이드 | health | Unassigned | Todo | - | TBD (`/wife/home/health` 후보) | Not Implemented |
-| UI-010 | SCR-W-09 수면 가이드 | sleep | Unassigned | Todo | - | TBD (`/wife/home/sleep` 후보) | Not Implemented |
-| UI-011 | SCR-W-06 가사 가이드 | household | Unassigned | Todo | - | TBD (`/wife/home/household` 후보) | Not Implemented |
-| UI-012 | SCR-H-04 파트너 가사 요청 | household | Unassigned | Todo | - | TBD (`/partner/requests/:requestId` 후보) | Not Implemented |
-| UI-013 | SCR-H-05 파트너 프로필 | profile | Unassigned | Todo | - | TBD (`/partner/profile` 후보) | Not Implemented |
-| UI-014 | SCR-H-03 알림 | notification | Unassigned | Todo | - | TBD (`/partner/notifications` 후보) | Not Implemented; Push 제외 |
-| UI-015 | SCR-W-11 Daily 리포트 | report | Unassigned | Todo | - | TBD (`/wife/calendar/report/:date` 후보) | Not Implemented |
-| UI-016 | SCR-W-12 컨디션 캘린더 | report | Unassigned | Todo | - | TBD (`/wife/calendar` 후보) | Not Implemented |
-| UI-017 | SCR-H-01 파트너 아침 리포트 | report | Unassigned | Todo | - | TBD (`/partner/report/:date` 후보) | Not Implemented |
-| UI-018 | SCR-H-02 파트너 캘린더 | report | Unassigned | Todo | - | TBD (`/partner/calendar` 후보) | Not Implemented; Partner Main |
-| UI-019 | SCR-W-13 설정 | settings | Unassigned | Blocked | - | TBD (`/wife/settings` 후보) | Not Implemented; 상세 요구사항 미정인 Phase 2 플레이스홀더 |
-| UI-020 | SCR-W-07 실시간 모션 | movement | Unassigned | Todo | - | TBD (`/wife/movement`, `/partner/movement` 후보) | Partially Implemented: Web 카메라/WebSocket 데모만 존재, 제품 화면은 Phase 2 |
+| UI-001 | SCR-W-01 임산부 프로필 설정 | profile | Unassigned | Todo | - | `/onboarding/profile`, `/wife/profile` | SKELETON; create/edit 진입 맥락 구현 |
+| UI-002 | SCR-W-14 배우자 초대 | invitation | Unassigned | Todo | - | `/onboarding/invite`, `/wife/invite` | SKELETON; onboarding/manual 복귀 계약 구현 |
+| UI-003 | SCR-H-06 초대 수락 | invitation | Unassigned | Todo | - | `/invitation-entry?token=` | SKELETON; Token 파싱, 외부 Domain/인증 복귀 미정 |
+| UI-004 | SCR-W-02 오늘의 컨디션 | condition | Unassigned | Todo | - | `/wife/home/condition?mode=` | SKELETON; create/edit 분기 구현 |
+| UI-005 | SCR-W-03 오늘 예정 활동 | condition | Unassigned | Todo | - | `/wife/home/activity` | SKELETON |
+| UI-006 | SCR-W-04 통합 홈 | routine | Unassigned | Todo | - | `/wife/home` | SKELETON; Wife Shell 연결 |
+| UI-007 | SCR-W-05 식사 가이드 | meal | Unassigned | Todo | - | `/wife/home/meal` | SKELETON |
+| UI-008 | SCR-W-10 식사 재조정 채팅 | meal | Unassigned | Todo | - | `/wife/meal-chat` | SKELETON; Wife Chat Tab 연결 |
+| UI-009 | SCR-W-08 건강 가이드 | health | Unassigned | Todo | - | `/wife/home/health` | SKELETON |
+| UI-010 | SCR-W-09 수면 가이드 | sleep | Unassigned | Todo | - | `/wife/home/sleep` | SKELETON |
+| UI-011 | SCR-W-06 가사 가이드 | household | Unassigned | Todo | - | `/wife/home/household` | SKELETON; Partner 화면 직접 이동 제거 |
+| UI-012 | SCR-H-04 파트너 가사 요청 | household | Unassigned | Todo | - | `/partner/requests/:requestId` | SKELETON; requestId 전달 구현 |
+| UI-013 | SCR-H-05 파트너 프로필 | profile | Unassigned | Todo | - | `/partner/profile` | SKELETON |
+| UI-014 | SCR-H-03 알림 | notification | Unassigned | Todo | - | `/partner/notifications` | SKELETON; Push 제외 |
+| UI-015 | SCR-W-11 Daily 리포트 | report | Unassigned | Todo | - | `/wife/calendar/report/:date` | SKELETON; date 전달 구현 |
+| UI-016 | SCR-W-12 컨디션 캘린더 | report | Unassigned | Todo | - | `/wife/calendar` | SKELETON |
+| UI-017 | SCR-H-01 파트너 아침 리포트 | report | Unassigned | Todo | - | `/partner/report/:date` | SKELETON; date 전달 구현 |
+| UI-018 | SCR-H-02 파트너 캘린더 | report | Unassigned | Todo | - | `/partner/calendar` | SKELETON; Partner Main/Shell 연결 |
+| UI-019 | SCR-W-13 설정 | settings | Unassigned | Blocked | - | `/wife/settings` | SKELETON; 상세 요구사항 미정 Phase 2 |
+| UI-020 | SCR-W-07 공유 실시간 모션 | movement | Unassigned | Blocked | - | `/wife/movement`, `/partner/movement` | SKELETON / Phase 2; 기존 Web Demo 별도 보존 |
 
 ## Shared Components
 
-제품용 공통 Component는 아직 존재하지 않는다.
+Skeleton 분업 기반에 필요한 최소 공통 Component가 구현되어 있다. 상세 Variant와 Domain Component는 화면 Task에서 추가한다.
 
 | Component | 존재 여부 | 현재 사용 위치 | 재사용 가능 여부 | 수정 주의사항 |
 |---|---|---|---|---|
-| `AppButton`, `AppIconButton` | 없음 | - | 구현 후 전체 제품 UI | Foundation Owner만 API 변경 |
-| `AppTextField`, `AppSelectionCard` | 없음 | - | Profile, Condition, Activity, Sleep | 입력·선택 Semantics와 오류 계약 유지 |
-| `AppCard`, `AppChip`, `AppBanner`, `AppDialog` | 없음 | - | 제품 UI 전반 | Feature 비즈니스 규칙을 넣지 않음 |
+| `AppButton` | 있음 | Skeleton Navigation | 전체 제품 UI | Foundation Owner만 API 변경 |
+| `AppInput`, `SelectionCard` | 있음 | Design System | Profile, Condition, Activity, Sleep | Semantics와 오류 계약 유지 |
+| `AppCard` | 있음 | Skeleton 상태 안내 | 제품 UI 전반 | Feature 비즈니스 규칙을 넣지 않음 |
 | `AppProgressMetric`, `AppSkeleton` | 없음 | - | Condition, Loading 상태 | 색만으로 상태를 표현하지 않음 |
 | `ResponsivePageContent` | 없음 | - | 모든 Page | `core/responsive`에 동명 구현을 중복 생성하지 않음 |
-| `AppTopBar`, `AppShell`, `AppBottomNavigation` | 없음 | - | 역할별 화면 | Partner Tab은 미정이므로 Item 주입형 유지 |
+| `TopAppBar`, `AppBottomNavigation` | 있음 | 역할별 Skeleton Shell | 역할별 화면 | Wife 4개, Partner 문서 명시 최소 2개 Tab 유지 |
 | `LoadingState`, `EmptyState`, `ErrorState` | 없음 | - | 비동기 화면 | 범용 상태 Wrapper로 과도하게 합치지 않음 |
 | `CategoryBadge`, `StatusBadge`, `GuideTaskCard` | 없음 | - | Routine, Guide, Report | `AppChip`과 Domain 상태 Mapping 책임을 구분 |
-| Material `Card`, `OutlinedButton`, `AppBar` | 있음 | `app.dart` 임시 실행 화면 | 제품 공통으로 재사용하지 않음 | 제품 화면 도입 시 임시 화면과 함께 제거 |
+| `ProductSkeletonScreen` | 있음 | 제품 화면 20개 | 상세 UI 구현 전 Navigation 검증 | Feature 상세 UI로 점진 교체 |
 | `_PostureBadge`, `MovementOverlayPainter` | 있음 | `features/movement` 데모 | 공통화하지 않음 | Backend enum/Canvas에 결합된 데모 전용 구현 보존 |
 
 Component의 상세 Props와 Variant는 `04_component_system.md`를 단일 기준으로 사용한다.
@@ -54,13 +54,13 @@ Component의 상세 Props와 Variant는 `04_component_system.md`를 단일 기�
 
 | 영역 | 상태 | 현재 코드 | 구현 기준 |
 |---|---|---|---|
-| Colors | 미구현 | `Colors.indigo`, 개별 Material Color 사용 | `AppColors` |
-| Typography | 미구현 | 개별 `TextStyle` 사용 | `AppTypography` |
-| Spacing | 미구현 | 개별 `SizedBox`, `EdgeInsets` 사용 | `AppSpacing` |
-| Radius | 미구현 | Material 기본값/개별 값 | `AppRadius` |
+| Colors | 구현 | `AppColors` | DESIGN.md Product Palette |
+| Typography | 구현 | `AppTypography` | DESIGN.md Type Scale |
+| Spacing | 구현 | `AppSpacing` | 4pt Grid |
+| Radius | 구현 | `AppRadius` | Component Hierarchy |
 | Elevation | 미구현 | Material 기본 Card | `AppElevation` |
 | Responsive Breakpoints | 미구현 | 제품 Page 없음 | `AppBreakpoints` |
-| Theme | 부분 구현 | `ColorScheme.fromSeed(Colors.indigo)` 임시 Theme | `AppTheme`으로 교체 필요 |
+| Theme | 구현 | `AppTheme.light` | 상세 Component Theme 확장 가능 |
 
 Token 값과 Flutter Mapping은 `DESIGN.md`, `03_design_system.md`를 따른다. Token 파일을 여러 Feature에서 각자 만들지 않는다.
 
@@ -81,13 +81,12 @@ Page → Feature Widget → State/Controller → Service Interface → MockServi
 
 ## Known Issues
 
-- `go_router`, `provider` 등 Router/상태관리 Package는 제안 상태이며 설치되지 않았다.
-- 제품 Route, 역할 Redirect, Not Found, 초대 Deep Link 외부 URL이 구현되지 않았다.
-- `app.dart`는 임시 실행 화면과 Web 전용 Movement Adapter를 직접 Import한다.
-- 제품용 Design Token과 공통 Component가 없어 기존 데모는 스타일 값을 직접 사용한다.
+- Flutter 기본 Navigator 기반 중앙 Router를 사용한다. `go_router`, `provider`는 설치하지 않았다.
+- 내부 제품 Route, Not Found, 동적 Parameter 파싱은 구현됐지만 실제 Session 기반 역할 Redirect/Guard는 미구현이다.
+- 외부 초대 Domain과 로그인/가입 복귀 URL 계약은 미정이다.
 - Android/iOS 정식 플랫폼 프로젝트가 저장소에 없고 `dart:html` Adapter 때문에 현재 앱은 Web 전용이다.
 - `.env`가 Flutter asset이라 파일이 없으면 실행/빌드가 실패한다.
-- Partner Bottom Navigation 항목, 설정 상세, 초대 Token/인증 복귀 계약은 미정이다.
+- Partner Bottom Navigation은 문서에 명시된 Calendar/Realtime 최소 항목만 제공한다. 설정 상세와 초대 인증 복귀 계약은 미정이다.
 - 실시간 모션 제품 화면은 MVP 제외다. 기존 Demo는 단일 세션 Backend와 실제 브라우저 수동 검증에 의존한다.
 - Backend가 없는 제품 Feature의 Loading/Empty/Error/성공 상태는 아직 Mock으로 재현되지 않는다.
 
@@ -98,8 +97,9 @@ Page → Feature Widget → State/Controller → Service Interface → MockServi
 | 파일/영역 | 위험 | 규칙 |
 |---|---|---|
 | `frontend/lib/app.dart` | 앱 진입, Theme, Dependency 조립 동시 변경 | Integration Owner 전용 |
-| `frontend/lib/core/navigation/router.dart` | 모든 Feature Route 등록 | Integration Owner 전용; Feature는 Route Descriptor/Builder만 제공 |
-| `frontend/lib/core/navigation/app_routes.dart` | Route 이름·Path 계약 | 임의 변경 금지; 변경 전 두 작업자 합의 |
+| `frontend/lib/routing/app_router.dart` | 모든 Feature Route 등록과 Parameter 파싱 | Integration Owner 전용; Feature는 Screen Builder만 제공 |
+| `frontend/lib/routing/route_names.dart` | Route 이름·Path 계약 | 임의 변경 금지; 변경 시 ROUTE_MAP/Test 동시 갱신 |
+| `frontend/lib/routing/route_context.dart` | 진입 모드·역할·Bootstrap 상태 계약 | 실제 Session Model과 혼합하지 않음 |
 | `frontend/lib/core/theme/**` 또는 `design_system/tokens/**` | 전 화면 시각 영향 | Foundation 완료 후 API Freeze |
 | `frontend/lib/design_system/components/**` | Props 변경 시 다수 Feature 영향 | Shared Component Owner 리뷰 필수 |
 | `frontend/lib/widgets/**` | Shell/상태 UI 중복과 충돌 | 새 공통화 전 기존 목록 확인 |

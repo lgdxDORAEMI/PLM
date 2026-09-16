@@ -15,8 +15,9 @@ class WifeHomeScreen extends ProductSkeletonScreen {
           SkeletonAction('가사 가이드', RouteNames.householdGuide),
           SkeletonAction('건강 가이드', RouteNames.healthGuide),
           SkeletonAction('수면 가이드', RouteNames.sleepGuide),
-          SkeletonAction('하루 루틴 끝내기', RouteNames.dailyReport),
-          SkeletonAction('프로필 수정', RouteNames.profileSetup),
+          SkeletonAction('하루 루틴 끝내기', RouteNames.dailyReportToday),
+          SkeletonAction('프로필 수정', RouteNames.wifeProfile),
+          SkeletonAction('배우자 초대', RouteNames.wifeInvite),
           SkeletonAction('설정 (Phase 2)', RouteNames.wifeSettings),
         ],
       );

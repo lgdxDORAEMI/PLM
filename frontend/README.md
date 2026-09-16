@@ -21,8 +21,9 @@ PLM Frontend는 임산부와 배우자의 생활관리 경험을 제공하기 �
 - DESIGN.md 기반 Theme와 공통 Design Token
 - Button, Input, Card, SelectionCard, TopAppBar, BottomNavigation
 - ROUTE_MAP의 20개 제품 화면 Skeleton과 중앙 Router
-- 온보딩, Wife Home·가이드·기록, Partner 화면의 Navigation 연결
-- 직접 URL과 동적 report/request 경로 복원, 404 화면
+- 프로필·배우자 초대의 온보딩/수동 진입 Context 분리
+- 역할별 Header, Wife 4개/Partner 2개 하단 Navigation
+- 직접 URL과 동적 date/requestId/token 복원, Bootstrap Resolver와 404 화면
 - 브라우저 카메라 프레임 캡처 및 WebSocket 전송
 - 캘리브레이션 진행률, 실시간 자세·부담 상태와 landmark 오버레이 표시
 - 카메라와 WebSocket을 추상화한 Controller 단위 테스트

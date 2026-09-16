@@ -1,26 +1,47 @@
-/// 중앙에서 관리하는 내부 제품 경로다.
-///
-/// 외부 deep link/API 계약이 아니라 ROUTE_MAP 후보를 Skeleton 검증에 사용한다.
+/// 서비스 흐름도와 ROUTE_MAP을 반영한 내부 제품 경로다.
+/// 외부 Deep Link domain과 인증 복귀 URL은 별도 계약 전까지 확정하지 않는다.
 abstract final class RouteNames {
   static const root = '/';
   static const profileSetup = '/onboarding/profile';
+  static const wifeProfile = '/wife/profile';
   static const partnerInvite = '/onboarding/invite';
+  static const wifeInvite = '/wife/invite';
   static const invitationEntry = '/invitation-entry';
   static const condition = '/wife/home/condition';
   static const activity = '/wife/home/activity';
   static const wifeHome = '/wife/home';
   static const mealGuide = '/wife/home/meal';
   static const householdGuide = '/wife/home/household';
-  static const movement = '/wife/movement';
+  static const wifeMovement = '/wife/movement';
+  static const partnerMovement = '/partner/movement';
   static const healthGuide = '/wife/home/health';
   static const sleepGuide = '/wife/home/sleep';
   static const mealChat = '/wife/meal-chat';
-  static const dailyReport = '/wife/calendar/report/today';
+  static const dailyReportPattern = '/wife/calendar/report/:date';
+  static const dailyReportToday = '/wife/calendar/report/today';
   static const wifeCalendar = '/wife/calendar';
   static const wifeSettings = '/wife/settings';
-  static const partnerMorningReport = '/partner/report/today';
+  static const partnerMorningReportPattern = '/partner/report/:date';
+  static const partnerMorningReportToday = '/partner/report/today';
   static const partnerCalendar = '/partner/calendar';
   static const partnerNotifications = '/partner/notifications';
-  static const partnerRequest = '/partner/requests/demo-request';
+  static const partnerRequestPattern = '/partner/requests/:requestId';
+  static const partnerRequestDemo = '/partner/requests/demo-request';
   static const partnerProfile = '/partner/profile';
+
+  static String dailyReport(String date) =>
+      '/wife/calendar/report/${Uri.encodeComponent(date)}';
+
+  static String partnerMorningReport(String date) =>
+      '/partner/report/${Uri.encodeComponent(date)}';
+
+  static String partnerRequest(String requestId) =>
+      '/partner/requests/${Uri.encodeComponent(requestId)}';
+
+  static String invitation({required String token}) {
+    return Uri(
+      path: invitationEntry,
+      queryParameters: {'token': token},
+    ).toString();
+  }
 }
