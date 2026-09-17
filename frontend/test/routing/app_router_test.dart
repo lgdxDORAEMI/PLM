@@ -121,6 +121,61 @@ void main() {
     expect(roles.switchTo(ActiveRole.husband, auth), isFalse);
   });
 
+  test('직접 URL과 외부 role switch URL은 현재 역할을 바꾸지 않는다', () {
+    ProfileStore.instance.save(ProfileDraft.mockEdit());
+    final auth = AuthSessionStore.instance;
+    final roles = ActiveRoleStore.instance;
+    auth.update(
+      accountId: 'dual-direct-url',
+      roles: {ActiveRole.wife, ActiveRole.husband},
+      husbandLinked: true,
+    );
+    expect(roles.switchTo(ActiveRole.wife, auth), isTrue);
+
+    expect(
+      AppRouter.resolveLocation(RouteNames.husbandNotifications),
+      RouteNames.wifeHome,
+    );
+    expect(
+      AppRouter.resolveLocation(RouteNames.roleSwitch('husband')),
+      RouteNames.wifeHome,
+    );
+    expect(roles.value, ActiveRole.wife);
+    expect(auth.accountId, 'dual-direct-url');
+  });
+
+  test('잘못된 역할의 최초 URL은 현재 역할 Home route로 정규화한다', () {
+    AuthSessionStore.instance.update(
+      accountId: 'husband-initial-guard',
+      roles: {ActiveRole.husband},
+      husbandLinked: true,
+    );
+
+    final routes = AppRouter.onGenerateInitialRoutes(RouteNames.wifeHome);
+
+    expect(routes.single.settings.name, RouteNames.husbandCalendar);
+    expect(ActiveRoleStore.instance.value, ActiveRole.husband);
+  });
+
+  testWidgets('식사 상세 URL은 Placeholder 없이 해당 끼니 상세를 복원한다', (tester) async {
+    ProfileStore.instance.save(ProfileDraft.mockEdit());
+    await tester.pumpWidget(
+      MaterialApp(
+        initialRoute: RouteNames.mealDetail('dinner'),
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        onGenerateInitialRoutes: AppRouter.onGenerateInitialRoutes,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('meal-recommendation-detail')),
+      findsOneWidget,
+    );
+    expect(find.text('저녁'), findsOneWidget);
+    expect(find.text('식사 상세 화면 준비 중'), findsNothing);
+  });
+
   testWidgets('명시적 전환은 대상 역할 홈으로 가고 이전 stack을 제거한다', (tester) async {
     ProfileStore.instance.save(ProfileDraft.mockEdit());
     AuthSessionStore.instance.update(
@@ -155,8 +210,53 @@ void main() {
     await tester.tap(find.text('전환'));
     await tester.pumpAndSettle();
     expect(ActiveRoleStore.instance.value, ActiveRole.husband);
+    expect(AuthSessionStore.instance.accountId, 'dual-widget');
+    expect(AuthSessionStore.instance.roles, {
+      ActiveRole.wife,
+      ActiveRole.husband,
+    });
     expect(find.text('컨디션 캘린더'), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
     expect(find.text('전환'), findsNothing);
+    expect(navigatorKey.currentState!.canPop(), isFalse);
+  });
+
+  testWidgets('남편에서 아내로 전환하면 아내 Home과 Bottom Navigation으로 교체한다', (
+    tester,
+  ) async {
+    ProfileStore.instance.save(ProfileDraft.mockEdit());
+    final auth = AuthSessionStore.instance;
+    auth.update(
+      accountId: 'dual-husband-to-wife',
+      roles: {ActiveRole.wife, ActiveRole.husband},
+      husbandLinked: true,
+    );
+    expect(ActiveRoleStore.instance.switchTo(ActiveRole.husband, auth), isTrue);
+
+    final navigatorKey = GlobalKey<NavigatorState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navigatorKey,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () => AppRouter.switchRole(context, ActiveRole.wife),
+              child: const Text('아내로 전환'),
+            ),
+          ),
+        ),
+        onGenerateRoute: AppRouter.onGenerateRoute,
+      ),
+    );
+    await tester.tap(find.text('아내로 전환'));
+    await tester.pumpAndSettle();
+
+    expect(ActiveRoleStore.instance.value, ActiveRole.wife);
+    expect(auth.accountId, 'dual-husband-to-wife');
+    expect(auth.isAuthenticated, isTrue);
+    expect(find.text('홈'), findsWidgets);
+    expect(find.byType(NavigationBar), findsOneWidget);
+    expect(find.text('아내로 전환'), findsNothing);
     expect(navigatorKey.currentState!.canPop(), isFalse);
   });
 }

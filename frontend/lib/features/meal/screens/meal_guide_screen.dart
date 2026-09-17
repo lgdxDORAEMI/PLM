@@ -24,9 +24,10 @@ import '../widgets/meal_period_card.dart';
 import '../widgets/meal_recommendation_card.dart';
 
 class MealGuideScreen extends StatefulWidget {
-  const MealGuideScreen({super.key, this.service});
+  const MealGuideScreen({super.key, this.service, this.initialPeriod});
 
   final MealService? service;
+  final MealPeriod? initialPeriod;
 
   @override
   State<MealGuideScreen> createState() => _MealGuideScreenState();
@@ -40,6 +41,7 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
     super.initState();
     _controller = MealGuideController(
       service: widget.service ?? const MockMealService(),
+      initialPeriod: widget.initialPeriod,
     )..addListener(_refresh);
     unawaited(_controller.load());
   }
@@ -116,7 +118,10 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
                     width: itemWidth,
                     child: MealPeriodCard(
                       summary: period,
-                      onTap: () => _controller.selectPeriod(period.period),
+                      onTap: () => Navigator.pushNamed(
+                        context,
+                        RouteNames.mealDetail(period.period.name),
+                      ),
                     ),
                   ),
               ],
@@ -218,6 +223,14 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
   }
 
   void _handleBack() {
+    if (widget.initialPeriod != null) {
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      } else {
+        Navigator.pushReplacementNamed(context, RouteNames.mealGuide);
+      }
+      return;
+    }
     if (_controller.showDetails) {
       _controller.showPeriodList();
       return;

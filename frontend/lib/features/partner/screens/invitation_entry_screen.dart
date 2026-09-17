@@ -67,13 +67,18 @@ class _InvitationEntryScreenState extends State<InvitationEntryScreen> {
       final auth = AuthSessionStore.instance;
       auth.update(
         accountId: auth.accountId ?? 'demo-husband',
-        roles: {...auth.roles, ActiveRole.husband},
+        // 초대 연결은 현재 ThinQ 계정의 역할 권한을 새로 부여하지 않는다.
+        // husband 권한은 인증/세션 조회 결과로 이미 확인되어 있어야 한다.
+        roles: auth.roles,
         husbandLinked: true,
       );
-      ActiveRoleStore.instance.switchTo(ActiveRole.husband, auth);
+      final switched = ActiveRoleStore.instance.switchTo(
+        ActiveRole.husband,
+        auth,
+      );
       Navigator.pushNamedAndRemoveUntil(
         context,
-        RouteNames.husbandCalendar,
+        switched ? RouteNames.husbandCalendar : RouteNames.entry,
         (_) => false,
       );
     } on Object {

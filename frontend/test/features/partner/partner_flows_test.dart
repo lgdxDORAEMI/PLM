@@ -65,7 +65,23 @@ void main() {
 
     expect(PartnerConnectionStore.instance.isLinked, isTrue);
     expect(ActiveRoleStore.instance.value, ActiveRole.husband);
+    expect(AuthSessionStore.instance.accountId, 'husband-invited');
+    expect(AuthSessionStore.instance.roles, {ActiveRole.husband});
     expect(find.text('컨디션 캘린더'), findsOneWidget);
+  });
+
+  testWidgets('아내 계정에서 초대 URL을 열어도 남편 역할 권한을 추가하지 않는다', (tester) async {
+    AuthSessionStore.instance.update(
+      accountId: 'wife-invitation-url',
+      roles: {ActiveRole.wife},
+      husbandLinked: false,
+    );
+    await _pumpRoute(tester, RouteNames.invitation(token: 'test-token'));
+
+    expect(AuthSessionStore.instance.accountId, 'wife-invitation-url');
+    expect(AuthSessionStore.instance.roles, {ActiveRole.wife});
+    expect(ActiveRoleStore.instance.value, ActiveRole.wife);
+    expect(find.text('컨디션 캘린더'), findsNothing);
   });
 
   testWidgets('남편 Home은 캘린더이며 Bottom Navigation과 프로필이 없다', (tester) async {
@@ -98,7 +114,11 @@ void main() {
     );
 
     final complete = find.byKey(const ValueKey('husband-request-complete'));
-    await tester.ensureVisible(complete);
+    await tester.scrollUntilVisible(
+      complete,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
     await tester.tap(complete);
     await tester.pumpAndSettle();
     await tester.tap(

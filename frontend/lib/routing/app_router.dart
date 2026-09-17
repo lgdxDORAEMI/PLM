@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../features/calendar/screens/wife_calendar_screen.dart';
 import '../features/condition/screens/activity_screen.dart';
@@ -164,9 +165,17 @@ abstract final class AppRouter {
     return _page(location, _screenFor(uri));
   }
 
-  static List<Route<dynamic>> onGenerateInitialRoutes(String initialRoute) => [
-    onGenerateRoute(RouteSettings(name: initialRoute)),
-  ];
+  static List<Route<dynamic>> onGenerateInitialRoutes(String initialRoute) {
+    final normalized = resolveLocation(initialRoute);
+    if (normalized != initialRoute) {
+      // 최초 직접 접근 guard가 화면뿐 아니라 브라우저 주소도 실제 목적지와 맞춘다.
+      SystemNavigator.routeInformationUpdated(
+        uri: Uri.parse(normalized),
+        replace: true,
+      );
+    }
+    return [onGenerateRoute(RouteSettings(name: normalized))];
+  }
 
   static Route<dynamic> _page(String name, Widget screen) =>
       MaterialPageRoute<void>(
@@ -192,7 +201,9 @@ abstract final class AppRouter {
     }
     if (parts.length == 3 && parts[0] == 'wife') {
       if (parts[1] == 'report') return _validDate(parts[2]);
-      if (parts[1] == 'meal') return parts[2].isNotEmpty;
+      if (parts[1] == 'meal') {
+        return MealPeriod.values.any((period) => period.name == parts[2]);
+      }
     }
     if (parts.length == 4 && parts[0] == 'husband') {
       if (parts[1] == 'report' &&
@@ -283,7 +294,10 @@ abstract final class AppRouter {
     if (path == RouteNames.wifeHome) return const WifeHomeScreen();
     if (path == RouteNames.mealGuide) return const MealGuideScreen();
     if (parts.length == 3 && parts[0] == 'wife' && parts[1] == 'meal') {
-      return const _RoutePlaceholder(title: '식사 상세 화면 준비 중');
+      final period = MealPeriod.values.firstWhere(
+        (period) => period.name == parts[2],
+      );
+      return MealGuideScreen(initialPeriod: period);
     }
     if (path == RouteNames.householdGuide) return const HouseholdGuideScreen();
     if (path == RouteNames.wifeMovement) {

@@ -7,10 +7,14 @@ import '../services/meal_service.dart';
 enum MealGuideViewState { loading, ready, error }
 
 class MealGuideController extends ChangeNotifier {
-  MealGuideController({required this.service, MealSelectionStore? store})
-    : store = store ?? MealSelectionStore.instance;
+  MealGuideController({
+    required this.service,
+    this.initialPeriod,
+    MealSelectionStore? store,
+  }) : store = store ?? MealSelectionStore.instance;
 
   final MealService service;
+  final MealPeriod? initialPeriod;
   final MealSelectionStore store;
 
   MealGuideViewState _state = MealGuideViewState.loading;
@@ -48,12 +52,12 @@ class MealGuideController extends ChangeNotifier {
     notifyListeners();
     try {
       _data = await service.fetchGuide();
-      _selectedPeriod = store.selectedPeriod;
+      _selectedPeriod = initialPeriod ?? store.selectedPeriod;
       final applied = store.appliedRecommendation;
       if (applied != null) {
         _selectedRecommendations[applied.period] = applied;
       }
-      _showDetails = store.appliedRecommendation != null;
+      _showDetails = initialPeriod != null || applied != null;
       _state = MealGuideViewState.ready;
     } on Object {
       _state = MealGuideViewState.error;
