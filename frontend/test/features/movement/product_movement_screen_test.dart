@@ -24,6 +24,8 @@ void main() {
     expect(find.text('오늘 이벤트 기록'), findsOneWidget);
 
     final event = find.byKey(const ValueKey('movement-alert-back-load'));
+    await tester.drag(find.byType(ListView), const Offset(0, -300));
+    await tester.pumpAndSettle();
     await tester.ensureVisible(event);
     await tester.tap(event);
     await tester.pumpAndSettle();

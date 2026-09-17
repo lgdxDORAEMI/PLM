@@ -3,10 +3,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:plm_frontend/features/invitation/data/partner_connection_store.dart';
 import 'package:plm_frontend/features/calendar/data/calendar_selection_store.dart';
 import 'package:plm_frontend/features/profile/data/profile_store.dart';
+import 'package:plm_frontend/features/profile/models/profile_draft.dart';
+import 'package:plm_frontend/features/profile/screens/profile_setup_screen.dart';
 import 'package:plm_frontend/routing/app_router.dart';
+import 'package:plm_frontend/routing/app_session.dart';
 import 'package:plm_frontend/routing/route_names.dart';
 
 void main() {
+  setUp(_useWifeSession);
+
   final routes = <String>[
     RouteNames.entry,
     RouteNames.profileSetup,
@@ -47,6 +52,11 @@ void main() {
 
       // 직접 URL 복원을 함께 검사해 얕은 화면 진입 누락을 찾는다.
       for (final route in routes) {
+        if (route.startsWith('/husband/')) {
+          _useHusbandSession();
+        } else {
+          _useWifeSession();
+        }
         await tester.pumpWidget(
           MaterialApp(
             key: ValueKey('$width:$route'),
@@ -101,7 +111,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('희선님'));
     await tester.pumpAndSettle();
-    expect(find.text('출산예정일을 알려주세요'), findsOneWidget);
+    expect(find.byType(ProfileSetupScreen), findsOneWidget);
   });
 
   testWidgets('주요 화면은 390px·200% 글자 확대에서 렌더링된다', (tester) async {
@@ -134,4 +144,21 @@ void main() {
       expect(tester.takeException(), isNull, reason: route);
     }
   });
+}
+
+void _useWifeSession() {
+  ProfileStore.instance.save(ProfileDraft.mockEdit());
+  AuthSessionStore.instance.update(
+    accountId: 'viewport-wife',
+    roles: {ActiveRole.wife},
+    husbandLinked: false,
+  );
+}
+
+void _useHusbandSession() {
+  AuthSessionStore.instance.update(
+    accountId: 'viewport-husband',
+    roles: {ActiveRole.husband},
+    husbandLinked: true,
+  );
 }
