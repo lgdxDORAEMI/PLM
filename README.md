@@ -39,7 +39,7 @@ Frontend 제품 UI 작업은 Backend 구현과 분리합니다. Backend가 준�
 
 Home의 AI Routine 영역은 `RoutineService` 경계를 통해 데이터를 받고, 현재는 `MockRoutineService`를 사용합니다. 따라서 실제 AI API 없이도 컨디션 입력 → 예정 활동 선택 → 생성 상태 → 4종 가이드 또는 기본 폴백의 UI Flow를 확인할 수 있으며, API 연결 시 화면을 수정하지 않고 Service 구현을 교체할 수 있습니다.
 
-4종 상세 가이드는 하나의 Dashboard Template을 복제하지 않습니다. Meal은 끼니별 추천·근거·수락/재조정/공유, Household는 직접 수행·가전 추천·가족 위임과 Partner Request 상태, Health는 부담 부위 우선순위와 활동 완료, Sleep은 취침 맥락·환경 항목별 설정·수면 팁에 각각 최적화되어 있습니다. ThinQ 기기 실행은 MVP 밖이므로 Household와 Sleep에서 실제 제어를 제공하지 않으며, 추천값과 local Mock 상태만 확인할 수 있습니다.
+4종 상세 가이드는 하나의 Dashboard Template을 복제하지 않습니다. Meal은 끼니별 추천·근거·수락/다른 메뉴 순환/공유, Household는 직접 수행·가전 추천·가족 위임과 Partner Request 상태, Health는 부담 부위 우선순위와 활동 완료, Sleep은 취침 맥락·환경 항목별 설정·수면 팁에 각각 최적화되어 있습니다. ThinQ 기기 실행은 MVP 밖이므로 Household와 Sleep에서 실제 제어를 제공하지 않으며, 추천값과 local Mock 상태만 확인할 수 있습니다.
 
 Chat은 임신 주차·주의 진단·당일 컨디션을 유지하는 식사 재조정 대화에 집중하고, Report는 핵심 결과 → 실행 루틴 → 하루 인사이트와 가족 참여 순으로 결과 위계를 제공합니다. Calendar는 날짜 선택 → 선택일 기록 → `/wife/report/:date` 또는 `/partner/report/:date` 상세 흐름으로 연결됩니다. Mobile에서는 세로 흐름을 유지하고 Desktop에서는 Calendar와 선택일 상세를 7:5 2-column으로 동시에 표시합니다.
 

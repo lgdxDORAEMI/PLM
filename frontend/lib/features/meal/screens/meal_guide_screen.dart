@@ -156,7 +156,7 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
                   decision: _controller.selectedDecision,
                   shared: _controller.selectedIsShared,
                   onAccept: _controller.acceptSelected,
-                  onAdjust: _openRejectedMealChat,
+                  onAdjust: _controller.showNextRecommendation,
                   onShare: _controller.shareSelected,
                 ),
               ],
@@ -211,11 +211,6 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
   Future<void> _openMealChat() async {
     await Navigator.pushNamed(context, RouteNames.mealChat);
     if (mounted) _controller.showAppliedRecommendation();
-  }
-
-  Future<void> _openRejectedMealChat() async {
-    _controller.rejectSelected();
-    await _openMealChat();
   }
 
   void _handleBack() {

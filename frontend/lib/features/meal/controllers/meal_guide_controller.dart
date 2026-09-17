@@ -16,6 +16,7 @@ class MealGuideController extends ChangeNotifier {
   MealGuideViewState _state = MealGuideViewState.loading;
   MealGuideData? _data;
   MealPeriod? _selectedPeriod;
+  final Map<MealPeriod, MealRecommendation> _selectedRecommendations = {};
   bool _showDetails = false;
 
   MealGuideViewState get state => _state;
@@ -38,9 +39,7 @@ class MealGuideController extends ChangeNotifier {
     final period = _selectedPeriod;
     final guide = _data;
     if (period == null || guide == null) return null;
-    final applied = store.appliedRecommendation;
-    if (applied?.period == period) return applied;
-    return guide.recommendationFor(period);
+    return _selectedRecommendations[period] ?? guide.recommendationFor(period);
   }
 
   /// Mock/API 교체와 무관하게 화면은 동일한 Loading/Ready/Error 상태를 사용한다.
@@ -50,6 +49,10 @@ class MealGuideController extends ChangeNotifier {
     try {
       _data = await service.fetchGuide();
       _selectedPeriod = store.selectedPeriod;
+      final applied = store.appliedRecommendation;
+      if (applied != null) {
+        _selectedRecommendations[applied.period] = applied;
+      }
       _showDetails = store.appliedRecommendation != null;
       _state = MealGuideViewState.ready;
     } on Object {
@@ -61,6 +64,10 @@ class MealGuideController extends ChangeNotifier {
   void selectPeriod(MealPeriod period) {
     store.selectPeriod(period);
     _selectedPeriod = period;
+    _selectedRecommendations.putIfAbsent(
+      period,
+      () => _data!.recommendationFor(period),
+    );
     _showDetails = true;
     notifyListeners();
   }
@@ -74,6 +81,7 @@ class MealGuideController extends ChangeNotifier {
     final period = store.selectedPeriod;
     if (period == null || store.appliedRecommendation == null) return;
     _selectedPeriod = period;
+    _selectedRecommendations[period] = store.appliedRecommendation!;
     _showDetails = true;
     notifyListeners();
   }
@@ -89,6 +97,27 @@ class MealGuideController extends ChangeNotifier {
     final recommendation = selectedRecommendation;
     if (recommendation == null) return;
     store.recordDecision(recommendation.id, MealDecision.rejected);
+    notifyListeners();
+  }
+
+  /// 현재 끼니의 Mock 추천을 순환해 화면 안에서 다음 메뉴를 보여준다.
+  void showNextRecommendation() {
+    final period = _selectedPeriod;
+    final guide = _data;
+    final current = selectedRecommendation;
+    if (period == null || guide == null || current == null) return;
+
+    final recommendations = guide.recommendationsFor(period);
+    if (recommendations.length < 2) return;
+
+    store.recordDecision(current.id, MealDecision.rejected);
+    final currentIndex = recommendations.indexWhere(
+      (recommendation) => recommendation.id == current.id,
+    );
+    final nextIndex = currentIndex < 0
+        ? 0
+        : (currentIndex + 1) % recommendations.length;
+    _selectedRecommendations[period] = recommendations[nextIndex];
     notifyListeners();
   }
 

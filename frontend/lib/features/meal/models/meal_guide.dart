@@ -68,4 +68,8 @@ class MealGuideData {
   MealRecommendation recommendationFor(MealPeriod period) {
     return recommendations.firstWhere((item) => item.period == period);
   }
+
+  List<MealRecommendation> recommendationsFor(MealPeriod period) {
+    return recommendations.where((item) => item.period == period).toList();
+  }
 }
