@@ -47,7 +47,7 @@ Chat은 임신 주차·주의 진단·당일 컨디션을 유지하는 식사 �
 
 실시간 경로는 아내 `/wife/live`, 남편 `/husband/live`입니다. 아내는 하단 실시간 탭으로, 남편은 캘린더에서 오늘 날짜를 선택했을 때 표시되는 버튼으로 진입합니다. 현재 화면 데이터는 Local Mock이고 실제 카메라·MediaPipe·실시간 센서를 실행하지 않습니다. 브라우저 카메라/WebSocket 코드는 `main_movement_debug.dart`의 독립 기술 데모에 남아 있습니다.
 
-라우팅은 [ROUTE_MAP_V2](docs/development/ROUTE_MAP_V2.md)를 따릅니다. `/entry`에서 인증·연결 상태를 확인하고, 아내는 프로필 첫 단계 또는 `/wife/home`으로, 연결된 남편은 `/husband/calendar`로 이동합니다. 미연결 남편에게는 초대 필요 안내를 표시합니다. `auth`와 `activeRole`을 별도 상태로 유지하며, 역할 전환은 권한 확인 후 이전 이동 기록을 지우고 대상 역할 홈으로 이동합니다. 계정별 `activeRole`은 Web 저장소에서 복원하지만 실제 ThinQ 세션·권한 연동은 아직 제공되지 않습니다.
+라우팅은 [ROUTE_MAP_V2](docs/development/ROUTE_MAP_V2.md)를 따릅니다. `/entry`에서 인증·연결 상태를 확인하고, 아내는 프로필 첫 단계 또는 `/wife/home`으로, 연결된 남편은 `/husband/calendar`로 이동합니다. 미연결 남편에게는 초대 필요 안내를 표시합니다. `auth`와 `activeRole`을 별도 상태로 유지하며, 역할 전환은 권한 확인 후 이전 이동 기록을 지우고 대상 역할 홈으로 이동합니다. 계정별 `activeRole`은 Web 저장소에서 복원하지만 실제 ThinQ 세션·권한 연동은 아직 제공되지 않습니다. 다른 역할의 URL로 최초 접근하면 현재 역할 Home과 브라우저 주소를 함께 보정하며, `/wife/meal/:mealKey`는 새로고침해도 해당 끼니 상세를 복원합니다.
 
 요구사항 재감사 후 프로필의 예정일/LMP 기반 임신 주수 계산, 필수 선택 단계의 다음 버튼 비활성, Report 저장 후 Calendar 선택일 유지 및 오늘 컨디션 초기화를 추가했습니다. Demo Profile은 브라우저 localStorage에 보존되지만 서버 계정과 동기화되지 않으며, 리포트도 영구 저장되지 않습니다. 실제 가전·모션 연동이 없는 MVP Mock 리포트에서 해당 실행 횟수는 0으로 표시합니다.
 

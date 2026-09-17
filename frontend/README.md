@@ -28,6 +28,7 @@ PLM Frontend는 임산부와 배우자의 생활관리 경험을 제공하기 �
 - 역할별 Header, Wife Mobile 4개 Bottom Navigation·Desktop Navigation Rail, Partner Calendar 중심 Navigation
 - Home·Meal·Health·Household·Sleep·Calendar·Report·Movement의 viewport별 composition
 - `/`와 잘못된 경로를 인증·역할·프로필·연동 상태에 따라 안전한 시작 경로로 보내는 Route guard
+- 최초 직접 접근에서 다른 역할 URL을 현재 역할 Home 주소로 교체하고, 끼니별 식사 상세 URL을 새로고침 후에도 복원
 - 아내 프로필 미완료 시 첫 단계, 연결된 남편은 캘린더, 미연결 남편은 초대 필요 안내로 진입
 - Web Demo Profile의 localStorage 복원
 - Web에서 계정별 `activeRole` 복원. 실제 역할 접근권과 ThinQ 로그인은 향후 호스트 연동이 필요
