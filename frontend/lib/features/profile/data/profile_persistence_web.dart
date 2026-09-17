@@ -14,6 +14,7 @@ ProfileDraft? readStoredProfile() {
     return ProfileDraft(
       dueDate: _readDate(json['dueDate']),
       lastPeriodDate: _readDate(json['lastPeriodDate']),
+      birthDate: _readDate(json['birthDate']),
       height: json['height'] as String?,
       prePregnancyWeight: json['prePregnancyWeight'] as String?,
       isFirstPregnancy: json['isFirstPregnancy'] as bool?,
@@ -37,6 +38,7 @@ void writeStoredProfile(ProfileDraft? profile) {
     html.window.localStorage[_profileStorageKey] = jsonEncode({
       'dueDate': profile.dueDate?.toIso8601String(),
       'lastPeriodDate': profile.lastPeriodDate?.toIso8601String(),
+      'birthDate': profile.birthDate?.toIso8601String(),
       'height': profile.height,
       'prePregnancyWeight': profile.prePregnancyWeight,
       'isFirstPregnancy': profile.isFirstPregnancy,
@@ -53,6 +55,5 @@ void writeStoredProfile(ProfileDraft? profile) {
 DateTime? _readDate(Object? value) =>
     value is String ? DateTime.tryParse(value) : null;
 
-Set<String> _readSet(Object? value) => value is List
-    ? value.whereType<String>().toSet()
-    : const <String>{};
+Set<String> _readSet(Object? value) =>
+    value is List ? value.whereType<String>().toSet() : const <String>{};

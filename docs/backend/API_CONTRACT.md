@@ -64,7 +64,7 @@
 - Authorization: 기본값
 - Error: 409(1단계 출산예정일 미저장), 422(범위 초과)
 - Status: **implemented**
-- Notes: 화면설계서 PDF가 서술하는 생년월일/나이 필드는 Request/Response에 없다 — `pregnancy_profiles`에 컬럼이 없고 `DB_ERD_스키마.md`가 이미 FR 범위 밖으로 제외
+- Notes: 화면설계서 PDF가 서술하는 생년월일/나이 필드는 Request/Response에 없다 — `pregnancy_profiles`에 컬럼이 없고 구 ERD 초안(삭제됨)에서도 FR 범위 밖으로 제외
 
 ### `PUT /api/v1/profile/me/pregnancy-history`
 

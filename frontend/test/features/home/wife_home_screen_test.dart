@@ -72,7 +72,7 @@ void main() {
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('맞춤 루틴 다시 시도'), findsOneWidget);
+    expect(find.text('다시 시도'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('routine-card-meal')),
       200,

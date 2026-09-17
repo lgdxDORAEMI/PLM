@@ -1,6 +1,6 @@
 """파이프라인 B ④: 프롬프트 조립 + ⑤에서 강제할 출력 JSON 스키마.
 
-스키마 키는 frontend 모델·routine_items.payload(docs/DB_ERD_스키마.md §3.2)와 같다.
+스키마 키는 frontend 모델·routine_items.payload(docs/api.md 루틴 응답 payload 표)와 같다.
 OpenAI json_schema strict 규칙: 모든 객체에 additionalProperties=false, 모든 속성 required.
 """
 
@@ -9,7 +9,9 @@ from __future__ import annotations
 import json
 from typing import Any
 
-PROMPT_VERSION = "2026-09-16.1"
+# 2026-09-17.1: 4종 한 번 호출 → 카테고리별 4회 동시 호출(생성 8.6초로 타임아웃 잦음)
+PROMPT_VERSION = "2026-09-17.1"
+CATEGORIES = ("meal", "household", "health", "sleep")
 
 
 def _obj(props: dict[str, Any]) -> dict[str, Any]:
@@ -101,6 +103,11 @@ ROUTINE_SCHEMA: dict[str, Any] = _obj(
     }
 )
 
+
+def category_schema(category: str) -> dict[str, Any]:
+    """카테고리 1개만 담은 strict 스키마. 응답은 {category: ...} 모양."""
+    return _obj({category: ROUTINE_SCHEMA["properties"][category]})
+
 SYSTEM_PROMPT = """당신은 임산부의 하루 생활 루틴을 설계하는 보조 도구다. 의료 진단이나 처방을 하지 않는다.
 규칙:
 - 출력은 주어진 JSON 스키마만. 한국어.
@@ -117,13 +124,15 @@ def build_user_prompt(
     facts: dict[str, Any],
     constraints: dict[str, list[dict[str, str]]] | None = None,
     chunks: list[dict[str, Any]] | None = None,
+    category: str | None = None,
 ) -> str:
-    """① facts + ② constraints + ③ chunks → 사용자 메시지 1개."""
+    """① facts + ② constraints + ③ chunks → 사용자 메시지 1개. category를 주면 그 카테고리만 요청한다."""
     parts = ["## 사용자 정보(오늘)", json.dumps(facts, ensure_ascii=False)]
     if constraints and any(constraints.values()):
         parts += ["## 확정 규칙(반드시 준수)", json.dumps(constraints, ensure_ascii=False)]
     if chunks:
         lines = [f"[id={c['id']}] ({c.get('category', '')}) {c['content']}" for c in chunks]
         parts += ["## 참고 문단", "\n\n".join(lines)]
-    parts += ["## 요청", "위 정보로 오늘의 meal·household·health·sleep 루틴을 JSON 스키마에 맞게 작성."]
+    target = category or "meal·household·health·sleep"
+    parts += ["## 요청", f"위 정보로 오늘의 {target} 루틴을 JSON 스키마에 맞게 작성."]
     return "\n".join(parts)

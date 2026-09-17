@@ -145,10 +145,7 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
             final recommendationPanel = Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  '오늘의 추천',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
+                Text('오늘의 추천', style: Theme.of(context).textTheme.titleLarge),
                 const SizedBox(height: AppSpacing.lg),
                 MealRecommendationCard(recommendation: recommendation),
                 const SizedBox(height: AppSpacing.lg),
@@ -209,7 +206,14 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
   }
 
   Future<void> _openMealChat() async {
-    await Navigator.pushNamed(context, RouteNames.mealChat);
+    final period = _controller.selectedPeriod;
+    final route = Uri(
+      path: RouteNames.mealChat,
+      queryParameters: period == null
+          ? null
+          : {'source': 'meal', 'period': period.name},
+    ).toString();
+    await Navigator.pushNamed(context, route);
     if (mounted) _controller.showAppliedRecommendation();
   }
 

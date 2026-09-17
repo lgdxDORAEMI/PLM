@@ -4,32 +4,39 @@
 # when 연산자: <field>_any: [값...] (배열 교집합) / <field>_gte, <field>_lte (숫자) / <field>: 값 (같음)
 #   여러 조건은 모두 만족해야 한다(AND).
 # effect: exclude(금지) / limit(제한) / require(반드시 포함). target 형식 "종류:값". reason은 LLM에 그대로 넘긴다.
-# 규칙이 20개를 넘으면 테이블로 옮긴다(docs/ai_routine/AI_루틴_파이프라인.md §4).
+# keywords(선택, exclude용): 검증(⑥)이 항목 이름(title·nutritionTags)에서 찾을 단어. target 값("갑각류")은 자동 포함.
+#   설명문(reason 등)은 검사하지 않는다 — "갑각류를 피했어요" 같은 문장으로 식단이 지워지던 문제(2026-09-17).
+# 규칙이 20개를 넘으면 테이블로 옮긴다(docs/ai_wednesday/AI_wednesday_pipeline.md §4).
 rules:
   - category: meal
     when: {allergies_any: [갑각류]}
     effect: exclude
     target: "ingredient:갑각류"
+    keywords: [새우, 꽃게, 대게, 게살, 킹크랩, 랍스터, 가재, 크릴]
     reason: 프로필 알레르기(갑각류)
   - category: meal
     when: {allergies_any: [견과류]}
     effect: exclude
     target: "ingredient:견과류"
+    keywords: [땅콩, 호두, 아몬드, 캐슈, 피스타치오, 잣, 마카다미아]
     reason: 프로필 알레르기(견과류)
   - category: meal
     when: {allergies_any: [우유]}
     effect: exclude
     target: "ingredient:우유"
+    keywords: [치즈, 요거트, 요구르트, 버터, 생크림, 라떼]
     reason: 프로필 알레르기(우유)
   - category: meal
     when: {allergies_any: [계란]}
     effect: exclude
     target: "ingredient:계란"
+    keywords: [달걀, 오믈렛, 스크램블, 마요네즈]
     reason: 프로필 알레르기(계란)
   - category: meal
     when: {allergies_any: [밀]}
     effect: exclude
     target: "ingredient:밀"
+    keywords: [빵, 국수, 파스타, 라면, 우동, 수제비, 밀가루]
     reason: 프로필 알레르기(밀)
   - category: meal
     when: {medical_conditions_any: [임신성 당뇨 경계, 임신성 당뇨]}
@@ -50,6 +57,7 @@ rules:
     when: {nausea_gte: 4}
     effect: exclude
     target: "food:기름진 음식"
+    keywords: [튀김, 부침개, 돈가스, 삼겹살]
     reason: 입덧 심함
   - category: health
     when: {waist_pain_gte: 4}

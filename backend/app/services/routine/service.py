@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 from datetime import date
 from pathlib import Path
@@ -41,17 +40,23 @@ def load_template() -> dict[str, Any]:
 
 def validate(
     routine: dict[str, Any],
-    constraints: dict[str, list[dict[str, str]]],
+    constraints: dict[str, list[dict[str, Any]]],
     allowed_source_ids: set[int],
 ) -> dict[str, Any]:
     """⑥ 검증: exclude 대상이 남은 항목 제거, 없는 source_id 제거. 원본은 바꾸지 않는다."""
-    # ponytail: target "ingredient:갑각류"의 값 부분을 항목 JSON에 부분일치. 코드형 target(activity:walk)은
-    # 한국어 본문과 안 맞아 못 걸러낸다 → 필요해지면 rules.yaml에 keywords 필드 추가.
-    banned = [c["target"].split(":", 1)[-1] for c in constraints.get("exclude", [])]
+    # 이름(title·nutritionTags)만 검사한다. reason 같은 설명문까지 보면 "갑각류를 피했어요"에 걸려 정상 항목이 지워진다.
+    # ponytail: 단어 부분일치라 keywords에 없는 메뉴명(예: 해물찜)은 못 거른다 → 누락이 보이면 rules.yaml keywords에 추가.
+    # 코드형 target(activity:walk)은 한국어 제목과 안 맞아 keywords가 없으면 걸러지지 않는다.
+    banned = [
+        word
+        for c in constraints.get("exclude", [])
+        for word in [c["target"].split(":", 1)[-1], *c.get("keywords", [])]
+        if word
+    ]
 
     def keep(entry: dict[str, Any]) -> bool:
-        text = json.dumps(entry, ensure_ascii=False)
-        return not any(word and word in text for word in banned)
+        name = " ".join([entry.get("title") or "", *((entry.get("payload") or {}).get("nutritionTags") or [])])
+        return not any(word in name for word in banned)
 
     def clean(entry: dict[str, Any]) -> dict[str, Any]:
         ids = [int(i) for i in entry.get("source_ids") or [] if int(i) in allowed_source_ids]
@@ -80,10 +85,9 @@ class RoutineService:
 
     async def _generate(self, facts: dict[str, Any], constraints: dict[str, Any]) -> tuple[dict[str, Any], set[int]]:
         chunks_by_category = await self.retriever.retrieve(facts)
-        chunks = [c for chunks in chunks_by_category.values() for c in chunks]
         llm_facts = {k: facts.get(k) for k in LLM_FACT_KEYS}
-        routine = await self.generator.generate_routine(llm_facts, constraints, chunks)
-        return routine, {int(c["id"]) for c in chunks}
+        routine = await self.generator.generate_routine(llm_facts, constraints, chunks_by_category)
+        return routine, {int(c["id"]) for chunks in chunks_by_category.values() for c in chunks}
 
     async def generate_today(self, user_id: str, today: date) -> dict[str, Any]:
         """POST /routine/today. 항상 4종 루틴을 저장·반환한다(빈 화면 0건, NFR-016)."""

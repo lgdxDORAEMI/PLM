@@ -1,6 +1,6 @@
 # PLM Frontend
 
-PLM Frontend는 임산부와 배우자의 생활관리 경험을 제공하기 위한 Flutter Web 앱입니다. DESIGN.md 기반 공통 UI와 ROUTE_MAP의 제품 화면·이동 관계, Entry부터 Profile·Home·생활 가이드·기록으로 이어지는 Demo flow가 구현되어 있습니다. 외부 Session/API가 없는 기능은 Mock 또는 브라우저 로컬 상태를 사용하며, 기존 Web 전용 모션 인식 데모 코드는 별도로 보존합니다.
+PLM Frontend는 임산부와 배우자의 생활관리 경험을 제공하기 위한 Flutter Web 앱입니다. 화면은 기존 공통 UI를 사용하고, 라우팅은 `docs/development/ROUTE_MAP_V2.md`의 아내·남편 경로를 따릅니다. ThinQ 세션/API 연결 전에는 시연 계정과 로컬 상태를 사용합니다.
 
 ## 지원 플랫폼
 
@@ -21,13 +21,19 @@ PLM Frontend는 임산부와 배우자의 생활관리 경험을 제공하기 �
 - DESIGN.md 기반 Theme와 공통 Design Token
 - 밝은 neutral surface 기반의 공통 Shell과 선택 상태 중심의 Pregnancy accent
 - Button, Input, Card, SelectionCard, TopAppBar, BottomNavigation
-- ROUTE_MAP의 20개 제품 화면 Skeleton과 중앙 Router
+- 아내 `/wife/*`, 남편 `/husband/*`, 공통 `/entry`·`/invite/accept` 경로를 구분하는 중앙 Router
+- ThinQ 인증 계정 상태와 `activeRole` 분리, 계정별 역할 복원 및 역할 경로 접근 제한
+- 역할 전환 시 대상 역할 홈으로 이동하고 이전 navigation stack 제거
 - 프로필·배우자 초대의 온보딩/수동 진입 Context 분리
 - 역할별 Header, Wife Mobile 4개 Bottom Navigation·Desktop Navigation Rail, Partner Calendar 중심 Navigation
 - Home·Meal·Health·Household·Sleep·Calendar·Report·Movement의 viewport별 composition
-- `/`·알 수 없는 경로를 `/entry`로 정규화하는 Bootstrap Resolver와 실제 responsive Entry
-- 필수 Profile 완료 여부에 따른 신규 사용자 Entry→Profile→Home 및 재방문 사용자 Home 직행
+- `/`와 잘못된 경로를 인증·역할·프로필·연동 상태에 따라 안전한 시작 경로로 보내는 Route guard
+- 아내 프로필 미완료 시 첫 단계, 연결된 남편은 캘린더, 미연결 남편은 초대 필요 안내로 진입
 - Web Demo Profile의 localStorage 복원
+- Web에서 계정별 `activeRole` 복원. 실제 역할 접근권과 ThinQ 로그인은 향후 호스트 연동이 필요
+- 아내 프로필 생년월일·DB 알레르기 항목, ThinQ 알림 초대, 챗봇 끼니 context 반영
+- 실시간 화면을 오늘 로그 전용으로 정리하고 확인 상태·과거 로그·개발용 기기 상태 제거
+- Daily 리포트·캘린더의 미확정 관절 수치를 홈캠 주의사항 문구로 교체
 - 브라우저 카메라 프레임 캡처 및 WebSocket 전송
 - 캘리브레이션 진행률, 실시간 자세·부담 상태와 landmark 오버레이 표시
 - 카메라와 WebSocket을 추상화한 Controller 단위 테스트
@@ -110,7 +116,7 @@ SDK 탐색이나 VS Code 실행 문제가 있으면 [개발 환경 및 실행 �
 
 1. Backend를 `localhost:8000`에서 실행합니다.
 2. Frontend를 Chrome에서 실행합니다.
-3. 현재 제품 Router에는 Phase 2 실시간 모션 Placeholder만 노출됩니다. 기존 데모를 다시 제품 UI에 연결할 때는 개인정보 동의와 노출 정책을 먼저 확정합니다.
+3. 제품의 실시간 화면은 오늘 감지 로그와 수집 ON/OFF 상태를 Mock service로 표시합니다. 실제 장치 연결 전에는 개인정보 동의와 보관 정책을 먼저 확정합니다.
 4. 브라우저 카메라 권한을 허용하고 캘리브레이션과 실시간 상태를 확인합니다.
 
 현재 데모는 Backend의 `WS /api/v1/movement/live/stream`에 JPEG 프레임을 약 5fps로 전송합니다. WebSocket은 로컬 `localhost` 또는 `127.0.0.1` origin만 허용합니다.

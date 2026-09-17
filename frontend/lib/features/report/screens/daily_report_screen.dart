@@ -112,7 +112,11 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
       if (recordDateKey(savedDate) == recordDateKey(DateTime.now())) {
         TodayCareStore.instance.finishDay();
       }
-      Navigator.pushReplacementNamed(context, RouteNames.wifeCalendar);
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        RouteNames.wifeHome,
+        (_) => false,
+      );
     }
   }
 
@@ -184,8 +188,8 @@ class _DailyReportContent extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: ReportMetricCard(
-              label: '관절 부담 초과',
-              value: '${record.burdenCount}회',
+              label: '가족이 완료한 일',
+              value: '${record.familyCompleted}건',
             ),
           ),
         ],
@@ -249,18 +253,11 @@ class _ReportInsights extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              record.burdenCount == 0
-                  ? '관절 부담 기록 없음'
-                  : '가장 무리한 관절 — ${record.burdenArea}',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
+            Text('홈캠 관련 주의사항', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: AppSpacing.sm),
-            Text(
-              record.burdenCount == 0
-                  ? '모션 기반 부담 분석은 Phase 2에서 제공됩니다.'
-                  : '부담 기준을 ${record.burdenCount}회 넘겼어요 · 내일은 가전 이관을 늘릴게요',
-              style: const TextStyle(color: AppColors.textSecondary),
+            const Text(
+              '장시간 서 있거나 허리를 반복해서 숙이는 행동이 확인됐어요. 내일은 중간에 휴식을 더 자주 가져보세요.',
+              style: TextStyle(color: AppColors.textSecondary),
             ),
           ],
         ),

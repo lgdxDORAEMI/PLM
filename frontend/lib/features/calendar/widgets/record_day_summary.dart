@@ -27,13 +27,11 @@ class RecordDaySummary extends StatelessWidget {
           value:
               '요청 ${record.familyRequested} · 확인 ${record.familyConfirmed} · 완료 ${record.familyCompleted}',
         ),
-        if (record.burdenCount > 0) ...[
-          const SizedBox(height: AppSpacing.md),
-          _SummaryRow(
-            label: '관절 부담 초과',
-            value: '${record.burdenArea} ${record.burdenCount}회',
-          ),
-        ],
+        const SizedBox(height: AppSpacing.md),
+        const _SummaryRow(
+          label: '홈캠 관련 주의사항',
+          value: '장시간 서 있거나 반복적으로 숙인 행동이 확인됐어요.',
+        ),
       ],
     );
   }

@@ -3,6 +3,7 @@ class ProfileDraft {
   const ProfileDraft({
     this.dueDate,
     this.lastPeriodDate,
+    this.birthDate,
     this.height,
     this.prePregnancyWeight,
     this.isFirstPregnancy,
@@ -16,6 +17,7 @@ class ProfileDraft {
     final today = DateTime.now();
     return ProfileDraft(
       dueDate: DateTime(today.year, today.month + 4, 20),
+      birthDate: DateTime(1993, 5, 14),
       height: '165',
       prePregnancyWeight: '55',
       isFirstPregnancy: true,
@@ -28,6 +30,7 @@ class ProfileDraft {
 
   final DateTime? dueDate;
   final DateTime? lastPeriodDate;
+  final DateTime? birthDate;
   final String? height;
   final String? prePregnancyWeight;
   final bool? isFirstPregnancy;
@@ -47,6 +50,7 @@ class ProfileDraft {
         parsedWeight != null &&
         parsedWeight >= 30 &&
         parsedWeight <= 250 &&
+        birthDate != null &&
         isFirstPregnancy != null &&
         isMultiplePregnancy != null;
   }
@@ -68,6 +72,7 @@ class ProfileDraft {
   ProfileDraft copyWith({
     DateTime? dueDate,
     DateTime? lastPeriodDate,
+    DateTime? birthDate,
     bool clearDueDate = false,
     bool clearLastPeriodDate = false,
     String? height,
@@ -83,6 +88,7 @@ class ProfileDraft {
       lastPeriodDate: clearLastPeriodDate
           ? null
           : lastPeriodDate ?? this.lastPeriodDate,
+      birthDate: birthDate ?? this.birthDate,
       height: height ?? this.height,
       prePregnancyWeight: prePregnancyWeight ?? this.prePregnancyWeight,
       isFirstPregnancy: isFirstPregnancy ?? this.isFirstPregnancy,

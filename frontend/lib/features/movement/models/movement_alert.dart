@@ -8,7 +8,6 @@ class MovementAlert {
     required this.suggestion,
     required this.time,
     required this.level,
-    this.isToday = true,
   });
   final String id;
   final String title;
@@ -16,7 +15,6 @@ class MovementAlert {
   final String suggestion;
   final String time;
   final MovementAlertLevel level;
-  final bool isToday;
 }
 
 abstract final class MovementMockData {
@@ -44,15 +42,6 @@ abstract final class MovementMockData {
       suggestion: '잠시 앉아 휴식을 취하는 것이 좋아요.',
       time: '오전 08:03',
       level: MovementAlertLevel.caution,
-    ),
-    MovementAlert(
-      id: 'bending',
-      title: '반복 숙이기 동작이 누적되었어요',
-      description: '허리를 숙이는 동작이 여러 번 감지되었어요.',
-      suggestion: '누적 시 허리 통증으로 이어질 수 있어요.',
-      time: '어제 오후 07:41',
-      level: MovementAlertLevel.high,
-      isToday: false,
     ),
   ];
 

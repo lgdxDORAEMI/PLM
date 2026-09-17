@@ -16,7 +16,7 @@ import 'controllers/realtime_alert_controller.dart';
 import 'models/movement_alert.dart';
 import 'widgets/movement_alert_card.dart';
 
-/// B-MOTION-001의 Phase 2 UI를 실제 장치 연동 없이 local Mock으로 표시한다.
+/// B-MOTION-001의 오늘 감지 상태와 로그를 서비스 교체 가능한 Mock으로 표시한다.
 class ProductMovementScreen extends StatefulWidget {
   const ProductMovementScreen({super.key, required this.role});
 
@@ -63,11 +63,10 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
           children: [
             const InfoBanner(
-              title: 'Phase 2 기능 미리보기',
-              message:
-                  '아래 내용은 Local Mock 상태입니다. 카메라 권한을 요청하거나 MediaPipe·실시간 센서를 실행하지 않습니다.',
+              title: '홈카메라 활동 감지',
+              message: '영상은 저장하지 않고 움직임 패턴만 인식해요. 의료 진단 기능이 아닙니다.',
               tone: InfoBannerTone.info,
-              icon: Icons.science_outlined,
+              icon: Icons.videocam_outlined,
             ),
             const SizedBox(height: AppSpacing.xxl),
             ResponsiveSplitView(
@@ -78,16 +77,13 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _CurrentStateCard(
-                    active: _controller.mockPreviewActive,
-                    onChanged: _controller.setMockPreview,
+                    active: _controller.detectionEnabled,
+                    onChanged: _isWife ? _controller.setDetectionEnabled : null,
                     onMoveToHousehold: _isWife ? _moveToHousehold : null,
                   ),
                   const SizedBox(height: AppSpacing.xxl),
                   _LatestEventSection(
                     event: _controller.latestEvent,
-                    reviewed: _controller.latestEvent == null
-                        ? false
-                        : _controller.isReviewed(_controller.latestEvent!.id),
                     onOpen: _controller.latestEvent == null
                         ? null
                         : () => _showAlert(_controller.latestEvent!),
@@ -99,11 +95,8 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
                 children: [
                   _TodayEventLog(
                     events: _controller.todayAlerts,
-                    isReviewed: _controller.isReviewed,
                     onOpen: _showAlert,
                   ),
-                  const SizedBox(height: AppSpacing.xxl),
-                  _DeviceStateCard(state: _controller.deviceState),
                 ],
               ),
             ),
@@ -167,12 +160,9 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
             const Text('Mock 생활 패턴 안내이며 의료적 판단이나 통증 진단을 제공하지 않아요.'),
             const SizedBox(height: AppSpacing.xl),
             AppButton(
-              key: ValueKey('movement-alert-confirm-${alert.id}'),
-              label: _controller.isReviewed(alert.id) ? '확인했어요' : '확인',
-              onPressed: () {
-                _controller.acknowledge(alert.id);
-                Navigator.pop(context);
-              },
+              key: ValueKey('movement-alert-close-${alert.id}'),
+              label: '닫기',
+              onPressed: () => Navigator.pop(context),
             ),
           ],
         ),
@@ -184,12 +174,12 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
 class _CurrentStateCard extends StatelessWidget {
   const _CurrentStateCard({
     required this.active,
-    required this.onChanged,
+    this.onChanged,
     required this.onMoveToHousehold,
   });
 
   final bool active;
-  final ValueChanged<bool> onChanged;
+  final ValueChanged<bool>? onChanged;
   final VoidCallback? onMoveToHousehold;
 
   @override
@@ -215,10 +205,14 @@ class _CurrentStateCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        active ? '휴식이 필요한 상태' : 'Mock 미리보기 일시 정지',
+                        active ? '활동 감지 ON' : '활동 감지 OFF',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
-                      const Text('실제 신체 상태가 아닌 화면 확인용 샘플이에요.'),
+                      Text(
+                        active
+                            ? '오늘의 움직임 패턴을 감지하고 있어요.'
+                            : '새로운 감지만 중단되며 기존 기록은 유지돼요.',
+                      ),
                     ],
                   ),
                 ),
@@ -264,14 +258,9 @@ class _CurrentStateCard extends StatelessWidget {
 }
 
 class _LatestEventSection extends StatelessWidget {
-  const _LatestEventSection({
-    required this.event,
-    required this.reviewed,
-    required this.onOpen,
-  });
+  const _LatestEventSection({required this.event, required this.onOpen});
 
   final MovementAlert? event;
-  final bool reviewed;
   final VoidCallback? onOpen;
 
   @override
@@ -287,7 +276,6 @@ class _LatestEventSection extends StatelessWidget {
           key: const ValueKey('movement-latest-event'),
           interactionKey: const ValueKey('movement-latest-event-open'),
           alert: event!,
-          reviewed: reviewed,
           onTap: onOpen!,
         ),
     ],
@@ -295,14 +283,9 @@ class _LatestEventSection extends StatelessWidget {
 }
 
 class _TodayEventLog extends StatelessWidget {
-  const _TodayEventLog({
-    required this.events,
-    required this.isReviewed,
-    required this.onOpen,
-  });
+  const _TodayEventLog({required this.events, required this.onOpen});
 
   final List<MovementAlert> events;
-  final bool Function(String id) isReviewed;
   final ValueChanged<MovementAlert> onOpen;
 
   @override
@@ -312,18 +295,14 @@ class _TodayEventLog extends StatelessWidget {
       Text('오늘 이벤트 기록', style: Theme.of(context).textTheme.titleLarge),
       const SizedBox(height: AppSpacing.xs),
       Text(
-        '자정에 초기화되는 Local Mock 목록',
+        '오늘 감지된 부담 가능 행동만 표시해요.',
         style: Theme.of(
           context,
         ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
       ),
       const SizedBox(height: AppSpacing.md),
       for (final event in events) ...[
-        MovementAlertCard(
-          alert: event,
-          reviewed: isReviewed(event.id),
-          onTap: () => onOpen(event),
-        ),
+        MovementAlertCard(alert: event, onTap: () => onOpen(event)),
         const SizedBox(height: AppSpacing.sm),
       ],
     ],

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from typing import Any
 
@@ -9,7 +10,7 @@ from openai import AsyncOpenAI
 
 from app.core.config import Settings
 from app.services.llm_service import LLMService
-from app.services.routine.prompt import ROUTINE_SCHEMA, SYSTEM_PROMPT, build_user_prompt
+from app.services.routine.prompt import CATEGORIES, ROUTINE_SCHEMA, SYSTEM_PROMPT, build_user_prompt, category_schema
 
 # NFR-001 p95 10초. 임베딩(③)에도 시간이 들어 LLM 호출은 8초로 잡는다.
 LLM_TIMEOUT_SEC = 8.0
@@ -26,7 +27,7 @@ class OpenAIRoutineGenerator(LLMService):
         )
         self.model = settings.llm_model
 
-    async def generate(self, prompt: str) -> str:
+    async def generate(self, prompt: str, schema: dict[str, Any] = ROUTINE_SCHEMA, name: str = "daily_routine") -> str:
         """LLMService 계약: 프롬프트 → 스키마를 만족하는 JSON 문자열."""
         response = await self.client.chat.completions.create(
             model=self.model,
@@ -36,16 +37,36 @@ class OpenAIRoutineGenerator(LLMService):
             ],
             response_format={
                 "type": "json_schema",
-                "json_schema": {"name": "daily_routine", "schema": ROUTINE_SCHEMA, "strict": True},
+                "json_schema": {"name": name, "schema": schema, "strict": True},
             },
         )
         return response.choices[0].message.content or ""
 
+    async def generate_category(
+        self,
+        category: str,
+        facts: dict[str, Any],
+        constraints: dict[str, list[dict[str, Any]]] | None = None,
+        chunks: list[dict[str, Any]] | None = None,
+    ) -> Any:
+        """카테고리 1개 생성. 그 카테고리의 규칙·참고 문단만 넣어 입력과 출력 길이를 줄인다."""
+        own = {k: [c for c in v if c.get("category") == category] for k, v in (constraints or {}).items()}
+        prompt = build_user_prompt(facts, own, chunks, category)
+        return json.loads(await self.generate(prompt, category_schema(category), f"routine_{category}"))[category]
+
     async def generate_routine(
         self,
         facts: dict[str, Any],
-        constraints: dict[str, list[dict[str, str]]] | None = None,
-        chunks: list[dict[str, Any]] | None = None,
+        constraints: dict[str, list[dict[str, Any]]] | None = None,
+        chunks_by_category: dict[str, list[dict[str, Any]]] | None = None,
     ) -> dict[str, Any]:
-        """①②③ → 4종 루틴 dict. 실패(타임아웃·API 오류·JSON 오류)는 예외로 올려 ⑥이 폴백한다."""
-        return json.loads(await self.generate(build_user_prompt(facts, constraints, chunks)))
+        """①②③ → 4종 루틴 dict. 카테고리 4개를 동시에 호출한다(한 번에 쓰면 출력이 길어 8초를 넘김).
+
+        하나라도 실패(타임아웃·API 오류·JSON 오류)하면 예외를 올려 ⑥이 4종 전체를 폴백한다.
+        """
+        # ponytail: 한 카테고리 실패도 전체 폴백. 부분 폴백은 daily_routines.source 의미(폴백률 측정)가 바뀌어 보류.
+        chunks_by_category = chunks_by_category or {}
+        results = await asyncio.gather(
+            *(self.generate_category(c, facts, constraints, chunks_by_category.get(c)) for c in CATEGORIES)
+        )
+        return dict(zip(CATEGORIES, results))

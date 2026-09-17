@@ -2,7 +2,7 @@
 -- 부모-자식 관계라 한 migration에 묶는다(BACKEND_COLLABORATION.md 2.2 예외).
 --
 -- 재확인 메모(migration 작성 전 실제 코드와 대조): TARGET_DB_SCHEMA.md 초안은
--- status 값을 DB_ERD_스키마.md의 (requested, confirmed, done)으로 뒀었으나,
+-- status 값을 구 ERD 초안(삭제됨)의 (requested, confirmed, done)으로 뒀었으나,
 -- 실제로 이미 구현된 backend/app/domains/family/schemas.py의
 -- HouseholdRequestStatus/HouseholdItemStatus가 (unconfirmed, confirmed, completed)로
 -- 정의돼 있어 이 값을 기준으로 정정했다 — 코드가 문서보다 최신 계약이다.

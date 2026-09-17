@@ -13,6 +13,7 @@ from app.core.config import Settings
 from app.core.security import CurrentUser, get_current_user
 from app.main import app
 from app.services.routine import repository
+from app.services.routine.rules import apply_rules
 from app.services.routine.service import RoutineService, load_template, validate
 
 TODAY = date(2026, 9, 16)
@@ -76,11 +77,13 @@ class FakeOpenAI:
         self.embeddings = SimpleNamespace(create=self._embed)
         self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._chat))
         self.routine_json, self.fail = routine_json, fail
+        self.chat_calls: list[dict] = []
 
     async def _embed(self, model, input):
         return SimpleNamespace(data=[SimpleNamespace(embedding=[0.0] * 1536) for _ in input])
 
     async def _chat(self, **kwargs):
+        self.chat_calls.append(kwargs)
         if self.fail:
             raise RuntimeError("insufficient_quota")
         return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=self.routine_json))])
@@ -114,11 +117,19 @@ def make_service(db: FakeSupabase, openai: FakeOpenAI) -> RoutineService:
 
 class ValidateTest(unittest.TestCase):
     def test_removes_excluded_and_unknown_sources(self) -> None:
-        constraints = {"exclude": [{"category": "meal", "target": "ingredient:갑각류", "reason": "알레르기"}], "limit": [], "require": []}
+        constraints = apply_rules({"allergies": ["갑각류"]})
         out = validate(AI_ROUTINE, constraints, {11})
-        self.assertEqual([m["title"] for m in out["meal"]], ["두부 조림"])   # "갑각류" 포함 항목 제거
+        self.assertEqual([m["title"] for m in out["meal"]], ["두부 조림"])   # 제목 "새우"(갑각류 keywords) 항목 제거
         self.assertEqual(out["meal"][0]["source_ids"], [11])                    # 999 제거
         self.assertEqual(out["sleep"]["source_ids"], [11])
+
+    def test_keeps_item_when_banned_word_only_in_reason(self) -> None:
+        # 2026-09-17 실호출: "기름진 음식과 갑각류를 피하면서" 설명 때문에 식단 3개가 모두 지워졌다.
+        constraints = apply_rules({"allergies": ["갑각류"], "nausea": 4})
+        routine = {"meal": [{"item_key": "meal:lunch", "title": "닭가슴살 샐러드",
+                             "payload": {"reason": "기름진 음식과 갑각류를 피하면서 단백질 보충", "nutritionTags": ["단백질"]},
+                             "source_ids": []}]}
+        self.assertEqual([m["title"] for m in validate(routine, constraints, set())["meal"]], ["닭가슴살 샐러드"])
 
     def test_template_matches_schema_shape(self) -> None:
         tpl = load_template()
@@ -143,6 +154,17 @@ class RoutineServiceTest(unittest.TestCase):
         # NFR-014: 요청 기록에는 정해진 키만
         self.assertNotIn("date", saved["request_payload"])
         self.assertEqual(saved["request_payload"]["week"], 24)
+
+    def test_generates_four_categories_in_separate_calls(self) -> None:
+        import json
+        openai = FakeOpenAI(json.dumps(AI_ROUTINE, ensure_ascii=False))
+        asyncio.run(make_service(self.db, openai).generate_today(USER, TODAY))
+        names = sorted(c["response_format"]["json_schema"]["name"] for c in openai.chat_calls)
+        self.assertEqual(names, ["routine_health", "routine_household", "routine_meal", "routine_sleep"])
+        prompts = {c["response_format"]["json_schema"]["name"]: c["messages"][1]["content"] for c in openai.chat_calls}
+        # 허리 4 → health의 activity:walk 규칙은 health 호출에만 들어간다
+        self.assertIn("activity:walk", prompts["routine_health"])
+        self.assertNotIn("activity:walk", prompts["routine_meal"])
 
     def test_llm_failure_uses_template_when_no_previous(self) -> None:
         service = make_service(self.db, FakeOpenAI("", fail=True))

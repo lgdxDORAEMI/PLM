@@ -11,12 +11,12 @@
 |---|---|---|---|---|
 | `pregnancy_profiles` | 아내 PDF W-PROFILE-001~007 필드 서술과 일치(단, PDF는 테이블 정의가 아니라 화면 필드 서술) | **존재** — `20260915000000` + `20260916000000_relax_due_date_constraint` + `20260917000001`(3~6단계 컬럼) | `profile_service.py`(1~2단계 실사용), `account` Stub(6단계 개념 참조, 미영속) | **KEEP** |
 | `daily_conditions` | 아내 PDF W-COND-001/W-TASK-001 필드 서술과 일치 | **존재** — `20260917000001` | `care` Stub이 메모리로만 사용, 테이블 미연결 | **KEEP** |
-| `daily_routines` | PDF에 직접 서술 없음(화면 표시는 `routine_items` 경유), FUC/ERD 기준 설계 | **존재** — `20260917000001` | `routine.py` 실사용(**Protected**) | **KEEP** |
+| `daily_routines` | PDF에 직접 서술 없음(화면 표시는 `routine_items` 경유), FUC 기준 설계 | **존재** — `20260917000001` | `routine.py` 실사용(**Protected**) | **KEEP** |
 | `routine_items` | 아내 PDF W-MEAL/HOUSE/HEALTH/SLEEP 필드 서술과 일치("계산 데이터"로 표기) | **존재**(`source_ids` 컬럼 포함, `20260917000001`) | `routine.py` 실사용(**Protected**) | **KEEP** |
 | `pregnancy_knowledge` | PDF에 없음(RAG 내부 코퍼스, 화면 비노출) | **존재**(pgvector, `20260917000000`) | `routine/retriever.py` 실사용(**Protected**) | **KEEP** |
-| `posture_calibration_profiles` | 아내/남편 PDF B-MOTION-001 서술과 대략 일치 | **존재**(`20260916000000_create_movement_tables`) — ERD 문서 명칭(`posture_calibrations`)과 실제 테이블명이 다름 | `movement.py` 실사용(**Protected**) | **KEEP** |
+| `posture_calibration_profiles` | 아내/남편 PDF B-MOTION-001 서술과 대략 일치 | **존재**(`20260916000000_create_movement_tables`) — 구 ERD 초안(삭제됨)의 명칭(`posture_calibrations`)과 실제 테이블명이 달랐음 | `movement.py` 실사용(**Protected**) | **KEEP** |
 | `posture_events` | 아내/남편 PDF B-MOTION-001 서술과 일치 | **존재**(`20260916000000_create_movement_tables`) | `movement.py` 실사용(**Protected**) | **KEEP** |
-| `profiles` | 아내 PDF에 role 개념 없음(ERD 자체 제안) | 없음 | `account` Stub이 `AccountState.role` 개념만 참조, 미영속 | **NEW** |
+| `profiles` | 아내 PDF에 role 개념 없음(구 ERD 초안(삭제됨) 자체 제안) | 없음 | `account` Stub이 `AccountState.role` 개념만 참조, 미영속 | **NEW** |
 | `partner_invitations` | 아내 PDF W-INVITE-001 서술과 일치 | 없음 | `account` Stub 메모리만 | **NEW** |
 | `partner_links` | 아내/남편 PDF 연동 상태 서술과 일치 | 없음 | `account` Stub 메모리만 | **NEW** |
 | `household_requests` | 아내/남편 PDF W-HOUSE-001/H-REQUEST-001 서술과 일치 | 없음 | `family` Stub 메모리만 | **NEW** |
@@ -26,10 +26,10 @@
 | `motion_consents` | 아내/남편 PDF B-MOTION-001 ON/OFF 서술과 일치 | 없음 | `family` Stub 메모리만, WS 게이트(Protected) 미연동 | **NEW** |
 | `chat_messages` | 아내 PDF W-CHAT-001 서술과 일치 | 없음 | Router/Service 자체가 없음 | **NEW** |
 | `recommendation_feedback` | 아내 PDF W-MEAL-002/W-CHAT-001/W-SLEEP-001 이력 서술과 일치 | 없음 | Router/Service 자체가 없음 | **NEW** |
-| `motion_sessions` | 아내/남편 PDF에 세션 개념 서술 없음(`DB_ERD_스키마.md`가 §5 "확인 필요한 가정"으로 자체 제안) | 없음 | `movement.py`가 프로세스 메모리(`SessionManager`, `_current_session_id`)로 대체 중(**Protected**) | **NOT_REQUIRED**(이번 MVP) |
+| `motion_sessions` | 아내/남편 PDF에 세션 개념 서술 없음(구 ERD 초안(삭제됨)이 "확인 필요한 가정"으로 자체 제안) | 없음 | `movement.py`가 프로세스 메모리(`SessionManager`, `_current_session_id`)로 대체 중(**Protected**) | **NOT_REQUIRED**(이번 MVP) |
 | 캘린더, 임신 주수, 컨디션 4단계 지수, (실시간형) 오전 리포트 | 각 화면 PDF에 표시값으로만 서술, 저장 언급 없음 | 해당 없음 | 해당 없음(조회 시 계산) | **DERIVED** |
 
-**5개 지정 테이블 확인 결과**: `pregnancy_profiles`, `daily_conditions`, `daily_routines`, `routine_items`, `pregnancy_knowledge` 모두 실제 migration에 존재하고 실제 코드가 사용 중이다. 신규 스키마 문서(`DB_ERD_스키마.md`)가 제안한 구조와 비교해도 컬럼 구성이 대부분 일치하며(`routine_items.source_ids`만 ERD 표에 누락된 문서 오차), 5개 전부 **KEEP**이다 — 재생성·재설계 대상이 아니다.
+**5개 지정 테이블 확인 결과**: `pregnancy_profiles`, `daily_conditions`, `daily_routines`, `routine_items`, `pregnancy_knowledge` 모두 실제 migration에 존재하고 실제 코드가 사용 중이다. 구 ERD 초안(삭제됨)이 제안한 구조와 비교해도 컬럼 구성이 대부분 일치하며(`routine_items.source_ids`만 초안 표에 누락된 문서 오차), 5개 전부 **KEEP**이다 — 재생성·재설계 대상이 아니다.
 
 ---
 
@@ -38,7 +38,7 @@
 - **KEEP**: 기존 migration 그대로 유지, 변경 없음.
 - **EXTEND**: 기존 테이블에 컬럼 추가가 필요(신규 migration, 기존 migration 파일은 수정하지 않음). 이번 MVP에는 해당 사례 없음 — 5개 핵심 테이블 모두 이미 필요한 컬럼을 갖추고 있었다.
 - **NEW**: 신규 테이블. migration 계획만 문서화, 아직 생성하지 않음.
-- **NOT_REQUIRED**: 화면/문서가 언급하거나 ERD가 제안했지만 이번 MVP 범위에서는 테이블이 필요 없음(대체 수단으로 충분하거나 범위 밖).
+- **NOT_REQUIRED**: 화면/문서가 언급하거나 구 ERD 초안(삭제됨)이 제안했지만 이번 MVP 범위에서는 테이블이 필요 없음(대체 수단으로 충분하거나 범위 밖).
 - **DERIVED**: 테이블 없이 조회 시 계산.
 
 ---
@@ -167,7 +167,7 @@
 - **Actor access**: Wife 전용
 - **관련 Screen**: B-MOTION-001(캘리브레이션 단계)
 - **관련 FUC**: FUC-B-MOTION-001
-- **현재 존재 여부**: 존재(`20260916000000_create_movement_tables`). **Protected.** ERD 문서 명칭(`posture_calibrations`)과 실제 테이블명이 다르다는 점만 문서 오차로 남아 있음(`DB_SCHEMA_RECONCILIATION.md` 기록됨).
+- **현재 존재 여부**: 존재(`20260916000000_create_movement_tables`). **Protected.** 구 ERD 초안(삭제됨)의 명칭(`posture_calibrations`)과 실제 테이블명이 달랐던 점은 초안 삭제로 해소됨(`DB_SCHEMA_RECONCILIATION.md` 기록됨).
 
 ### `posture_events` (Protected)
 
@@ -325,7 +325,7 @@
 - **관련 Screen**: H-NOTI-001
 - **관련 FUC**: FUC-H-NOTI-001/002
 - **현재 존재 여부**: 없음
-- **Notes**: `type` 값은 `DB_ERD_스키마.md` 초안(4종: morning_report/household_request/daily_report/meal_share)이 아니라 **실제 `app/domains/family/schemas.py`의 `NotificationType`(3종: morning_report/household_request/condition_changed)을 기준으로 좁혔다** — 코드가 더 최신 계약이므로 문서보다 코드를 우선했다.
+- **Notes**: `type` 값은 구 ERD 초안(삭제됨)(4종: morning_report/household_request/daily_report/meal_share)이 아니라 **실제 `app/domains/family/schemas.py`의 `NotificationType`(3종: morning_report/household_request/condition_changed)을 기준으로 좁혔다** — 코드가 더 최신 계약이므로 문서보다 코드를 우선했다.
 
 | Column | Type | Nullable |
 |---|---|---|
@@ -391,7 +391,7 @@
 - **관련 Screen**: W-MEAL-002, W-CHAT-001, W-SLEEP-001(팝업)
 - **관련 FUC**: FUC-W-MEAL-004, FUC-W-SLEEP-001-1
 - **현재 존재 여부**: 없음
-- **Notes**: `04_3_개발순서.md` 기준 우선순위 낮음(#27, 우선순위 4) — MVP 후순위지만 `routine_items`와 독립적이라 스키마 자체는 이번 Target Schema에 포함해 둔다.
+- **Notes**: `docs/requirements/04_1_기능요구사항명세서.md` 기준 FUC-W-MEAL-004 우선순위 중 — MVP 후순위지만 `routine_items`와 독립적이라 스키마 자체는 이번 Target Schema에 포함해 둔다.
 
 | Column | Type | Nullable |
 |---|---|---|
@@ -410,7 +410,7 @@
 
 - **목적(제안됐던 것)**: 진행 중인 모션 세션 상태(현재 자세, 누적 시간)를 DB로 영속화
 - **현재 대체 수단**: `app/services/movement/session_manager.py`의 `SessionManager` + 전역 변수 `_current_session_id`(프로세스 메모리)
-- **NOT_REQUIRED 판단 근거**: (1) `DB_ERD_스키마.md` §5-1이 자체적으로 "확인 필요한 가정"으로 표시해 팀 확정값이 아님. (2) 도입하려면 Protected `movement.py`의 `/live` 조회 로직을 메모리 기반에서 DB 기반으로 바꿔야 하는데, 이는 "Routine/AI 구조를 깨기 위해 테이블을 재설계하지 않는다"는 이번 STEP의 원칙과 같은 이유로 Protected 모듈에 대한 별도 합의 없이는 손대지 않는다. (3) 현재 데모 범위(단일 세션 가정)에서는 메모리로 충분히 동작 중(`DOMAIN_OWNERSHIP.md`도 "별도 합의 후 진행"으로 이미 보류).
+- **NOT_REQUIRED 판단 근거**: (1) 구 ERD 초안(삭제됨)이 자체적으로 "확인 필요한 가정"으로 표시해 팀 확정값이 아님. (2) 도입하려면 Protected `movement.py`의 `/live` 조회 로직을 메모리 기반에서 DB 기반으로 바꿔야 하는데, 이는 "Routine/AI 구조를 깨기 위해 테이블을 재설계하지 않는다"는 이번 STEP의 원칙과 같은 이유로 Protected 모듈에 대한 별도 합의 없이는 손대지 않는다. (3) 현재 데모 범위(단일 세션 가정)에서는 메모리로 충분히 동작 중(`DOMAIN_OWNERSHIP.md`도 "별도 합의 후 진행"으로 이미 보류).
 - **재검토 시점**: 다중 사용자 실서비스 전환, 서버 재시작 내성이 요구사항으로 확정될 때. 그때도 `posture_events.session_id`에 FK를 새로 거는 등 기존 Protected 테이블 변경이 필요하므로 별도 논의를 먼저 거친다.
 
 ---
@@ -433,6 +433,6 @@
 1. `chat_messages` 보관·파기 기준(NFR-027, TBD)
 2. `motion_consents` ↔ `WS /movement/live/stream` 연동 방식(Protected 모듈 합의 필요)
 3. `daily_reports.kind='morning'` 자동 생성 트리거 구현 여부(FUC-W-COND-002, 현재 "미반영")
-4. `notifications.type` 값 확정(현재 코드 3종 vs ERD 초안 4종 — 코드 기준으로 좁혔으나 팀 재확인 필요)
+4. `notifications.type` 값 확정(현재 코드 3종 vs 구 ERD 초안(삭제됨) 4종 — 코드 기준으로 좁혔으나 팀 재확인 필요)
 
-이 4가지가 정리되면 신규 테이블 10개를 기능 우선순위(`04_3_개발순서.md`)에 맞춰 여러 개의 신규 migration으로 나눠 작성한다.
+이 4가지가 정리되면 신규 테이블 10개를 기능 우선순위(`docs/requirements/04_1_기능요구사항명세서.md` 상/중/하)에 맞춰 여러 개의 신규 migration으로 나눠 작성한다.

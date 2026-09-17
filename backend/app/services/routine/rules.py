@@ -14,7 +14,7 @@ RULES_PATH = Path(__file__).resolve().parent / "rules.yaml"
 EFFECTS = ("exclude", "limit", "require")
 
 Facts = dict[str, Any]
-Constraints = dict[str, list[dict[str, str]]]
+Constraints = dict[str, list[dict[str, Any]]]
 
 
 def load_rules(path: Path = RULES_PATH) -> list[dict]:
@@ -43,7 +43,7 @@ def _matches(condition: dict[str, Any], facts: Facts) -> bool:
 def apply_rules(facts: Facts, rules: list[dict] | None = None) -> Constraints:
     """facts(프로필+컨디션 평면 dict) → {"exclude": [...], "limit": [...], "require": [...]}.
 
-    각 항목은 {"category", "target", "reason"}. 같은 target이 여러 규칙에 걸리면 첫 규칙만 남긴다.
+    각 항목은 {"category", "target", "reason"(, "keywords")}. 같은 target이 여러 규칙에 걸리면 첫 규칙만 남긴다.
     """
     result: Constraints = {effect: [] for effect in EFFECTS}
     seen: set[tuple[str, str]] = set()
@@ -54,7 +54,8 @@ def apply_rules(facts: Facts, rules: list[dict] | None = None) -> Constraints:
         if key in seen:
             continue
         seen.add(key)
-        result[rule["effect"]].append(
-            {"category": rule["category"], "target": rule["target"], "reason": rule["reason"]}
-        )
+        constraint = {"category": rule["category"], "target": rule["target"], "reason": rule["reason"]}
+        if rule.get("keywords"):
+            constraint["keywords"] = rule["keywords"]
+        result[rule["effect"]].append(constraint)
     return result
