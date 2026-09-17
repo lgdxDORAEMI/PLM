@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import datetime
 from uuid import uuid4
 
@@ -35,6 +36,27 @@ class StubAccountRepository(AccountRepository):
         )
         self._invitations[invitation_id] = record
         return record
+
+    def find_invitation_by_token(self, token: str) -> InvitationRecord | None:
+        return next(
+            (record for record in self._invitations.values() if record.token == token),
+            None,
+        )
+
+    def mark_invitation_used(self, invitation_id: str, *, used_at: datetime) -> None:
+        record = self._invitations[invitation_id]
+        self._invitations[invitation_id] = replace(record, used_at=used_at)
+
+    def link_partner(self, wife_user_id: str, husband_user_id: str) -> None:
+        """FUC-H-INVITE-001(Stub): 남편 표시 이름은 아직 모르므로 지어내지 않고
+        None으로 둔다 — 실제 adapter는 profiles.display_name을 채워야 한다."""
+        wife_state = self.get_state(wife_user_id)
+        self._states[wife_user_id] = replace(wife_state, partner_link=PartnerLinkStatus.LINKED)
+        self._states[husband_user_id] = AccountState(
+            role=UserRole.HUSBAND,
+            profile=self.get_state(husband_user_id).profile,
+            partner_link=PartnerLinkStatus.LINKED,
+        )
 
     def set_state(self, user_id: str, state: AccountState) -> None:
         """테스트와 로컬 Demo fixture에서만 사용자 상태를 주입한다."""

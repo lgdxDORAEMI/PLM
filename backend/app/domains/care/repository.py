@@ -8,6 +8,9 @@ from .schemas import (
     PlannedActivitiesInput,
     RoutineExecutionInput,
     RoutineExecutionResponse,
+    RoutineItemResponse,
+    RoutineItemUpdateInput,
+    SleepEnvironmentInput,
 )
 
 
@@ -27,6 +30,14 @@ class CareRepository(Protocol):
     def set_execution(
         self, user_id: str, routine_item_id: str, payload: RoutineExecutionInput
     ) -> RoutineExecutionResponse: ...
+
+    def update_routine_item(
+        self, user_id: str, routine_item_id: str, payload: RoutineItemUpdateInput
+    ) -> RoutineItemResponse: ...
+
+    def update_sleep_environment(
+        self, user_id: str, routine_item_id: str, payload: SleepEnvironmentInput
+    ) -> RoutineItemResponse: ...
 
     def get_report(self, user_id: str, target_date: date) -> DailyReportResponse | None: ...
 

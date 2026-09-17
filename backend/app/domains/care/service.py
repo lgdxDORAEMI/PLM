@@ -14,6 +14,9 @@ from .schemas import (
     PlannedActivitiesInput,
     RoutineExecutionInput,
     RoutineExecutionResponse,
+    RoutineItemResponse,
+    RoutineItemUpdateInput,
+    SleepEnvironmentInput,
 )
 
 
@@ -31,6 +34,14 @@ class CareServicePort(Protocol):
     def set_execution(
         self, user_id: str, item_id: str, payload: RoutineExecutionInput
     ) -> RoutineExecutionResponse: ...
+
+    def update_routine_item(
+        self, user_id: str, item_id: str, payload: RoutineItemUpdateInput
+    ) -> RoutineItemResponse: ...
+
+    def update_sleep_environment(
+        self, user_id: str, item_id: str, payload: SleepEnvironmentInput
+    ) -> RoutineItemResponse: ...
 
     def preview_report(self, user_id: str, target_date: date) -> DailyReportResponse: ...
 
@@ -65,6 +76,16 @@ class CareService(CareServicePort):
         self, user_id: str, item_id: str, payload: RoutineExecutionInput
     ) -> RoutineExecutionResponse:
         return self.repository.set_execution(user_id, item_id, payload)
+
+    def update_routine_item(
+        self, user_id: str, item_id: str, payload: RoutineItemUpdateInput
+    ) -> RoutineItemResponse:
+        return self.repository.update_routine_item(user_id, item_id, payload)
+
+    def update_sleep_environment(
+        self, user_id: str, item_id: str, payload: SleepEnvironmentInput
+    ) -> RoutineItemResponse:
+        return self.repository.update_sleep_environment(user_id, item_id, payload)
 
     def preview_report(self, user_id: str, target_date: date) -> DailyReportResponse:
         existing = self.repository.get_report(user_id, target_date)

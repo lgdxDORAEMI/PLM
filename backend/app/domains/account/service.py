@@ -28,6 +28,8 @@ class AccountServicePort(Protocol):
 
     def issue_invitation(self, user_id: str) -> InvitationResponse: ...
 
+    def accept_invitation(self, husband_user_id: str, token: str) -> PartnerLinkResponse: ...
+
     def get_profile(self, user_id: str) -> ProfileResponse: ...
 
     def save_profile(self, user_id: str, payload: ProfileInput) -> ProfileResponse: ...
@@ -71,6 +73,20 @@ class AccountService(AccountServicePort):
             invitation_url=f"/partner/join?token={record.token}",
             expires_at=record.expires_at,
         )
+
+    def accept_invitation(self, husband_user_id: str, token: str) -> PartnerLinkResponse:
+        """FUC-H-INVITE-001: 화면·인증 복귀 계약은 아직 미확정(TBD, DOMAIN_OWNERSHIP.md)
+        — 여기서는 토큰 검증·연동 계약만 먼저 구현한다."""
+        invitation = self.repository.find_invitation_by_token(token)
+        if invitation is None:
+            raise DomainNotFoundError("초대 링크를 찾을 수 없습니다.")
+        now = datetime.now(timezone.utc)
+        if invitation.used_at is not None or invitation.expires_at < now:
+            raise DomainConflictError("만료되었거나 이미 사용된 초대 링크입니다.")
+        self.repository.mark_invitation_used(invitation.invitation_id, used_at=now)
+        self.repository.link_partner(invitation.wife_user_id, husband_user_id)
+        # 남편 표시 이름은 Stub이 모르는 값이라 지어내지 않는다.
+        return PartnerLinkResponse(status=PartnerLinkStatus.LINKED, partner_display_name=None)
 
     def get_profile(self, user_id: str) -> ProfileResponse:
         profile = self.repository.get_profile(user_id)

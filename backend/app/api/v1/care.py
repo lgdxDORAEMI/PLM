@@ -13,6 +13,9 @@ from app.domains.care.schemas import (
     PlannedActivitiesInput,
     RoutineExecutionInput,
     RoutineExecutionResponse,
+    RoutineItemResponse,
+    RoutineItemUpdateInput,
+    SleepEnvironmentInput,
 )
 from app.domains.care.service import CareService, CareServicePort
 from app.domains.care.stub_repository import StubCareRepository
@@ -63,6 +66,24 @@ def set_execution(
 ) -> RoutineExecutionResponse:
     """FUC-W-RECORD-001: Routine 알고리즘을 수정하지 않는 실행 기록 경계."""
     return service.set_execution(user.id, item_id, payload)
+
+
+@router.put("/routine-items/{item_id}", response_model=RoutineItemResponse)
+def update_routine_item(
+    item_id: str, payload: RoutineItemUpdateInput, user: User, service: Service
+) -> RoutineItemResponse:
+    """FUC-W-MEAL-003/004: 챗봇이 제안한 대체 메뉴 수락/거절/재요청 반영 계약(Stub)."""
+    return service.update_routine_item(user.id, item_id, payload)
+
+
+@router.put(
+    "/routine-items/{item_id}/sleep-environment", response_model=RoutineItemResponse
+)
+def update_sleep_environment(
+    item_id: str, payload: SleepEnvironmentInput, user: User, service: Service
+) -> RoutineItemResponse:
+    """FUC-W-SLEEP-001-1: 수면 환경 AI 권장값 override 계약(Stub)."""
+    return service.update_sleep_environment(user.id, item_id, payload)
 
 
 @router.post("/daily-reports/{target_date}/preview", response_model=DailyReportResponse)

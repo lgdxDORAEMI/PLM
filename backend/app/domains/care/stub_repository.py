@@ -16,6 +16,9 @@ from .schemas import (
     RoutineCategory,
     RoutineExecutionInput,
     RoutineExecutionResponse,
+    RoutineItemResponse,
+    RoutineItemUpdateInput,
+    SleepEnvironmentInput,
 )
 
 
@@ -26,6 +29,7 @@ class StubCareRepository(CareRepository):
         self._conditions: dict[tuple[str, date], ConditionResponse] = {}
         self._reports: dict[tuple[str, date], DailyReportResponse] = {}
         self._executions: dict[tuple[str, str], RoutineExecutionResponse] = {}
+        self._routine_item_overrides: dict[tuple[str, str], RoutineItemResponse] = {}
 
     def get_condition(self, user_id: str, target_date: date) -> ConditionResponse | None:
         return self._conditions.get((user_id, target_date))
@@ -97,6 +101,36 @@ class StubCareRepository(CareRepository):
             }
         )
         self._executions[key] = response
+        return response
+
+    def update_routine_item(
+        self, user_id: str, routine_item_id: str, payload: RoutineItemUpdateInput
+    ) -> RoutineItemResponse:
+        # Stub은 실제 routine_items 원본을 모른다 — category/title을 지어내지 않고
+        # 요청으로 받은 payload만 그대로 반영한다(NFR-014 성격의 최소 응답 원칙).
+        response = RoutineItemResponse(
+            routine_item_id=routine_item_id,
+            category=RoutineCategory.MEAL,
+            title=None,
+            payload=payload.payload,
+        )
+        self._routine_item_overrides[(user_id, routine_item_id)] = response
+        return response
+
+    def update_sleep_environment(
+        self, user_id: str, routine_item_id: str, payload: SleepEnvironmentInput
+    ) -> RoutineItemResponse:
+        response = RoutineItemResponse(
+            routine_item_id=routine_item_id,
+            category=RoutineCategory.SLEEP,
+            title=None,
+            payload={
+                key: value
+                for key, value in payload.model_dump().items()
+                if value is not None
+            },
+        )
+        self._routine_item_overrides[(user_id, routine_item_id)] = response
         return response
 
     def get_report(self, user_id: str, target_date: date) -> DailyReportResponse | None:

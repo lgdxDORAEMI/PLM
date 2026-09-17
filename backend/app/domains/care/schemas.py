@@ -1,5 +1,6 @@
 from datetime import date, datetime
 from enum import StrEnum
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -121,6 +122,47 @@ class CalendarDay(BaseModel):
     condition_index: ConditionIndex
     has_report: bool
     report_finalized: bool
+
+
+class RoutineFeedbackKind(StrEnum):
+    MEAL_ACCEPT = "meal_accept"
+    MEAL_REJECT = "meal_reject"
+    MEAL_REPLACE = "meal_replace"
+
+
+class RoutineItemUpdateInput(BaseModel):
+    """FUC-W-MEAL-003/004: 챗봇이 제안한 대체 메뉴 수락·거절·재요청. `payload`는
+    W-MEAL-002의 meal payload 모양(reasonTitle/reason/evidence/nutritionTags 등)을
+    그대로 따르되, 이 계층에서는 내용을 검증하지 않고 그대로 전달한다."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    feedback_kind: RoutineFeedbackKind
+    payload: dict[str, Any] = Field(default_factory=dict)
+
+
+class SleepEnvironmentInput(BaseModel):
+    """FUC-W-SLEEP-001-1: AI 권장값 대비 override. 항목별로 선택 입력이다."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    lighting: str | None = None
+    temperature: float | None = Field(default=None, ge=0, le=40)
+    humidity: float | None = Field(default=None, ge=0, le=100)
+    sound: str | None = None
+    air_purifier: str | None = None
+
+
+class RoutineItemResponse(BaseModel):
+    """갱신된 routine_item의 최소 응답. Stub 단계에서는 실제 routine_items 원본을
+    모르므로 title은 항상 null이다 — 모르는 값을 지어내지 않는다."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    routine_item_id: str
+    category: RoutineCategory
+    title: str | None = None
+    payload: dict[str, Any]
 
 
 class CalendarMonthResponse(BaseModel):
