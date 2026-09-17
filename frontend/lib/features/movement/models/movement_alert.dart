@@ -44,25 +44,4 @@ abstract final class MovementMockData {
       level: MovementAlertLevel.caution,
     ),
   ];
-
-  static const device = MovementDeviceState(
-    source: 'Local Mock Data',
-    camera: '연결하지 않음',
-    analysis: 'MediaPipe 실행 안 함',
-    sensor: '실시간 센서 실행 안 함',
-  );
-}
-
-class MovementDeviceState {
-  const MovementDeviceState({
-    required this.source,
-    required this.camera,
-    required this.analysis,
-    required this.sensor,
-  });
-
-  final String source;
-  final String camera;
-  final String analysis;
-  final String sensor;
 }

@@ -244,7 +244,7 @@ class _SelectedDayDetail extends StatelessWidget {
       const SizedBox(height: AppSpacing.lg),
       AppButton(
         key: const ValueKey('calendar-open-report'),
-        label: role == AppUserRole.wife ? '이 날 리포트 자세히 보기' : '이 날 아침 리포트 보기',
+        label: role == AppUserRole.wife ? '이 날 리포트 자세히 보기' : '이 날 리포트 보기',
         variant: AppButtonVariant.secondary,
         onPressed: onOpenReport,
       ),

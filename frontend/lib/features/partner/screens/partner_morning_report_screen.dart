@@ -21,10 +21,12 @@ class PartnerMorningReportScreen extends StatefulWidget {
     super.key,
     required this.date,
     this.service,
+    this.daily = false,
   });
 
   final String date;
   final RecordService? service;
+  final bool daily;
 
   @override
   State<PartnerMorningReportScreen> createState() =>
@@ -66,7 +68,7 @@ class _PartnerMorningReportScreenState
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: TopAppBar(
-      title: '오전 리포트',
+      title: widget.daily ? 'Daily 리포트' : '오전 리포트',
       onBack: _handleBack,
       actions: [
         IconButton(
@@ -96,7 +98,10 @@ class _PartnerMorningReportScreenState
       message: '잠시 후 다시 시도해 주세요.',
       onRetry: _controller.load,
     ),
-    _ => _PartnerReportContent(record: _controller.record!),
+    _ => _PartnerReportContent(
+      record: _controller.record!,
+      daily: widget.daily,
+    ),
   };
 
   void _handleBack() {
@@ -109,9 +114,10 @@ class _PartnerMorningReportScreenState
 }
 
 class _PartnerReportContent extends StatelessWidget {
-  const _PartnerReportContent({required this.record});
+  const _PartnerReportContent({required this.record, required this.daily});
 
   final DailyRecord record;
+  final bool daily;
 
   @override
   Widget build(BuildContext context) => ListView(
@@ -122,7 +128,10 @@ class _PartnerReportContent extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const AppBadge(label: '오늘 아침', tone: AppBadgeTone.primary),
+            AppBadge(
+              label: daily ? '하루 기록' : '오늘 아침',
+              tone: AppBadgeTone.primary,
+            ),
             const SizedBox(height: AppSpacing.md),
             Text(
               '희선님은 임신 ${record.pregnancyWeek}주차예요',

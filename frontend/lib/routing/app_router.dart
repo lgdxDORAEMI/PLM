@@ -16,6 +16,7 @@ import '../features/partner/screens/partner_calendar_screen.dart';
 import '../features/partner/screens/partner_morning_report_screen.dart';
 import '../features/partner/screens/partner_notifications_screen.dart';
 import '../features/partner/screens/partner_request_screen.dart';
+import '../features/partner/screens/partner_request_result_screen.dart';
 import '../features/profile/data/profile_store.dart';
 import '../features/profile/screens/partner_invite_screen.dart';
 import '../features/profile/screens/profile_setup_screen.dart';
@@ -91,8 +92,9 @@ abstract final class AppRouter {
   /// 새로고침/직접 URL을 같은 guard로 정규화한다. URL만으로 역할을 바꾸지 않는다.
   static String resolveLocation(String requestedName) {
     final uri = Uri.tryParse(requestedName);
-    if (uri == null || uri.hasScheme || uri.hasAuthority)
+    if (uri == null || uri.hasScheme || uri.hasAuthority) {
       return RouteNames.entry;
+    }
     final path = uri.path == RouteNames.root ? RouteNames.entry : uri.path;
     final auth = AuthSessionStore.instance;
     final roles = ActiveRoleStore.instance;
@@ -308,8 +310,9 @@ abstract final class AppRouter {
       );
     }
     if (path == RouteNames.wifeSettings) return const WifeSettingsScreen();
-    if (path == RouteNames.husbandCalendar)
+    if (path == RouteNames.husbandCalendar) {
       return const PartnerCalendarScreen();
+    }
     if (path == RouteNames.husbandNotifications) {
       return const PartnerNotificationsScreen();
     }
@@ -317,11 +320,11 @@ abstract final class AppRouter {
       if (parts[2] == 'morning') {
         return PartnerMorningReportScreen(date: parts[3]);
       }
-      return const _RoutePlaceholder(title: 'Daily 리포트 조회 준비 중');
+      return PartnerMorningReportScreen(date: parts[3], daily: true);
     }
     if (parts.length >= 3 && parts[0] == 'husband' && parts[1] == 'requests') {
       if (parts.length == 4) {
-        return const _RoutePlaceholder(title: '가사 요청 완료 결과 준비 중');
+        return PartnerRequestResultScreen(requestId: parts[2]);
       }
       return PartnerRequestScreen(requestId: parts[2]);
     }

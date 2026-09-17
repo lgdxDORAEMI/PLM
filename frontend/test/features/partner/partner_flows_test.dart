@@ -1,23 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:plm_frontend/features/condition/data/planned_activity_store.dart';
+import 'package:plm_frontend/features/calendar/data/calendar_selection_store.dart';
+import 'package:plm_frontend/features/invitation/data/partner_connection_store.dart';
 import 'package:plm_frontend/features/partner/data/partner_notification_store.dart';
 import 'package:plm_frontend/features/partner/data/partner_request_store.dart';
 import 'package:plm_frontend/features/partner/models/partner_request.dart';
 import 'package:plm_frontend/features/partner/screens/partner_morning_report_screen.dart';
 import 'package:plm_frontend/routing/app_router.dart';
+import 'package:plm_frontend/routing/app_session.dart';
 import 'package:plm_frontend/routing/route_names.dart';
 
 void main() {
   setUp(() {
-    PlannedActivityStore.instance.clear();
     PartnerRequestStore.instance.clear();
     PartnerNotificationStore.instance.reset();
+    PartnerConnectionStore.instance.reset();
+    CalendarSelectionStore.instance.reset();
+    AuthSessionStore.instance.update(
+      accountId: 'husband-test',
+      roles: {ActiveRole.husband},
+      husbandLinked: true,
+    );
   });
 
-  testWidgets('리포트 알림은 해당 날짜 오전 리포트로 연결된다', (tester) async {
-    await _pumpRoute(tester, RouteNames.partnerNotifications);
+  testWidgets('알림은 오전 리포트·가사 요청·루틴 변경 3종을 표시한다', (tester) async {
+    await _pumpRoute(tester, RouteNames.husbandNotifications);
 
+    expect(find.text('오늘 아침 리포트가 도착했어요'), findsOneWidget);
+    expect(find.text('가사 요청이 도착했어요'), findsOneWidget);
+    expect(find.text('오늘 루틴이 변경됐어요'), findsOneWidget);
+
+    await tester.tap(
+      find.byKey(const ValueKey('notification-routine-2026-09-13')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('컨디션 캘린더'), findsOneWidget);
+    expect(CalendarSelectionStore.instance.selectedDate, DateTime(2026, 9, 13));
+  });
+
+  testWidgets('오전 리포트 알림은 해당 날짜의 읽기 전용 화면으로 연결된다', (tester) async {
+    await _pumpRoute(tester, RouteNames.husbandNotifications);
     await tester.tap(
       find.byKey(const ValueKey('notification-report-2026-09-13')),
     );
@@ -27,84 +49,55 @@ void main() {
     final context = tester.element(find.byType(PartnerMorningReportScreen));
     expect(
       ModalRoute.of(context)?.settings.name,
-      RouteNames.partnerMorningReport('2026-09-13'),
+      RouteNames.husbandMorningReport('2026-09-13'),
     );
     expect(find.byType(NavigationBar), findsNothing);
     expect(find.byTooltip('프로필'), findsNothing);
-    expect(find.text('도움 요청 확인하기'), findsNothing);
   });
 
-  testWidgets('Partner Join은 초대 상태만 표시하고 실제 연동을 실행하지 않는다', (tester) async {
-    await _pumpRoute(tester, '${RouteNames.partnerJoin}?token=test-token');
-    await tester.scrollUntilVisible(
-      find.text('초대 수락은 개발 중입니다'),
-      300,
-      scrollable: find.byType(Scrollable).first,
+  testWidgets('ThinQ 초대 검증 성공 후 남편 캘린더로 바로 진입한다', (tester) async {
+    AuthSessionStore.instance.update(
+      accountId: 'husband-invited',
+      roles: {ActiveRole.husband},
+      husbandLinked: false,
     );
-    expect(find.text('초대 수락은 개발 중입니다'), findsOneWidget);
-    expect(find.text('ThinQ 로그인하고 연결하기'), findsNothing);
+    await _pumpRoute(tester, RouteNames.invitation(token: 'test-token'));
+
+    expect(PartnerConnectionStore.instance.isLinked, isTrue);
+    expect(ActiveRoleStore.instance.value, ActiveRole.husband);
+    expect(find.text('컨디션 캘린더'), findsOneWidget);
   });
 
-  testWidgets('Partner Calendar는 알림과 명시적 상세 CTA만 제공한다', (tester) async {
-    await _pumpRoute(tester, RouteNames.partnerCalendar);
+  testWidgets('남편 Home은 캘린더이며 Bottom Navigation과 프로필이 없다', (tester) async {
+    await _pumpRoute(tester, RouteNames.husbandCalendar);
 
     expect(find.byTooltip('알림'), findsOneWidget);
     expect(find.byTooltip('프로필'), findsNothing);
     expect(find.byType(NavigationBar), findsNothing);
-    expect(find.text('이 날 아침 리포트 보기'), findsOneWidget);
-    expect(find.text('실시간 홈캠 신체 정보 보기'), findsOneWidget);
+    expect(find.text('이 날 리포트 보기'), findsOneWidget);
   });
 
-  testWidgets('예정 활동을 선택하고 Mock 루틴을 생성한다', (tester) async {
-    await _pumpRoute(tester, RouteNames.activity);
-
-    await tester.tap(find.byKey(const ValueKey('activity-장보기')));
-    final submit = find.byKey(const ValueKey('activity-submit-button'));
-    await tester.scrollUntilVisible(
-      submit,
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(submit);
-    await tester.pumpAndSettle();
-
-    expect(PlannedActivityStore.instance.activities, contains('장보기'));
-    expect(find.textContaining('오늘 임신 28주차예요'), findsOneWidget);
-  });
-
-  testWidgets('가사 알림에서 요청 상세로 이동하고 확인·완료 처리한다', (tester) async {
-    await _pumpRoute(tester, RouteNames.partnerNotifications);
-
+  testWidgets('가사 요청은 카드 전체를 확인·완료하고 결과 전체 화면으로 이동한다', (tester) async {
+    await _pumpRoute(tester, RouteNames.husbandNotifications);
     await tester.tap(
       find.byKey(const ValueKey('notification-request-demo-request')),
     );
     await tester.pumpAndSettle();
-    expect(find.text('희선님이 도움을 요청했어요'), findsOneWidget);
 
-    expect(PartnerNotificationStore.instance.unreadCount, 1);
-    expect(find.byType(NavigationBar), findsNothing);
-    expect(find.byTooltip('프로필'), findsNothing);
-
-    final confirm = find.byKey(
-      const ValueKey('partner-request-confirm-heavy-grocery'),
-    );
+    final confirm = find.byKey(const ValueKey('husband-request-confirm'));
     await tester.scrollUntilVisible(
       confirm,
       300,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.drag(find.byType(Scrollable).first, const Offset(0, -120));
-    await tester.pumpAndSettle();
     await tester.tap(confirm);
     await tester.pumpAndSettle();
     expect(
-      PartnerRequestStore.instance.request('demo-request').tasks.first.status,
+      PartnerRequestStore.instance.request('demo-request').status,
       PartnerRequestStatus.confirmed,
     );
 
-    final complete = find.byKey(
-      const ValueKey('partner-request-complete-heavy-grocery'),
-    );
+    final complete = find.byKey(const ValueKey('husband-request-complete'));
     await tester.ensureVisible(complete);
     await tester.tap(complete);
     await tester.pumpAndSettle();
@@ -116,13 +109,14 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('완료 처리됐어요'), findsOneWidget);
-    expect(find.textContaining('요청 3건 · 확인 1건 · 완료 1건'), findsOneWidget);
+    expect(find.text('가사 요청을 완료했어요'), findsOneWidget);
+    expect(find.text('반영 위치'), findsOneWidget);
+    expect(find.text('3건'), findsNWidgets(3));
+    expect(find.byType(AlertDialog), findsNothing);
 
     await tester.tap(find.text('캘린더로 돌아가기'));
     await tester.pumpAndSettle();
-    expect(find.text('2026년 9월'), findsOneWidget);
-    expect(find.text('요청 3 · 확인 1 · 완료 1'), findsOneWidget);
+    expect(find.text('컨디션 캘린더'), findsOneWidget);
   });
 }
 

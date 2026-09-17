@@ -1,4 +1,4 @@
-enum PartnerNotificationType { morningReport, householdRequest }
+enum PartnerNotificationType { morningReport, householdRequest, routineChanged }
 
 class PartnerNotificationItem {
   const PartnerNotificationItem({
@@ -14,7 +14,9 @@ class PartnerNotificationItem {
          (type == PartnerNotificationType.morningReport &&
                  reportDate != null) ||
              (type == PartnerNotificationType.householdRequest &&
-                 requestId != null),
+                 requestId != null) ||
+             (type == PartnerNotificationType.routineChanged &&
+                 reportDate != null),
        );
 
   final String id;

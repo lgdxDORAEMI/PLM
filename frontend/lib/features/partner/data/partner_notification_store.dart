@@ -55,6 +55,14 @@ class PartnerNotificationStore extends ChangeNotifier {
       requestId: 'demo-request',
     ),
     PartnerNotificationItem(
+      id: 'routine-2026-09-13',
+      type: PartnerNotificationType.routineChanged,
+      title: '오늘 루틴이 변경됐어요',
+      message: '컨디션 변경에 따라 식사·가사 가이드가 조정됐어요.',
+      timeLabel: '오늘 오전 9:05',
+      reportDate: '2026-09-13',
+    ),
+    PartnerNotificationItem(
       id: 'report-2026-09-12',
       type: PartnerNotificationType.morningReport,
       title: '어제 아침 리포트',

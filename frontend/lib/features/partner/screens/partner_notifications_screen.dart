@@ -8,6 +8,8 @@ import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_names.dart';
+import '../../calendar/data/calendar_selection_store.dart';
+import '../../report/models/daily_record.dart';
 import '../controllers/partner_notification_controller.dart';
 import '../models/partner_notification.dart';
 
@@ -63,7 +65,7 @@ class _PartnerNotificationsScreenState
               title: _controller.unreadCount == 0
                   ? '새 알림이 없어요'
                   : '읽지 않은 알림 ${_controller.unreadCount}개',
-              message: '리포트와 가사 요청을 시간순으로 보여드려요.',
+              message: '오전 리포트·가사 요청·루틴 변경을 시간순으로 보여드려요.',
               tone: InfoBannerTone.info,
             ),
             const SizedBox(height: AppSpacing.xl),
@@ -86,8 +88,19 @@ class _PartnerNotificationsScreenState
       PartnerNotificationType.householdRequest => RouteNames.partnerRequest(
         item.requestId!,
       ),
+      PartnerNotificationType.routineChanged => _routineChangedRoute(
+        item.reportDate!,
+      ),
     };
     Navigator.pushNamed(context, route);
+  }
+
+  String _routineChangedRoute(String date) {
+    final parsed = DateTime.tryParse(date);
+    if (parsed != null && recordDateKey(parsed) == date) {
+      CalendarSelectionStore.instance.remember(parsed);
+    }
+    return RouteNames.husbandCalendar;
   }
 
   void _handleBack() {
@@ -123,11 +136,12 @@ class _NotificationCard extends StatelessWidget {
               foregroundColor: item.read
                   ? AppColors.textSecondary
                   : AppColors.primary700,
-              child: Icon(
-                item.type == PartnerNotificationType.morningReport
-                    ? Icons.fact_check_outlined
-                    : Icons.home_outlined,
-              ),
+              child: Icon(switch (item.type) {
+                PartnerNotificationType.morningReport =>
+                  Icons.fact_check_outlined,
+                PartnerNotificationType.householdRequest => Icons.home_outlined,
+                PartnerNotificationType.routineChanged => Icons.update_outlined,
+              }),
             ),
             const SizedBox(width: AppSpacing.md),
             Expanded(

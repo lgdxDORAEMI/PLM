@@ -16,19 +16,7 @@ class PartnerRequestController extends ChangeNotifier {
 
   PartnerRequestData get request => _request;
 
-  void confirmTask(String taskId) => _updateTask(
-    taskId,
-    from: PartnerRequestStatus.requested,
-    to: PartnerRequestStatus.confirmed,
-  );
-
-  void completeTask(String taskId) => _updateTask(
-    taskId,
-    from: PartnerRequestStatus.confirmed,
-    to: PartnerRequestStatus.completed,
-  );
-
-  /// 기존 Household 상태 계약에서는 전체 요청의 단계 전환으로 집계한다.
+  /// 남편 DB 문서에 따라 요청 카드 전체를 하나의 상태로 전환한다.
   void confirm() {
     _save(
       _request.copyWith(
@@ -50,24 +38,6 @@ class PartnerRequestController extends ChangeNotifier {
           for (final task in _request.tasks)
             if (task.status == PartnerRequestStatus.confirmed)
               task.copyWith(status: PartnerRequestStatus.completed)
-            else
-              task,
-        ],
-      ),
-    );
-  }
-
-  void _updateTask(
-    String taskId, {
-    required PartnerRequestStatus from,
-    required PartnerRequestStatus to,
-  }) {
-    _save(
-      _request.copyWith(
-        tasks: [
-          for (final task in _request.tasks)
-            if (task.id == taskId && task.status == from)
-              task.copyWith(status: to)
             else
               task,
         ],

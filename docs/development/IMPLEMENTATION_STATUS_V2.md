@@ -1,7 +1,7 @@
-# 아내 화면 구현 상태 V2
+# 화면 구현 상태 V2
 
 작성일: 2026-09-17  
-범위: `docs/requirements/renew/`, 아내 화면설계서, 아내 화면 DB 스키마, `ROUTE_MAP_V2.md`, `SCREEN_CHANGE_IMPACT_V2.md`를 기준으로 한 Flutter 아내 화면 구현 상태.
+범위: 역할별 신규 화면설계서와 DB 문서, `docs/requirements/renew/`, `ROUTE_MAP_V2.md`, `USER_ROLE_FLOW_V2.md`, `SCREEN_CHANGE_IMPACT_V2.md`를 기준으로 한 Flutter 구현 상태.
 
 ## 1. 판정 기준
 
@@ -80,4 +80,40 @@
 - `flutter analyze --no-pub`: Flutter batch가 Dart 분석기를 시작하지 못하고 `cmd.exe`에서 대기해 중단. Flutter tool snapshot 직접 실행은 SDK cache lock 쓰기 권한이 필요했으며 권한 요청이 거부됨. `FLUTTER_ALREADY_LOCKED=true` 실행도 분석 하위 프로세스 생성이 운영 환경에서 거부되어 완료하지 못함.
 - 관련 테스트: 같은 Flutter tool/하위 프로세스 권한 제약으로 실행하지 못함.
 - `git diff --check`: 성공.
+- 전체 `flutter test`와 `flutter build`: 실행하지 않음.
+
+## 8. 남편 화면 구현 상태
+
+| 화면 ID | 화면 | 상태 | 구현 내용과 남은 작업 |
+|---|---|---|---|
+| `B-ENTRY-001` | 남편 최초 진입 | 일부 완료 | 연결 전 `/entry`에서 `초대가 필요합니다` 안내. 별도 가입 절차 없음. 실제 ThinQ session adapter는 미연결 |
+| ThinQ 초대 handoff | 초대 수락·연결 | 일부 완료 | 토큰 유효성 검증 후 남편 연결 상태·`activeRole=husband`를 반영하고 남편 캘린더로 stack 초기화. 만료·사용됨·중복 연결 오류 안내. 실제 ThinQ API는 Mock |
+| `B-CAL-001` | 남편 Home/캘린더 | 완료 | 캘린더를 남편 기본 Home으로 사용. 알림, 날짜별 리포트, 오늘 날짜에서만 실시간 진입. 프로필과 Bottom Navigation 없음 |
+| `H-REPORT-001` | 오전 컨디션 리포트 | 완료 | 임신 주차, 컨디션 요약, 예정 활동, 식사·가사·건강·수면 4가이드 요약의 조회 전용 화면 |
+| Daily 리포트 조회 | 캘린더 날짜 리포트 | 일부 완료 | `/husband/report/daily/:date`에서 남편용 읽기 전용 리포트 shell을 재사용. 별도 화면 ID와 최종 상세 디자인은 지정 자료에 없어 확인 필요 |
+| `H-NOTI-001` | 통합 알림 | 완료 | 오전 리포트·가사 요청·루틴 변경 3종, 읽음 상태, 모두 읽음, 대상 화면 이동. ThinQ 초대 알림은 목록에서 제외 |
+| `H-REQUEST-001` | 가사 요청 확인·수행 | 완료 | 요청 이유·항목·보조 정보 표시. 항목별 버튼을 제거하고 요청 카드 전체를 `미확인 → 확인 → 완료` 단일 상태로 전환 |
+| 완료 확인 Modal | 요청 완료 확인 | 완료 | 요청 카드 전체 완료 여부를 확인하며 취소 시 현재 요청 화면 유지 |
+| `H-REQUEST-002` | 요청 완료 결과 | 완료 | Dialog를 제거하고 독립 전체 화면으로 구현. 아내 화면·캘린더·Daily 리포트 반영 위치와 가족 분담 건수 표시 |
+| `B-MOTION-001` | 남편 실시간 | 일부 완료 | 남편 캘린더에서 오늘 선택 시에만 진입, Bottom Navigation 없음, 수집 토글은 읽기 전용. 실제 홈카메라 API는 미연결 |
+| 사용자 전환 | 역할 전환 기반 | 일부 완료 | 명시적 전환 명령 시 `activeRole=husband`, 남편 캘린더로 이동하고 이전 stack 제거. 전환 UI와 한 계정의 양 역할 권한은 요구사항에서 미정 |
+
+### 남편 데이터 연결
+
+- 오전 리포트와 캘린더는 기존 `RecordService`/`MockRecordService`를 조회 전용으로 사용한다.
+- 알림은 `PartnerNotificationStore`에 오전 리포트·가사 요청·루틴 변경 3종과 읽음 상태를 보존한다.
+- 가사 요청은 `PartnerRequestStore`의 요청 카드 단위 상태를 사용한다. 요청 항목 수와 카드 상태를 아내 가사 화면·캘린더 집계와 공유한다.
+- 초대 연결은 기존 `InvitationService` abstraction과 `PartnerConnectionStore`, 분리된 `AuthSessionStore`/`ActiveRoleStore`를 사용한다.
+
+### 남편 화면 제외 항목
+
+- 남편 Bottom Navigation, 프로필, 온보딩, 챗봇, 가이드 편집 화면은 만들지 않았다.
+- 남편 PLM 알림함에 ThinQ 초대 알림을 추가하지 않았다.
+- 아내 프로필 원본·컨디션 입력 원본·AI 대화 원문을 남편 화면에 노출하지 않았다.
+
+### 남편 화면 검증 결과
+
+- `dart format`: 남편 화면과 관련 테스트 파일에 실행, 성공.
+- `flutter analyze --no-pub`: 최초 8개 항목을 발견해 미사용 코드·import와 lint를 수정한 뒤 재실행, **No issues found**.
+- `flutter test test/features/partner/partner_flows_test.dart --no-pub`: Flutter test runner가 시작되지 않은 채 `cmd.exe`에서 장시간 대기해 사용자 중단. 남은 테스트용 `cmd` 프로세스는 종료함. 테스트 성공 여부는 확인되지 않음.
 - 전체 `flutter test`와 `flutter build`: 실행하지 않음.
