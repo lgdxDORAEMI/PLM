@@ -40,7 +40,7 @@ class MovementGuideCard extends StatelessWidget {
         child: Container(
           height: 132,
           decoration: BoxDecoration(
-            color: AppColors.categoryBodyBackground,
+            color: AppColors.surfaceSubtle,
             borderRadius: BorderRadius.circular(AppRadius.card),
           ),
           child: const Center(

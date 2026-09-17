@@ -19,6 +19,7 @@ PLM Frontend는 임산부와 배우자의 생활관리 경험을 제공하기 �
 - `.env` 로딩과 `BACKEND_URL` 설정
 - Supabase URL과 anon key가 모두 존재할 때만 Flutter client 초기화
 - DESIGN.md 기반 Theme와 공통 Design Token
+- 밝은 neutral surface 기반의 공통 Shell과 선택 상태 중심의 Pregnancy accent
 - Button, Input, Card, SelectionCard, TopAppBar, BottomNavigation
 - ROUTE_MAP의 20개 제품 화면 Skeleton과 중앙 Router
 - 프로필·배우자 초대의 온보딩/수동 진입 Context 분리

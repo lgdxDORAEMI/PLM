@@ -319,7 +319,8 @@ class _ReportHero extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(AppSpacing.pageMobile),
     decoration: BoxDecoration(
-      color: AppColors.primary50,
+      color: AppColors.surface,
+      border: Border.all(color: AppColors.borderSubtle),
       borderRadius: BorderRadius.circular(AppRadius.hero),
     ),
     child: Column(
@@ -336,7 +337,7 @@ class _ReportHero extends StatelessWidget {
           '${record.date.month}월 ${record.date.day}일 · 임신 ${record.pregnancyWeek}주차',
         ),
         const SizedBox(height: AppSpacing.md),
-        const Divider(color: AppColors.primary100),
+        const Divider(color: AppColors.borderSubtle),
         Text(
           '실행 기록은 내일 추천 정확도에 반영됩니다',
           style: Theme.of(

@@ -33,7 +33,7 @@ class TopAppBar extends StatelessWidget implements PreferredSizeWidget {
         ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
       ),
       automaticallyImplyLeading: false,
-      backgroundColor: AppColors.canvas,
+      backgroundColor: AppColors.surface,
       surfaceTintColor: Colors.transparent,
       leading: showBack
           ? IconButton(

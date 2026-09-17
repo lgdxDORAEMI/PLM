@@ -27,7 +27,7 @@ class SleepEnvironmentCard extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
-            color: AppColors.categorySleepBackground,
+            color: AppColors.surface,
             border: Border.all(color: AppColors.borderSubtle),
             borderRadius: BorderRadius.circular(AppRadius.card),
           ),

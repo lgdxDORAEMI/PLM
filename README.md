@@ -144,6 +144,14 @@ cd backend
 
 ## 최근 변경
 
+### 2026-09-17 — Pregnancy Life Mode 공통 UI 정돈
+
+- 공통 Scaffold와 AppBar를 밝은 `surface` 기반으로 통일해 Life Mode 진입 전후의 배경 차이를 줄였습니다.
+- Teal은 내비게이션 선택, Primary CTA, 임신 주차와 진행 상태 등 의미가 있는 강조에 집중했습니다.
+- Meal·Health·Sleep·Report의 큰 카테고리색 면을 중립 surface와 border 구조로 바꾸고 카테고리색은 아이콘·배지·텍스트에 남겼습니다.
+- 공통 Button, AppBar, Mobile Bottom Navigation, Desktop Navigation Rail의 형태와 상태 표현을 같은 디자인 시스템 규칙으로 맞췄습니다.
+- 화면 구조, Route, Interaction, Mock Data와 Service 로직은 유지했습니다.
+
 ### 2026-09-16 — Backend 프로필 출산예정일 규칙 완화 (W-PROFILE-001)
 
 기획 개정에서 W-PROFILE-001이 "출산예정일 입력(1/6)"으로 세분화되고, 출산예정일을 모르는 경우 마지막 생리 시작일(LMP)로 산출한다는 내용이 확정되면서 Backend 검증 규칙을 맞췄습니다.

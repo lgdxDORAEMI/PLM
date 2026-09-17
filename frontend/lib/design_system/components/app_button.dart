@@ -81,7 +81,8 @@ class AppButton extends StatelessWidget {
       AppButtonVariant.secondary => OutlinedButton(
         onPressed: effectiveOnPressed,
         style: style.copyWith(
-          foregroundColor: const WidgetStatePropertyAll(AppColors.primary700),
+          foregroundColor: const WidgetStatePropertyAll(AppColors.textPrimary),
+          backgroundColor: const WidgetStatePropertyAll(AppColors.surface),
           side: const WidgetStatePropertyAll(
             BorderSide(color: AppColors.borderStrong),
           ),

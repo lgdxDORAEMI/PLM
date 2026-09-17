@@ -99,8 +99,8 @@ ThinQ와의 일관성은 브랜드 색상 복제가 아닌 다음 특성으로 �
 
 | Token | Value | Usage |
 |---|---:|---|
-| `canvas` | `#F6F4EF` | 앱 전체 배경 |
-| `surface` | `#FFFEFB` | 기본 카드, dialog, sheet |
+| `canvas` | `#F6F4EF` | Pregnancy 콘텐츠 구획, 루틴·생활관리의 제한적 보조 면 |
+| `surface` | `#FFFEFB` | 앱 공통 shell, 기본 카드, dialog, sheet |
 | `surface-subtle` | `#F0EEE8` | 구획 배경, 비활성 영역 |
 | `surface-raised` | `#FFFFFF` | 부유 패널, 선택 상세 |
 | `text-primary` | `#202624` | 제목, 핵심 수치 |
@@ -145,6 +145,8 @@ Error 색상은 오류 의미에만 사용한다. Primary CTA나 선택 상태�
 ### 5.4 Color rules
 
 - 텍스트와 배경은 WCAG 2.2 AA 명암비를 충족한다.
+- 앱 공통 shell은 `surface` 또는 `surface-raised`를 사용하고 `canvas`로 화면 전체를 채우지 않는다.
+- `primary-soft`와 category soft surface는 선택·추천·아이콘·작은 상태 영역에 한정한다.
 - 상태를 색상 하나로 전달하지 않는다.
 - 같은 의미에는 같은 semantic token을 사용한다.
 - gradient는 기본 표현 수단으로 사용하지 않는다.

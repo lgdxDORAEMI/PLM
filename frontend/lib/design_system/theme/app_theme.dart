@@ -34,7 +34,8 @@ abstract final class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: AppColors.canvas,
+      // 제품 공통 shell은 중립 surface를 사용하고 canvas는 콘텐츠 구획에서만 쓴다.
+      scaffoldBackgroundColor: AppColors.surface,
       fontFamilyFallback: const [
         'Pretendard Variable',
         'Noto Sans KR',
@@ -55,7 +56,7 @@ abstract final class AppTheme {
             displayColor: AppColors.textPrimary,
           ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.canvas,
+        backgroundColor: AppColors.surface,
         foregroundColor: AppColors.textPrimary,
         centerTitle: true,
         elevation: 0,
@@ -94,9 +95,24 @@ abstract final class AppTheme {
           borderSide: const BorderSide(color: AppColors.danger, width: 2),
         ),
       ),
-      navigationBarTheme: const NavigationBarThemeData(
+      navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.surface,
         indicatorColor: AppColors.primary100,
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            color: states.contains(WidgetState.selected)
+                ? AppColors.primary700
+                : AppColors.textSecondary,
+          ),
+        ),
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => TextStyle(
+            color: states.contains(WidgetState.selected)
+                ? AppColors.primary700
+                : AppColors.textSecondary,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         elevation: 0,
         height: 72,
       ),

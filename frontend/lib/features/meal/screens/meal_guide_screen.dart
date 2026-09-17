@@ -272,7 +272,8 @@ class _MealGreeting extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppColors.categoryMealBackground,
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.borderSubtle),
         borderRadius: BorderRadius.circular(AppRadius.hero),
       ),
       child: Padding(

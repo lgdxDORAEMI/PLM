@@ -22,7 +22,8 @@ class PregnancyWeekTipCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppColors.primary50,
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.borderSubtle),
         borderRadius: BorderRadius.circular(AppRadius.hero),
       ),
       child: Padding(
@@ -56,7 +57,7 @@ class PregnancyWeekTipCard extends StatelessWidget {
                   ],
                 ),
               ),
-            const Divider(color: AppColors.primary100),
+            const Divider(color: AppColors.borderSubtle),
             const SizedBox(height: AppSpacing.sm),
             Text(
               caution,

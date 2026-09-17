@@ -171,7 +171,8 @@ class _BodySummary extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(AppSpacing.pageMobile),
     decoration: BoxDecoration(
-      color: AppColors.categoryBodyBackground,
+      color: AppColors.surface,
+      border: Border.all(color: AppColors.borderSubtle),
       borderRadius: BorderRadius.circular(AppRadius.hero),
     ),
     child: Column(
@@ -219,7 +220,7 @@ class _BodyLoadCard extends StatelessWidget {
       child: Ink(
         padding: const EdgeInsets.all(AppSpacing.lg),
         decoration: BoxDecoration(
-          color: AppColors.categoryBodyBackground,
+          color: AppColors.surface,
           border: Border.all(
             color: selected ? AppColors.categoryBody : AppColors.borderSubtle,
             width: selected ? 2 : 1,

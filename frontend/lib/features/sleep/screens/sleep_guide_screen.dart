@@ -202,7 +202,8 @@ class _SleepSummary extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.pageMobile),
       decoration: BoxDecoration(
-        color: AppColors.categorySleepBackground,
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.borderSubtle),
         borderRadius: BorderRadius.circular(AppRadius.hero),
       ),
       child: Column(

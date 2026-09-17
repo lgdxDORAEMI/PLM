@@ -27,7 +27,7 @@ class MealRecommendationCard extends StatelessWidget {
           if (!compact) ...[
             DecoratedBox(
               decoration: BoxDecoration(
-                color: AppColors.categoryMealBackground,
+                color: AppColors.surfaceSubtle,
                 borderRadius: BorderRadius.circular(AppRadius.card),
               ),
               child: const SizedBox(

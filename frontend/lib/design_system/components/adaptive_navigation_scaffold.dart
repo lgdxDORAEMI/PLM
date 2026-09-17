@@ -42,26 +42,32 @@ class AdaptiveNavigationScaffold extends StatelessWidget {
       builder: (context, constraints) {
         final desktop = constraints.maxWidth >= AppBreakpoints.desktop;
         return Scaffold(
+          backgroundColor: AppColors.surface,
           appBar: appBar,
           body: desktop
               ? Row(
                   children: [
-                    NavigationRail(
-                      selectedIndex: currentIndex,
-                      extended: constraints.maxWidth >= AppBreakpoints.wide,
-                      labelType: constraints.maxWidth >= AppBreakpoints.wide
-                          ? NavigationRailLabelType.none
-                          : NavigationRailLabelType.all,
-                      onDestinationSelected: _select,
-                      destinations: [
-                        for (final item in items)
-                          NavigationRailDestination(
-                            icon: Icon(item.icon),
-                            selectedIcon: Icon(item.selectedIcon ?? item.icon),
-                            label: Text(item.label),
-                            disabled: !item.enabled,
-                          ),
-                      ],
+                    DecoratedBox(
+                      decoration: const BoxDecoration(color: AppColors.surface),
+                      child: NavigationRail(
+                        selectedIndex: currentIndex,
+                        extended: constraints.maxWidth >= AppBreakpoints.wide,
+                        labelType: constraints.maxWidth >= AppBreakpoints.wide
+                            ? NavigationRailLabelType.none
+                            : NavigationRailLabelType.all,
+                        onDestinationSelected: _select,
+                        destinations: [
+                          for (final item in items)
+                            NavigationRailDestination(
+                              icon: Icon(item.icon),
+                              selectedIcon: Icon(
+                                item.selectedIcon ?? item.icon,
+                              ),
+                              label: Text(item.label),
+                              disabled: !item.enabled,
+                            ),
+                        ],
+                      ),
                     ),
                     const VerticalDivider(
                       width: 1,
@@ -73,18 +79,25 @@ class AdaptiveNavigationScaffold extends StatelessWidget {
               : body,
           bottomNavigationBar: desktop
               ? null
-              : NavigationBar(
-                  selectedIndex: currentIndex,
-                  onDestinationSelected: _select,
-                  destinations: [
-                    for (final item in items)
-                      NavigationDestination(
-                        enabled: item.enabled,
-                        icon: Icon(item.icon),
-                        selectedIcon: Icon(item.selectedIcon ?? item.icon),
-                        label: item.label,
-                      ),
-                  ],
+              : DecoratedBox(
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      top: BorderSide(color: AppColors.borderSubtle),
+                    ),
+                  ),
+                  child: NavigationBar(
+                    selectedIndex: currentIndex,
+                    onDestinationSelected: _select,
+                    destinations: [
+                      for (final item in items)
+                        NavigationDestination(
+                          enabled: item.enabled,
+                          icon: Icon(item.icon),
+                          selectedIcon: Icon(item.selectedIcon ?? item.icon),
+                          label: item.label,
+                        ),
+                    ],
+                  ),
                 ),
           floatingActionButton: floatingActionButton,
         );

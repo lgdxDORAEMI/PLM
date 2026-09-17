@@ -229,7 +229,7 @@ class _SectionTitle extends StatelessWidget {
       CircleAvatar(
         radius: 16,
         backgroundColor: AppColors.categoryHome,
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.textInverse,
         child: Text('$number'),
       ),
       const SizedBox(width: AppSpacing.md),
