@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../../design_system/components/app_button.dart';
+import '../../design_system/components/content_frame.dart';
+import '../../design_system/components/info_banner.dart';
+import '../../design_system/components/top_app_bar.dart';
+import '../../design_system/tokens/app_colors.dart';
+import '../../design_system/tokens/app_radius.dart';
+import '../../design_system/tokens/app_spacing.dart';
 import 'camera_frame_source.dart';
 import 'live_transport.dart';
 import 'models/posture_frame_state.dart';
@@ -77,17 +84,23 @@ class _MovementScreenState extends State<MovementScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('모션 인식 (데모)')),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Expanded(child: _buildPreview()),
-            const SizedBox(height: 16),
-            _buildStatusBanner(),
-            const SizedBox(height: 16),
-            _buildControlButton(),
-          ],
+      appBar: const TopAppBar(title: '모션 인식 (데모)', showBack: false),
+      body: SafeArea(
+        top: false,
+        child: ContentFrame(
+          maxWidth: 720,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+            child: Column(
+              children: [
+                Expanded(child: _buildPreview()),
+                const SizedBox(height: AppSpacing.xl),
+                _buildStatusBanner(),
+                const SizedBox(height: AppSpacing.xl),
+                _buildControlButton(),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -100,7 +113,7 @@ class _MovementScreenState extends State<MovementScreen>
       child: Container(
         decoration: BoxDecoration(
           color: Colors.black87,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.card),
         ),
         clipBehavior: Clip.antiAlias,
         child: viewType == null
@@ -136,40 +149,49 @@ class _MovementScreenState extends State<MovementScreen>
   Widget _buildStatusBanner() {
     switch (_controller.state) {
       case MovementConnectionState.idle:
-        return const Text('시작하려면 아래 버튼을 누르세요.');
+        return const InfoBanner(
+          title: '시작하려면 아래 버튼을 누르세요.',
+          tone: InfoBannerTone.neutral,
+        );
       case MovementConnectionState.connecting:
-        return const Text('카메라·서버에 연결하는 중...');
+        return const InfoBanner(
+          title: '카메라·서버에 연결하는 중...',
+          tone: InfoBannerTone.info,
+        );
       case MovementConnectionState.calibrating:
         final collected = _controller.calibrationCollected;
         final target = _controller.calibrationTarget;
         final label = target > 0
             ? '캘리브레이션 중... $collected/$target'
             : '캘리브레이션 준비 중...';
-        return Column(
-          children: [
-            Text(label),
-            const SizedBox(height: 8),
-            const Text('편하게 서서 전신이 보이도록 해주세요.', style: TextStyle(fontSize: 12)),
-          ],
+        return InfoBanner(
+          title: label,
+          message: '편하게 서서 전신이 보이도록 해주세요.',
+          tone: InfoBannerTone.info,
         );
       case MovementConnectionState.live:
         final frame = _controller.latestFrame;
-        if (frame == null) return const Text('판정 대기 중...');
+        if (frame == null) {
+          return const InfoBanner(title: '판정 대기 중...', tone: InfoBannerTone.info);
+        }
         return _PostureBadge(frame: frame);
       case MovementConnectionState.disconnected:
-        return const Text('연결이 끊겼습니다.');
+        return const InfoBanner(
+          title: '연결이 끊겼습니다.',
+          tone: InfoBannerTone.warning,
+        );
       case MovementConnectionState.error:
-        return Text(
-          '오류: ${_controller.errorMessage ?? "알 수 없는 오류"}',
-          style: TextStyle(color: Theme.of(context).colorScheme.error),
+        return InfoBanner(
+          title: '오류: ${_controller.errorMessage ?? "알 수 없는 오류"}',
+          tone: InfoBannerTone.danger,
         );
     }
   }
 
   Widget _buildControlButton() {
-    return FilledButton(
+    return AppButton(
+      label: _isRunning ? '중지' : '시작',
       onPressed: _isRunning ? _controller.stop : _controller.start,
-      child: Text(_isRunning ? '중지' : '시작'),
     );
   }
 }
@@ -181,22 +203,38 @@ class _PostureBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Chip(
-      label: Text('${frame.posture.value} · ${frame.burdenLabel.value}'),
-      backgroundColor: _colorFor(frame.burdenLabel),
+    final (background, foreground) = _colorsFor(frame.burdenLabel);
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+        ),
+        child: Text(
+          '${frame.posture.value} · ${frame.burdenLabel.value}',
+          style: Theme.of(
+            context,
+          ).textTheme.labelMedium?.copyWith(color: foreground),
+        ),
+      ),
     );
   }
 
-  Color _colorFor(BurdenLabel label) {
+  (Color, Color) _colorsFor(BurdenLabel label) {
     switch (label) {
       case BurdenLabel.normal:
-        return Colors.green.shade100;
+        return (AppColors.successBackground, AppColors.success);
       case BurdenLabel.repeatedLoad:
-        return Colors.yellow.shade200;
+        return (AppColors.warningBackground, AppColors.warning);
       case BurdenLabel.prolongedLoad:
-        return Colors.orange.shade200;
+        return (AppColors.warningBackground, AppColors.warning);
       case BurdenLabel.highLoadAction:
-        return Colors.red.shade200;
+        return (AppColors.dangerBackground, AppColors.danger);
     }
   }
 }
