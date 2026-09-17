@@ -15,7 +15,8 @@ Source of Truth 우선순위는 다음과 같다.
 
 ## 2. Route 설계 원칙
 
-- `/entry`가 앱의 유일한 Bootstrap 진입점이다.
+- `/entry`가 앱의 canonical Bootstrap 진입점이며 브라우저 root `/`도 이 경로로 정규화한다.
+- Bootstrap 상태 판정과 Entry 화면 표현을 분리한다. 신규 Wife는 Entry를 본 뒤 시작하고, 완료 사용자는 역할별 시작 화면으로 바로 이동한다.
 - 아내와 남편의 인증 후 영역은 각각 `/wife/**`, `/partner/**`로 분리한다.
 - 최초 프로필 등록과 기존 프로필 수정은 같은 6단계 UI를 재사용하되 Route와 완료 후 목적지를 분리한다.
 - 아내와 남편이 같은 데이터를 보는 Calendar와 Motion도 Actor별 진입 규칙과 Guard가 다르므로 Route는 분리한다.
@@ -28,11 +29,11 @@ Source of Truth 우선순위는 다음과 같다.
 
 | Screen ID | Requirement ID | Actor | Route | Entry | Next | Parameter | MVP | 상태 |
 |---|---|---|---|---|---|---|---|---|
-| `B-ENTRY-001`, `B-ENTRY-001-1` | `FUC-B-ENTRY-001` | Both | `/entry` | ThinQ PLM 탭, 앱 최초 실행, 인증/상태 변경 후 재진입 | 상태에 따라 `/onboarding/profile`, `/partner/join`, `/wife/home`, `/partner/calendar` | 없음 | Yes | `BOOTSTRAP` |
-| `W-PROFILE-001`, `W-PROFILE-002`, `W-PROFILE-003`, `W-PROFILE-004`, `W-PROFILE-005`, `W-PROFILE-006` | `FUC-W-PROFILE-001`, `FUC-W-PROFILE-002`, `FUC-W-PROFILE-003`, `FUC-W-PROFILE-004`, `FUC-W-PROFILE-005`, `FUC-W-PROFILE-006` | Wife | `/onboarding/profile` | `/entry`에서 아내 프로필 미완료 | 동일 Route 내 1~6단계 → Summary → `/onboarding/invite` | navigation state: `step`, `returnTo=summary` | Yes | `REQUIRED` |
+| `B-ENTRY-001`, `B-ENTRY-001-1` | `FUC-B-ENTRY-001` | Both | `/entry` | ThinQ PLM 탭, 앱 최초 실행, `/`, 인증/상태 변경 후 재진입 | 신규 Wife: Entry의 시작하기 → `/onboarding/profile`; 완료 Wife: `/wife/home`; Partner: 연동 상태에 따라 `/partner/join` 또는 `/partner/calendar` | query: `token` | Yes | `BOOTSTRAP_AND_ENTRY` |
+| `W-PROFILE-001`, `W-PROFILE-002`, `W-PROFILE-003`, `W-PROFILE-004`, `W-PROFILE-005`, `W-PROFILE-006` | `FUC-W-PROFILE-001`, `FUC-W-PROFILE-002`, `FUC-W-PROFILE-003`, `FUC-W-PROFILE-004`, `FUC-W-PROFILE-005`, `FUC-W-PROFILE-006` | Wife | `/onboarding/profile` | `/entry`의 시작하기 | 동일 Route 내 1~6단계 → Summary → `/wife/home` | navigation state: `step`, `returnTo=summary` | Yes | `REQUIRED` |
 | `W-PROFILE-001`, `W-PROFILE-002`, `W-PROFILE-003`, `W-PROFILE-004`, `W-PROFILE-005`, `W-PROFILE-006` | `FUC-W-PROFILE-008` | Wife | `/wife/profile` | `/wife/menu`의 프로필 수정 | 동일 Route 내 수정 단계 → Summary 또는 `/wife/menu` | navigation state: `step`, `returnTo=summary` | Yes | `REQUIRED` |
-| `W-PROFILE-007` | `FUC-W-PROFILE-007`, `FUC-W-PROFILE-008` | Wife | 별도 Route 없음 | Profile 6단계 완료 또는 Summary 행 선택 | 최초 등록은 `/onboarding/invite`, 수정은 `/wife/menu` | Profile flow 내부 state | Yes | `UI_STATE` |
-| `W-INVITE-001` | `FUC-W-INVITE-001` | Wife | `/onboarding/invite` | 최초 Profile Summary 저장 완료 | 링크 전송 또는 나중에 → `/wife/home` | 없음 | Yes | `REQUIRED` |
+| `W-PROFILE-007` | `FUC-W-PROFILE-007`, `FUC-W-PROFILE-008` | Wife | 별도 Route 없음 | Profile 6단계 완료 또는 Summary 행 선택 | 최초 등록은 `/wife/home`, 수정은 `/wife/menu` | Profile flow 내부 state | Yes | `UI_STATE` |
+| `W-INVITE-001` | `FUC-W-INVITE-001` | Wife | `/onboarding/invite` | 초대 흐름을 직접 시연할 때 선택 진입 | 링크 전송 또는 나중에 → `/wife/home` | 없음 | Yes | `OPTIONAL_DEMO` |
 | `W-INVITE-001` | `FUC-W-INVITE-001`, `FUC-W-MENU-001` | Wife | `/wife/invite` | `/wife/menu`의 미연동 남편 초대 행 | 링크 전송/나중에/뒤로 → `/wife/menu` | 없음 | Yes | `REQUIRED` |
 | `W-MENU-001`, `W-MENU-001-1` | `FUC-W-MENU-001` | Wife | `/wife/menu` | 아내 화면 Header의 전역 프로필 버튼 | `/wife/profile`, `/wife/invite`, `/wife/settings`, 이전 화면 | navigation state: `returnLocation` | Yes | `REQUIRED` |
 | PNG 없음 | `FUC-W-SETTING-001` | Wife | `/wife/settings` | `/wife/menu` | 뒤로 → `/wife/menu` | 없음 | Placeholder | `PHASE_2_PLACEHOLDER` |
@@ -58,7 +59,7 @@ Source of Truth 우선순위는 다음과 같다.
 
 | Screen ID | Requirement ID | Route를 만들지 않는 이유 | 소속 Route / 표현 방식 |
 |---|---|---|---|
-| `B-ENTRY-001-1` | `FUC-B-ENTRY-001` | ThinQ 안의 대체 Entry 표현이며 독립 목적지가 아님 | `/entry`의 host/entry state |
+| `B-ENTRY-001-1` | `FUC-B-ENTRY-001` | 같은 진입 목적의 표현 변형이며 독립 목적지가 아님 | `/entry`의 responsive entry state |
 | `W-PROFILE-007` | `FUC-W-PROFILE-007`, `FUC-W-PROFILE-008` | 6단계 Profile flow 안의 확인 단계 | `/onboarding/profile` 또는 `/wife/profile` 내부 Summary state |
 | `W-HOME-001-1` | `FUC-W-HOME-001` | 컨디션 입력과 AI Routine 생성 후의 Home 상태 | `/wife/home`의 ready state |
 | `W-MENU-001-1` | `FUC-W-MENU-001` | 남편 연동 여부에 따른 행의 조건부 표현 | `/wife/menu`의 linked state |
@@ -77,10 +78,12 @@ Source of Truth 우선순위는 다음과 같다.
 
 ### 5.1 Bootstrap
 
-`/entry`는 세션과 도메인 상태를 확인한 뒤 다음 우선순위로 분기한다.
+`/entry`는 세션과 도메인 상태를 확인한 뒤 다음 우선순위로 분기한다. `/`와 알 수 없는 경로도 `/entry`로 정규화한다.
+
+Web의 `initialRoute`는 브라우저가 전달한 경로를 사용하고 `onGenerateInitialRoutes`에서 한 번만 해석한다. 따라서 `/`는 `/entry`가 되고 유효한 직접 URL의 date/requestId/token은 유지된다.
 
 1. 인증되지 않았거나 사용자 역할을 알 수 없으면 ThinQ 인증/역할 확인 상태를 표시한다.
-2. Wife이며 Profile이 완료되지 않았으면 `/onboarding/profile`로 이동한다.
+2. Wife이며 Profile이 완료되지 않았으면 `/entry`에 실제 Entry 콘텐츠와 `시작하기` CTA를 표시한다. CTA를 누르면 `/onboarding/profile`로 이동한다.
 3. Wife이며 Profile이 완료되었으면 Partner 연동 여부와 관계없이 `/wife/home`으로 이동한다.
 4. Partner이며 유효한 invitation token이 있고 연동이 완료되지 않았으면 `/partner/join?token=...`으로 이동한다.
 5. Partner이며 연동이 완료되었으면 `/partner/calendar`로 이동한다.
@@ -96,8 +99,9 @@ Source of Truth 우선순위는 다음과 같다.
 ### 5.3 Profile 완료 여부
 
 - Wife의 `profileCompleted=false`에서는 `/onboarding/profile`과 `/entry`만 허용한다.
-- `/onboarding/profile`에서 6단계와 Summary 저장이 완료되어야 `profileCompleted=true`가 된다.
-- 최초 완료 후에는 `/onboarding/invite`로 이동한다.
+- 완료 여부는 예정일 또는 LMP 기반 예정일, 유효 범위의 신장·임신 전 체중, 초산/경산, 단태/다태 입력이 모두 있을 때만 참이다.
+- `/onboarding/profile`에서 6단계와 Summary 저장이 완료되어야 `profileCompleted=true`가 되며 최초 완료 후 `/wife/home`으로 이동한다.
+- Demo에서는 완료 Profile을 브라우저 localStorage에 저장해 새로고침 후 Returning User 분기를 재현한다. 서버 Profile이 연결되면 같은 Bootstrap 계약을 유지한 채 저장 구현을 교체한다.
 - `/wife/profile`은 완료된 Profile 수정 전용이다. 저장 후 Partner Invite로 이동하지 않고 `/wife/menu`로 복귀한다.
 - Profile step과 Summary 편집 복귀 지점은 일시적인 navigation state다. URL별 Route를 만들지 않는다.
 
@@ -187,10 +191,10 @@ Source of Truth 우선순위는 다음과 같다.
 
 ```mermaid
 flowchart TD
-    E[/entry/] -->|Profile 미완료| P[/onboarding/profile/]
+    E[/entry/] -->|Profile 미완료| V[Entry 콘텐츠]
+    V -->|시작하기| P[/onboarding/profile/]
     P --> PS[Profile Summary state]
-    PS --> I[/onboarding/invite/]
-    I --> H[/wife/home/]
+    PS --> H[/wife/home/]
     E -->|Profile 완료| H
     H --> C[/wife/condition/]
     C --> A[/wife/activity/]

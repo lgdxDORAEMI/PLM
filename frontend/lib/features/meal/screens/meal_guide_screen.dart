@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/app_button.dart';
-import '../../../design_system/components/bottom_navigation.dart';
+import '../../../design_system/components/content_frame.dart';
 import '../../../design_system/components/info_banner.dart';
-import '../../../design_system/components/responsive_page_content.dart';
+import '../../../design_system/components/responsive_split_view.dart';
 import '../../../design_system/components/section_header.dart';
 import '../../../design_system/components/top_app_bar.dart';
+import '../../../design_system/components/wife_navigation_scaffold.dart';
+import '../../../design_system/tokens/app_breakpoints.dart';
 import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_radius.dart';
 import '../../../design_system/tokens/app_spacing.dart';
@@ -54,7 +56,8 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return WifeNavigationScaffold(
+      currentIndex: 0,
       appBar: TopAppBar(
         title: '식사 가이드',
         onBack: _handleBack,
@@ -62,7 +65,8 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
       ),
       body: SafeArea(
         top: false,
-        child: ResponsivePageContent(
+        child: ContentFrame(
+          maxWidth: 1200,
           child: switch (_controller.state) {
             MealGuideViewState.loading => const AppLoadingState(
               message: '오늘의 메뉴를 준비하고 있어요',
@@ -78,22 +82,6 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
                   : _buildPeriodSelection(),
           },
         ),
-      ),
-      bottomNavigationBar: AppBottomNavigation(
-        currentIndex: 0,
-        items: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), label: '홈'),
-          NavigationDestination(icon: Icon(Icons.sync_alt), label: '실시간'),
-          NavigationDestination(
-            icon: Icon(Icons.chat_bubble_outline),
-            label: '챗봇',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            label: '캘린더',
-          ),
-        ],
-        onSelected: _openBottomDestination,
       ),
     );
   }
@@ -111,13 +99,30 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
           description: '지금은 아침이지만, 다른 끼니도 미리 볼 수 있어요',
         ),
         const SizedBox(height: AppSpacing.lg),
-        for (final period in data.periods) ...[
-          MealPeriodCard(
-            summary: period,
-            onTap: () => _controller.selectPeriod(period.period),
-          ),
-          const SizedBox(height: AppSpacing.md),
-        ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final columns = constraints.maxWidth >= AppBreakpoints.tablet
+                ? 2
+                : 1;
+            final itemWidth = columns == 1
+                ? constraints.maxWidth
+                : (constraints.maxWidth - AppSpacing.md) / 2;
+            return Wrap(
+              spacing: AppSpacing.md,
+              runSpacing: AppSpacing.md,
+              children: [
+                for (final period in data.periods)
+                  SizedBox(
+                    width: itemWidth,
+                    child: MealPeriodCard(
+                      summary: period,
+                      onTap: () => _controller.selectPeriod(period.period),
+                    ),
+                  ),
+              ],
+            );
+          },
+        ),
       ],
     );
   }
@@ -135,23 +140,60 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
           ).textTheme.labelLarge?.copyWith(color: AppColors.primary600),
         ),
         const SizedBox(height: AppSpacing.md),
-        _RecommendationReason(recommendation: recommendation),
-        const SizedBox(height: AppSpacing.xxl),
-        Text('오늘의 추천', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: AppSpacing.lg),
-        MealRecommendationCard(recommendation: recommendation),
-        const SizedBox(height: AppSpacing.lg),
-        _RecommendationActions(
-          decision: _controller.selectedDecision,
-          shared: _controller.selectedIsShared,
-          onAccept: _controller.acceptSelected,
-          onAdjust: _openRejectedMealChat,
-          onShare: _controller.shareSelected,
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final recommendationPanel = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  '오늘의 추천',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                MealRecommendationCard(recommendation: recommendation),
+                const SizedBox(height: AppSpacing.lg),
+                _RecommendationActions(
+                  decision: _controller.selectedDecision,
+                  shared: _controller.selectedIsShared,
+                  onAccept: _controller.acceptSelected,
+                  onAdjust: _openRejectedMealChat,
+                  onShare: _controller.shareSelected,
+                ),
+              ],
+            );
+            final contextPanel = Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _RecommendationReason(recommendation: recommendation),
+                const SizedBox(height: AppSpacing.lg),
+                _MealAdjustmentEntry(onTap: _openMealChat),
+                const SizedBox(height: AppSpacing.xxl),
+                MealInfoSection(items: recommendation.cautions),
+              ],
+            );
+            if (constraints.maxWidth < AppBreakpoints.desktop) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _RecommendationReason(recommendation: recommendation),
+                  const SizedBox(height: AppSpacing.xxl),
+                  recommendationPanel,
+                  const SizedBox(height: AppSpacing.lg),
+                  _MealAdjustmentEntry(onTap: _openMealChat),
+                  const SizedBox(height: AppSpacing.xxxl),
+                  MealInfoSection(items: recommendation.cautions),
+                ],
+              );
+            }
+            return ResponsiveSplitView(
+              primaryFlex: 7,
+              secondaryFlex: 5,
+              gap: AppSpacing.xxl,
+              primary: recommendationPanel,
+              secondary: contextPanel,
+            );
+          },
         ),
-        const SizedBox(height: AppSpacing.lg),
-        _MealAdjustmentEntry(onTap: _openMealChat),
-        const SizedBox(height: AppSpacing.xxxl),
-        MealInfoSection(items: recommendation.cautions),
         const SizedBox(height: AppSpacing.xxl),
       ],
     );
@@ -186,17 +228,6 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
     } else {
       Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
     }
-  }
-
-  void _openBottomDestination(int index) {
-    final route = switch (index) {
-      0 => RouteNames.wifeHome,
-      1 => RouteNames.wifeMovement,
-      2 => RouteNames.mealChat,
-      3 => RouteNames.wifeCalendar,
-      _ => RouteNames.wifeHome,
-    };
-    Navigator.pushReplacementNamed(context, route);
   }
 }
 

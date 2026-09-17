@@ -8,15 +8,15 @@ PDF 대조 페이지: p.1 Profile 005, p.2 Motion, p.3 Entry, p.4 Calendar, p.5 
 
 | Screen ID | Requirement | Route / 상태 | 구현 파일 | 구현 · UI / Interaction | QA |
 |---|---|---|---|---|---|
-| B-ENTRY-001 | FUC-B-ENTRY-001 | `/entry` | `features/entry/screens/entry_screen.dart`, `routing/app_router.dart` | Bootstrap loading·오류·재시도·역할 분기 Mock; ThinQ 홈 배너는 Host 대기, 실제 Session Guard 미연동 | 3폭·분기 단위 |
-| B-ENTRY-001-1 | FUC-B-ENTRY-001 | `/entry` Host 메뉴 variant | 동일 | ThinQ 메뉴 행/NEW 배지는 Host 대기, 동일 Bootstrap 경로만 제공 | 경로 3폭; Host UI 미검증 |
+| B-ENTRY-001 | FUC-B-ENTRY-001 | `/entry` | `features/entry/screens/entry_screen.dart`, `features/entry/widgets/pregnancy_entry_view.dart`, `routing/app_router.dart` | Bootstrap loading·오류·재시도와 실제 responsive Entry. 신규 Wife는 시작하기→Profile, 완료 Wife는 Home으로 자동 이동 | 이번 변경 최종 QA 대기 |
+| B-ENTRY-001-1 | FUC-B-ENTRY-001 | `/entry` responsive state | 동일 | ThinQ 화면을 복제하지 않고 PLM 디자인 토큰으로 서비스 맥락·핵심 기능을 표현; 별도 Route 없음 | 이번 변경 최종 QA 대기 |
 | W-PROFILE-001 | FUC-W-PROFILE-001 | `/onboarding/profile`, `/wife/profile` step 1 | `features/profile/screens/profile_setup_screen.dart`, `features/profile/models/profile_draft.dart` | 예정일/LMP picker·필수 오류·뒤로; LMP+280일 예정일 및 현재 임신 주수 계산 | 3폭·Wizard·계산 단위 |
 | W-PROFILE-002 | FUC-W-PROFILE-002 | 동일 step 2 | 동일 | 신장·임신 전 체중만 입력, 범위 검증; 구형 나이 입력 제거 | 3폭·Wizard |
 | W-PROFILE-003 | FUC-W-PROFILE-003 | 동일 step 3 | 동일 | 초산/경산 단일 선택·미선택 시 다음 버튼 비활성 | Wizard |
 | W-PROFILE-004 | FUC-W-PROFILE-004 | 동일 step 4 | 동일 | 단태/다태 단일 선택·미선택 시 다음 버튼 비활성 | Wizard |
 | W-PROFILE-005 | FUC-W-PROFILE-005 | 동일 step 5 | 동일 | 알레르기 복수 선택·없어요 상호 배타 | 단위 |
 | W-PROFILE-006 | FUC-W-PROFILE-006 | 동일 step 6 | 동일 | 진단 복수 선택·메모·미입력 통과 | Wizard |
-| W-PROFILE-007 | FUC-W-PROFILE-007/008 | 동일 Summary | `features/profile/widgets/profile_summary.dart`, `controllers/profile_setup_controller.dart`, `data/profile_store.dart` | 행 수정 → 저장 → Summary 복귀, 생성 시 Invite·수정 시 Menu; 앱 실행 중 로컬 저장 및 Home/Menu 주수 재계산, 서버·브라우저 재시작 영속화 미연동 | 단위·Route |
+| W-PROFILE-007 | FUC-W-PROFILE-007/008 | 동일 Summary | `features/profile/widgets/profile_summary.dart`, `controllers/profile_setup_controller.dart`, `data/profile_store.dart` | 행 수정 → 저장 → Summary 복귀, 생성 시 Home·수정 시 Menu; 유효한 필수값으로 완료 판정하고 브라우저 localStorage에서 Demo Profile 복원 | 이번 변경 최종 QA 대기 |
 | W-INVITE-001 | FUC-W-INVITE-001/002 | `/onboarding/invite`, `/wife/invite` | `features/profile/screens/partner_invite_screen.dart` | 링크 생성·복사·Mock 전송; 온보딩→Home/메뉴→Menu. 실제 OS 공유·일회성 발급 미연동 | 3폭·Route |
 | W-MENU-001 | FUC-W-MENU-001 | `/wife/menu` 미연동 | `features/menu/screens/wife_menu_screen.dart` | 프로필/초대/설정·이전 화면 복귀, 전역 Wife Header 진입 | 3폭·상태 전환 |
 | W-MENU-001-1 | FUC-W-MENU-001 | `/wife/menu` 연동 | 동일, `features/invitation/data/partner_connection_store.dart` | 초대 행 제거·연동 안내; 로컬 Mock 연동 상태(실제 인증 아님) | 상태 전환 |
@@ -61,7 +61,7 @@ PDF 대조 페이지: p.1 Profile 005, p.2 Motion, p.3 Entry, p.4 Calendar, p.5 
 
 ## 남은 정합성 Gap
 
-- ThinQ 홈 배너/메뉴 Entry, 세션·역할·연동 서버 상태 및 Route Guard는 Host/Auth 계약 없이 구현 불가. 현재 `/entry`는 Mock Bootstrap이고 직접 Actor URL 차단을 보장하지 않는다.
-- 프로필은 앱 실행 중 메모리에만 저장되며 브라우저 새로고침 후 복원되지 않는다. 초대·리포트 공유, AI 추천, 가전 제어, 실시간 모션도 실제 API를 호출하지 않는다. Menu 연동 완료 variant는 테스트용 로컬 상태이며 Partner Join에서 수락하지 않는다.
+- 실제 ThinQ Host shell과 인증·역할·연동 서버 상태 및 Route Guard는 Host/Auth 계약 없이 구현할 수 없다. 현재 `/entry`는 실제 Demo Entry와 Mock Bootstrap을 제공하며 직접 Actor URL 차단은 보장하지 않는다.
+- Demo Profile은 브라우저 localStorage에서 복원되지만 서버 계정과 동기화되지 않는다. 초대·리포트 공유, AI 추천, 가전 제어, 실시간 모션도 실제 API를 호출하지 않는다. Menu 연동 완료 variant는 테스트용 로컬 상태이며 Partner Join에서 수락하지 않는다.
 - 달력/리포트에는 2026-09-13 중심 샘플 기록과 실행일 Mock 기록이 있고 실제 루틴 완료/저장 이력과 동기화되지 않는다. 리포트의 미연동 모션·가전 실행 횟수는 0으로 표시한다. NFR-022 대비 토큰 자동 검사는 통과했지만 모든 개별 조합·도구 검사 100% 인증은 아니며, NFR-025의 200% 확대도 대표 5개 Route만 자동 확인했다. 스크린리더 실기기·실제 브라우저 hover/focus/시각 QA는 별도다.
 - PDF p.3/4/17/19 및 Screen PNG는 콘텐츠·정보 구조의 참조이며 ThinQ Host 배너의 원본 시각 스타일은 PLM 화면에 복제하지 않는다.

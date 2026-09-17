@@ -36,6 +36,21 @@ class ProfileDraft {
   final Set<String> medicalConditions;
   final String medicalNote;
 
+  /// Bootstrap은 실제 필수 Profile 값이 모두 유효할 때만 완료 사용자로 판정한다.
+  bool get isComplete {
+    final parsedHeight = double.tryParse(height ?? '');
+    final parsedWeight = double.tryParse(prePregnancyWeight ?? '');
+    return effectiveDueDate != null &&
+        parsedHeight != null &&
+        parsedHeight >= 100 &&
+        parsedHeight <= 220 &&
+        parsedWeight != null &&
+        parsedWeight >= 30 &&
+        parsedWeight <= 250 &&
+        isFirstPregnancy != null &&
+        isMultiplePregnancy != null;
+  }
+
   /// 병원에서 확정한 예정일이 없을 때만 마지막 생리일+280일을 사용한다.
   DateTime? get effectiveDueDate =>
       dueDate ?? lastPeriodDate?.add(const Duration(days: 280));

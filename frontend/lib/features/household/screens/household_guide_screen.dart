@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_dialog.dart';
-import '../../../design_system/components/bottom_navigation.dart';
+import '../../../design_system/components/content_frame.dart';
 import '../../../design_system/components/info_banner.dart';
-import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/components/top_app_bar.dart';
+import '../../../design_system/components/wife_navigation_scaffold.dart';
+import '../../../design_system/tokens/app_breakpoints.dart';
 import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_radius.dart';
 import '../../../design_system/tokens/app_spacing.dart';
@@ -46,7 +47,8 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return WifeNavigationScaffold(
+      currentIndex: 0,
       appBar: TopAppBar(
         title: '가사 가이드',
         onBack: _handleBack,
@@ -54,82 +56,122 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
       ),
       body: SafeArea(
         top: false,
-        child: ResponsivePageContent(
+        child: ContentFrame(
+          maxWidth: 1200,
           child: ListView(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
             children: [
               _PainBanner(shared: _controller.shared),
               const SizedBox(height: AppSpacing.xxl),
-              _SectionTitle(
-                number: 1,
-                title: '오늘은 이것만 직접',
-                label: _controller.shared ? '남편과 함께 진행 중' : '2개 · 가볍게',
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final sections = [
+                    _directSection(),
+                    _applianceSection(),
+                    _partnerSection(),
+                  ];
+                  if (constraints.maxWidth < AppBreakpoints.desktop) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        sections[0],
+                        const SizedBox(height: AppSpacing.xl),
+                        sections[1],
+                        const SizedBox(height: AppSpacing.xl),
+                        sections[2],
+                      ],
+                    );
+                  }
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (var index = 0; index < sections.length; index++) ...[
+                        Expanded(child: sections[index]),
+                        if (index < sections.length - 1)
+                          const SizedBox(width: AppSpacing.xl),
+                      ],
+                    ],
+                  );
+                },
               ),
-              const SizedBox(height: AppSpacing.md),
-              ..._taskCards(HouseholdTaskOwner.self, selectable: true),
-              const SizedBox(height: AppSpacing.xl),
-              const _SectionTitle(
-                number: 2,
-                title: '가전이 대신합니다',
-                label: '추천 3개',
-              ),
-              const SizedBox(height: AppSpacing.md),
-              ..._taskCards(HouseholdTaskOwner.appliance),
-              const InfoBanner(
-                title: '가전 실행은 아직 지원하지 않아요',
-                message: 'MVP에서는 부담을 줄일 수 있는 가전 수행 방법만 추천해요.',
-                tone: InfoBannerTone.neutral,
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              _SectionTitle(
-                number: 3,
-                title: '가족과 나누기',
-                label: '${_controller.selectedCount}개 요청',
-              ),
-              const SizedBox(height: AppSpacing.md),
-              ..._taskCards(HouseholdTaskOwner.partner, selectable: true),
-              const SizedBox(height: AppSpacing.md),
-              Text(
-                '함께 부탁할 항목을 골라주세요',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: AppSpacing.md),
-              ..._taskCards(HouseholdTaskOwner.self, selectable: true),
-              if (_controller.shareError != null) ...[
-                const SizedBox(height: AppSpacing.md),
-                InfoBanner(
-                  title: '공유하지 못했어요',
-                  message: _controller.shareError,
-                  tone: InfoBannerTone.danger,
-                ),
-              ],
-              const SizedBox(height: AppSpacing.md),
-              AppButton(
-                key: const ValueKey('household-share-button'),
-                label: _controller.sharing
-                    ? '요청 보내는 중…'
-                    : _controller.shared
-                    ? '남편에게 공유했어요'
-                    : '남편에게 공유하기',
-                loading: _controller.sharing,
-                onPressed:
-                    _controller.selectedCount == 0 ||
-                        _controller.shared ||
-                        _controller.sharing
-                    ? null
-                    : _share,
-              ),
-              if (_controller.shared) ...[
-                const SizedBox(height: AppSpacing.lg),
-                const _LiveStatusBanner(),
-              ],
             ],
           ),
         ),
       ),
-      bottomNavigationBar: _WifeBottomNavigation(onSelected: _openTab),
     );
   }
+
+  Widget _directSection() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      _SectionTitle(
+        number: 1,
+        title: '오늘은 이것만 직접',
+        label: _controller.shared ? '함께 진행 중' : '2개 · 가볍게',
+      ),
+      const SizedBox(height: AppSpacing.md),
+      ..._taskCards(HouseholdTaskOwner.self, selectable: true),
+    ],
+  );
+
+  Widget _applianceSection() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      const _SectionTitle(number: 2, title: '가전이 대신합니다', label: '추천 3개'),
+      const SizedBox(height: AppSpacing.md),
+      ..._taskCards(HouseholdTaskOwner.appliance),
+      const InfoBanner(
+        title: '가전 실행은 아직 지원하지 않아요',
+        message: 'MVP에서는 부담을 줄일 수 있는 가전 수행 방법만 추천해요.',
+        tone: InfoBannerTone.neutral,
+      ),
+    ],
+  );
+
+  Widget _partnerSection() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      _SectionTitle(
+        number: 3,
+        title: '가족과 나누기',
+        label: '${_controller.selectedCount}개 요청',
+      ),
+      const SizedBox(height: AppSpacing.md),
+      ..._taskCards(HouseholdTaskOwner.partner, selectable: true),
+      const SizedBox(height: AppSpacing.md),
+      Text('함께 부탁할 항목을 골라주세요', style: Theme.of(context).textTheme.titleMedium),
+      const SizedBox(height: AppSpacing.md),
+      ..._taskCards(HouseholdTaskOwner.self, selectable: true),
+      if (_controller.shareError != null) ...[
+        const SizedBox(height: AppSpacing.md),
+        InfoBanner(
+          title: '공유하지 못했어요',
+          message: _controller.shareError,
+          tone: InfoBannerTone.danger,
+        ),
+      ],
+      const SizedBox(height: AppSpacing.md),
+      AppButton(
+        key: const ValueKey('household-share-button'),
+        label: _controller.sharing
+            ? '요청 보내는 중…'
+            : _controller.shared
+            ? '남편에게 공유했어요'
+            : '남편에게 공유하기',
+        loading: _controller.sharing,
+        onPressed:
+            _controller.selectedCount == 0 ||
+                _controller.shared ||
+                _controller.sharing
+            ? null
+            : _share,
+      ),
+      if (_controller.shared) ...[
+        const SizedBox(height: AppSpacing.lg),
+        const _LiveStatusBanner(),
+      ],
+    ],
+  );
 
   List<Widget> _taskCards(HouseholdTaskOwner owner, {bool selectable = false}) {
     return [
@@ -174,16 +216,6 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
         ],
       ),
     );
-  }
-
-  void _openTab(int index) {
-    final route = [
-      RouteNames.wifeHome,
-      RouteNames.wifeMovement,
-      RouteNames.mealChat,
-      RouteNames.wifeCalendar,
-    ][index];
-    Navigator.pushReplacementNamed(context, route);
   }
 
   void _handleBack() {
@@ -262,27 +294,5 @@ class _LiveStatusBanner extends StatelessWidget {
         Expanded(child: Text('남편의 확인·완료 상태가 요청 Route를 통해 이 화면에 반영돼요')),
       ],
     ),
-  );
-}
-
-class _WifeBottomNavigation extends StatelessWidget {
-  const _WifeBottomNavigation({required this.onSelected});
-  final ValueChanged<int> onSelected;
-  @override
-  Widget build(BuildContext context) => AppBottomNavigation(
-    currentIndex: 0,
-    items: const [
-      NavigationDestination(icon: Icon(Icons.home_outlined), label: '홈'),
-      NavigationDestination(
-        icon: Icon(Icons.monitor_heart_outlined),
-        label: '실시간',
-      ),
-      NavigationDestination(icon: Icon(Icons.chat_bubble_outline), label: '챗봇'),
-      NavigationDestination(
-        icon: Icon(Icons.calendar_month_outlined),
-        label: '캘린더',
-      ),
-    ],
-    onSelected: onSelected,
   );
 }

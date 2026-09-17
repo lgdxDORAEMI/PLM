@@ -39,9 +39,11 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 flutter run -d chrome
 ```
 
-실행하면 `/`이 `/entry` Mock Bootstrap을 열고 기본 상태인 임산부 프로필 미완료로 분기합니다. ThinQ Host/실제 Session Adapter는 아직 없으므로 역할별 직접 URL 접근 차단이나 브라우저 재시작 후 가입 상태 복원을 보장하지 않습니다. Browser 주소의 `/wife/home`, `/wife/menu`, `/wife/report/2026-09-13`, `/partner/calendar`, `/partner/requests/demo-request`를 직접 열어 Mock UI를 확인할 수 있습니다.
+실행하면 `/`이 canonical `/entry`로 정규화되고 Mock Bootstrap이 사용자 상태를 확인합니다. 새 사용자는 실제 Entry 화면에서 `시작하기`를 눌러 Profile Setup으로 이동하고, Profile을 완료한 재방문 사용자는 `/wife/home`으로 바로 이동합니다. 알 수 없는 경로도 안전하게 `/entry`로 복구됩니다. ThinQ Host/실제 Session Adapter는 아직 없으므로 역할별 직접 URL 접근 차단은 보장하지 않습니다. Browser 주소의 `/wife/home`, `/wife/menu`, `/wife/report/2026-09-13`, `/partner/calendar`, `/partner/requests/demo-request`를 직접 열어 Mock UI를 확인할 수 있습니다.
 
-온보딩에서 출산예정일 또는 마지막 생리 시작일을 입력할 수 있습니다. LMP만 입력하면 예정일을 280일 뒤로 계산하고, 저장 후 앱을 새로고침하기 전까지 Home/Menu에 계산된 임신 주수를 표시합니다. 초산/경산·단태/다태는 선택해야 다음 버튼이 활성화됩니다. 프로필은 현재 메모리 기반 Mock 저장이므로 브라우저 새로고침 후에는 다시 온보딩이 나타납니다. 서버 영속 저장과 기존 계정 재진입은 아직 제공하지 않습니다.
+온보딩에서 출산예정일 또는 마지막 생리 시작일을 입력할 수 있습니다. LMP만 입력하면 예정일을 280일 뒤로 계산합니다. 예정일, 100~220cm 신장, 30~250kg 임신 전 체중, 초산/경산, 단태/다태가 모두 유효해야 완료 사용자로 판정합니다. 완료 Profile은 Demo 전용 브라우저 localStorage의 `plm.demo.profile.v1` 키에 저장되어 새로고침 후에도 Home/Menu의 임신 주수와 재방문 분기가 유지됩니다. 서버 영속 저장과 계정 간 동기화는 아직 제공하지 않습니다.
+
+새 사용자 상태를 다시 시연하려면 Chrome 개발자 도구의 `Application` → `Local Storage`에서 현재 origin의 `plm.demo.profile.v1` 항목을 삭제하고 `/entry`를 새로고침합니다. Profile Setup을 끝내면 같은 코드에서 완료 사용자 상태로 전환되며, 이후 `/entry` 재진입 시 Home으로 이동합니다. 브라우저 저장소 접근이 차단된 환경에서는 현재 실행 중인 메모리 상태만 유지되고 새로고침 후 Entry로 돌아올 수 있습니다.
 
 `/wife/home`의 AI Routine은 실제 AI API가 없어도 실행됩니다. 당일 컨디션 미입력 시 컨디션 CTA가 표시되고, 입력과 예정 활동 선택을 마치면 `MockRoutineService`가 식사·가사·건강·수면 가이드를 제공합니다. Service 오류 시 화면을 비우지 않고 기본 Routine과 재시도 버튼을 표시합니다.
 

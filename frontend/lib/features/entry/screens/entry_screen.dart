@@ -6,9 +6,12 @@ import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/app_router.dart';
+import '../../../routing/route_context.dart';
+import '../../../routing/route_names.dart';
 import '../controllers/entry_controller.dart';
 import '../services/entry_service.dart';
 import '../services/mock_entry_service.dart';
+import '../widgets/pregnancy_entry_view.dart';
 
 class EntryScreen extends StatefulWidget {
   const EntryScreen({super.key, this.service, this.invitationToken});
@@ -22,6 +25,7 @@ class EntryScreen extends StatefulWidget {
 
 class _EntryScreenState extends State<EntryScreen> {
   late final EntryController _controller;
+  bool _redirectScheduled = false;
 
   @override
   void initState() {
@@ -40,11 +44,18 @@ class _EntryScreenState extends State<EntryScreen> {
     super.dispose();
   }
 
+  /// Bootstrap 결과가 기존 사용자일 때만 역할별 시작 화면으로 이동한다.
   void _onChanged() {
     if (!mounted) return;
-    if (_controller.state == EntryViewState.ready) {
+
+    final launchState = _controller.launchState;
+    final shouldRedirect = _controller.state == EntryViewState.ready &&
+        launchState != null &&
+        launchState != AppLaunchState.wifeNeedsProfile;
+    if (shouldRedirect && !_redirectScheduled) {
+      _redirectScheduled = true;
       final route = AppRouter.resolveLaunchRoute(
-        _controller.launchState!,
+        launchState,
         invitationToken: widget.invitationToken,
       );
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -57,20 +68,45 @@ class _EntryScreenState extends State<EntryScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     body: SafeArea(
-      child: ResponsivePageContent.form(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
-            child: _controller.state == EntryViewState.error
-                ? AppErrorState(
-                    title: 'Pregnancy Life Mode를 열지 못했어요',
-                    message: 'ThinQ 로그인과 연결 상태를 확인한 뒤 다시 시도해 주세요.',
-                    onRetry: _controller.load,
-                  )
-                : const AppLoadingState(message: '사용자 상태를 확인하고 있어요'),
-          ),
-        ),
+      child: ResponsivePageContent(
+        maxWidth: 1200,
+        child: switch (_controller.state) {
+          EntryViewState.loading => const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+                child: AppLoadingState(message: '사용자 상태를 확인하고 있어요.'),
+              ),
+            ),
+          EntryViewState.error => Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+                child: AppErrorState(
+                  title: 'Pregnancy Life Mode를 열지 못했어요',
+                  message: '연결 상태를 확인한 뒤 다시 시도해 주세요.',
+                  onRetry: _controller.load,
+                ),
+              ),
+            ),
+          EntryViewState.ready => _buildReadyState(),
+        },
       ),
     ),
   );
+
+  Widget _buildReadyState() {
+    if (_controller.launchState == AppLaunchState.wifeNeedsProfile) {
+      return PregnancyEntryView(
+        onStart: () => Navigator.pushReplacementNamed(
+          context,
+          RouteNames.profileSetup,
+        ),
+      );
+    }
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+        child: AppLoadingState(message: '시작 화면으로 이동하고 있어요.'),
+      ),
+    );
+  }
 }

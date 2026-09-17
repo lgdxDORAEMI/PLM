@@ -1,6 +1,6 @@
 # PLM Frontend
 
-PLM Frontend는 임산부와 배우자의 생활관리 경험을 제공하기 위한 Flutter Web 앱입니다. 현재 DESIGN.md 기반 공통 UI와 ROUTE_MAP의 전체 제품 화면·이동 관계가 Frontend Skeleton으로 구현되어 있습니다. 각 화면은 상세 UI가 아닌 Placeholder이며, 기존 Web 전용 모션 인식 데모 코드는 별도로 보존합니다.
+PLM Frontend는 임산부와 배우자의 생활관리 경험을 제공하기 위한 Flutter Web 앱입니다. DESIGN.md 기반 공통 UI와 ROUTE_MAP의 제품 화면·이동 관계, Entry부터 Profile·Home·생활 가이드·기록으로 이어지는 Demo flow가 구현되어 있습니다. 외부 Session/API가 없는 기능은 Mock 또는 브라우저 로컬 상태를 사용하며, 기존 Web 전용 모션 인식 데모 코드는 별도로 보존합니다.
 
 ## 지원 플랫폼
 
@@ -23,8 +23,11 @@ PLM Frontend는 임산부와 배우자의 생활관리 경험을 제공하기 �
 - Button, Input, Card, SelectionCard, TopAppBar, BottomNavigation
 - ROUTE_MAP의 20개 제품 화면 Skeleton과 중앙 Router
 - 프로필·배우자 초대의 온보딩/수동 진입 Context 분리
-- 역할별 Header, Wife 4개/Partner 2개 하단 Navigation
-- 직접 URL과 동적 date/requestId/token 복원, Bootstrap Resolver와 404 화면
+- 역할별 Header, Wife Mobile 4개 Bottom Navigation·Desktop Navigation Rail, Partner Calendar 중심 Navigation
+- Home·Meal·Health·Household·Sleep·Calendar·Report·Movement의 viewport별 composition
+- `/`·알 수 없는 경로를 `/entry`로 정규화하는 Bootstrap Resolver와 실제 responsive Entry
+- 필수 Profile 완료 여부에 따른 신규 사용자 Entry→Profile→Home 및 재방문 사용자 Home 직행
+- Web Demo Profile의 localStorage 복원
 - 브라우저 카메라 프레임 캡처 및 WebSocket 전송
 - 캘리브레이션 진행률, 실시간 자세·부담 상태와 landmark 오버레이 표시
 - 카메라와 WebSocket을 추상화한 Controller 단위 테스트

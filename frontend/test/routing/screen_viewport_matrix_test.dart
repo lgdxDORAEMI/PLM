@@ -33,7 +33,7 @@ void main() {
     RouteNames.partnerMovement,
   ];
 
-  for (final width in [390.0, 768.0, 1280.0]) {
+  for (final width in [390.0, 768.0, 1280.0, 1440.0]) {
     testWidgets('화면 Route 전체가 ${width.toInt()}px에서 overflow 없이 열린다', (
       tester,
     ) async {
