@@ -8,7 +8,7 @@ PLM은 임신 주수, 당일 컨디션, 예정 활동과 생활 기록을 바탕
 
 ```text
 임산부
-프로필 등록 → 배우자 초대 → 오늘의 컨디션·예정 활동 입력
+Entry 시작 → 프로필 등록 → Home → 오늘의 컨디션·예정 활동 입력
 → 개인화 루틴 확인 → 식사·가사·건강·수면 가이드 실행
 → 완료 기록과 Daily 리포트 확인
 
@@ -24,7 +24,7 @@ MVP는 가전 자동 실행과 홈카메라 기반 실시간 위험 행동 로�
 | 영역 | 구현 상태 | 비고 |
 | --- | --- | --- |
 | Frontend 기반 | 구현 | Flutter Web 초기화, 환경설정, DESIGN.md 기반 Theme·반응형 Layout·공통 상태/Badge/Task Component |
-| Frontend 제품 UI | 부분 구현 | Profile 6단계와 LMP+280일·주수 계산, 초대 Mock, Home·Today Care·예정 활동, Daily Routine, Meal·Chat, 가사·건강·Sleep, Record/Calendar·Movement Mock, Partner Report·Inbox·Request 구현. Home은 임신 맥락 → 오늘 컨디션 → 핵심 행동 → 하루 루틴 → 진행 → 보조 정보의 단일 흐름이며, 컨디션 미입력·완료와 Routine Loading·Success·Fallback 상태를 지원. 설정·Partner Profile은 요구사항 확정 대기 |
+| Frontend 제품 UI | 부분 구현 | 실제 responsive Entry, Profile 6단계와 LMP+280일·주수 계산, 초대 Mock, Home·Today Care·예정 활동, Daily Routine, Meal·Chat, 가사·건강·Sleep, Record/Calendar·Movement Mock, Partner Report·Inbox·Request 구현. 신규 사용자는 Entry→Profile→Home, 완료 사용자는 Home으로 바로 진입. 설정·Partner Profile은 요구사항 확정 대기 |
 | 모션 인식 Web 데모 | 구현 | 브라우저 카메라 프레임 전송, 캘리브레이션, 자세 오버레이와 상태 표시 |
 | Backend 기본 API | 구현 | `/`, `/health`, 개발용 CORS |
 | 임산부 프로필 | 부분 구현 | 프로필 1/6 출산예정일(W-PROFILE-001), 2/6 신장·임신 전 체중(W-PROFILE-002) 조회·저장. 3~6단계(초산/경산·단태/쌍태·알레르기·주의 진단)와 확인·저장 단계는 미구현 |
@@ -47,9 +47,9 @@ Partner 영역은 Wife UI를 복제하지 않고 상태 확인 → 행동 확인
 
 B-MOTION은 Phase 2 범위이므로 `/wife/movement`와 `/partner/movement` 제품 화면에서 실제 카메라·MediaPipe·실시간 센서를 실행하지 않습니다. 제품 UI는 Current state, Latest event, Today event log, Device state를 Local Mock으로만 제공하며 실제 연동 상태를 별도 표시합니다. 기존 브라우저 카메라/WebSocket 코드는 `main_movement_debug.dart`로 실행하는 독립 기술 데모에만 남아 있습니다. Wife는 하단 실시간 탭으로, Partner는 Calendar의 명시적 CTA로만 진입하며 Partner Movement에는 Bottom Navigation이 없습니다.
 
-최종 Frontend 화면 점검에서는 `/entry` Mock Bootstrap, Wife 전역 `/wife/menu`(연동 전/후), `/wife/condition`·`/wife/activity` 및 `/partner/join?token=...` canonical Route를 정리하고 Profile Summary 행 수정 시 즉시 요약으로 돌아오도록 보정했습니다. Partner Join은 실제 인증·수락이 아닌 개발 중 안내만 제공하며, ThinQ Host Entry와 실제 Session Guard도 아직 연결되지 않았습니다. Screen ID별 상태와 390/768/1280px QA 결과는 [Screen 구현 Map](docs/SCREEN_IMPLEMENTATION_MAP.md) 및 [Frontend 진행 현황](docs/FRONTEND_PROGRESS.md)을 참고하세요.
+`/entry`는 Bootstrap과 실제 Demo Entry를 함께 제공하되 두 역할을 코드에서 분리합니다. 신규 사용자는 Entry의 `시작하기`로 Profile을 등록한 뒤 Home에 도착하고, 완료 Profile이 브라우저에 저장된 재방문 사용자는 Home으로 바로 이동합니다. `/`와 알 수 없는 경로는 `/entry`로 정규화합니다. 실제 ThinQ Host shell과 Session Guard는 아직 연결되지 않았습니다. Screen ID별 상태와 QA 결과는 [Screen 구현 Map](docs/SCREEN_IMPLEMENTATION_MAP.md) 및 [Frontend 진행 현황](docs/FRONTEND_PROGRESS.md)을 참고하세요.
 
-요구사항 재감사 후 프로필의 예정일/LMP 기반 임신 주수 계산과 앱 실행 중 로컬 수정 반영, 필수 선택 단계의 다음 버튼 비활성, Report 저장 후 Calendar 선택일 유지 및 오늘 컨디션 초기화를 추가했습니다. 실제 가전·모션 연동이 없는 MVP Mock 리포트에서 해당 실행 횟수는 0으로 표시합니다. 프로필·리포트는 아직 서버에 영구 저장되지 않으며 샘플 기록이 실제 당일 활동을 집계하지 않습니다. 보조 텍스트 대비와 대표 화면의 200% 글자 확대를 자동 검증했지만 전체 화면의 실기기 접근성 인증은 남아 있습니다.
+요구사항 재감사 후 프로필의 예정일/LMP 기반 임신 주수 계산, 필수 선택 단계의 다음 버튼 비활성, Report 저장 후 Calendar 선택일 유지 및 오늘 컨디션 초기화를 추가했습니다. Demo Profile은 브라우저 localStorage에 보존되지만 서버 계정과 동기화되지 않으며, 리포트도 영구 저장되지 않습니다. 실제 가전·모션 연동이 없는 MVP Mock 리포트에서 해당 실행 횟수는 0으로 표시합니다.
 
 ## 기술 구성
 
@@ -150,6 +150,9 @@ cd backend
 - Teal은 내비게이션 선택, Primary CTA, 임신 주차와 진행 상태 등 의미가 있는 강조에 집중했습니다.
 - Meal·Health·Sleep·Report의 큰 카테고리색 면을 중립 surface와 border 구조로 바꾸고 카테고리색은 아이콘·배지·텍스트에 남겼습니다.
 - 공통 Button, AppBar, Mobile Bottom Navigation, Desktop Navigation Rail의 형태와 상태 표현을 같은 디자인 시스템 규칙으로 맞췄습니다.
+- Wife 주요 화면의 네 목적지를 `WifeNavigationScaffold`로 통합해 Mobile·Tablet은 Bottom Navigation, Desktop·Wide는 Navigation Rail을 사용합니다.
+- Home은 Desktop에서 루틴과 컨디션·주차 맥락을 8:4로, Meal·Health는 본문과 근거·상태를 split view로, Household는 직접·가전·가족 영역을 3열로 재구성합니다.
+- Sleep 환경은 넓은 화면에서 3열로 확장하고 Calendar·Report·Movement의 기존 split view와 동일한 최대 폭·여백 규칙을 사용합니다.
 - 화면 구조, Route, Interaction, Mock Data와 Service 로직은 유지했습니다.
 
 ### 2026-09-16 — Backend 프로필 출산예정일 규칙 완화 (W-PROFILE-001)

@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import '../../../design_system/components/app_bottom_sheet.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_state_view.dart';
-import '../../../design_system/components/bottom_navigation.dart';
+import '../../../design_system/components/content_frame.dart';
 import '../../../design_system/components/info_banner.dart';
-import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/components/top_app_bar.dart';
+import '../../../design_system/components/wife_navigation_scaffold.dart';
 import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_radius.dart';
 import '../../../design_system/tokens/app_spacing.dart';
@@ -53,7 +53,8 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return WifeNavigationScaffold(
+      currentIndex: 0,
       appBar: TopAppBar(
         title: '수면 가이드',
         onBack: _handleBack,
@@ -61,26 +62,7 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
       ),
       body: SafeArea(
         top: false,
-        child: ResponsivePageContent(child: _buildBody()),
-      ),
-      bottomNavigationBar: AppBottomNavigation(
-        currentIndex: 0,
-        items: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), label: '홈'),
-          NavigationDestination(
-            icon: Icon(Icons.monitor_heart_outlined),
-            label: '실시간',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.chat_bubble_outline),
-            label: '챗봇',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            label: '캘린더',
-          ),
-        ],
-        onSelected: _openBottomDestination,
+        child: ContentFrame(maxWidth: 1200, child: _buildBody()),
       ),
     );
   }
@@ -118,16 +100,6 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
     } else {
       Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
     }
-  }
-
-  void _openBottomDestination(int index) {
-    final route = [
-      RouteNames.wifeHome,
-      RouteNames.wifeMovement,
-      RouteNames.mealChat,
-      RouteNames.wifeCalendar,
-    ][index];
-    Navigator.pushReplacementNamed(context, route);
   }
 }
 

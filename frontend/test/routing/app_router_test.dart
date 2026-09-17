@@ -65,7 +65,7 @@ void main() {
     }
   });
 
-  testWidgets('최초 프로필 등록은 초대를 거쳐 홈으로 이동한다', (tester) async {
+  testWidgets('최초 프로필 등록을 완료하면 홈으로 이동한다', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         initialRoute: RouteNames.profileSetup,
@@ -114,15 +114,6 @@ void main() {
 
     await tester.ensureVisible(find.text('완료하고 시작하기'));
     await tester.tap(find.text('완료하고 시작하기'));
-    await tester.pumpAndSettle();
-    expect(find.text('남편도 ThinQ에 연결해보세요'), findsOneWidget);
-
-    await tester.scrollUntilVisible(
-      find.text('나중에'),
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(find.text('나중에'));
     await tester.pumpAndSettle();
     expect(find.textContaining('오늘 임신'), findsOneWidget);
   });
@@ -383,7 +374,7 @@ void main() {
   test('Bootstrap 상태가 역할별 시작 경로를 결정한다', () {
     expect(
       AppRouter.resolveLaunchRoute(AppLaunchState.wifeNeedsProfile),
-      RouteNames.profileSetup,
+      RouteNames.entry,
     );
     expect(
       AppRouter.resolveLaunchRoute(AppLaunchState.wifeReady),
@@ -395,7 +386,7 @@ void main() {
     );
   });
 
-  testWidgets('등록되지 않은 경로는 404 스켈레톤을 표시한다', (tester) async {
+  testWidgets('등록되지 않은 경로는 Entry로 복구한다', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         initialRoute: '/missing',
@@ -404,7 +395,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.textContaining('등록되지 않은 경로입니다: /missing'), findsOneWidget);
+    expect(find.text('PREGNANCY LIFE MODE'), findsOneWidget);
+    expect(find.text('시작하기'), findsOneWidget);
   });
 }
 

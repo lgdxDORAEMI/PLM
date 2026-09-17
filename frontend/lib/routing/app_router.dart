@@ -21,7 +21,6 @@ import '../features/profile/screens/profile_setup_screen.dart';
 import '../features/report/screens/daily_report_screen.dart';
 import '../features/settings/screens/wife_settings_screen.dart';
 import '../features/sleep/screens/sleep_guide_screen.dart';
-import '../shared/widgets/product_skeleton_screen.dart';
 import 'route_context.dart';
 import 'route_names.dart';
 
@@ -60,7 +59,7 @@ abstract final class AppRouter {
     String? invitationToken,
   }) {
     return switch (state) {
-      AppLaunchState.wifeNeedsProfile => RouteNames.profileSetup,
+      AppLaunchState.wifeNeedsProfile => RouteNames.entry,
       AppLaunchState.wifeReady => RouteNames.wifeHome,
       AppLaunchState.partnerNeedsLink =>
         invitationToken == null
@@ -70,17 +69,24 @@ abstract final class AppRouter {
     };
   }
 
-  /// URL 새로고침에서도 date/requestId/token과 진입 맥락을 보존한다.
+  /// URL을 canonical 경로로 정규화하고 date/requestId/token 진입 맥락을 보존한다.
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     final requestedName = settings.name ?? RouteNames.root;
-    final uri = Uri.tryParse(requestedName) ?? Uri(path: RouteNames.root);
-    final screen = _screenFor(uri);
+    final requestedUri =
+        Uri.tryParse(requestedName) ?? Uri(path: RouteNames.entry);
+    final normalizedUri = requestedUri.path == RouteNames.root
+        ? requestedUri.replace(path: RouteNames.entry)
+        : requestedUri;
+    final screen = _screenFor(normalizedUri);
+    final effectiveUri = screen == null
+        ? Uri(path: RouteNames.entry)
+        : normalizedUri;
     return MaterialPageRoute<void>(
       settings: RouteSettings(
-        name: requestedName,
+        name: effectiveUri.toString(),
         arguments: settings.arguments,
       ),
-      builder: (_) => screen,
+      builder: (_) => screen ?? const EntryScreen(),
     );
   }
 
@@ -89,9 +95,9 @@ abstract final class AppRouter {
     return [onGenerateRoute(RouteSettings(name: initialRoute))];
   }
 
-  static Widget _screenFor(Uri uri) {
+  static Widget? _screenFor(Uri uri) {
     final path = uri.path;
-    if (path == RouteNames.root || path == RouteNames.entry) {
+    if (path == RouteNames.entry) {
       return EntryScreen(invitationToken: uri.queryParameters['token']);
     }
     if (path == RouteNames.profileSetup) {
@@ -150,14 +156,7 @@ abstract final class AppRouter {
     if (_matchesDetailPath(uri, actor: 'partner', resource: 'requests')) {
       return PartnerRequestScreen(requestId: _lastSegment(uri));
     }
-    return ProductSkeletonScreen(
-      requirementIds: const [],
-      title: '화면을 찾을 수 없습니다',
-      description: '등록되지 않은 경로입니다: $path',
-      actions: const [
-        SkeletonAction('처음으로 이동', RouteNames.entry, replace: true),
-      ],
-    );
+    return null;
   }
 
   static String _lastSegment(Uri uri) {

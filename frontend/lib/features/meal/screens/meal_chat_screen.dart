@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_input.dart';
-import '../../../design_system/components/bottom_navigation.dart';
 import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/components/top_app_bar.dart';
+import '../../../design_system/components/wife_navigation_scaffold.dart';
 import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_radius.dart';
 import '../../../design_system/tokens/app_spacing.dart';
@@ -62,7 +62,8 @@ class _MealChatScreenState extends State<MealChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return WifeNavigationScaffold(
+      currentIndex: 2,
       appBar: TopAppBar(
         title: '챗봇',
         onBack: _handleBack,
@@ -155,22 +156,6 @@ class _MealChatScreenState extends State<MealChatScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: AppBottomNavigation(
-        currentIndex: 2,
-        items: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), label: '홈'),
-          NavigationDestination(icon: Icon(Icons.sync_alt), label: '실시간'),
-          NavigationDestination(
-            icon: Icon(Icons.chat_bubble_outline),
-            label: '챗봇',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            label: '캘린더',
-          ),
-        ],
-        onSelected: _openBottomDestination,
-      ),
     );
   }
 
@@ -208,19 +193,6 @@ class _MealChatScreenState extends State<MealChatScreen> {
       Navigator.pop(context);
     } else {
       Navigator.pushReplacementNamed(context, RouteNames.mealGuide);
-    }
-  }
-
-  void _openBottomDestination(int index) {
-    final route = switch (index) {
-      0 => RouteNames.wifeHome,
-      1 => RouteNames.wifeMovement,
-      2 => RouteNames.mealChat,
-      3 => RouteNames.wifeCalendar,
-      _ => RouteNames.wifeHome,
-    };
-    if (route != RouteNames.mealChat) {
-      Navigator.pushReplacementNamed(context, route);
     }
   }
 }

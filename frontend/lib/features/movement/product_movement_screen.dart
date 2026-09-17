@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 
 import '../../design_system/components/app_button.dart';
 import '../../design_system/components/app_card.dart';
-import '../../design_system/components/bottom_navigation.dart';
 import '../../design_system/components/content_frame.dart';
 import '../../design_system/components/info_banner.dart';
 import '../../design_system/components/responsive_split_view.dart';
 import '../../design_system/components/top_app_bar.dart';
+import '../../design_system/components/wife_navigation_scaffold.dart';
 import '../../design_system/tokens/app_colors.dart';
 import '../../design_system/tokens/app_radius.dart';
 import '../../design_system/tokens/app_spacing.dart';
@@ -48,14 +48,14 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
   void _refresh() => setState(() {});
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: TopAppBar(
+  Widget build(BuildContext context) {
+    final appBar = TopAppBar(
       title: '실시간',
       showBack: !_isWife,
       onBack: _isWife ? null : _backToPartnerCalendar,
       wifeProfileAction: _isWife,
-    ),
-    body: SafeArea(
+    );
+    final body = SafeArea(
       top: false,
       child: ContentFrame(
         maxWidth: 1200,
@@ -110,11 +110,16 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
           ],
         ),
       ),
-    ),
-    bottomNavigationBar: _isWife
-        ? _WifeMovementNavigation(onSelected: _openWifeTab)
-        : null,
-  );
+    );
+    if (_isWife) {
+      return WifeNavigationScaffold(
+        currentIndex: 1,
+        appBar: appBar,
+        body: body,
+      );
+    }
+    return Scaffold(appBar: appBar, body: body);
+  }
 
   void _moveToHousehold() =>
       Navigator.pushNamed(context, RouteNames.householdGuide);
@@ -173,16 +178,6 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
         ),
       ),
     ),
-  );
-
-  void _openWifeTab(int index) => Navigator.pushReplacementNamed(
-    context,
-    [
-      RouteNames.wifeHome,
-      RouteNames.wifeMovement,
-      RouteNames.mealChat,
-      RouteNames.wifeCalendar,
-    ][index],
   );
 }
 
@@ -380,29 +375,5 @@ class _DeviceRow extends StatelessWidget {
         ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
       ),
     ],
-  );
-}
-
-class _WifeMovementNavigation extends StatelessWidget {
-  const _WifeMovementNavigation({required this.onSelected});
-
-  final ValueChanged<int> onSelected;
-
-  @override
-  Widget build(BuildContext context) => AppBottomNavigation(
-    currentIndex: 1,
-    items: const [
-      NavigationDestination(icon: Icon(Icons.home_outlined), label: '홈'),
-      NavigationDestination(
-        icon: Icon(Icons.monitor_heart_outlined),
-        label: '실시간',
-      ),
-      NavigationDestination(icon: Icon(Icons.chat_bubble_outline), label: '챗봇'),
-      NavigationDestination(
-        icon: Icon(Icons.calendar_month_outlined),
-        label: '캘린더',
-      ),
-    ],
-    onSelected: onSelected,
   );
 }

@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_state_view.dart';
-import '../../../design_system/components/bottom_navigation.dart';
+import '../../../design_system/components/content_frame.dart';
 import '../../../design_system/components/info_banner.dart';
-import '../../../design_system/components/responsive_page_content.dart';
+import '../../../design_system/components/responsive_split_view.dart';
 import '../../../design_system/components/section_header.dart';
 import '../../../design_system/components/top_app_bar.dart';
+import '../../../design_system/components/wife_navigation_scaffold.dart';
+import '../../../design_system/tokens/app_breakpoints.dart';
 import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_names.dart';
@@ -81,7 +83,8 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
     final pregnancyWeek =
         _profileStore.profile?.pregnancyWeekAt(DateTime.now()) ??
         _data.pregnancyWeek;
-    return Scaffold(
+    return WifeNavigationScaffold(
+      currentIndex: 0,
       appBar: TopAppBar(
         title: '홈',
         showBack: false,
@@ -98,65 +101,83 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
       ),
       body: SafeArea(
         top: false,
-        child: ResponsivePageContent(
-          child: ListView(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-            children: [
-              PregnancyWeekHero(userName: _data.userName, week: pregnancyWeek),
-              const SizedBox(height: AppSpacing.xxl),
-              _TodayConditionSection(
-                hasTodayCare: hasTodayCare,
-                summary: hasTodayCare
-                    ? TodayConditionSummary(
-                        condition: _todayCareStore.today!,
-                        onEdit: _editCondition,
-                      )
-                    : null,
-              ),
-              const SizedBox(height: AppSpacing.xxl),
-              if (!hasTodayCare)
-                ..._todayCarePrompt()
-              else
-                ..._routineContent(),
-              const SizedBox(height: AppSpacing.huge),
-              const SectionHeader(
-                title: '이번 주에 알아두세요',
-                description: '임신 주차와 오늘 상태를 바탕으로 확인하는 보조 정보예요.',
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              PregnancyWeekTipCard(
-                week: pregnancyWeek,
-                tips: pregnancyWeek == _data.pregnancyWeek
-                    ? _data.weekTips
-                    : const [
-                        '임신 주수에 따라 몸의 변화가 조금씩 달라질 수 있어요.',
-                        '불편함이 지속되면 진료 때 상담해 주세요.',
+        child: ContentFrame(
+          maxWidth: 1200,
+          child: LayoutBuilder(
+            builder: (context, constraints) => ListView(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+              children: [
+                PregnancyWeekHero(
+                  userName: _data.userName,
+                  week: pregnancyWeek,
+                ),
+                const SizedBox(height: AppSpacing.xxl),
+                if (constraints.maxWidth < AppBreakpoints.desktop) ...[
+                  _conditionSection(hasTodayCare),
+                  const SizedBox(height: AppSpacing.xxl),
+                  ..._primaryContent(hasTodayCare),
+                  const SizedBox(height: AppSpacing.huge),
+                  _weekContext(pregnancyWeek),
+                ] else
+                  ResponsiveSplitView(
+                    primaryFlex: 8,
+                    secondaryFlex: 4,
+                    gap: AppSpacing.xxl,
+                    primary: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: _primaryContent(hasTodayCare),
+                    ),
+                    secondary: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _conditionSection(hasTodayCare),
+                        const SizedBox(height: AppSpacing.xxl),
+                        _weekContext(pregnancyWeek),
                       ],
-                caution: _data.caution,
-                todayTip: _data.todayTip,
-              ),
-            ],
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
-      bottomNavigationBar: AppBottomNavigation(
-        currentIndex: 0,
-        items: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), label: '홈'),
-          NavigationDestination(icon: Icon(Icons.sync_alt), label: '실시간'),
-          NavigationDestination(
-            icon: Icon(Icons.chat_bubble_outline),
-            label: '챗봇',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            label: '캘린더',
-          ),
-        ],
-        onSelected: _openBottomDestination,
-      ),
     );
   }
+
+  Widget _conditionSection(bool hasTodayCare) => _TodayConditionSection(
+    hasTodayCare: hasTodayCare,
+    summary: hasTodayCare
+        ? TodayConditionSummary(
+            condition: _todayCareStore.today!,
+            onEdit: _editCondition,
+          )
+        : null,
+  );
+
+  List<Widget> _primaryContent(bool hasTodayCare) =>
+      hasTodayCare ? _routineContent() : _todayCarePrompt();
+
+  Widget _weekContext(int pregnancyWeek) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      const SectionHeader(
+        title: '이번 주에 알아두세요',
+        description: '임신 주차와 오늘 상태를 바탕으로 확인하는 보조 정보예요.',
+      ),
+      const SizedBox(height: AppSpacing.lg),
+      PregnancyWeekTipCard(
+        week: pregnancyWeek,
+        tips: pregnancyWeek == _data.pregnancyWeek
+            ? _data.weekTips
+            : const [
+                '임신 주수에 따라 몸의 변화가 조금씩 달라질 수 있어요.',
+                '불편함이 지속되면 진료 때 상담해 주세요.',
+              ],
+        caution: _data.caution,
+        todayTip: _data.todayTip,
+      ),
+    ],
+  );
 
   List<Widget> _todayCarePrompt() {
     return [
@@ -249,17 +270,6 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
 
   void _editCondition() {
     Navigator.pushNamed(context, '${RouteNames.condition}?mode=edit');
-  }
-
-  /// Home은 목적지만 선택하고 각 Feature의 로직은 해당 Route가 담당한다.
-  void _openBottomDestination(int index) {
-    final route = switch (index) {
-      1 => RouteNames.wifeMovement,
-      2 => RouteNames.mealChat,
-      3 => RouteNames.wifeCalendar,
-      _ => null,
-    };
-    if (route != null) Navigator.pushReplacementNamed(context, route);
   }
 }
 

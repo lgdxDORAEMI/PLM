@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../../../design_system/components/bottom_navigation.dart';
-import '../../../design_system/components/responsive_page_content.dart';
+import '../../../design_system/components/content_frame.dart';
+import '../../../design_system/components/responsive_split_view.dart';
 import '../../../design_system/components/top_app_bar.dart';
+import '../../../design_system/components/wife_navigation_scaffold.dart';
 import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_radius.dart';
 import '../../../design_system/tokens/app_spacing.dart';
@@ -36,7 +37,8 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
   void _refresh() => setState(() {});
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => WifeNavigationScaffold(
+    currentIndex: 0,
     appBar: TopAppBar(
       title: '건강 가이드',
       onBack: _handleBack,
@@ -44,74 +46,75 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
     ),
     body: SafeArea(
       top: false,
-      child: ResponsivePageContent(
+      child: ContentFrame(
+        maxWidth: 1200,
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
           children: [
-            const _BodySummary(),
-            const SizedBox(height: AppSpacing.xxl),
-            Text('오늘의 집중 부위', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: AppSpacing.lg),
-            for (final load in BodyCareMockData.loads) ...[
-              _BodyLoadCard(
-                load: load,
-                selected: load.area == _controller.selectedArea,
-                onTap: () => _controller.selectArea(load.area),
+            ResponsiveSplitView(
+              primaryFlex: 7,
+              secondaryFlex: 5,
+              gap: AppSpacing.xxl,
+              mobileSecondaryFirst: true,
+              primary: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    '${_controller.selectedArea}에 맞춘 오늘의 활동',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  for (final activity in BodyCareMockData.activitiesFor(
+                    _controller.selectedArea,
+                  ).indexed) ...[
+                    MovementGuideCard(
+                      activity: activity.$2,
+                      featured: activity.$1 == 0,
+                      completed: _controller.isCompleted(activity.$2.id),
+                      onOpen: () => _showGuide(activity.$2),
+                      onComplete: () =>
+                          _controller.toggleCompleted(activity.$2.id),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                  ],
+                  const SizedBox(height: AppSpacing.sm),
+                  _BodyAreaSelector(
+                    selectedArea: _controller.selectedArea,
+                    onSelected: _controller.selectArea,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Text(
+                    '불편하거나 통증이 심해지면 동작을 멈추고 의료진과 상담해 주세요.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: AppSpacing.md),
-            ],
-            const SizedBox(height: AppSpacing.xl),
-            Text(
-              '${_controller.selectedArea}에 맞춘 오늘의 활동',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            for (final activity in BodyCareMockData.activitiesFor(
-              _controller.selectedArea,
-            ).indexed) ...[
-              MovementGuideCard(
-                activity: activity.$2,
-                featured: activity.$1 == 0,
-                completed: _controller.isCompleted(activity.$2.id),
-                onOpen: () => _showGuide(activity.$2),
-                onComplete: () => _controller.toggleCompleted(activity.$2.id),
+              secondary: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const _BodySummary(),
+                  const SizedBox(height: AppSpacing.xxl),
+                  Text(
+                    '오늘의 집중 부위',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  for (final load in BodyCareMockData.loads) ...[
+                    _BodyLoadCard(
+                      load: load,
+                      selected: load.area == _controller.selectedArea,
+                      onTap: () => _controller.selectArea(load.area),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                  ],
+                ],
               ),
-              const SizedBox(height: AppSpacing.md),
-            ],
-            const SizedBox(height: AppSpacing.sm),
-            _BodyAreaSelector(
-              selectedArea: _controller.selectedArea,
-              onSelected: _controller.selectArea,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              '불편하거나 통증이 심해지면 동작을 멈추고 의료진과 상담해 주세요.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
             ),
           ],
         ),
       ),
-    ),
-    bottomNavigationBar: AppBottomNavigation(
-      currentIndex: 0,
-      items: const [
-        NavigationDestination(icon: Icon(Icons.home_outlined), label: '홈'),
-        NavigationDestination(
-          icon: Icon(Icons.monitor_heart_outlined),
-          label: '실시간',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.chat_bubble_outline),
-          label: '챗봇',
-        ),
-        NavigationDestination(
-          icon: Icon(Icons.calendar_month_outlined),
-          label: '캘린더',
-        ),
-      ],
-      onSelected: _openBottomDestination,
     ),
   );
 
@@ -121,16 +124,6 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
     } else {
       Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
     }
-  }
-
-  void _openBottomDestination(int index) {
-    final route = [
-      RouteNames.wifeHome,
-      RouteNames.wifeMovement,
-      RouteNames.mealChat,
-      RouteNames.wifeCalendar,
-    ][index];
-    Navigator.pushReplacementNamed(context, route);
   }
 
   Future<void> _showGuide(BodyCareActivity activity) =>
