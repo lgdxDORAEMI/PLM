@@ -1,6 +1,6 @@
 import unittest
 
-from app.services.routine.prompt import ROUTINE_SCHEMA, build_user_prompt
+from app.services.routine.prompt import CATEGORIES, ROUTINE_SCHEMA, build_user_prompt, category_schema
 
 
 def _walk(node, path="$"):
@@ -17,9 +17,10 @@ def _walk(node, path="$"):
 class RoutinePromptTest(unittest.TestCase):
     def test_schema_is_strict_compatible(self) -> None:
         """OpenAI strict 모드: 모든 객체는 additionalProperties=false, required = 모든 속성."""
-        for path, obj in _walk(ROUTINE_SCHEMA):
-            self.assertIs(obj.get("additionalProperties"), False, path)
-            self.assertEqual(set(obj["required"]), set(obj["properties"]), path)
+        for schema in (ROUTINE_SCHEMA, *(category_schema(c) for c in CATEGORIES)):
+            for path, obj in _walk(schema):
+                self.assertIs(obj.get("additionalProperties"), False, path)
+                self.assertEqual(set(obj["required"]), set(obj["properties"]), path)
         self.assertEqual(set(ROUTINE_SCHEMA["properties"]), {"meal", "household", "health", "sleep"})
 
     def test_prompt_sections(self) -> None:
