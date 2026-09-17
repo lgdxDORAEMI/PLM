@@ -23,9 +23,9 @@
 
 서비스 흐름도(`docs/서비스흐름도/**`)는 사용하지 않았다.
 
-> **중요 발견**: 6·7번 PDF는 파일명과 달리 실제 테이블/컬럼/타입/PK/FK 표기가 전혀 없는 **화면별 필드 명세서**다(ERD 아님). 이 문서에서 "DB 설계 기준"으로 실제 사용 가능한 자료는 화면별로 어떤 데이터가 필요한지에 대한 서술뿐이며, 실제 테이블 설계는 이미 Backend 팀이 작성한 `docs/DB_ERD_스키마.md`(근거: 04_1/04_2/화면설계서/개발순서/실제 코드)가 담당하고 있었다. 본 문서와 `DB_SCHEMA_RECONCILIATION.md`는 이 실태를 반영해 `DB_ERD_스키마.md`를 사실상의 스키마 기준선으로 쓰고, 6·7번 PDF는 화면별 "필요한 데이터" 열의 근거로만 사용한다.
+> **중요 발견**: 6·7번 PDF는 파일명과 달리 실제 테이블/컬럼/타입/PK/FK 표기가 전혀 없는 **화면별 필드 명세서**다(ERD 아님). 이 문서에서 "DB 설계 기준"으로 실제 사용 가능한 자료는 화면별로 어떤 데이터가 필요한지에 대한 서술뿐이며, 실제 테이블 설계는 이미 Backend 팀이 작성한 구 ERD 초안(삭제됨)(근거: 04_1/04_2/화면설계서/개발순서/실제 코드)이 담당하고 있었고, 현재는 `docs/backend/TARGET_DB_SCHEMA.md`가 대체한다. 본 문서와 `DB_SCHEMA_RECONCILIATION.md`는 이 실태를 반영해 당시 구 ERD 초안을 스키마 기준선으로 썼고(현재 기준선은 `TARGET_DB_SCHEMA.md`), 6·7번 PDF는 화면별 "필요한 데이터" 열의 근거로만 사용한다.
 
-현재 구현 상태 파악용 참고자료: `backend/README.md`, `docs/api.md`, `docs/DB_ERD_스키마.md`, `backend/DOMAIN_OWNERSHIP.md`, `backend/app/**`, `supabase/migrations/**`.
+현재 구현 상태 파악용 참고자료: `backend/README.md`, `docs/api.md`, `docs/backend/TARGET_DB_SCHEMA.md`, `backend/DOMAIN_OWNERSHIP.md`, `backend/app/**`, `supabase/migrations/**`.
 
 ---
 
@@ -37,7 +37,7 @@
 |---|---|---|---|---|---|---|
 | Wife | B-ENTRY-001 | FUC-B-ENTRY-001 | 로그인 상태, 프로필 완료 여부, 파트너 연동 상태 | `profiles`(MISSING), `pregnancy_profiles`(EXISTING) | `GET /account/bootstrap` (Stub, 메모리) | SKELETON_REQUIRED |
 | Wife | W-PROFILE-001 | FUC-W-PROFILE-001 | 출산예정일, 마지막 생리 시작일 | `pregnancy_profiles`(EXISTING) | `PUT /profile/me/due-date` (Supabase 연동) | IMPLEMENTED |
-| Wife | W-PROFILE-002 | FUC-W-PROFILE-002 | 신장, 임신 전 체중, (화면상) 생년월일→나이 | `pregnancy_profiles.height_cm/pre_pregnancy_weight_kg`(EXISTING). 생년월일/나이 컬럼 없음(`DB_ERD_스키마.md`가 "ProfileDraft.age는 FR에 없어 제외"로 이미 결정) | `PUT /profile/me/body` (Supabase 연동, 신장·체중만) | PARTIAL |
+| Wife | W-PROFILE-002 | FUC-W-PROFILE-002 | 신장, 임신 전 체중, (화면상) 생년월일→나이 | `pregnancy_profiles.height_cm/pre_pregnancy_weight_kg`(EXISTING). 생년월일/나이 컬럼 없음(구 ERD 초안(삭제됨)에서 "ProfileDraft.age는 FR에 없어 제외"로 결정) | `PUT /profile/me/body` (Supabase 연동, 신장·체중만) | PARTIAL |
 | Wife | W-PROFILE-003 | FUC-W-PROFILE-003 | 초산/경산 여부 | `pregnancy_profiles.is_first_pregnancy`(EXISTING, migration `20260917000001`) | 없음. `account.py`의 6단계 통합 `ProfileInput`(Stub)만 존재, 단계별 저장 라우트 없음 | SKELETON_REQUIRED |
 | Wife | W-PROFILE-004 | FUC-W-PROFILE-004 | 단태/쌍태 여부 | `pregnancy_profiles.is_multiple_pregnancy`(EXISTING) | 없음(위와 동일) | SKELETON_REQUIRED |
 | Wife | W-PROFILE-005 | FUC-W-PROFILE-005 | 알레르기 다중 선택 | `pregnancy_profiles.allergies`(EXISTING) | 없음(위와 동일) | SKELETON_REQUIRED |
@@ -106,22 +106,22 @@
 
 실제 적용된 migration 7건(`supabase/migrations/*.sql`) 기준 테이블: `pregnancy_profiles`(1~6단계 컬럼 포함), `daily_conditions`, `daily_routines`, `routine_items`, `pregnancy_knowledge`(pgvector), `posture_calibration_profiles`, `posture_events`.
 
-`DB_ERD_스키마.md`가 제안한 18개 테이블 대비:
+구 ERD 초안(삭제됨)이 제안한 18개 테이블 대비:
 
 - **EXISTING_MATCH (7)**: `pregnancy_profiles`, `daily_conditions`, `daily_routines`, `routine_items`, `pregnancy_knowledge`, `posture_events`(컬럼은 대부분 일치)
-- **EXISTING_DIFFERENT (2)**: `posture_calibrations`(ERD 명칭) vs 실제 `posture_calibration_profiles`(테이블명 불일치); `routine_items.source_ids`(migration에는 있으나 ERD 표에는 누락, 문서만 stale)
+- **EXISTING_DIFFERENT (2)**: `posture_calibrations`(구 ERD 초안(삭제됨) 명칭) vs 실제 `posture_calibration_profiles`(테이블명 불일치); `routine_items.source_ids`(migration에는 있으나 초안 표에는 누락, 초안 삭제로 해소)
 - **MISSING (9)**: 아래 Missing DB Structures 참고
 
 상세 화면 단위 대조는 `DB_SCHEMA_RECONCILIATION.md` 참고.
 
 ## Missing DB Structures
 
-`profiles`, `partner_invitations`, `partner_links`, `recommendation_feedback`, `chat_messages`, `household_requests`, `household_request_items`, `daily_reports`, `notifications`, `motion_consents`, `motion_sessions` — 총 11개(`DB_ERD_스키마.md`가 이미 설계했으나 migration 미적용).
+`profiles`, `partner_invitations`, `partner_links`, `recommendation_feedback`, `chat_messages`, `household_requests`, `household_request_items`, `daily_reports`, `notifications`, `motion_consents`, `motion_sessions` — 총 11개(구 ERD 초안(삭제됨)이 설계했으나 migration 미적용).
 
 ## Duplicate Data Risks
 
-1. **프로필 저장 이중 구현**: `profile.py`(Supabase 연동, 1~2단계 단계별 저장)와 `account.py`의 `PUT /account/profile`(Stub, 6단계 일괄 저장, `birth_date` 필수)이 같은 `pregnancy_profiles` 대상 데이터를 서로 다른 계약으로 다룬다. `birth_date`/`age`는 `pregnancy_profiles`에 컬럼이 없고 `DB_ERD_스키마.md`가 이미 "FR에 없어 제외"로 결정한 값이라, Account 쪽 실제 구현 시 필드 정합을 다시 맞춰야 한다.
-2. **`posture_calibrations` 명칭 불일치**: ERD 문서와 실제 migration의 테이블명이 달라, 새 migration 작성 시 문서를 그대로 따르면 테이블이 중복 생성될 위험이 있다.
+1. **프로필 저장 이중 구현**: `profile.py`(Supabase 연동, 1~2단계 단계별 저장)와 `account.py`의 `PUT /account/profile`(Stub, 6단계 일괄 저장, `birth_date` 필수)이 같은 `pregnancy_profiles` 대상 데이터를 서로 다른 계약으로 다룬다. `birth_date`/`age`는 `pregnancy_profiles`에 컬럼이 없고 구 ERD 초안(삭제됨)에서 "FR에 없어 제외"로 결정한 값이라, Account 쪽 실제 구현 시 필드 정합을 다시 맞춰야 한다.
+2. **`posture_calibrations` 명칭 불일치**: 구 ERD 초안(삭제됨)과 실제 migration의 테이블명이 달랐다. 새 migration은 실제 테이블명(`posture_calibration_profiles`)을 기준으로 작성한다.
 3. **컨디션 캘린더 지수**(위험 아님, 확인 완료): `daily_conditions` 원본 점수와 `B-CAL-001`의 4단계 색상 지수는 별도 테이블 없이 조회 시 계산으로 유지하도록 이미 설계돼 있다.
 4. **모션 요약 vs 원본 이벤트**(위험 아님, 확인 완료): `daily_reports.content`의 모션 요약 스냅샷은 `posture_events` 30일 보존 만료 후에도 캘린더 과거 조회를 지원하려는 목적이라 중복 저장이 아니다.
 5. **가사 요청 항목 vs 루틴 항목**(위험 아님, 확인 완료): `household_request_items.routine_item_id`가 `routine_items`를 FK로 재사용하도록 설계돼 있어 항목 원본을 중복 저장하지 않는다.
@@ -153,4 +153,4 @@
 - `H-REQUEST-002`(가사 요청 완료 결과): 남편 화면설계서 인덱스에는 있으나 본문 상세 섹션이 문서에 없음 — 별도 API 필요 여부 확인 필요
 - Calendar 4단계 컨디션 지수 계산식, Motion 감지 임계값 — 문서상 수치 미확정 (`DOMAIN_OWNERSHIP.md` 기존 TBD)
 - Account Stub의 기본 역할이 Wife로 고정 — 실제 adapter에서 인증 사용자 역할 조회 필요 (`DOMAIN_OWNERSHIP.md` 기존 TBD)
-- `posture_calibration_profiles`/`posture_events`의 `motion_sessions` 연동(§5 가정 1, `/live` 조회를 DB 기반으로 전환할지) — `DB_ERD_스키마.md`가 "확인 필요한 가정"으로 명시, 미확정
+- `posture_calibration_profiles`/`posture_events`의 `motion_sessions` 연동(§5 가정 1, `/live` 조회를 DB 기반으로 전환할지) — `TARGET_DB_SCHEMA.md`에서 NOT_REQUIRED(이번 MVP)

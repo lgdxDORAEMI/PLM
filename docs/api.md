@@ -148,7 +148,7 @@ Swagger UI: `/docs`, OpenAPI schema: `/openapi.json`.
 ## AI 하루 루틴 (W-ROUTINE-001/003, W-HOME-001)
 
 모든 요청에 `Authorization: Bearer <Supabase access token>`이 필요합니다. 구현: `backend/app/api/v1/routine.py`,
-파이프라인 설계: `docs/ai_routine/AI_루틴_파이프라인.md`.
+파이프라인 설계: `docs/ai_wednesday/AI_wednesday_pipeline.md`.
 
 | Method | Path | 화면 | 성공 응답 | 설명 |
 | --- | --- | --- | --- | --- |
@@ -162,7 +162,16 @@ Swagger UI: `/docs`, OpenAPI schema: `/openapi.json`.
 | id, date, generated_at | `daily_routines` 행 |
 | source | `ai` / `fallback_prev`(전일 루틴 복사) / `fallback_template`(기본 템플릿). 폴백률(NFR-016) 측정용 |
 | model | 생성에 쓴 LLM 모델명. 폴백이면 `null` |
-| response | `{meal: [...], household: [...], health: [...], sleep: {...}}`. 각 항목 `{item_key, title, payload, source_ids}`. `payload` 모양은 `docs/DB_ERD_스키마.md` §3.2 카테고리별 정의와 같다. `source_ids`는 근거 문단 `pregnancy_knowledge.id` |
+| response | `{meal: [...], household: [...], health: [...], sleep: {...}}`. 각 항목 `{item_key, title, payload, source_ids}`. `payload` 모양은 아래 표. `source_ids`는 근거 문단 `pregnancy_knowledge.id` |
+
+`payload` 모양 (카테고리별, 기준 코드 `backend/app/services/routine/prompt.py` `ROUTINE_SCHEMA`)
+
+| 카테고리 | payload |
+| --- | --- |
+| meal (배열) | `{period: breakfast\|lunch\|dinner\|snack, reasonTitle, reason, evidence, nutritionTags: [문자열], cautions: [{title, description, badge}]}` |
+| household (배열) | `{owner: self\|appliance\|partner, applianceAction: now\|reserve\|night\|none, reason}` |
+| health (배열) | `{bodyArea, loads: [{area, label, value(숫자)}], guide, durationMin(정수), reason}` |
+| sleep (객체 1개) | `{recommendedBedtime, environments: [{type, value, options: [문자열]}], tips: [문자열], reason}` |
 
 | 상태 코드 | 의미 |
 | --- | --- |

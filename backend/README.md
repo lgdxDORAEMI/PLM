@@ -44,7 +44,7 @@ AI 루틴은 코드·DB·단위 테스트까지 완료됐고 **OpenAI 크레딧 
 - `POST /api/v1/routine/today`: 프로필 + 오늘 컨디션으로 루틴 생성·저장. AI 실패·10초 초과 시 전일 루틴 → 기본 템플릿 순으로 폴백해 항상 4종을 반환
 - 파이프라인: `app/services/routine/` — ① `inputs.py` 입력 수집 → ② `rules.py`+`rules.yaml` 룰 엔진(16규칙) → ③ `retriever.py` RAG(OpenAI 임베딩 + RPC `match_pregnancy_knowledge`) → ④ `prompt.py` 프롬프트·JSON 스키마 → ⑤ `generator.py` OpenAI `json_schema strict` 호출 → ⑥ `service.py` 검증(금지 항목·`source_ids` 제거)·폴백 → ⑦ `repository.py` `daily_routines`/`routine_items` 저장
 - 지식 적재(1회성)는 `tools/rag_ingest/`(팀원 패키지). 영문 공개자료 75청크 → 한국어 번역·재청크 → `text-embedding-3-small`(1536) → `pregnancy_knowledge`
-- 설계·진행 기록: [AI 루틴 파이프라인](../docs/ai_routine/AI_루틴_파이프라인.md), 테이블: [DB ERD](../docs/DB_ERD_스키마.md)
+- 설계·진행 기록: [웬즈데이 AI 파이프라인](../docs/ai_wednesday/AI_wednesday_pipeline.md), 테이블: `supabase/migrations/`
 
 #### 상태 (2026-09-16)
 
@@ -222,7 +222,7 @@ LLM_API_BASE_URL=
 - `.env.example`에 실제 값이 들어간 것을 발견해 placeholder로 원복
 - 실DB 폴백 경로 검증 완료(OpenAI 429 → `fallback_template` 저장 → 재생성 덮어쓰기 → 테스트 행 삭제)
 - Backend 테스트 37개 전부 통과합니다
-- **AI 루틴 남은 작업: OpenAI 크레딧 충전 후 실테스트 2건(지식 적재, 루틴 실호출)만.** 그 외 다음 작업은 `docs/04_3_개발순서.md`의 W-COND-001 컨디션 입력 API(테이블은 이미 있음)
+- **AI 루틴 남은 작업: OpenAI 크레딧 충전 후 실테스트 2건(지식 적재, 루틴 실호출)만.** 그 외 다음 작업은 `docs/requirements/04_1_기능요구사항명세서.md`의 FUC-W-COND-001 컨디션 입력 API(테이블은 이미 있음)
 
 ## 관련 문서
 
@@ -230,6 +230,5 @@ LLM_API_BASE_URL=
 - [API 계약](../docs/api.md)
 - [Architecture](../docs/architecture.md)
 - [Supabase](../supabase/README.md)
-- [AI 루틴 파이프라인](../docs/ai_routine/AI_루틴_파이프라인.md)
-- [DB ERD 스키마](../docs/DB_ERD_스키마.md)
+- [웬즈데이 AI 파이프라인](../docs/ai_wednesday/AI_wednesday_pipeline.md)
 - [모션 통합 및 검증](../docs/movement/README.md)

@@ -1,4 +1,4 @@
--- AI 하루 루틴 생성(W-ROUTINE-001/003)에 필요한 테이블. 설계: docs/DB_ERD_스키마.md §3.2, docs/ai_routine/AI_루틴_파이프라인.md
+-- AI 하루 루틴 생성(W-ROUTINE-001/003)에 필요한 테이블. 설계: docs/ai_wednesday/AI_wednesday_pipeline.md, payload 모양: docs/api.md
 -- 컨벤션(pregnancy_profiles와 동일): enum은 text + check, 접근은 backend(service role)만 → RLS 켜고 정책 없음.
 -- 값 범위는 backend/app/schemas/*.py 검증과 같게 유지한다.
 
@@ -21,7 +21,7 @@ create table if not exists public.daily_conditions (
   wrist_pain         smallint not null check (wrist_pain between 1 and 5),
   fatigue            smallint not null check (fatigue between 1 and 5),
   mood               smallint not null check (mood between 1 and 5),
-  sleep_quality      smallint check (sleep_quality between 1 and 5),  -- 척도 미확정(04_3 #2), null 허용
+  sleep_quality      smallint check (sleep_quality between 1 and 5),  -- 04_1 FUC-W-COND-001 입력 항목에 수면 없음, null 허용
   planned_activities text[] not null default '{}',                    -- 9종 코드 + 직접 입력
   created_at         timestamptz not null default now(),
   updated_at         timestamptz not null default now(),
@@ -45,7 +45,7 @@ create table if not exists public.daily_routines (
 );
 alter table public.daily_routines enable row level security;
 
--- 4) 루틴 항목 (홈 4종 카드, W-RECORD-001/002). payload 모양은 ERD §3.2 카테고리별 정의.
+-- 4) 루틴 항목 (홈 4종 카드, W-RECORD-001/002). payload 모양은 docs/api.md 루틴 응답 payload 표.
 create table if not exists public.routine_items (
   id           uuid primary key default gen_random_uuid(),
   routine_id   uuid not null references public.daily_routines (id) on delete cascade,
