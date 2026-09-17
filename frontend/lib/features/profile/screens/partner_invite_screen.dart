@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_card.dart';
@@ -68,10 +67,10 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
 
   Widget _buildBody() => switch (_controller.state) {
     InvitationActionState.loading => const AppLoadingState(
-      message: '초대 링크를 준비하고 있어요',
+      message: 'ThinQ 초대를 준비하고 있어요',
     ),
     InvitationActionState.error => AppErrorState(
-      title: '초대 링크를 만들지 못했어요',
+      title: '초대를 준비하지 못했어요',
       message: '잠시 후 다시 시도해 주세요.',
       onRetry: _controller.load,
     ),
@@ -100,23 +99,8 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
           description: '가족 분담이 캘린더에 자동 정리돼요',
         ),
         const SizedBox(height: AppSpacing.xxl),
-        Text('초대 링크', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: AppSpacing.md),
-        AppCard(
-          child: Row(
-            children: [
-              Expanded(
-                child: SelectableText(
-                  _controller.link!,
-                  key: const ValueKey('partner-invite-link'),
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-              ),
-              TextButton(onPressed: _copyLink, child: const Text('복사')),
-            ],
-          ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
+        const AppCard(child: Text('초대장은 남편의 ThinQ 앱 알림으로 전송돼요.')),
+        const SizedBox(height: AppSpacing.xl),
         Row(
           children: [
             Expanded(
@@ -125,7 +109,7 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
                 key: const ValueKey('partner-invite-send'),
                 label: _controller.state == InvitationActionState.submitting
                     ? '보내는 중…'
-                    : '링크 보내기',
+                    : '초대장 보내기',
                 onPressed: _controller.state == InvitationActionState.submitting
                     ? null
                     : _send,
@@ -143,7 +127,7 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
         ),
         const SizedBox(height: AppSpacing.md),
         Text(
-          '남편이 링크를 열면 ThinQ 설치와 로그인 후 연결할 수 있어요.',
+          '남편이 ThinQ 알림을 선택하고 연결을 완료하면 함께 볼 수 있어요.',
           textAlign: TextAlign.center,
           style: Theme.of(
             context,
@@ -152,14 +136,6 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
       ],
     ),
   };
-
-  Future<void> _copyLink() async {
-    await Clipboard.setData(ClipboardData(text: _controller.link!));
-    if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('초대 링크를 복사했어요.')));
-  }
 
   Future<void> _send() async {
     if (!await _controller.send() || !mounted) return;
@@ -171,8 +147,8 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
           color: AppColors.success,
           size: 48,
         ),
-        title: const Text('초대 링크를 준비했어요'),
-        content: const Text('현재는 Mock 공유 상태이며 실제 OS 공유 시트는 연결하지 않았어요.'),
+        title: const Text('초대장을 보냈어요'),
+        content: const Text('남편의 ThinQ 앱 알림으로 초대장을 전송했어요.'),
         actions: [
           AppButton(label: '확인', onPressed: () => Navigator.pop(dialogContext)),
         ],
@@ -213,7 +189,7 @@ class _InviteHero extends StatelessWidget {
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: AppSpacing.sm),
-        const Text('설치와 가입은 링크 하나로 끝나요'),
+        const Text('ThinQ 알림으로 안전하게 계정을 연결할 수 있어요.'),
       ],
     ),
   );

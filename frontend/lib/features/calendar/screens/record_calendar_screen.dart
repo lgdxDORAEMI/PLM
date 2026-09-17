@@ -104,7 +104,7 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen> {
     final date = recordDateKey(record.date);
     final route = widget.role == AppUserRole.wife
         ? RouteNames.dailyReport(date)
-        : RouteNames.partnerMorningReport(date);
+        : RouteNames.husbandDailyReport(date);
     Navigator.pushNamed(context, route);
   }
 }
@@ -248,7 +248,8 @@ class _SelectedDayDetail extends StatelessWidget {
         variant: AppButtonVariant.secondary,
         onPressed: onOpenReport,
       ),
-      if (role == AppUserRole.partner) ...[
+      if (role == AppUserRole.husband &&
+          DateUtils.isSameDay(record.date, DateTime.now())) ...[
         const SizedBox(height: AppSpacing.md),
         AppButton(
           label: '실시간 홈캠 신체 정보 보기',

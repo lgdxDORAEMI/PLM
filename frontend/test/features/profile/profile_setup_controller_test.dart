@@ -19,6 +19,7 @@ void main() {
     expect(controller.continueToNextStep(), isTrue);
 
     controller
+      ..updateBirthDate(DateTime(1993, 5, 14))
       ..updateHeight('165')
       ..updateWeight('55');
     expect(controller.continueToNextStep(), isTrue);
@@ -68,6 +69,12 @@ void main() {
     addTearDown(controller.dispose);
     controller.updateDueDate(DateTime(2026, 12, 1));
     controller.updateLastPeriodDate(lmp);
+    controller
+      ..updateBirthDate(DateTime(1993, 5, 14))
+      ..updateHeight('165')
+      ..updateWeight('55')
+      ..updateFirstPregnancy(true)
+      ..updateMultiplePregnancy(false);
     expect(controller.draft.dueDate, isNull);
     expect(
       controller.draft.effectiveDueDate,
@@ -96,5 +103,18 @@ void main() {
     expect(controller.continueToNextStep(), isTrue);
     expect(controller.isSummary, isTrue);
     expect(controller.draft.height, '168');
+  });
+
+  test('Summary 수정 중 뒤로가면 변경값을 버리고 기존 값으로 복귀한다', () {
+    final controller = ProfileSetupController(
+      mode: ProfileMode.edit,
+      initialStep: 6,
+    );
+    addTearDown(controller.dispose);
+    controller.editStep(1);
+    controller.updateHeight('190');
+    expect(controller.moveBack(), isTrue);
+    expect(controller.isSummary, isTrue);
+    expect(controller.draft.height, '165');
   });
 }

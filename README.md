@@ -41,13 +41,13 @@ Home의 AI Routine 영역은 `RoutineService` 경계를 통해 데이터를 받�
 
 4종 상세 가이드는 하나의 Dashboard Template을 복제하지 않습니다. Meal은 끼니별 추천·근거·수락/다른 메뉴 순환/공유, Household는 직접 수행·가전 추천·가족 위임과 Partner Request 상태, Health는 부담 부위 우선순위와 활동 완료, Sleep은 취침 맥락·환경 항목별 설정·수면 팁에 각각 최적화되어 있습니다. ThinQ 기기 실행은 MVP 밖이므로 Household와 Sleep에서 실제 제어를 제공하지 않으며, 추천값과 local Mock 상태만 확인할 수 있습니다.
 
-Chat은 임신 주차·주의 진단·당일 컨디션을 유지하는 식사 재조정 대화에 집중하고, Report는 핵심 결과 → 실행 루틴 → 하루 인사이트와 가족 참여 순으로 결과 위계를 제공합니다. Calendar는 날짜 선택 → 선택일 기록 → `/wife/report/:date` 또는 `/partner/report/:date` 상세 흐름으로 연결됩니다. Mobile에서는 세로 흐름을 유지하고 Desktop에서는 Calendar와 선택일 상세를 7:5 2-column으로 동시에 표시합니다.
+Chat은 임신 주차·주의 진단·당일 컨디션을 유지하는 식사 재조정 대화에 집중하고, Report는 핵심 결과 → 실행 루틴 → 하루 인사이트와 가족 참여 순으로 결과 위계를 제공합니다. Calendar는 날짜 선택 → 선택일 기록 → 아내 `/wife/report/:date` 또는 남편 `/husband/report/daily/:date` 상세 흐름으로 연결됩니다. 남편 Daily 리포트 상세는 현재 임시 화면입니다. Mobile에서는 세로 흐름을 유지하고 Desktop에서는 Calendar와 선택일 상세를 7:5 2-column으로 동시에 표시합니다.
 
-Partner 영역은 Wife UI를 복제하지 않고 상태 확인 → 행동 확인 → 요청 처리 흐름으로 구성됩니다. `/partner/calendar`의 알림 진입점에서 Notification을 열면 날짜가 일치하는 오전 Report 또는 실제 request ID의 가사 Request로 이동합니다. Request는 항목별로 확인·완료하며 처리 결과는 Wife Household 상태와 Partner Calendar의 가족 분담 집계에 함께 반영됩니다. 최신 Route 계약에 따라 Partner 전용 Bottom Navigation과 Profile 버튼은 제공하지 않습니다.
+남편 영역은 `/husband/calendar`를 기본 홈으로 사용합니다. 알림은 오전 Report 또는 request ID의 가사 Request로 이동하며, 남편 화면에는 Bottom Navigation을 두지 않습니다. 요청 처리의 화면·데이터 세부 개편은 이번 라우팅 작업 범위에 포함하지 않았습니다.
 
-B-MOTION은 Phase 2 범위이므로 `/wife/movement`와 `/partner/movement` 제품 화면에서 실제 카메라·MediaPipe·실시간 센서를 실행하지 않습니다. 제품 UI는 Current state, Latest event, Today event log, Device state를 Local Mock으로만 제공하며 실제 연동 상태를 별도 표시합니다. 기존 브라우저 카메라/WebSocket 코드는 `main_movement_debug.dart`로 실행하는 독립 기술 데모에만 남아 있습니다. Wife는 하단 실시간 탭으로, Partner는 Calendar의 명시적 CTA로만 진입하며 Partner Movement에는 Bottom Navigation이 없습니다.
+실시간 경로는 아내 `/wife/live`, 남편 `/husband/live`입니다. 아내는 하단 실시간 탭으로, 남편은 캘린더에서 오늘 날짜를 선택했을 때 표시되는 버튼으로 진입합니다. 현재 화면 데이터는 Local Mock이고 실제 카메라·MediaPipe·실시간 센서를 실행하지 않습니다. 브라우저 카메라/WebSocket 코드는 `main_movement_debug.dart`의 독립 기술 데모에 남아 있습니다.
 
-`/entry`는 Bootstrap과 실제 Demo Entry를 함께 제공하되 두 역할을 코드에서 분리합니다. 신규 사용자는 Entry의 `시작하기`로 Profile을 등록한 뒤 Home에 도착하고, 완료 Profile이 브라우저에 저장된 재방문 사용자는 Home으로 바로 이동합니다. `/`와 알 수 없는 경로는 `/entry`로 정규화합니다. 실제 ThinQ Host shell과 Session Guard는 아직 연결되지 않았습니다. Screen ID별 상태와 QA 결과는 [Screen 구현 Map](docs/SCREEN_IMPLEMENTATION_MAP.md) 및 [Frontend 진행 현황](docs/FRONTEND_PROGRESS.md)을 참고하세요.
+라우팅은 [ROUTE_MAP_V2](docs/development/ROUTE_MAP_V2.md)를 따릅니다. `/entry`에서 인증·연결 상태를 확인하고, 아내는 프로필 첫 단계 또는 `/wife/home`으로, 연결된 남편은 `/husband/calendar`로 이동합니다. 미연결 남편에게는 초대 필요 안내를 표시합니다. `auth`와 `activeRole`을 별도 상태로 유지하며, 역할 전환은 권한 확인 후 이전 이동 기록을 지우고 대상 역할 홈으로 이동합니다. 계정별 `activeRole`은 Web 저장소에서 복원하지만 실제 ThinQ 세션·권한 연동은 아직 제공되지 않습니다.
 
 요구사항 재감사 후 프로필의 예정일/LMP 기반 임신 주수 계산, 필수 선택 단계의 다음 버튼 비활성, Report 저장 후 Calendar 선택일 유지 및 오늘 컨디션 초기화를 추가했습니다. Demo Profile은 브라우저 localStorage에 보존되지만 서버 계정과 동기화되지 않으며, 리포트도 영구 저장되지 않습니다. 실제 가전·모션 연동이 없는 MVP Mock 리포트에서 해당 실행 횟수는 0으로 표시합니다.
 

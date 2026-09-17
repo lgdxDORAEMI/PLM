@@ -52,8 +52,9 @@ class WifeNavigationScaffold extends StatelessWidget {
   Widget build(BuildContext context) => AdaptiveNavigationScaffold(
     currentIndex: currentIndex,
     items: items,
-    onSelected: (index) =>
-        Navigator.pushReplacementNamed(context, routes[index]),
+    onSelected: (index) => Navigator.of(
+      context,
+    ).pushNamedAndRemoveUntil(routes[index], (_) => false),
     appBar: appBar,
     body: body,
     floatingActionButton: floatingActionButton,

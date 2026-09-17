@@ -2,7 +2,7 @@
 
 ## 제품 화면과 기술 데모 경계
 
-`ProductMovementScreen`은 B-MOTION-001의 Phase 2 화면 구성을 확인하기 위한 Local Mock입니다. `/wife/movement`는 Wife 하단 실시간 탭, `/partner/movement`는 Partner Calendar CTA에서만 진입하며, 제품 화면은 카메라 권한·MediaPipe·WebSocket·실시간 센서를 사용하지 않습니다.
+`ProductMovementScreen`은 B-MOTION-001의 오늘 감지 상태와 로그를 Local Mock으로 표시합니다. `/wife/live`는 아내 하단 실시간 탭, `/husband/live`는 남편 캘린더의 오늘 CTA에서 진입하며, 제품 화면은 카메라 권한·MediaPipe·실시간 센서를 직접 실행하지 않습니다.
 
 아래 카메라/분석 구현은 `main_movement_debug.dart`로만 실행하는 독립 기술 데모입니다. 일반 `main.dart`와 `AppRouter`에서는 `MovementScreen`, `BrowserCameraFrameSource`, `BrowserLiveTransport`를 생성하지 않습니다.
 

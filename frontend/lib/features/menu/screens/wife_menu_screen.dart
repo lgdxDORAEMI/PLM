@@ -75,7 +75,7 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
                 key: const ValueKey('partner-unlinked-state'),
                 icon: Icons.person_add_alt,
                 title: '남편 초대하기',
-                description: '초대 링크를 보내 남편 ThinQ와 연결',
+                description: 'ThinQ 알림으로 초대장을 보내 계정 연결',
                 onTap: () =>
                     Navigator.pushNamed(context, RouteNames.wifeInvite),
               ),

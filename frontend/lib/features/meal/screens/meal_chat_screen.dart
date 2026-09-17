@@ -20,9 +20,10 @@ import '../widgets/meal_chat_bubble.dart';
 import '../widgets/meal_recommendation_card.dart';
 
 class MealChatScreen extends StatefulWidget {
-  const MealChatScreen({super.key, this.service});
+  const MealChatScreen({super.key, this.service, this.mealPeriod});
 
   final MealChatService? service;
+  final MealPeriod? mealPeriod;
 
   @override
   State<MealChatScreen> createState() => _MealChatScreenState();
@@ -80,7 +81,7 @@ class _MealChatScreenState extends State<MealChatScreen> {
                   controller: _scrollController,
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
                   children: [
-                    const _MealChatContext(),
+                    _MealChatContext(period: widget.mealPeriod),
                     const SizedBox(height: AppSpacing.xxl),
                     for (final message in _controller.messages) ...[
                       MealChatBubble(
@@ -160,7 +161,9 @@ class _MealChatScreenState extends State<MealChatScreen> {
   }
 
   MealRecommendation _initialRecommendation() {
-    return MockMealService.guide.recommendationFor(MealPeriod.breakfast);
+    return MockMealService.guide.recommendationFor(
+      widget.mealPeriod ?? MealPeriod.breakfast,
+    );
   }
 
   void _send(String value) {
@@ -198,7 +201,9 @@ class _MealChatScreenState extends State<MealChatScreen> {
 }
 
 class _MealChatContext extends StatelessWidget {
-  const _MealChatContext();
+  const _MealChatContext({required this.period});
+
+  final MealPeriod? period;
 
   @override
   Widget build(BuildContext context) {
@@ -213,13 +218,19 @@ class _MealChatContext extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '아침 메뉴를 다시 고르는 중',
+              period == null
+                  ? '오늘 식사 가이드를 조정해요'
+                  : '${_label(period!)} 메뉴를 다시 고르는 중',
               style: Theme.of(
                 context,
               ).textTheme.titleMedium?.copyWith(color: AppColors.primary700),
             ),
             const SizedBox(height: AppSpacing.xs),
-            const Text('식사 가이드에서 이어짐 · 임당 경계 · 입덧 반영'),
+            Text(
+              period == null
+                  ? '임신 주차 · 주의 진단 · 오늘 컨디션 반영'
+                  : '식사 가이드에서 이어짐 · 임당 경계 · 입덧 반영',
+            ),
             const SizedBox(height: AppSpacing.sm),
             Text(
               'MVP에서는 식사 가이드 재조정 대화만 지원해요.',
@@ -232,6 +243,13 @@ class _MealChatContext extends StatelessWidget {
       ),
     );
   }
+
+  static String _label(MealPeriod period) => switch (period) {
+    MealPeriod.breakfast => '아침',
+    MealPeriod.lunch => '점심',
+    MealPeriod.dinner => '저녁',
+    MealPeriod.snack => '밤',
+  };
 }
 
 class _RespondingIndicator extends StatelessWidget {

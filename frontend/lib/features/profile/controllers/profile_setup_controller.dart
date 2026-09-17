@@ -6,18 +6,26 @@ import '../models/profile_draft.dart';
 
 /// Profile 입력값과 Wizard 이동 규칙을 UI에서 분리해 관리한다.
 class ProfileSetupController extends ChangeNotifier {
-  ProfileSetupController({required ProfileMode mode})
-    : _draft = mode == ProfileMode.edit
-          ? ProfileStore.instance.profile ?? ProfileDraft.mockEdit()
-          : const ProfileDraft();
+  ProfileSetupController({
+    required ProfileMode mode,
+    int initialStep = 0,
+    bool returnToSummary = false,
+  }) : _step = initialStep,
+       _editingFromSummary = returnToSummary,
+       _draft = mode == ProfileMode.edit
+           ? ProfileStore.instance.profile ?? ProfileDraft.mockEdit()
+           : const ProfileDraft() {
+    if (returnToSummary) _summarySnapshot = _draft;
+  }
 
   static const int inputStepCount = 6;
 
   ProfileDraft _draft;
-  int _step = 0;
+  int _step;
   String? _validationMessage;
   bool _dirty = false;
-  bool _editingFromSummary = false;
+  bool _editingFromSummary;
+  ProfileDraft? _summarySnapshot;
 
   ProfileDraft get draft => _draft;
   int get step => _step;
@@ -36,6 +44,9 @@ class ProfileSetupController extends ChangeNotifier {
 
   void updateWeight(String value) =>
       _update(_draft.copyWith(prePregnancyWeight: value));
+
+  void updateBirthDate(DateTime value) =>
+      _update(_draft.copyWith(birthDate: value));
 
   void updateFirstPregnancy(bool value) =>
       _update(_draft.copyWith(isFirstPregnancy: value));
@@ -77,6 +88,7 @@ class ProfileSetupController extends ChangeNotifier {
     if (_editingFromSummary) {
       _step = inputStepCount;
       _editingFromSummary = false;
+      _summarySnapshot = null;
     } else {
       _step += 1;
     }
@@ -87,8 +99,10 @@ class ProfileSetupController extends ChangeNotifier {
   bool moveBack() {
     if (_step == 0) return false;
     if (_editingFromSummary) {
+      _draft = _summarySnapshot ?? _draft;
       _step = inputStepCount;
       _editingFromSummary = false;
+      _summarySnapshot = null;
       _validationMessage = null;
       notifyListeners();
       return true;
@@ -101,6 +115,7 @@ class ProfileSetupController extends ChangeNotifier {
 
   void editStep(int step) {
     assert(step >= 0 && step < inputStepCount);
+    _summarySnapshot = _draft;
     _step = step;
     _editingFromSummary = true;
     _validationMessage = null;
@@ -127,6 +142,9 @@ class ProfileSetupController extends ChangeNotifier {
           return '출산예정일 또는 마지막 생리 시작일을 입력해 주세요.';
         }
       case 1:
+        if (_draft.birthDate == null) {
+          return '생년월일을 입력해 주세요.';
+        }
         final height = double.tryParse(_draft.height ?? '');
         final weight = double.tryParse(_draft.prePregnancyWeight ?? '');
         if (height == null || height < 100 || height > 220) {

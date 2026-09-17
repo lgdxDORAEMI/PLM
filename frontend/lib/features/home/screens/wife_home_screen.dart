@@ -223,11 +223,20 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
         ),
         Align(
           alignment: Alignment.centerRight,
-          child: TextButton.icon(
-            key: const ValueKey('home-routine-retry'),
-            onPressed: _routineController.loadToday,
-            icon: const Icon(Icons.refresh),
-            label: const Text('맞춤 루틴 다시 시도'),
+          child: Wrap(
+            children: [
+              TextButton(
+                onPressed: () =>
+                    Navigator.pushNamed(context, RouteNames.routineFallback),
+                child: const Text('오류 안내'),
+              ),
+              TextButton.icon(
+                key: const ValueKey('home-routine-retry'),
+                onPressed: _routineController.loadToday,
+                icon: const Icon(Icons.refresh),
+                label: const Text('다시 시도'),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: AppSpacing.xl),

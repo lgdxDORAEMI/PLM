@@ -11,4 +11,4 @@ enum InviteEntryContext { onboarding, profileMenu }
 
 enum ConditionMode { create, edit }
 
-enum AppUserRole { wife, partner }
+enum AppUserRole { wife, husband }

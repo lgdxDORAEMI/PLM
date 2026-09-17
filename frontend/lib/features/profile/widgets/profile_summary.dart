@@ -42,8 +42,9 @@ class ProfileSummary extends StatelessWidget {
               onTap: () => onEditStep(0),
             ),
             _SummaryItem(
-              label: '신장 · 체중 (임신 전)',
-              value: '${draft.height}cm · ${draft.prePregnancyWeight}kg',
+              label: '생년월일 · 신장 · 체중 (임신 전)',
+              value:
+                  '${_formatDate(draft.birthDate)} · ${draft.height}cm · ${draft.prePregnancyWeight}kg',
               onTap: () => onEditStep(1),
             ),
             _SummaryItem(
@@ -90,6 +91,12 @@ class ProfileSummary extends StatelessWidget {
 
   String _dateValue(ProfileDraft draft) {
     final date = draft.effectiveDueDate;
+    if (date == null) return '입력되지 않음';
+    return '${date.year}. ${date.month.toString().padLeft(2, '0')}. '
+        '${date.day.toString().padLeft(2, '0')}.';
+  }
+
+  String _formatDate(DateTime? date) {
     if (date == null) return '입력되지 않음';
     return '${date.year}. ${date.month.toString().padLeft(2, '0')}. '
         '${date.day.toString().padLeft(2, '0')}.';

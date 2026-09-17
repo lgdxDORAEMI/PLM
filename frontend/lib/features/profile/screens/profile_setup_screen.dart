@@ -13,9 +13,16 @@ import '../widgets/profile_summary.dart';
 import '../widgets/profile_wizard_frame.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
-  const ProfileSetupScreen({super.key, required this.mode});
+  const ProfileSetupScreen({
+    super.key,
+    required this.mode,
+    this.initialStep = 0,
+    this.returnToSummary = false,
+  });
 
   final ProfileMode mode;
+  final int initialStep;
+  final bool returnToSummary;
 
   @override
   State<ProfileSetupScreen> createState() => _ProfileSetupScreenState();
@@ -27,14 +34,27 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   late final TextEditingController _weightController;
   late final TextEditingController _medicalNoteController;
 
-  static const _allergyOptions = ['갑각류', '견과류', '우유', '계란', '밀', '없어요'];
+  static const _allergyOptions = [
+    '갑각류',
+    '견과류',
+    '우유',
+    '계란',
+    '밀',
+    '생선류',
+    '땅콩',
+    '대두',
+    '없어요',
+  ];
   static const _medicalOptions = ['임신성 당뇨 경계', '빈혈', '고혈압', '조기진통', '역류성 식도염'];
 
   @override
   void initState() {
     super.initState();
-    _controller = ProfileSetupController(mode: widget.mode)
-      ..addListener(_onControllerChanged);
+    _controller = ProfileSetupController(
+      mode: widget.mode,
+      initialStep: widget.initialStep,
+      returnToSummary: widget.returnToSummary,
+    )..addListener(_onControllerChanged);
     final draft = _controller.draft;
     _heightController = TextEditingController(text: draft.height);
     _weightController = TextEditingController(text: draft.prePregnancyWeight);
@@ -116,12 +136,14 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       ),
       1 => ProfileWizardFrame(
         step: 1,
-        title: '임신 전 신장·체중을 알려주세요',
-        description: '관절 부담 기준과 맞춤 가이드를 계산할 때 사용해요.',
+        title: '기본 정보를 알려주세요',
+        description: '생년월일과 임신 전 신체 정보는 맞춤 가이드에 사용해요.',
         validationMessage: _controller.validationMessage,
         onContinue: _continue,
         continueLabel: _continueLabel,
         child: _BodyFields(
+          birthDate: _controller.draft.birthDate,
+          onBirthDateTap: _selectBirthDate,
           heightController: _heightController,
           weightController: _weightController,
           onHeightChanged: _controller.updateHeight,
@@ -270,6 +292,18 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         : _controller.updateLastPeriodDate(selected);
   }
 
+  Future<void> _selectBirthDate() async {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: _controller.draft.birthDate ?? DateTime(today.year - 30),
+      firstDate: DateTime(today.year - 70),
+      lastDate: DateTime(today.year - 14, today.month, today.day),
+      helpText: '생년월일 선택',
+    );
+    if (selected != null) _controller.updateBirthDate(selected);
+  }
+
   Future<void> _handleBack() async {
     FocusManager.instance.primaryFocus?.unfocus();
     if (_controller.moveBack()) return;
@@ -311,7 +345,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   void _complete() {
     _controller.markSaved();
     if (widget.mode == ProfileMode.create) {
-      Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
+      Navigator.pushReplacementNamed(context, RouteNames.partnerInvite);
       return;
     }
     if (Navigator.canPop(context)) {
@@ -324,12 +358,16 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
 class _BodyFields extends StatelessWidget {
   const _BodyFields({
+    required this.birthDate,
+    required this.onBirthDateTap,
     required this.heightController,
     required this.weightController,
     required this.onHeightChanged,
     required this.onWeightChanged,
   });
 
+  final DateTime? birthDate;
+  final VoidCallback onBirthDateTap;
   final TextEditingController heightController;
   final TextEditingController weightController;
   final ValueChanged<String> onHeightChanged;
@@ -350,12 +388,24 @@ class _BodyFields extends StatelessWidget {
       textInputAction: TextInputAction.done,
       onChanged: onWeightChanged,
     );
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Expanded(child: height),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(child: weight),
+        ProfileDateField(
+          key: const Key('birth-date-field'),
+          label: '생년월일',
+          value: birthDate,
+          onTap: onBirthDateTap,
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: height),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(child: weight),
+          ],
+        ),
       ],
     );
   }
