@@ -73,13 +73,64 @@ class BodyInput(BaseModel):
     pre_pregnancy_weight_kg: WeightKg
 
 
+class PregnancyHistoryInput(BaseModel):
+    """프로필 설정 3/6. 초산/경산 여부."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    is_first_pregnancy: bool
+
+
+class PregnancyCountInput(BaseModel):
+    """프로필 설정 4/6. 단태/쌍태 여부."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    is_multiple_pregnancy: bool
+
+
+MAX_ALLERGY_ITEMS = 30
+MAX_MEDICAL_CONDITION_ITEMS = 30
+MAX_MEDICAL_NOTE_LENGTH = 1000
+
+
+class AllergiesInput(BaseModel):
+    """프로필 설정 5/6. 다중 선택. "없어요"는 빈 배열로 저장한다."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    allergies: list[str] = Field(default_factory=list, max_length=MAX_ALLERGY_ITEMS)
+
+
+class MedicalNotesInput(BaseModel):
+    """프로필 설정 6/6. 주의 진단 다중 선택 + 자유 텍스트."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    medical_conditions: list[str] = Field(
+        default_factory=list, max_length=MAX_MEDICAL_CONDITION_ITEMS
+    )
+    medical_note: str = Field(default="", max_length=MAX_MEDICAL_NOTE_LENGTH)
+
+
 class ProfileResponse(BaseModel):
     due_date: date | None
     last_period_start: date | None
     height_cm: float | None
     pre_pregnancy_weight_kg: float | None
+    is_first_pregnancy: bool | None
+    is_multiple_pregnancy: bool | None
+    allergies: list[str]
+    medical_conditions: list[str]
+    medical_note: str
     pregnancy_weeks: int | None
     pregnancy_days: int | None
 
     # 연속으로 완료한 프로필 설정 단계 수. 진행바·이어하기에 쓴다.
+    # allergies/medical_conditions는 DB 컬럼이 not null default '{}'라 "아직 입력
+    # 안 함"과 "빈 배열을 선택함"을 컬럼값만으로 구분할 수 없다 — 그래서 이 두 단계는
+    # STEP_COLUMNS(완료 단계 계산)에 포함하지 않는다. 즉 completed_step은 최대 4까지만
+    # 정확하고, 5~6단계 저장 여부는 이 필드로 알 수 없다(TBD: nullable 컬럼 또는 별도
+    # 완료 플래그로 스키마를 바꾸기 전까지는 프런트가 allergies/medical_note 자체의
+    # 존재 여부로 판단해야 한다).
     completed_step: int

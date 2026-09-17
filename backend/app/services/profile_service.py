@@ -7,18 +7,40 @@ import httpx
 from postgrest.exceptions import APIError
 from supabase import Client
 
-from app.schemas.profile import BodyInput, DueDateInput, ProfileResponse
+from app.schemas.profile import (
+    AllergiesInput,
+    BodyInput,
+    DueDateInput,
+    MedicalNotesInput,
+    PregnancyCountInput,
+    PregnancyHistoryInput,
+    ProfileResponse,
+)
 from app.utils import dates
 
 logger = logging.getLogger(__name__)
 
 TABLE = "pregnancy_profiles"
-PROFILE_COLUMNS = ("due_date", "last_period_start", "height_cm", "pre_pregnancy_weight_kg")
+PROFILE_COLUMNS = (
+    "due_date",
+    "last_period_start",
+    "height_cm",
+    "pre_pregnancy_weight_kg",
+    "is_first_pregnancy",
+    "is_multiple_pregnancy",
+    "allergies",
+    "medical_conditions",
+    "medical_note",
+)
 
-# 단계별로 채워져야 하는 컬럼. 3~6단계 화면설계서가 나오면 순서대로 추가한다.
+# 단계별로 채워져야 하는 컬럼. allergies/medical_conditions는 여기 포함하지 않는다
+# (schemas/profile.py의 ProfileResponse.completed_step 주석 참고 — not null default
+# '{}'라 "미입력"과 "빈 배열 선택"을 구분할 수 없다).
 STEP_COLUMNS: tuple[tuple[str, ...], ...] = (
     ("due_date",),
     ("height_cm", "pre_pregnancy_weight_kg"),
+    ("is_first_pregnancy",),
+    ("is_multiple_pregnancy",),
 )
 
 Row = dict[str, Any]
@@ -91,6 +113,49 @@ class ProfileService:
             raise ProfileStepOrderError
         return _to_response(rows[0])
 
+    def save_pregnancy_history(
+        self, user_id: str, data: PregnancyHistoryInput
+    ) -> ProfileResponse:
+        return self._update_step(
+            user_id, {"is_first_pregnancy": data.is_first_pregnancy}
+        )
+
+    def save_pregnancy_count(
+        self, user_id: str, data: PregnancyCountInput
+    ) -> ProfileResponse:
+        return self._update_step(
+            user_id, {"is_multiple_pregnancy": data.is_multiple_pregnancy}
+        )
+
+    def save_allergies(self, user_id: str, data: AllergiesInput) -> ProfileResponse:
+        return self._update_step(user_id, {"allergies": data.allergies})
+
+    def save_medical_notes(
+        self, user_id: str, data: MedicalNotesInput
+    ) -> ProfileResponse:
+        return self._update_step(
+            user_id,
+            {
+                "medical_conditions": data.medical_conditions,
+                "medical_note": data.medical_note,
+            },
+        )
+
+    def _update_step(self, user_id: str, values: dict[str, Any]) -> ProfileResponse:
+        """3~6단계 공통 저장 경로. 행은 1단계 저장 때만 생기므로, 수정된 행이 없으면
+        1단계가 없는 것이다(save_body와 같은 전제). 2~5단계 사이의 순서는 강제하지
+        않는다 — completed_step 계산이 순서를 어겨도 정확히 세므로, 화면 흐름에서만
+        순서를 강제하면 충분하다."""
+        rows = self._run(
+            lambda: self.client.table(TABLE)
+            .update({**values, "updated_at": _now()})
+            .eq("user_id", user_id)
+            .execute()
+        )
+        if not rows:
+            raise ProfileStepOrderError
+        return _to_response(rows[0])
+
     def _run(self, request: Callable[[], Any]) -> list[Row]:
         try:
             return request().data
@@ -108,8 +173,14 @@ def _to_response(row: Row) -> ProfileResponse:
     if row.get("due_date") is not None:
         due_date = date.fromisoformat(str(row["due_date"]))
         weeks, days = dates.pregnancy_age(due_date, dates.today_kst())
+    values = {column: row.get(column) for column in PROFILE_COLUMNS}
+    # allergies/medical_conditions는 DB에서 not null default '{}'라 이론상 None이
+    # 될 수 없지만, 방어적으로 폴백을 둔다.
+    values["allergies"] = values.get("allergies") or []
+    values["medical_conditions"] = values.get("medical_conditions") or []
+    values["medical_note"] = values.get("medical_note") or ""
     return ProfileResponse(
-        **{column: row.get(column) for column in PROFILE_COLUMNS},
+        **values,
         pregnancy_weeks=weeks,
         pregnancy_days=days,
         completed_step=completed_step(row),

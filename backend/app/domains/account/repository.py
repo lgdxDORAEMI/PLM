@@ -19,6 +19,7 @@ class InvitationRecord:
     token: str
     wife_user_id: str
     expires_at: datetime
+    used_at: datetime | None = None
 
 
 class AccountRepository(Protocol):
@@ -29,6 +30,12 @@ class AccountRepository(Protocol):
     def create_invitation(
         self, user_id: str, *, expires_at: datetime
     ) -> InvitationRecord: ...
+
+    def find_invitation_by_token(self, token: str) -> InvitationRecord | None: ...
+
+    def mark_invitation_used(self, invitation_id: str, *, used_at: datetime) -> None: ...
+
+    def link_partner(self, wife_user_id: str, husband_user_id: str) -> None: ...
 
     def get_profile(self, user_id: str) -> ProfileResponse | None: ...
 

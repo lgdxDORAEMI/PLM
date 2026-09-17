@@ -180,6 +180,11 @@ class ProfileApiTest(unittest.IsolatedAsyncioTestCase):
                     "last_period_start": iso(-100),
                     "height_cm": None,
                     "pre_pregnancy_weight_kg": None,
+                    "is_first_pregnancy": None,
+                    "is_multiple_pregnancy": None,
+                    "allergies": [],
+                    "medical_conditions": [],
+                    "medical_note": "",
                     "pregnancy_weeks": 14,
                     "pregnancy_days": 2,
                     "completed_step": 1,
@@ -204,6 +209,52 @@ class ProfileApiTest(unittest.IsolatedAsyncioTestCase):
             response = await client.get("/api/v1/profile/me")
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.json(), body)
+
+    async def test_steps_3_to_6_require_step_1_first(self) -> None:
+        async with self.client() as client:
+            response = await client.put(
+                "/api/v1/profile/me/pregnancy-history", json={"is_first_pregnancy": True}
+            )
+            self.assertEqual(response.status_code, 409)
+
+            response = await client.put(
+                "/api/v1/profile/me/due-date", json={"due_date": iso(100)}
+            )
+            self.assertEqual(response.status_code, 200)
+
+            response = await client.put(
+                "/api/v1/profile/me/pregnancy-history", json={"is_first_pregnancy": True}
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response.json()["is_first_pregnancy"])
+            self.assertEqual(response.json()["completed_step"], 1)  # 2단계가 없어 카운트 정체
+
+            response = await client.put(
+                "/api/v1/profile/me/pregnancy-count", json={"is_multiple_pregnancy": False}
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertFalse(response.json()["is_multiple_pregnancy"])
+
+            response = await client.put(
+                "/api/v1/profile/me/allergies", json={"allergies": ["갑각류", "갑각류"]}
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json()["allergies"], ["갑각류", "갑각류"])
+
+            response = await client.put(
+                "/api/v1/profile/me/medical-notes",
+                json={"medical_conditions": ["빈혈"], "medical_note": "의사가 참고하라고 함"},
+            )
+            self.assertEqual(response.status_code, 200)
+            body = response.json()
+            self.assertEqual(body["medical_conditions"], ["빈혈"])
+            self.assertEqual(body["medical_note"], "의사가 참고하라고 함")
+
+            # 신장·체중(2단계)까지 채우면 completed_step이 4까지 정확히 올라간다.
+            response = await client.put(
+                "/api/v1/profile/me/body", json={"height_cm": 165, "pre_pregnancy_weight_kg": 55}
+            )
+            self.assertEqual(response.json()["completed_step"], 4)
 
     async def test_invalid_payload_is_not_saved(self) -> None:
         async with self.client() as client:

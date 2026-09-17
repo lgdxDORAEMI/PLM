@@ -64,3 +64,17 @@ def create_partner_invitation(user: User, service: Service) -> InvitationRespons
         return service.issue_invitation(user.id)
     except Exception as error:
         raise to_http_exception(error) from error
+
+
+@router.post(
+    "/partner-invitations/{token}/accept",
+    response_model=PartnerLinkResponse,
+)
+def accept_partner_invitation(
+    token: str, user: User, service: Service
+) -> PartnerLinkResponse:
+    """FUC-H-INVITE-001: 초대 수락 계약(Stub). 화면·인증 복귀 흐름은 미확정(TBD)."""
+    try:
+        return service.accept_invitation(user.id, token)
+    except Exception as error:
+        raise to_http_exception(error) from error
