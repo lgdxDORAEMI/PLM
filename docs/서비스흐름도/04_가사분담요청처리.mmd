@@ -1,34 +1,62 @@
-%% 서비스 흐름도: 가사 가이드 & 가족 분담 요청 처리
-%% 관련 기능: FUC-W-HOUSE-001, FUC-W-HOUSE-003, FUC-W-HOUSE-003-1, FUC-W-RECORD-002, FUC-H-REQUEST-001, FUC-H-REQUEST-002, FUC-H-REQUEST-003 / 관련 UC: UC3, UC5, UC9
-%% 참고: 완료 확인 팝업(구 FUC-H-REQUEST-003)은 FUC-H-REQUEST-002(요청 확인 및 완료 처리)에 병합됨. 완료 결과 안내 팝업(구 FUC-H-REQUEST-003-1)은 FUC-H-REQUEST-003으로 번호 변경됨
+%% 서비스 흐름도: 가사 가이드 3분류 → 가족 분담 요청 전송 → 남편 확인/완료 처리
+%% 관련 기능: FUC-W-HOUSE-001(3분류), FUC-W-HOUSE-002(가전 실행, Phase 2), FUC-W-HOUSE-003(요청 카드 전송),
+%%           FUC-W-HOUSE-003-1(전송 완료 팝업), FUC-W-RECORD-002(남편 요청 진행 상태 반영),
+%%           FUC-H-NOTI-001(알림 목록), FUC-H-REQUEST-001~003 / 관련 UC: UC3, UC5, UC9, UC12
+%% 핵심 규칙:
+%%   - 요청 상태는 `미확인 → 확인 → 완료` 3단계뿐이다. **거절 상태·거절 버튼은 존재하지 않으며**,
+%%     확인만 하고 완료하지 않은 요청은 계속 '확인' 상태로 유지된다(자동 거절·자동 상태 변경 금지).
+%%   - 요청 **상태 변화를 근거로 새 알림을 발송하지 않는다**(FUC-H-NOTI-001 금지 항목).
+%%     아내 화면은 조회 시점에 최신 상태를 반영해 표시한다(FUC-W-RECORD-002).
+%%   - ②가전 수행 항목의 실제 실행(FUC-W-HOUSE-002)은 Phase 2다. MVP는 '가전 수행 추천' 표시까지만 제공한다.
 flowchart TD
     classDef user fill:#E8F0FE,stroke:#4285F4,color:#1a1a1a;
     classDef system fill:#F1F3F4,stroke:#5f6368,color:#1a1a1a;
+    classDef decision fill:#FEF7E0,stroke:#F9AB00,color:#1a1a1a;
     classDef terminal fill:#E6F4EA,stroke:#34A853,color:#1a1a1a;
+    classDef external fill:#FCE8E6,stroke:#EA4335,color:#1a1a1a,stroke-dasharray: 4 3;
 
-    Start(["시작: 가사 가이드 화면 진입"]):::terminal --> A["시스템: 집안일을 직접수행/가전수행/가족분담으로 분류 표시"]:::system
+    Start(["시작: 홈의 가사 가이드 진입<br/>(W-HOUSE-001)"]):::terminal --> A["시스템: 당일 컨디션·예정 활동 기준 3분류 표시<br/>①오늘은 이것만 직접 ②가전이 대신합니다 ③가족과 나누기<br/>+ 컨디션 근거 배너 (FUC-W-HOUSE-001)"]:::system
 
-    subgraph WIFE["아내 앱"]
-        B(["사용자(아내): 가족 분담 항목 선택 후 카드 보내기"]):::user
+    A --> Br{"사용자: 어떤 분류를 처리하는가?"}:::decision
+
+    Br -- "① 직접 수행" --> Self(["사용자: 직접 수행 후 완료 체크 (FUC-W-RECORD-001)"]):::user
+    Self --> EndSelf(["다음 흐름: 05_루틴실행기록및리포트"]):::terminal
+
+    Br -- "② 가전 수행" --> Dev["시스템: 가전 수행 추천 항목 표시(MVP 범위)<br/>※ 실행 버튼(지금 시작/예약/야간)·일괄 실행은 Phase 2<br/>(FUC-W-HOUSE-002)"]:::system
+    Dev -.Phase 2.-> EXTD
+
+    subgraph EXTD["외부 시스템 (Phase 2)"]
+        ThinQ["ThinQ 연동 가전: 실행 명령 수신 및 결과 회신"]:::external
     end
 
-    A --> B
-    B --> C["시스템: 요청 생성 및 남편 계정에 알림 전송"]:::system
-    C --> C1["시스템: 딤 배경 팝업으로 전송 완료·도착 위치 안내 (FUC-W-HOUSE-003-1)"]:::system
+    Dev --> EndDev(["종료: MVP는 추천 표시까지, 실제 실행은 사용자가 수동 수행"]):::terminal
 
-    subgraph HUSBAND["남편 앱"]
-        D(["사용자(남편): 알림/카드에서 요청 확인"]):::user
-        E(["사용자(남편): '확인' 버튼 클릭 (FUC-H-REQUEST-002)"]):::user
-        F(["사용자(남편): 실제 집안일 수행"]):::user
-        G(["사용자(남편): '완료했어요' 버튼 클릭"]):::user
-        G1(["사용자(남편): 완료 확인 팝업에서 '완료했어요' 재확인 (FUC-H-REQUEST-002)"]):::user
-    end
+    Br -- "③ 가족과 나누기" --> B(["사용자(아내): 공유 선택 패널에서 ①·③ 항목 체크<br/>(가족 분담 항목은 기본 선택 상태) 후 '남편에게 공유하기'<br/>(FUC-W-HOUSE-003)"]):::user
+    B --> C["시스템: 요청 이유(당일 컨디션)와 보조 정보를 자동 첨부해<br/>요청 카드 구성 → 남편 계정에 전송 + 알림 생성<br/>(FUC-H-NOTI-001 '가사 요청 도착')"]:::system
+    C --> CSend{"시스템: 전송 성공했는가?"}:::decision
+    CSend -- "실패" --> CFail["시스템: 재전송 안내 문구 표시 (FUC-W-HOUSE-003-1)"]:::system
+    CFail --> B
+    CSend -- "성공" --> C1["시스템: 딤 배경 팝업으로 전송 항목 수·수신자·도착 위치 안내<br/>(W-HOUSE-003-1, FUC-W-HOUSE-003-1)"]:::system
+    C1 --> C2(["사용자(아내): '확인' → 가사 가이드 복귀<br/>(요청 항목은 진행 상태로 전환)"]):::user
+    C2 --> Wait["시스템: 요청 상태 = 미확인"]:::system
 
-    C1 --> D --> E
-    E --> H["시스템: 요청 상태 = 확인됨, 아내 화면 반영"]:::system
-    H --> F --> G
-    G --> G1
-    G1 --> I["시스템: 요청 상태 = 완료, Household DB 저장"]:::system
-    I --> K["시스템: 완료 결과·오늘 가족 분담 내역 안내 (FUC-H-REQUEST-003)"]:::system
-    K --> J["시스템: 아내의 루틴 실행 기록에 완료 상태 자동 반영"]:::system
-    J --> End(["종료: 캘린더/리포트에 가족 분담 내역 반영"]):::terminal
+    %% ── 남편 앱 ─────────────────────────────
+    Wait --> D(["사용자(남편): 알림(H-NOTI-001) 또는 캘린더에서 요청 카드 진입"]):::user
+    D --> DS["시스템: 요청 카드 표시<br/>(요청자·요청 사유(당일 컨디션)·요청 집안일 목록·보조 정보)<br/>(H-REQUEST-001, FUC-H-REQUEST-001)"]:::system
+    DS --> E(["사용자(남편): 카드별 '확인' 클릭 (FUC-H-REQUEST-002)"]):::user
+    E --> H["시스템: 요청 상태 = 확인<br/>(별도 알림 발송 없음)"]:::system
+    H --> F(["사용자(남편): 실제 집안일 수행"]):::user
+    F --> G(["사용자(남편): '완료했어요' 클릭"]):::user
+    G --> GP["시스템: 실수 방지 확인 팝업 표시<br/>(완료 처리할 집안일 내용 재노출)"]:::system
+    GP --> GD{"사용자(남편): 재확인 선택"}:::decision
+    GD -- "'아직이에요'" --> H
+    GD -- "'완료했어요'" --> I["시스템: 요청 상태 = 완료, Household DB 저장"]:::system
+    I --> K["시스템: 완료 결과·반영 위치 안내 +<br/>당일 가족 분담 내역 요약(요청/확인/완료 건수)<br/>(H-REQUEST-002 화면, FUC-H-REQUEST-003)"]:::system
+    K --> KB(["사용자(남편): '캘린더로 돌아가기'"]):::user
+    KB --> EndH(["종료: 완료 결과가 반영된 캘린더 조회 (B-CAL-001)"]):::terminal
+
+    %% ── 아내 화면 반영 ─────────────────────────────
+    H -.상태 저장(알림 없음).-> J
+    I -.상태 저장(알림 없음).-> J
+    J["시스템: 아내가 가사 가이드를 조회할 때 최신 상태 반영<br/>완료=초록 / 확인=파랑 / 미공유 직접 수행=핑크<br/>(FUC-W-RECORD-002, 오늘의 기록에 가족 분담으로 자동 집계)"]:::system
+    J --> End(["다음 흐름: 05_루틴실행기록및리포트<br/>(Daily 리포트·캘린더의 가족 분담 내역에 반영)"]):::terminal
