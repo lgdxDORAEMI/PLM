@@ -1,0 +1,35 @@
+%% 서비스 흐름도: PLM 진입 분기 (ThinQ 홈 배너 / 메뉴 리스트 → 아내·남편 분기)
+%% 관련 기능: FUC-B-ENTRY-001 / 관련 UC: UC17
+%% 전제: ThinQ 계정 로그인 상태에서만 진입점(배너·메뉴 항목)이 노출되며, 서비스 해지 시 둘 다 미노출된다.
+%%       아내는 '프로필 등록 완료 여부', 남편은 '계정 연동 여부'로 최초/기존을 판단한다.
+%%       남편은 초대 링크 수락(FUC-H-INVITE-001)으로만 최초 진입할 수 있어, 미연동 상태에서는 안내만 표시하고
+%%       별도 가입 절차로 진행하지 않는다.
+%%       프로필이 최종 저장되기 전에 앱이 종료된 경우 작성 중이던 Step을 복원하지 않고 1단계부터 다시 시작한다(FUC-W-PROFILE-009).
+flowchart TD
+    classDef user fill:#E8F0FE,stroke:#4285F4,color:#1a1a1a;
+    classDef system fill:#F1F3F4,stroke:#5f6368,color:#1a1a1a;
+    classDef decision fill:#FEF7E0,stroke:#F9AB00,color:#1a1a1a;
+    classDef terminal fill:#E6F4EA,stroke:#34A853,color:#1a1a1a;
+    classDef external fill:#FCE8E6,stroke:#EA4335,color:#1a1a1a,stroke-dasharray: 4 3;
+
+    Start(["시작: ThinQ 앱 실행(로그인 상태)"]):::terminal --> EXTQ
+
+    subgraph EXT["외부 시스템"]
+        EXTQ["ThinQ 앱: PLM 진입점 노출<br/>① 홈 배너(ThinQ PLAY 배너 하단 '시작하기')<br/>② 메뉴 리스트(제품 및 앱 활용 &gt; PLM, NEW 배지)<br/>※ 서비스 해지 시 둘 다 미노출"]:::external
+    end
+
+    EXTQ --> U1(["사용자: Pregnancy Life Mode 선택"]):::user
+    U1 --> A["시스템: 계정의 가입·연동 상태 조회<br/>(B-ENTRY-001, FUC-B-ENTRY-001)"]:::system
+    A --> R{"시스템: 사용자 역할은?"}:::decision
+
+    R -- 아내 --> W1{"시스템: 프로필 등록이 완료되었는가?"}:::decision
+    W1 -- 아니오(최초/미완료) --> W2["시스템: 프로필 등록 1/6로 이동<br/>(W-PROFILE-001, mode = onboarding)"]:::system
+    W2 --> EndW1(["다음 흐름: 01_프로필등록"]):::terminal
+    W1 -- 예 --> W3["시스템: 홈 화면으로 이동<br/>(W-HOME-001)"]:::system
+    W3 --> EndW2(["다음 흐름: 02_AI하루루틴생성"]):::terminal
+
+    R -- 남편 --> H1{"시스템: 아내 계정과 연동되어 있는가?"}:::decision
+    H1 -- 아니오(미연동) --> H2["시스템: '초대 필요' 안내 표시<br/>(별도 가입 절차로 진행하지 않음)"]:::system
+    H2 --> EndH1(["다음 흐름: 09_남편초대수락및계정연동<br/>(아내의 초대 링크 수락이 선행 조건)"]):::terminal
+    H1 -- 예 --> H3["시스템: 캘린더(남편 홈)로 이동<br/>(B-CAL-001)"]:::system
+    H3 --> EndH2(["다음 흐름: 06_남편오전리포트및알림"]):::terminal
