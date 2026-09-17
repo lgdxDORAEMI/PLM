@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.v1.account import router as account_router
+from app.api.v1.care import router as care_router
+from app.api.v1.family import router as family_router
 from app.api.v1.movement import router as movement_router
 from app.api.v1.profile import router as profile_router
 from app.api.v1.routine import router as routine_router
@@ -18,6 +21,9 @@ app.add_middleware(
 app.include_router(movement_router, prefix="/api/v1")
 app.include_router(profile_router, prefix="/api/v1")
 app.include_router(routine_router, prefix="/api/v1")
+app.include_router(account_router, prefix="/api/v1")
+app.include_router(care_router, prefix="/api/v1")
+app.include_router(family_router, prefix="/api/v1")
 
 
 @app.get("/")

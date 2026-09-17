@@ -1,0 +1,139 @@
+from datetime import date, datetime
+from enum import StrEnum
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+Score = int
+
+
+class ConditionInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    nausea: Score = Field(ge=1, le=5)
+    waist_pain: Score = Field(ge=1, le=5)
+    pelvis_pain: Score = Field(ge=1, le=5)
+    leg_pain: Score = Field(ge=1, le=5)
+    wrist_pain: Score = Field(ge=1, le=5)
+    fatigue: Score = Field(ge=1, le=5)
+    mood: Score = Field(ge=1, le=5)
+
+
+class PlannedActivitiesInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    activities: list[str] = Field(default_factory=list, max_length=20)
+
+    @field_validator("activities")
+    @classmethod
+    def normalize_activities(cls, values: list[str]) -> list[str]:
+        normalized = [value.strip() for value in values if value.strip()]
+        if any(len(value) > 80 for value in normalized):
+            raise ValueError("예정 활동은 항목당 80자 이하여야 합니다.")
+        return list(dict.fromkeys(normalized))
+
+
+class ConditionWriteKind(StrEnum):
+    CREATED = "created"
+    UPDATED = "updated"
+    NEW_ROUTINE_REQUIRED = "new_routine_required"
+
+
+class ConditionResponse(ConditionInput):
+    target_date: date
+    planned_activities: list[str] = Field(default_factory=list)
+    changed_fields: list[str] = Field(default_factory=list)
+    write_kind: ConditionWriteKind
+    updated_at: datetime
+
+
+class RoutineCategory(StrEnum):
+    MEAL = "meal"
+    HOUSEHOLD = "household"
+    HEALTH = "health"
+    SLEEP = "sleep"
+
+
+class ExecutionStatus(StrEnum):
+    SCHEDULED = "scheduled"
+    COMPLETED = "completed"
+    SKIPPED = "skipped"
+    NEEDS_CONFIRMATION = "needs_confirmation"
+
+
+class CompletionActor(StrEnum):
+    WIFE = "wife"
+    HUSBAND = "husband"
+    APPLIANCE = "appliance"
+
+
+class RoutineExecutionInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: ExecutionStatus
+
+
+class RoutineExecutionResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    routine_item_id: str
+    category: RoutineCategory
+    title: str
+    status: ExecutionStatus
+    completed_by: CompletionActor | None = None
+    completed_at: datetime | None = None
+
+
+class FamilyContributionSummary(BaseModel):
+    requested: int = Field(ge=0)
+    confirmed: int = Field(ge=0)
+    completed: int = Field(ge=0)
+
+
+class DailyReportResponse(BaseModel):
+    """NFR-028에 따라 사용자와 날짜 조합당 하나만 존재하는 집계 Read Model."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    report_id: str
+    target_date: date
+    finalized: bool
+    completed_routines: int = Field(ge=0)
+    appliance_executions: int = Field(ge=0)
+    routines: list[RoutineExecutionResponse] = Field(default_factory=list)
+    highest_load_area: str | None = None
+    motion_cautions: list[str] = Field(default_factory=list)
+    family: FamilyContributionSummary
+    updated_at: datetime
+
+
+class ConditionIndex(StrEnum):
+    GOOD = "good"
+    FAIR = "fair"
+    BAD = "bad"
+    HARD = "hard"
+
+
+class CalendarDay(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    target_date: date
+    condition_index: ConditionIndex
+    has_report: bool
+    report_finalized: bool
+
+
+class CalendarMonthResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    month: str
+    days: list[CalendarDay] = Field(default_factory=list)
+
+    @field_validator("month")
+    @classmethod
+    def validate_month(cls, value: str) -> str:
+        try:
+            datetime.strptime(value, "%Y-%m")
+        except ValueError as error:
+            raise ValueError("month는 YYYY-MM 형식이어야 합니다.") from error
+        return value

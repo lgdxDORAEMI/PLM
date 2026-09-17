@@ -26,8 +26,8 @@ MVP는 가전 자동 실행과 홈카메라 기반 실시간 위험 행동 로�
 | Frontend 기반 | 구현 | Flutter Web 초기화, 환경설정, DESIGN.md 기반 Theme·반응형 Layout·공통 상태/Badge/Task Component |
 | Frontend 제품 UI | 부분 구현 | 실제 responsive Entry, Profile 6단계와 LMP+280일·주수 계산, 초대 Mock, Home·Today Care·예정 활동, Daily Routine, Meal·Chat, 가사·건강·Sleep, Record/Calendar·Movement Mock, Partner Report·Inbox·Request 구현. 신규 사용자는 Entry→Profile→Home, 완료 사용자는 Home으로 바로 진입. 설정·Partner Profile은 요구사항 확정 대기 |
 | 모션 인식 Web 데모 | 구현 | 브라우저 카메라 프레임 전송, 캘리브레이션, 자세 오버레이와 상태 표시 |
-| Backend 기본 API | 구현 | `/`, `/health`, 개발용 CORS |
-| 임산부 프로필 | 부분 구현 | 프로필 1/6 출산예정일(W-PROFILE-001), 2/6 신장·임신 전 체중(W-PROFILE-002) 조회·저장. 3~6단계(초산/경산·단태/쌍태·알레르기·주의 진단)와 확인·저장 단계는 미구현 |
+| Backend 기본 API | 구현 | `/`, `/health`, 개발용 CORS와 Account·Care·Family Contract First Skeleton |
+| 임산부 프로필 | 부분 구현 | 기존 Supabase API는 1~2단계 저장. Account Stub은 화면설계서의 생년월일과 1~6단계 최종 저장 계약 제공. 전체 Profile Supabase adapter는 미구현 |
 | 모션 분석 API | 데모 구현 | 단일 세션 WebSocket 분석, 이벤트 및 일일 집계 조회 |
 | Supabase | 부분 구현 | Auth 토큰 검증 경계와 `pregnancy_profiles` migration 2건(생성, 출산예정일 제약 완화) |
 | AI 루틴·LLM | 미구현 | 인터페이스만 존재하며 공급자 및 실제 호출 없음 |
@@ -143,6 +143,14 @@ cd backend
 카메라 권한과 실제 WebSocket 모션 흐름은 자동 테스트만으로 검증할 수 없으므로 Chrome에서 별도 확인해야 합니다.
 
 ## 최근 변경
+
+### 2026-09-17 — Backend 병렬 개발 Skeleton
+
+- 세 명의 개발자가 각각 `account`, `care`, `family`를 소유하도록 Router·Schema·Service Protocol·Repository Protocol·메모리 Stub 경계를 추가했습니다.
+- Bootstrap, 최종 Profile, 컨디션·예정 활동, 실행 기록, Daily report·Calendar, 가사 요청·알림, Motion 동의·수집 설정 API 계약을 OpenAPI에 연결했습니다.
+- AI Routine과 Movement 보호 영역, 기존 migration은 수정하지 않았습니다.
+- 개발 경계와 실제 adapter 교체 지점은 [Backend Domain Ownership](backend/DOMAIN_OWNERSHIP.md), endpoint 계약은 [API 문서](docs/api.md)에 정리했습니다.
+- Backend 전체 테스트 54개를 통과했습니다.
 
 ### 2026-09-17 — Pregnancy Life Mode 공통 UI 정돈
 

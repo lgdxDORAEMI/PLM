@@ -74,4 +74,18 @@ SDK가 저장소 밖에 있고 제한된 실행 환경에서 `bin/cache/lockfile
 
 백엔드 설치와 환경변수 목록은 [README](README.md)를 참고하세요.
 
+## Backend Skeleton 로컬 확인
+
+`account`, `care`, `family` API는 실제 Supabase adapter가 연결되기 전까지 프로세스 메모리 Stub을 사용합니다. 서버 재시작 시 Stub 데이터는 초기화됩니다. Bearer token 검증은 기존 Supabase Auth 경계를 그대로 사용하므로 `.env`에 Backend용 Supabase 설정이 필요합니다.
+
+```powershell
+cd backend
+python -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements.txt
+Copy-Item .env.example .env
+.venv\Scripts\python.exe -m uvicorn app.main:app --reload
+```
+
+OpenAPI 문서는 `http://localhost:8000/docs`에서 확인합니다. 도메인 소유권과 Stub 교체 순서는 [Backend Domain Ownership](backend/DOMAIN_OWNERSHIP.md)을 따릅니다. Routine·Movement 보호 영역과 기존 migration은 이번 Skeleton에서 변경하지 않습니다.
+
 참고: [Flutter 편집기 실행 안내](https://docs.flutter.dev/tools/vs-code), [Dart 확장 설정](https://dartcode.org/docs/settings/).

@@ -1,5 +1,51 @@
 # API
 
+## Contract First Backend Skeleton
+
+아래 API는 Frontend 병렬 연동을 위한 안정 계약이다. 현재 `account`, `care`, `family` 구현은 인증된 사용자 ID를 받는 메모리 Stub이며, 실제 Repository adapter로 교체해도 URL과 Schema를 유지한다. 모든 경로는 `Authorization: Bearer <Supabase access token>`을 요구한다.
+
+### Account
+
+| Method | Path | Response | 관련 요구사항 |
+|---|---|---|---|
+| GET | `/api/v1/account/bootstrap` | 역할, Profile 완료 상태, Partner 연동 상태, 진입 목적지 | FUC-B-ENTRY-001 |
+| GET/PUT | `/api/v1/account/profile` | 6단계 Profile 최종본 조회·원자적 저장 | FUC-W-PROFILE-001~009 |
+| GET | `/api/v1/account/partner-link` | 연동 여부와 표시명 | FUC-W-MENU-001 |
+| POST | `/api/v1/account/partner-invitations` | 72시간 이내 만료되는 초대 URL | FUC-W-INVITE-001, NFR-026 |
+
+`destination`은 `wife_profile`, `wife_home`, `husband_invitation_required`, `husband_calendar` 중 하나다. 초대 수락 API는 화면과 인증 복귀 계약이 미확정이므로 TBD다.
+
+### Care
+
+| Method | Path | 역할 | 관련 요구사항 |
+|---|---|---|---|
+| GET/PUT | `/api/v1/care/conditions/{date}` | 날짜별 7개 컨디션 점수 조회·저장 | FUC-W-COND-001~004 |
+| PUT | `/api/v1/care/conditions/{date}/activities` | 예정 집안일과 직접 입력 항목 저장 | FUC-W-TASK-001 |
+| PUT | `/api/v1/care/routine-items/{itemId}/execution` | 직접 행동 완료·취소 기록 | FUC-W-RECORD-001 |
+| POST | `/api/v1/care/daily-reports/{date}/preview` | Daily report 미확정 집계 | FUC-W-HOME-002, FUC-W-REPORT-001 |
+| POST | `/api/v1/care/daily-reports/{date}/finalize` | 명시적 저장과 루틴 확정 | FUC-W-REPORT-001, NFR-028 |
+| GET | `/api/v1/care/daily-reports/{date}` | 날짜당 단일 Daily report 조회 | FUC-W-REPORT-001~002 |
+| GET | `/api/v1/care/calendar/{YYYY-MM}` | 기록이 있는 날짜의 Calendar read model | FUC-B-CAL-001 |
+
+컨디션 응답의 `write_kind`는 `created`, `updated`, `new_routine_required`다. 확정 리포트 이후 같은 날짜의 컨디션을 다시 저장하면 `new_routine_required`를 반환해 기존 확정 루틴을 덮어쓰지 않는다.
+
+### Family
+
+| Method | Path | 역할 | 관련 요구사항 |
+|---|---|---|---|
+| POST/GET | `/api/v1/family/household-requests` | 가사 요청 생성·목록 조회 | FUC-W-HOUSE-003, FUC-H-REQUEST-001 |
+| GET | `/api/v1/family/household-requests/{requestId}` | 권한이 있는 부부의 요청 조회 | FUC-H-REQUEST-001 |
+| POST | `/api/v1/family/household-requests/{requestId}/confirm` | 미확인 → 확인 | FUC-H-REQUEST-002 |
+| POST | `/api/v1/family/household-requests/{requestId}/complete` | 확인 → 완료 | FUC-H-REQUEST-002~003 |
+| GET | `/api/v1/family/notifications` | 오전 리포트·가사 요청·컨디션 변경 알림 | FUC-H-NOTI-001~002 |
+| POST | `/api/v1/family/notifications/{notificationId}/read` | 알림 읽음 처리 | FUC-H-NOTI-001 |
+| GET | `/api/v1/family/morning-reports/{date}` | 남편 공유 범위의 오전 요약 | FUC-H-REPORT-001, NFR-013 |
+| GET | `/api/v1/family/motion/privacy` | 동의와 수집 ON/OFF 상태 | FUC-B-MOTION-001, NFR-012 |
+| PUT/DELETE | `/api/v1/family/motion/consent` | 수집 동의·철회 | NFR-012 |
+| PUT | `/api/v1/family/motion/collection` | 신규 Motion 감지만 ON/OFF | FUC-B-MOTION-001 |
+
+가사 요청에는 거절 상태가 없다. 확인·완료 전환은 받은 남편만 수행하며 상태 변경으로 새 알림을 생성하지 않는다. Motion OFF와 동의 철회 모두 기존 기록을 삭제하지 않는다.
+
 개발 기본 주소: `http://localhost:8000`
 
 ## 최근 변경사항 (프론트 영향)

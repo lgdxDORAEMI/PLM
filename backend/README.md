@@ -1,5 +1,17 @@
 # PLM Backend
 
+## 병렬 개발용 도메인 Skeleton
+
+Backend는 세 명이 독립적으로 작업할 수 있도록 `account`, `care`, `family` 경계로 나뉩니다. 각 도메인은 Pydantic Schema, FastAPI Router, Service Protocol, Repository Protocol, 메모리 Stub을 갖습니다. URL과 응답 Schema를 유지한 채 Stub Repository를 Supabase adapter로 교체할 수 있습니다.
+
+| 도메인 | Prefix | 책임 |
+|---|---|---|
+| Account | `/api/v1/account` | Bootstrap, Profile 완료 상태, Partner 초대·연동 상태 |
+| Care | `/api/v1/care` | 컨디션·예정 활동, 실행 기록, Daily report, Calendar |
+| Family | `/api/v1/family` | 가사 요청, 남편 알림·오전 리포트, Motion 동의·수집 설정 |
+
+상세 소유권과 교체 지점은 [DOMAIN_OWNERSHIP.md](DOMAIN_OWNERSHIP.md)를 확인합니다. 현재 Stub 데이터는 프로세스 재시작 시 초기화되며 Supabase migration은 추가하지 않았습니다.
+
 PLM Backend는 FastAPI 기반 서버입니다. 현재 기본 상태 확인, Supabase Auth 토큰 검증을 사용하는 임산부 프로필 1·2단계, AI 하루 루틴 생성(룰 엔진 + RAG + OpenAI, 폴백 포함), 그리고 단일 사용자 모션 인식 데모 API를 제공합니다.
 
 AI 루틴은 코드·DB·단위 테스트까지 완료됐고 **OpenAI 크레딧 충전 후 실호출 테스트(지식 적재 1회 + 루틴 생성 1회)만 남았습니다.** 배우자 연동과 ThinQ 가전 제어는 아직 구현되지 않았습니다. Frontend UI 개발 중에는 이 Backend를 확장하지 않고 Mock Service를 사용합니다.
