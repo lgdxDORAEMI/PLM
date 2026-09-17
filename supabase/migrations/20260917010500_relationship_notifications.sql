@@ -1,7 +1,7 @@
 -- notifications: 남편 알림(오전리포트/가사요청/컨디션변경) EVENT 로그 (FUC-H-NOTI-001/002).
 -- TARGET_DB_SCHEMA.md 기준 NEW.
 --
--- 재확인 메모: type 값은 DB_ERD_스키마.md 초안(4종)이 아니라 실제
+-- 재확인 메모: type 값은 구 ERD 초안(삭제됨, 4종)이 아니라 실제
 -- backend/app/domains/family/schemas.py의 NotificationType(3종:
 -- morning_report/household_request/condition_changed)을 기준으로 정정했다.
 -- 같은 파일의 NotificationResponse에 있는 target_date/reference_id 필드도
