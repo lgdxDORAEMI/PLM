@@ -5,9 +5,7 @@ from app.domains.errors import DomainNotFoundError
 
 from .repository import CareRepository
 from .schemas import (
-    CalendarDay,
     CalendarMonthResponse,
-    ConditionIndex,
     ConditionInput,
     ConditionResponse,
     DailyReportResponse,
@@ -88,15 +86,17 @@ class CareService(CareServicePort):
         return self.repository.update_sleep_environment(user_id, item_id, payload)
 
     def preview_report(self, user_id: str, target_date: date) -> DailyReportResponse:
+        """미리보기는 저장하지 않는다 — Daily Report는 날짜당 1개만 존재해야 하므로
+        (NFR-028) 확정 전 상태를 영속화하지 않는다. 이미 확정된 리포트가 있으면
+        그걸 그대로 보여주고, 없으면 매번 새로 계산만 해서 보여준다."""
         existing = self.repository.get_report(user_id, target_date)
         if existing is not None:
             return existing
-        return self.repository.save_report(
-            user_id, self.repository.build_report(user_id, target_date)
-        )
+        return self.repository.build_report(user_id, target_date)
 
     def finalize_report(self, user_id: str, target_date: date) -> DailyReportResponse:
-        report = self.preview_report(user_id, target_date)
+        """저장(=Daily Report 행 생성/갱신)은 이 명시적 요청에서만 일어난다."""
+        report = self.repository.build_report(user_id, target_date)
         finalized = report.model_copy(
             update={"finalized": True, "updated_at": datetime.now(timezone.utc)}
         )
@@ -109,16 +109,6 @@ class CareService(CareServicePort):
         return report
 
     def calendar(self, user_id: str, month: str) -> CalendarMonthResponse:
-        reports = self.repository.list_reports(user_id, month)
-        return CalendarMonthResponse(
-            month=month,
-            days=[
-                CalendarDay(
-                    target_date=report.target_date,
-                    condition_index=ConditionIndex.FAIR,
-                    has_report=True,
-                    report_finalized=report.finalized,
-                )
-                for report in reports
-            ],
-        )
+        """Calendar는 별도 테이블이 아니라 조회 모델(VIEW)이다 — 저장은
+        Repository가 daily_conditions/daily_reports를 조합해서 만든다."""
+        return CalendarMonthResponse(month=month, days=self.repository.list_calendar_days(user_id, month))

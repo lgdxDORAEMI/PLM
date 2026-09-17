@@ -11,3 +11,7 @@ class DomainConflictError(Exception):
 
 class DomainForbiddenError(Exception):
     """현재 사용자에게 요청한 리소스의 읽기 또는 변경 권한이 없다."""
+
+
+class DomainStorageError(Exception):
+    """저장소 연결 또는 요청이 실패했다(예: Supabase 장애)."""

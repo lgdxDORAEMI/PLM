@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.v1.domain_errors import to_http_exception
 from app.core.security import CurrentUser, get_current_user
@@ -19,13 +19,27 @@ from app.domains.care.schemas import (
 )
 from app.domains.care.service import CareService, CareServicePort
 from app.domains.care.stub_repository import StubCareRepository
+from app.domains.care.supabase_repository import SupabaseCareRepository
+from app.services.supabase_service import get_supabase_service
 
 router = APIRouter(prefix="/care", tags=["care"])
-_repository = StubCareRepository()
+# Record/Report/Household는 아직 이 Stub에 남아 있다 — Condition만 실제 DB로
+# 옮겼다(STEP 9). 모듈 싱글턴으로 둬야 재시작 전까지 상태가 유지된다(기존과 동일).
+_stub_repository = StubCareRepository()
+
+STORAGE_UNAVAILABLE = "컨디션 저장소에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요."
+
+
+def _storage_unavailable() -> HTTPException:
+    return HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, STORAGE_UNAVAILABLE)
 
 
 def get_care_service() -> CareServicePort:
-    return CareService(_repository)
+    try:
+        client = get_supabase_service().client
+    except ValueError as error:  # Supabase 환경변수 누락
+        raise _storage_unavailable() from error
+    return CareService(SupabaseCareRepository(client, fallback=_stub_repository))
 
 
 User = Annotated[CurrentUser, Depends(get_current_user)]
@@ -44,7 +58,10 @@ def read_condition(target_date: date, user: User, service: Service) -> Condition
 def save_condition(
     target_date: date, payload: ConditionInput, user: User, service: Service
 ) -> ConditionResponse:
-    return service.save_condition(user.id, target_date, payload)
+    try:
+        return service.save_condition(user.id, target_date, payload)
+    except Exception as error:
+        raise to_http_exception(error) from error
 
 
 @router.put("/conditions/{target_date}/activities", response_model=ConditionResponse)
@@ -65,7 +82,10 @@ def set_execution(
     item_id: str, payload: RoutineExecutionInput, user: User, service: Service
 ) -> RoutineExecutionResponse:
     """FUC-W-RECORD-001: Routine 알고리즘을 수정하지 않는 실행 기록 경계."""
-    return service.set_execution(user.id, item_id, payload)
+    try:
+        return service.set_execution(user.id, item_id, payload)
+    except Exception as error:
+        raise to_http_exception(error) from error
 
 
 @router.put("/routine-items/{item_id}", response_model=RoutineItemResponse)
@@ -113,4 +133,7 @@ def read_report(target_date: date, user: User, service: Service) -> DailyReportR
 
 @router.get("/calendar/{month}", response_model=CalendarMonthResponse)
 def read_calendar(month: str, user: User, service: Service) -> CalendarMonthResponse:
-    return service.calendar(user.id, month)
+    try:
+        return service.calendar(user.id, month)
+    except Exception as error:
+        raise to_http_exception(error) from error

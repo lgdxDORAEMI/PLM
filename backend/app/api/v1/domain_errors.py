@@ -6,6 +6,7 @@ from app.domains.errors import (
     DomainConflictError,
     DomainForbiddenError,
     DomainNotFoundError,
+    DomainStorageError,
 )
 
 
@@ -16,4 +17,6 @@ def to_http_exception(error: Exception) -> HTTPException:
         return HTTPException(status.HTTP_409_CONFLICT, str(error))
     if isinstance(error, DomainForbiddenError):
         return HTTPException(status.HTTP_403_FORBIDDEN, str(error))
+    if isinstance(error, DomainStorageError):
+        return HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, str(error))
     raise error

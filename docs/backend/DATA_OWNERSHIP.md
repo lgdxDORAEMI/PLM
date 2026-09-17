@@ -114,3 +114,40 @@ NFR-008(민감정보 암호화)·NFR-010(민감정보 분리 관리)·NFR-013(�
 - `posture_events`(EVENT)와 `posture_calibration_profiles`(SOURCE)만 Movement 도메인의 영속 데이터이며, 둘 다 `app/services/movement/**`(Protected)만 쓴다.
 - 다른 도메인(Report/Notification/Family)은 이 두 테이블을 **읽기 전용**으로만 소비하고, 자체 테이블에 원본 이벤트를 복제하지 않는다 — 유일한 예외는 `daily_reports.content`의 모션 요약 스냅샷이며, 이는 `posture_events`의 30일 보존 만료 이후에도 과거 리포트 조회를 지원하기 위한 의도된 예외로 이미 설계돼 있다(중복 저장 위험이 아님, `DB_SCHEMA_RECONCILIATION.md` 확인 완료).
 - `motion_sessions` 도입 여부(현재는 프로세스 메모리 `_current_session_id`)는 Protected 모듈 변경이 필요해 이번 단계에서 결정하지 않고 TBD로 남긴다.
+
+**STEP 14 재확인**: `motion_consents`(STEP 7 신규 스키마)를 현재 Movement 구현과 비교했다. `posture_events`/`posture_calibration_profiles`(Protected)는 이미 `EventStore` Protocol(`app/services/movement/events.py`) + `InMemoryEventStore`(Demo 계속 사용 가능) + `SupabaseEventStore`(별도 Adapter) 구조를 갖추고 있어 — 이번 STEP이 요구한 "필요하다면 MovementEventRepository 경계만 추가"에 이미 해당해 새로 만들지 않았다. `motion_consents`(설정값, 이벤트 아님)만 STEP 14에서 `app/domains/family/supabase_repository.py`에 실 연결했고, 저장 필드는 `consent_granted`/`collection_enabled`/`updated_at` 3개뿐 — 카메라 프레임·영상·landmark는 어디에도 없다(회귀 테스트: `tests/test_family_motion_consent.py`). 알고리즘(`rule_engine.py` 등)과 Protected 스키마는 수정하지 않았다.
+
+## Husband Data & Permission (STEP 13)
+
+남편 화면설계서(B-ENTRY-001, B-CAL-001, H-NOTI-001, H-REPORT-001, H-REQUEST-001/002, B-MOTION-001)와 남편 화면 DB 스키마(실은 화면 필드 서술 — STEP 0에서 이미 확인, 실제 테이블 정의 없음)를 다시 대조해 데이터를 4분류했다.
+
+| 데이터 | 화면 | 분류 | Source | 비고 |
+|---|---|---|---|---|
+| 남편 본인 role·표시 이름 | B-ENTRY-001, 전역 | **OWNED BY HUSBAND** | `profiles`(user_id=남편) | 초대 수락(`link_partner`) 시점에 `role='husband'`로 처음 생성됨(STEP 13) |
+| 알림 수신함 | H-NOTI-001 | **OWNED BY HUSBAND** | `notifications`(recipient_user_id=남편) | 본인만 보는 이벤트 로그. 아직 Stub(별도 STEP) |
+| 초대 토큰 검증·연동 상태 | B-ENTRY-001(수락) | **OWNED BY HUSBAND**(수락 행위) / 관계는 공유 | `partner_invitations`, `partner_links` | 토큰은 아내가 발급하지만 "이 초대를 쓸지"는 남편의 행위 — STEP 13에서 실 연결 |
+| 가사 요청 | H-REQUEST-001/002 | **SHARED / event**(양방향 쓰기) | `household_requests`(+`items`) | 아내가 만들고 남편이 상태를 전이(요청됨→확인됨→완료됨) — 어느 한쪽 소유가 아니라 같은 행을 공유. 아직 Stub |
+| 오전 리포트 | H-REPORT-001 | **SHARED projection** | `partner_links`(authorization) → `pregnancy_profiles`+`daily_conditions`+`routine_items`(그 자리에서 읽음) | STEP 12에서 구현 완료. 남편용 복제 테이블 없음 |
+| 캘린더(읽기 전용) | B-CAL-001 | **SHARED projection**(예정) | `daily_conditions`+`daily_reports` | STEP 12에서 아내용은 구현, 남편 role 필터링(수정 금지)은 아직 없음 — TBD |
+| 홈캠 조회(읽기 전용) | B-MOTION-001(남편) | **SHARED projection**(예정) | `posture_events` | 아직 남편 role 조회 권한 분기 없음 — TBD |
+| 임신 주수 | H-REPORT-001 | **DERIVED** | `pregnancy_profiles.due_date` 기준 계산 | 저장 안 함 |
+| 진입 목적지(destination) | B-ENTRY-001 | **DERIVED** | role+profile+partner_link 조합 계산 | 저장 안 함 |
+| 아내 Profile 원본 | (없음 — 남편 화면에 노출 필드 자체가 없음) | **NOT ACCESSIBLE** | `pregnancy_profiles`(원본) | `profile.py`/`account.py` 어떤 엔드포인트도 타 user_id로 조회 불가(STEP 10 테스트로 확인) |
+| 컨디션 원본 점수(1~5) | (없음) | **NOT ACCESSIBLE** | `daily_conditions`(원본) | 오전 리포트는 "높음" 같은 정성 문구로만 요약(STEP 12) |
+| AI 대화 원문 | (없음) | **NOT ACCESSIBLE** | `chat_messages` | Family 응답 Schema 자체에 필드 없음 |
+
+### 관계 테이블 기반 접근권한 검증 (구현 완료, STEP 13)
+
+- `partner_links`가 유일한 관계 SOURCE다. `husband_*` 복제 테이블은 만들지 않았다 — 남편에게 보여줄 데이터는 전부 위 표처럼 아내 테이블을 그 자리에서 읽는 projection이다.
+- 초대 수락(`AccountService.accept_invitation`)은 STEP 13에서 실제 DB(`partner_invitations`/`partner_links`)에 연결했다. 순서를 **연동 시도 → 성공 시에만 토큰 소진**으로 바로잡았다(기존 순서는 연동이 실패해도 토큰이 먼저 소진되는 버그였음 — STEP 13에서 발견·수정).
+- 초대 링크는 `partner_invitations_max_72h` CHECK 제약(STEP 7 migration)으로 72시간 이내만 허용되고, `used_at` 컬럼으로 1회성을 강제한다 — 서비스 계층도 `used_at is not None`이면 409로 거절한다.
+- `partner_links.husband_user_id`의 `unique` 제약으로 "이미 다른 아내와 연동된 남편"을 DB 레벨에서 막고, Repository가 이를 감지해 503이 아니라 409(DomainConflictError)로 명확히 알린다.
+- 가사 요청 확인(`family/service.py`의 `_partner_request`)과 오전 리포트 조회 모두 같은 원칙 — `partner_links`(또는 요청 소유자 목록)로 권한을 검증한 뒤에만 데이터를 보여준다.
+
+### 명시적으로 추가하지 않은 기능
+
+기능요구사항명세서·유스케이스 어디에도 없는 다음 기능은 이번 STEP은 물론 이전 STEP에서도 추가하지 않았다(`test_account_partner_link.py::test_no_unlink_reject_or_auto_reject_endpoints_exist`로 회귀 검증):
+
+- 연동 해제(unlink/disconnect)
+- 가사 요청 거절(reject/decline) — `HouseholdRequestStatus`는 `unconfirmed/confirmed/completed` 3종뿐, 거절 상태 자체가 없음(`DOMAIN_OWNERSHIP.md`가 이미 "가사 요청에는 거절 상태가 없다"로 명시)
+- 초대 자동 거절(auto-reject)

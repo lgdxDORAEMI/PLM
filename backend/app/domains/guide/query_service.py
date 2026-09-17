@@ -1,0 +1,94 @@
+"""Meal/Household/Health/Sleep 화면용 Query Layer (STEP 11).
+
+    Routine AI(app/services/routine/**, Protected)
+        ↓ (이미 씀)
+    routine_items / daily_routines (Protected 테이블, 이 서비스는 읽기만)
+        ↓
+    GuideQueryService (이 파일)
+        ↓
+    Meal / Household / Health / Sleep API (app/api/v1/guide.py)
+
+카테고리별로 AI를 다시 호출하지 않는다 — routine_items에 이미 저장된 행만 읽는다.
+아내 화면 DB 스키마가 Meal/Household/Health/Sleep 테이블을 각각 제시하더라도,
+그 데이터는 전부 routine_items(category로 구분)로 이미 표현 가능해 새 테이블을
+만들지 않는다(DATA_OWNERSHIP.md Duplicate Storage 항목 2와 동일 원칙).
+
+실행 상태(status/completed_by)는 AI가 처음 만든 daily_routines.response 스냅샷이
+아니라 routine_items 원본에서 읽는다 — 완료 체크(STEP 8의 execution API)가 반영된
+최신 상태를 보여주기 위해서다.
+"""
+
+from __future__ import annotations
+
+from datetime import date
+from typing import Any, Callable
+
+import httpx
+from postgrest.exceptions import APIError
+from supabase import Client
+
+from app.domains.errors import DomainNotFoundError, DomainStorageError
+
+from .schemas import GuideItem, GuideResponse, RoutineCategory
+
+ITEM_COLUMNS = (
+    "item_key",
+    "title",
+    "description",
+    "payload",
+    "status",
+    "completed_by",
+    "completed_at",
+)
+
+
+class GuideQueryService:
+    def __init__(self, client: Client) -> None:
+        self.client = client
+
+    def get_guide(
+        self, user_id: str, target_date: date, category: RoutineCategory
+    ) -> GuideResponse:
+        # 1) 오늘 루틴 자체가 있는지 먼저 확인한다 — routine.py의 GET /routine/today와
+        #    같은 전제(없으면 404, 앱은 컨디션 CTA를 보여준다).
+        routine_rows = self._run(
+            lambda: self.client.table("daily_routines")
+            .select("id")
+            .eq("user_id", user_id)
+            .eq("date", target_date.isoformat())
+            .limit(1)
+            .execute()
+        )
+        if not routine_rows:
+            raise DomainNotFoundError("오늘 생성된 루틴이 없습니다.")
+
+        # 2) 이 카테고리의 항목은 있을 수도 없을 수도 있다(예: 해당 없음) — 빈 목록도
+        #    정상 상태이지 오류가 아니다. 루틴 자체가 없는 것과 구분한다.
+        item_rows = self._run(
+            lambda: self.client.table("routine_items")
+            .select(*ITEM_COLUMNS)
+            .eq("user_id", user_id)
+            .eq("date", target_date.isoformat())
+            .eq("category", category.value)
+            .order("sort_order")
+            .execute()
+        )
+        items = [
+            GuideItem(
+                item_key=row["item_key"],
+                title=row["title"],
+                description=row.get("description"),
+                payload=row.get("payload") or {},
+                status=row["status"],
+                completed_by=row.get("completed_by"),
+                completed_at=row.get("completed_at"),
+            )
+            for row in item_rows
+        ]
+        return GuideResponse(date=target_date, category=category, items=items)
+
+    def _run(self, request: Callable[[], Any]) -> list[dict]:
+        try:
+            return request().data
+        except (APIError, httpx.HTTPError) as error:
+            raise DomainStorageError("루틴 가이드 저장소에 연결할 수 없습니다.") from error

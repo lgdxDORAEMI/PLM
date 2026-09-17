@@ -256,6 +256,72 @@ class ProfileApiTest(unittest.IsolatedAsyncioTestCase):
             )
             self.assertEqual(response.json()["completed_step"], 4)
 
+    async def test_full_six_step_completion_flow(self) -> None:
+        """STEP 10: 1~6단계를 순서대로 저장하고 GET이 전체를 그대로 돌려주는지 확인한다
+        (W-PROFILE-007 요약 화면이 의존하는 계약)."""
+        async with self.client() as client:
+            response = await client.put(
+                "/api/v1/profile/me/due-date", json={"due_date": iso(100)}
+            )
+            self.assertEqual(response.status_code, 200)
+            response = await client.put(
+                "/api/v1/profile/me/body",
+                json={"height_cm": 160, "pre_pregnancy_weight_kg": 52},
+            )
+            self.assertEqual(response.status_code, 200)
+            response = await client.put(
+                "/api/v1/profile/me/pregnancy-history", json={"is_first_pregnancy": False}
+            )
+            self.assertEqual(response.status_code, 200)
+            response = await client.put(
+                "/api/v1/profile/me/pregnancy-count", json={"is_multiple_pregnancy": True}
+            )
+            self.assertEqual(response.status_code, 200)
+            response = await client.put(
+                "/api/v1/profile/me/allergies", json={"allergies": ["우유", "계란"]}
+            )
+            self.assertEqual(response.status_code, 200)
+            response = await client.put(
+                "/api/v1/profile/me/medical-notes",
+                json={"medical_conditions": ["고혈압"], "medical_note": "정기 검진 권유받음"},
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json()["completed_step"], 4)  # 5~6단계는 카운트 제외(TBD)
+
+            response = await client.get("/api/v1/profile/me")
+            self.assertEqual(response.status_code, 200)
+            body = response.json()
+            self.assertEqual(body["due_date"], iso(100))
+            self.assertEqual(body["height_cm"], 160.0)
+            self.assertFalse(body["is_first_pregnancy"])
+            self.assertTrue(body["is_multiple_pregnancy"])
+            self.assertEqual(body["allergies"], ["우유", "계란"])
+            self.assertEqual(body["medical_conditions"], ["고혈압"])
+            self.assertEqual(body["medical_note"], "정기 검진 권유받음")
+
+    async def test_husband_cannot_read_wifes_profile(self) -> None:
+        """STEP 10: 남편은 아내 Profile 원본을 직접 조회할 수 없다. `/profile/me`는
+        항상 호출자 본인의 user_id로만 조회하므로, 아내 데이터를 저장해도 남편으로
+        같은 엔드포인트를 부르면 자기 자신의(없는) 프로필만 본다 — 아내 데이터가
+        새어 나가지 않는다."""
+        async with self.client() as client:
+            response = await client.put(
+                "/api/v1/profile/me/due-date", json={"due_date": iso(100)}
+            )
+            self.assertEqual(response.status_code, 200)
+
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(id="husband-1")
+        async with self.client() as client:
+            response = await client.get("/api/v1/profile/me")
+            self.assertEqual(response.status_code, 404)  # 아내 데이터가 아니라 "없음"
+
+        # 아내 본인이 다시 조회하면 여전히 자신의 데이터를 정상적으로 본다.
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(id="user-1")
+        async with self.client() as client:
+            response = await client.get("/api/v1/profile/me")
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json()["due_date"], iso(100))
+
     async def test_invalid_payload_is_not_saved(self) -> None:
         async with self.client() as client:
             response = await client.put(

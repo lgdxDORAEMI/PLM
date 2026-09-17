@@ -5,6 +5,7 @@ from app.domains.errors import DomainConflictError, DomainNotFoundError
 
 from .repository import CareRepository
 from .schemas import (
+    CalendarDay,
     CompletionActor,
     ConditionInput,
     ConditionResponse,
@@ -19,6 +20,7 @@ from .schemas import (
     RoutineItemResponse,
     RoutineItemUpdateInput,
     SleepEnvironmentInput,
+    condition_index_from_scores,
 )
 
 
@@ -146,6 +148,23 @@ class StubCareRepository(CareRepository):
         return [
             report
             for (owner_id, target_date), report in self._reports.items()
+            if owner_id == user_id and target_date.strftime("%Y-%m") == month
+        ]
+
+    def list_calendar_days(self, user_id: str, month: str) -> list[CalendarDay]:
+        finalized_dates = {
+            target_date
+            for (owner_id, target_date), report in self._reports.items()
+            if owner_id == user_id and report.finalized and target_date.strftime("%Y-%m") == month
+        }
+        return [
+            CalendarDay(
+                target_date=target_date,
+                condition_index=condition_index_from_scores(condition.model_dump()),
+                has_report=target_date in finalized_dates,
+                report_finalized=target_date in finalized_dates,
+            )
+            for (owner_id, target_date), condition in self._conditions.items()
             if owner_id == user_id and target_date.strftime("%Y-%m") == month
         ]
 

@@ -132,10 +132,10 @@
 - Use Case: UC17
 - Request: 없음
 - Response: `BootstrapResponse { role, profile: missing|incomplete|complete|null, partner_link: unlinked|linked, destination }`
-- Source Data: `profiles`(MISSING) + `pregnancy_profiles` + `partner_links`(MISSING)
+- Source Data: `profiles` + `pregnancy_profiles` + `partner_links`
 - Authorization: 기본값
 - Error: 없음(항상 200)
-- Status: **stub** — 역할 판정 로직이 항상 Wife 고정(`DOMAIN_OWNERSHIP.md` 기존 TBD)
+- Status: **implemented**(STEP 13) — `profiles` 행이 없으면 여전히 Wife로 기본 처리한다(`DOMAIN_OWNERSHIP.md` 기존 TBD와 동일 결정, 새로 바꾸지 않음). 남편은 초대 수락 시점에 `profiles` 행이 생겨 이 기본값을 거치지 않는다.
 
 ### `GET /api/v1/account/partner-link`
 
@@ -145,10 +145,10 @@
 - Use Case: UC1(연계)
 - Request: 없음
 - Response: `PartnerLinkResponse { status: unlinked|linked, partner_display_name? }`
-- Source Data: `partner_links`(MISSING)
+- Source Data: `partner_links`
 - Authorization: 기본값
 - Error: 없음
-- Status: **stub**
+- Status: **implemented**(STEP 13) — `partner_display_name`은 상대방 `profiles.display_name`을 읽지만 아무 화면도 이 값을 아직 채우지 않아 대개 `null`이다(지어내지 않음)
 
 ### `POST /api/v1/account/partner-invitations`
 
@@ -158,10 +158,10 @@
 - Use Case: UC15
 - Request: 없음
 - Response: `InvitationResponse { invitation_id, invitation_url, expires_at }`
-- Source Data: `partner_invitations`(MISSING)
+- Source Data: `partner_invitations`
 - Authorization: 기본값
-- Error: 없음(현재 Stub 기준)
-- Status: **stub** — NFR-026(72시간·1회성) 제약은 실 구현 시 반드시 적용
+- Error: 409(프로필 미완료 또는 이미 연동됨)
+- Status: **implemented**(STEP 13) — NFR-026(72시간)은 `partner_invitations_max_72h` DB CHECK 제약(STEP 7)으로 강제, 1회성은 `used_at` 컬럼으로 강제
 
 ### `POST /api/v1/account/partner-invitations/{token}/accept`
 
@@ -171,10 +171,10 @@
 - Use Case: UC16
 - Request: 경로 파라미터 `token`만(본문 없음, 인증은 계정 생성/로그인 이후 호출 전제)
 - Response: `PartnerLinkResponse { status: linked, partner_display_name }`
-- Source Data: `partner_invitations`(검증) → `partner_links`(신규 행 생성)
+- Source Data: `partner_invitations`(검증) → `partner_links`(신규 행 생성, 복제 없음)
 - Authorization: 기본값(남편 계정으로 로그인된 상태)
-- Error: 404(토큰 없음), 409(만료/이미 사용됨)
-- Status: **stub** — 화면·인증 복귀 계약 자체가 `DOMAIN_OWNERSHIP.md`에서 TBD. Stub은 토큰 검증·1회성 소비·연동 상태 전이 계약만 구현했고, 남편 표시 이름은 지어내지 않고 `null`로 둔다.
+- Error: 404(토큰 없음), 409(만료/이미 사용됨/이미 다른 아내와 연동됨)
+- Status: **implemented**(STEP 13) — 화면·인증 복귀 계약 자체는 여전히 `DOMAIN_OWNERSHIP.md`에서 TBD(이 API의 존재 자체는 유효). 연동 시도(`link_partner`)를 토큰 소비보다 먼저 수행하도록 순서를 바로잡았다(STEP 13에서 발견한 버그 수정 — 실패해도 토큰이 먼저 소진되지 않음). 남편 표시 이름은 지어내지 않고 `null`로 둔다.
 
 ### `GET/PUT /api/v1/account/profile`
 
@@ -233,8 +233,8 @@
 - Response: `ConditionResponse { nausea, waist_pain, pelvis_pain, leg_pain, wrist_pain, fatigue, mood, target_date, planned_activities[], changed_fields[], write_kind, updated_at }`
 - Source Data: `daily_conditions`
 - Authorization: 기본값
-- Error: 404(해당 날짜 기록 없음)
-- Status: **stub** — DB `daily_conditions`는 존재하지만 이 API는 메모리만 사용, 실제 테이블 미연결
+- Error: 404(해당 날짜 기록 없음), 503(Supabase 연결 실패)
+- Status: **implemented**(STEP 9) — 조회는 아무것도 바꾸지 않으므로 `changed_fields`는 항상 `[]`, `write_kind`는 조회 맥락에서 의미가 없어 중립값 `updated`를 고정 반환한다(지어내지 않음)
 
 ### `PUT /api/v1/care/conditions/{target_date}`
 
@@ -243,11 +243,11 @@
 - FUC: FUC-W-COND-001
 - Use Case: UC2
 - Request: `ConditionInput { nausea, waist_pain, pelvis_pain, leg_pain, wrist_pain, fatigue, mood: 1~5 }`
-- Response: `ConditionResponse`(위와 동일, `write_kind`로 created/updated/new_routine_required 구분)
+- Response: `ConditionResponse`(위와 동일)
 - Source Data: `daily_conditions`
 - Authorization: 기본값
-- Error: 없음(현재 Stub 기준)
-- Status: **stub**
+- Error: 422(범위 초과), 503
+- Status: **implemented**(STEP 9) — `write_kind`는 `created`/`updated`만 정확히 구분한다. FUC-W-COND-004의 `new_routine_required`(확정된 Daily 리포트가 있을 때)는 `daily_reports`가 아직 실 연동되지 않아(Report 도메인은 별도 STEP) 이번 구현에서 판단하지 않는다 — TBD로 남긴다.
 
 ### `PUT /api/v1/care/conditions/{target_date}/activities`
 
@@ -255,12 +255,12 @@
 - Screen: W-TASK-001
 - FUC: FUC-W-TASK-001
 - Use Case: UC3
-- Request: `PlannedActivitiesInput { activities: string[] }`(9종 코드+직접입력, 최대 20개)
+- Request: `PlannedActivitiesInput { activities: string[] }`(9종 코드+직접입력, 최대 20개, 중복 제거)
 - Response: `ConditionResponse`
 - Source Data: `daily_conditions.planned_activities`
 - Authorization: 기본값
-- Error: 422(80자 초과 항목)
-- Status: **stub**
+- Error: 409(해당 날짜 컨디션 미저장), 503
+- Status: **implemented**(STEP 9)
 
 ### `PUT /api/v1/care/routine-items/{item_id}/execution`
 
@@ -272,8 +272,8 @@
 - Response: `RoutineExecutionResponse { routine_item_id, category, title, status, completed_by?, completed_at? }`
 - Source Data: `routine_items.status/completed_by/completed_at`(별도 실행 로그 테이블 아님 — `DATA_OWNERSHIP.md` Duplicate Storage 항목 3)
 - Authorization: 기본값
-- Error: 없음(현재 Stub 기준)
-- Status: **stub**
+- Error: 404(항목 없음/다른 사용자 소유), 409(`needs_confirmation`은 DB CHECK 제약상 아직 저장 불가)
+- Status: **implemented**(STEP 12)
 
 ### `PUT /api/v1/care/routine-items/{item_id}`
 
@@ -309,10 +309,10 @@
 - Use Case: UC7
 - Request: 없음
 - Response: `DailyReportResponse { report_id, target_date, finalized: false, completed_routines, appliance_executions, routines[], highest_load_area?, motion_cautions[], family{requested,confirmed,completed}, updated_at }`
-- Source Data: `daily_conditions`+`routine_items`+`posture_events`(조회 조합, 미저장)
+- Source Data: `daily_conditions`(존재 확인)+`routine_items`(Record)+`posture_events`(Movement, `generate_daily_report()` 재사용)에서 매번 계산만 한다 — `daily_reports`에는 쓰지 않는다(NFR-028)
 - Authorization: 기본값
-- Error: 없음(현재 Stub 기준)
-- Status: **stub**
+- Error: 404(해당 날짜 컨디션 없음)
+- Status: **implemented**(STEP 12) — `family`는 Household 도메인이 아직 실 연결 전이라 항상 `{0,0,0}`(지어내지 않음, TBD)
 
 ### `POST /api/v1/care/daily-reports/{target_date}/finalize`
 
@@ -322,10 +322,10 @@
 - Use Case: UC7
 - Request: 없음
 - Response: `DailyReportResponse`(`finalized: true`)
-- Source Data: `daily_reports`(MISSING, 확정 시 1행 생성/`kind=daily`)
+- Source Data: `daily_reports`(확정 시 1행 upsert, `kind=daily`, `unique(user_id,date,kind)`로 NFR-028 보장 — 같은 날짜 재확정은 덮어쓰기, 중복 생성 아님)
 - Authorization: 기본값
-- Error: 없음(현재 Stub 기준). 실 구현 시 NFR-028(날짜당 1개) 위반은 409
-- Status: **stub**
+- Error: 404(해당 날짜 컨디션 없음)
+- Status: **implemented**(STEP 12)
 
 ### `GET /api/v1/care/daily-reports/{target_date}`
 
@@ -335,10 +335,10 @@
 - Use Case: UC7
 - Request: 경로 `target_date`
 - Response: `DailyReportResponse`
-- Source Data: `daily_reports`(MISSING)
+- Source Data: `daily_reports`
 - Authorization: 기본값
-- Error: 404(해당 날짜 리포트 없음)
-- Status: **stub**
+- Error: 404(해당 날짜 리포트 없음 — 확정 전이면 항상 404, 미리보기는 저장되지 않으므로)
+- Status: **implemented**(STEP 12)
 
 ### `GET /api/v1/care/calendar/{month}`
 
@@ -348,12 +348,30 @@
 - Use Case: UC7, UC10
 - Request: 경로 `month`(YYYY-MM)
 - Response: `CalendarMonthResponse { month, days: [{ target_date, condition_index: good|fair|bad|hard, has_report, report_finalized }] }`
-- Source Data: `daily_conditions`+`routine_items`+`daily_reports`(조회 조합, VIEW)
+- Source Data: `daily_conditions`+`daily_reports`(조회 조합, VIEW — 별도 저장 테이블 없음)
 - Authorization: 기본값
 - Error: 422(month 형식 오류)
-- Status: **stub** — 남편 role별 응답 필터링(수정 권한 제거)은 미구현
+- Status: **implemented**(STEP 12) — `condition_index` 계산식은 04_3 개발순서 #2 기준 문서상 미확정이라 임시 규칙(통증·피로 6종 평균 4구간)을 쓴다(`condition_index_from_scores()`). 남편 role별 응답 필터링(수정 권한 제거)은 여전히 미구현
 
 ---
+
+## Guide Query — Meal / Household / Health / Sleep (STEP 11)
+
+`routine_items`(Protected 테이블)를 읽기 전용으로 조회하는 Query Layer다. Routine AI를 카테고리별로 다시 호출하지 않으며, `daily_routines.response`(생성 시점 스냅샷)가 아니라 `routine_items` 원본에서 읽어 실행 상태(완료 체크)가 항상 최신으로 반영된다. 4개 API 모두 계약이 동일해 한 번에 기술한다.
+
+### `GET /api/v1/meals/today` · `GET /api/v1/household/today` · `GET /api/v1/health/today` · `GET /api/v1/sleep/today`
+
+- Actor: Wife
+- Screen: `meals`→W-MEAL-001/002, `household`→W-HOUSE-001, `health`→W-HEALTH-001, `sleep`→W-SLEEP-001
+- FUC: FUC-W-MEAL-001/002, FUC-W-HOUSE-001, FUC-W-HEALTH-001, FUC-W-SLEEP-001
+- Use Case: UC3, UC11
+- Request: 쿼리 `date`(기본 오늘, KST)
+- Response: `GuideResponse { date, category: meal|household|health|sleep, items: [{ item_key, title, description?, payload: object, status: scheduled|completed|skipped, completed_by?: wife|husband|appliance, completed_at? }] }`
+- Source Data: `daily_routines`(존재 확인용) + `routine_items`(category 필터, `sort_order` 정렬)
+- Authorization: 기본값
+- Error: 404(오늘 생성된 루틴 자체가 없음 — `GET /routine/today`와 동일 조건). 해당 카테고리에 항목이 0개인 것은 오류가 아니라 `items: []`로 정상 응답한다.
+- Status: **implemented**
+- Notes: `app/domains/guide/query_service.py`가 유일한 구현이며 `app/services/routine/**`/`app/api/v1/routine.py`(Protected)는 이 API를 구현하며 전혀 수정하지 않았다.
 
 ## Household
 
@@ -433,11 +451,11 @@
 - FUC: FUC-H-REPORT-001
 - Use Case: UC8
 - Request: 경로 `target_date`
-- Response: `MorningReportResponse { target_date, pregnancy_week, condition_summary[], planned_activities[], guide_summaries: {meal, household, health, sleep} }`(프로필 원본·컨디션 원본·AI 대화 원문 미포함, NFR-013)
-- Source Data: `daily_conditions`+`routine_items`(허용 범위만 파생) 또는 `daily_reports`(kind=morning, MISSING)
-- Authorization: 기본값(연동된 남편만)
-- Error: 403(미연동), 404(해당 날짜 리포트 없음)
-- Status: **stub** — 남편 PDF의 H-REPORT-001 두 버전이 가이드 요약 포함 여부를 다르게 서술(`BACKEND_STATUS.md` TBD), `guide_summaries` 포함 여부는 재확인 필요
+- Response: `MorningReportResponse { target_date, pregnancy_week, condition_summary[], planned_activities[], guide_summaries: {category: title 나열} }`(프로필 원본·컨디션 원본·AI 대화 원문 미포함, NFR-013)
+- Source Data: `partner_links`(family authorization) → `pregnancy_profiles`+`daily_conditions`+`routine_items`(그 자리에서 읽는 projection, 복사 저장 없음)
+- Authorization: 기본값(연동된 남편만 — `partner_links.husband_user_id`로 확인)
+- Error: 403(연동된 아내 계정 없음), 404(해당 날짜 컨디션 없음)
+- Status: **implemented**(STEP 12) — `condition_summary`는 원본 1~5 점수를 그대로 노출하지 않고 "높음"만 정성 문구로 뽑는다(임계값도 TBD, 04_3 #2와 같은 성격). 남편 PDF의 H-REPORT-001 두 버전이 가이드 요약 포함 여부를 다르게 서술한 점은(`BACKEND_STATUS.md` TBD) `guide_summaries`를 포함하는 쪽으로 확정 구현했다.
 
 ---
 
@@ -563,10 +581,10 @@
 - Use Case: UC13
 - Request: 없음
 - Response: `MotionPrivacyResponse { consent_granted, collection_enabled, updated_at }`
-- Source Data: `motion_consents`(MISSING)
+- Source Data: `motion_consents`
 - Authorization: 기본값
-- Error: 없음
-- Status: **stub**
+- Error: 없음(행이 없으면 미동의 기본값 반환, 지어내지 않음)
+- Status: **implemented**(STEP 14)
 
 ### `PUT /api/v1/family/motion/consent`
 
@@ -576,10 +594,10 @@
 - Use Case: UC13
 - Request: 없음
 - Response: `MotionPrivacyResponse`(`consent_granted: true`)
-- Source Data: `motion_consents`(MISSING)
+- Source Data: `motion_consents`
 - Authorization: 기본값
 - Error: 없음
-- Status: **stub**
+- Status: **implemented**(STEP 14)
 
 ### `DELETE /api/v1/family/motion/consent`
 
@@ -589,10 +607,10 @@
 - Use Case: UC13
 - Request: 없음
 - Response: `MotionPrivacyResponse`(`consent_granted: false, collection_enabled: false`)
-- Source Data: `motion_consents`(MISSING)
+- Source Data: `motion_consents`
 - Authorization: 기본값
 - Error: 없음
-- Status: **stub** — `WS /movement/live/stream`(Protected) 연결 게이트와 미연동, 별도 합의 필요
+- Status: **implemented**(STEP 14, 데이터만) — `WS /movement/live/stream`(Protected) 연결 게이트와는 여전히 미연동, 별도 합의 필요(TBD 유지)
 
 ### `PUT /api/v1/family/motion/collection`
 
@@ -602,17 +620,21 @@
 - Use Case: UC13
 - Request: `MotionCollectionInput { enabled: bool }`
 - Response: `MotionPrivacyResponse`
-- Source Data: `motion_consents.enabled`(MISSING)
+- Source Data: `motion_consents.collection_enabled`
 - Authorization: 기본값
-- Error: 없음
-- Status: **stub** — OFF는 신규 감지만 중단, 기존 기록은 삭제하지 않음(`DOMAIN_OWNERSHIP.md` 원칙)
+- Error: 409(동의 없이 켜려는 시도)
+- Status: **implemented**(STEP 14) — OFF는 신규 감지만 중단, 기존 기록은 삭제하지 않음(`DOMAIN_OWNERSHIP.md` 원칙, DB 컬럼도 분리돼 있어 자연히 지켜짐)
 
 ---
 
 ## 요약
 
-- 작성일: 2026-09-17 (STEP 5 초안, STEP 8에서 8개 planned API를 실제로 구현하며 갱신)
+- 작성일: 2026-09-17 (STEP 5 초안, STEP 8에서 8개 planned API 구현, STEP 9·STEP 10·STEP 11(2026-09-18)에서 갱신)
+- STEP 9: `GET/PUT /care/conditions/{date}`, `PUT /care/conditions/{date}/activities`가 실제 `daily_conditions`에 연결됐다. `app/services/routine/inputs.py`(Protected)가 같은 테이블·같은 컬럼명을 읽으므로 호환성을 확인하는 통합 테스트를 추가했다(`tests/test_care_condition.py`). Care 도메인의 나머지 메서드(execution/report/routine-item 피드백/캘린더)는 여전히 Stub — 같은 Repository 안에서 fallback으로 위임한다.
+- STEP 10: 프로필 1~6단계 필드를 화면설계서·DB와 재대조해 신규 컬럼/migration이 필요 없음을 확정하고, 회귀·남편 비공개 테스트를 추가했다(코드 변경 없음, `tests/test_profile.py`만 확장).
+- STEP 11: `GET /api/v1/meals/today`·`/household/today`·`/health/today`·`/sleep/today` 4개를 신규 구현했다(`app/domains/guide/**`, `app/api/v1/guide.py`) — `routine_items`를 읽기 전용으로 조회하는 Query Layer이며 새 테이블도, AI 재호출도 없다. 전체 API가 43개 → **47개**가 됐다.
+- STEP 12: Record(`PUT .../routine-items/{id}/execution`), Report(`POST .../preview`·`.../finalize`, `GET .../daily-reports/{date}`), Calendar(`GET .../calendar/{month}`), 남편 오전 리포트(`GET /family/morning-reports/{date}`) 6개를 stub→implemented로 전환했다. 새 테이블은 만들지 않았다 — Record는 `routine_items` 컬럼을 직접 갱신, Report는 Record+Condition+Movement에서 매번 계산, Calendar는 조회 조합, 남편 리포트는 `partner_links` 기반 projection이다.
 - STEP 8 구현 결과 W-PROFILE-003/004를 묶었던 `pregnancy-history` 1개가 화면 단위(due-date/body 관례)에 맞춰 `pregnancy-history`+`pregnancy-count` 2개로 나뉘어, 전체 API는 42개 → **43개**(기존 34 + 신규 9)가 됐다.
 - 프로필 4개(`pregnancy-history`/`pregnancy-count`/`allergies`/`medical-notes`)는 `pregnancy_profiles` 컬럼이 이미 있어 **implemented**(Supabase 실연결)로 구현했다.
 - 나머지 5개(`chat/messages` GET·POST, `care/routine-items/{id}` PUT, `.../sleep-environment` PUT, `account/partner-invitations/{token}/accept` POST)는 지원 테이블이 없거나(chat_messages, recommendation_feedback) 화면 계약 자체가 TBD(H-INVITE-001)라 **stub**(프로세스 메모리, 실제 데이터 지어내지 않음)으로 구현했다.
-- 최종 집계: **implemented 13 / stub 30 / planned 0**. partial은 0개 — `PUT/GET /account/profile`의 `birth_date` 불일치는 여전히 남아 있지만 그 자체가 Stub이므로 partial이 아니라 stub으로 분류한다. 상세 수치와 화면별 매트릭스는 `API_IMPLEMENTATION_MATRIX.md` 참고.
+- STEP 8 종료 시점 집계: implemented 13 / stub 30 / planned 0. STEP 9에서 Condition 3개가 stub→implemented로 바뀌어 implemented 16 / stub 27(합계 43). STEP 11에서 Guide Query 4개가 신규 implemented로 추가돼 implemented 20 / stub 27(합계 47). STEP 12에서 Record/Report/Calendar/남편 오전 리포트 6개가 stub→implemented로 바뀌어 implemented 26 / stub 21(합계 47). STEP 13에서 파트너 연동 4개(bootstrap/partner-link/invitations 발급·수락)가 stub→implemented로 바뀌어 implemented 30 / stub 17(합계 47). STEP 14에서 모션 동의 4개(`family/motion/privacy`·`/consent`·`/collection`)가 stub→implemented로 바뀌어 **최종 집계는 implemented 34 / stub 13 / planned 0**(합계 47). partial은 0개 — `PUT/GET /account/profile`의 `birth_date` 불일치는 여전히 남아 있지만 그 자체가 Stub이므로 partial이 아니라 stub으로 분류한다. 상세 수치와 화면별 매트릭스는 `API_IMPLEMENTATION_MATRIX.md` 참고.

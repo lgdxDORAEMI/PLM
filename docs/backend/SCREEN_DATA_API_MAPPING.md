@@ -7,12 +7,12 @@
 
 ## API 설계 원칙 (이 문서에서 지킨 것)
 
-1. **API는 화면이 필요로 하는 DTO를 제공하고, Backend 테이블 이름을 그대로 노출하지 않는다.** 예: `W-MEAL-001`은 `routine_items(category=meal)`이 Source Table이지만 API는 `GET /api/v1/routine/today`이며 응답 DTO의 `response.meal[]` 필드로 내려준다 — URL/응답 어디에도 `routine_items`라는 이름이 없다.
+1. **API는 화면이 필요로 하는 DTO를 제공하고, Backend 테이블 이름을 그대로 노출하지 않는다.** 예: `W-MEAL-001`은 `routine_items(category=meal)`이 Source Table이지만 API는 `GET /api/v1/meals/today`이며 응답 DTO의 `items[]` 필드로 내려준다(STEP 11) — URL/응답 어디에도 `routine_items`라는 이름이 없다.
 2. **실제로 이미 구현된 API는 그 경로를 그대로 사용한다.** `account`/`care`/`family`/`profile`/`routine`/`movement` 6개 라우터의 기존 경로 중 테이블명을 노출하는 것은 하나도 없었다(전수 확인 완료) — 새로 이름을 바꾸지 않는다.
 3. **아직 없는 API만 신규 제안하며, 기존 경로의 네이밍 컨벤션(도메인 prefix + 리소스명)을 따른다.** 표에서 `[제안]`으로 표시한다. 나머지는 `docs/api.md`/실제 라우터에 이미 있는 `[기존]` 경로다.
 4. **단순 Navigation(화면 전환만 하는 버튼, 팝업 닫기, 약관 링크 등)에는 API를 만들지 않는다.** 표에서 `Navigation-only`로 표시하고 API 열은 `—`로 둔다.
 5. **ThinQ 가전 실행(Phase 2)은 API를 제안하지 않는다.** 표시까지만 MVP 범위이므로 API 열은 `Phase 2 — 미제안`으로 둔다.
-6. **`routine.py`/`movement.py`는 Protected라 이 문서도 새 엔드포인트를 그 파일에 추가하는 것을 전제하지 않는다.** 식사/가사/건강/수면 화면은 기존 `GET /api/v1/routine/today` 응답을 Frontend가 카테고리로 나눠 쓰는 것을 그대로 계약으로 삼는다(이미 DTO이므로 원칙 1 위반 아님).
+6. **`routine.py`/`movement.py`는 Protected라 이 문서도 새 엔드포인트를 그 파일에 추가하는 것을 전제하지 않는다.** (STEP 11 갱신) 원래는 식사/가사/건강/수면 화면이 `GET /api/v1/routine/today` 응답을 Frontend가 카테고리로 나눠 쓰는 것을 그대로 계약으로 삼았으나, STEP 11에서 화면별 조회 전용 Query Layer(`GET /api/v1/meals/today`, `/household/today`, `/health/today`, `/sleep/today`)를 별도로 구현했다 — `routine.py`는 여전히 손대지 않고, 새 `app/domains/guide/`+`app/api/v1/guide.py`가 `routine_items`(Protected 테이블)를 읽기만 한다. 이 쪽이 실행 상태(완료 체크)까지 최신으로 반영해 더 정확하다(`daily_routines.response`는 AI가 처음 생성한 시점의 스냅샷이라 이후 완료 체크가 반영되지 않음).
 
 ---
 
@@ -42,21 +42,21 @@
 | Wife | W-COND-001 | 저장 | 위 7종 점수 | `daily_conditions` | `PUT /api/v1/care/conditions/{date}` [기존, Stub] | FUC-W-COND-001 |
 | Wife | W-TASK-001 | 저장(활동 선택) | planned_activities[] | `daily_conditions.planned_activities` | `PUT /api/v1/care/conditions/{date}/activities` [기존, Stub] | FUC-W-TASK-001 |
 | Wife | W-TASK-001 | "AI 하루루틴 만들기" | 루틴 생성 요청 | `daily_routines`/`routine_items` | `POST /api/v1/routine/today` [기존] | FUC-W-ROUTINE-001(트리거) |
-| Wife | W-MEAL-001 | 조회(끼니 요약) | routine_items 중 meal 카테고리 | `routine_items`(category=meal) | `GET /api/v1/routine/today`(응답의 `response.meal[]`) [기존] | FUC-W-MEAL-001 |
+| Wife | W-MEAL-001 | 조회(끼니 요약) | routine_items 중 meal 카테고리 | `routine_items`(category=meal) | `GET /api/v1/meals/today` [기존, STEP 11] | FUC-W-MEAL-001 |
 | Wife | W-MEAL-001 | 끼니 탭 | — | — | Navigation-only(W-MEAL-002 이동) | — |
-| Wife | W-MEAL-002 | 조회(메뉴 상세) | meal payload(메뉴/이유/영양태그/주의사항) | `routine_items.payload`(meal) | `GET /api/v1/routine/today`(`response.meal[].payload`) [기존] | FUC-W-MEAL-002 |
+| Wife | W-MEAL-002 | 조회(메뉴 상세) | meal payload(메뉴/이유/영양태그/주의사항) | `routine_items.payload`(meal) | `GET /api/v1/meals/today`(`items[].payload`) [기존, STEP 11] | FUC-W-MEAL-002 |
 | Wife | W-MEAL-002 | "AI 재조정" 탭 | — | — | Navigation-only(W-CHAT-001 이동, context 전달) | — |
 | Wife | W-CHAT-001 | 조회(대화 이력) | 대화 메시지 | `chat_messages`(MISSING) | `GET /api/v1/chat/messages?date={date}` [제안] | FUC-W-CHAT-001 |
 | Wife | W-CHAT-001 | 메시지 전송 | 사용자 입력, AI 응답 | `chat_messages`(MISSING) | `POST /api/v1/chat/messages` [제안] | FUC-W-CHAT-001 |
 | Wife | W-CHAT-001 | "이걸로 할게요"(대체 메뉴 수락) | 대체 메뉴 반영 + 수락 이력 | `routine_items.payload`(갱신) + `recommendation_feedback`(MISSING) | `PUT /api/v1/care/routine-items/{itemId}` [제안] | FUC-W-MEAL-003/004 |
-| Wife | W-HOUSE-001 | 조회(3분류 표시) | routine_items 중 household 카테고리 | `routine_items`(category=household) | `GET /api/v1/routine/today`(`response.household[]`) [기존] | FUC-W-HOUSE-001 |
+| Wife | W-HOUSE-001 | 조회(3분류 표시) | routine_items 중 household 카테고리 | `routine_items`(category=household) | `GET /api/v1/household/today` [기존, STEP 11] | FUC-W-HOUSE-001 |
 | Wife | W-HOUSE-001 | 가전 실행 버튼(지금/예약/야간) | ThinQ 실행 명령 | — | Phase 2 — 미제안 | FUC-W-HOUSE-002 |
 | Wife | W-HOUSE-001 | 공유 항목 선택 + "남편에게 공유하기" | 요청 이유, 집안일 목록, 보조정보 | `household_requests`/`household_request_items`(MISSING) | `POST /api/v1/family/household-requests` [기존, Stub] | FUC-W-HOUSE-003 |
 | Wife | W-HOUSE-001 | 공유완료 팝업 | — | — | Navigation-only(직전 응답 재사용, 별도 API 없음) | FUC-W-HOUSE-003-1 |
 | Wife | W-HOUSE-001 | 남편 진행상태 반영 표시(조회) | household_requests.status | `household_requests`(MISSING) | `GET /api/v1/family/household-requests` [기존, Stub] | FUC-W-RECORD-002 |
-| Wife | W-HEALTH-001 | 조회(부위/활동 추천) | routine_items 중 health 카테고리 | `routine_items`(category=health) | `GET /api/v1/routine/today`(`response.health[]`) [기존] | FUC-W-HEALTH-001 |
+| Wife | W-HEALTH-001 | 조회(부위/활동 추천) | routine_items 중 health 카테고리 | `routine_items`(category=health) | `GET /api/v1/health/today` [기존, STEP 11] | FUC-W-HEALTH-001 |
 | Wife | W-HEALTH-001 | 완료 체크 | routine_items.status/completed_by | `routine_items` | `PUT /api/v1/care/routine-items/{itemId}/execution` [기존, Stub] | FUC-W-HEALTH-002/FUC-W-RECORD-001 |
-| Wife | W-SLEEP-001 | 조회(수면 가이드) | routine_items 중 sleep 카테고리 | `routine_items`(category=sleep) | `GET /api/v1/routine/today`(`response.sleep`) [기존] | FUC-W-SLEEP-001 |
+| Wife | W-SLEEP-001 | 조회(수면 가이드) | routine_items 중 sleep 카테고리 | `routine_items`(category=sleep) | `GET /api/v1/sleep/today` [기존, STEP 11] | FUC-W-SLEEP-001 |
 | Wife | W-SLEEP-001 | 환경 설정 적용(바텀시트) | 조명/온도/습도/소리/공기청정기 override | `recommendation_feedback`(kind=sleep_env_override, MISSING) | `PUT /api/v1/care/routine-items/{itemId}/sleep-environment` [제안] | FUC-W-SLEEP-001-1 |
 | Wife | W-SLEEP-001 | "수면 루틴 시작하기"(가전 일괄 실행) | ThinQ 실행 명령 | — | Phase 2 — 미제안 | FUC-W-SLEEP-002 |
 | Wife | B-CAL-001 | 조회(월/일 상세) | 날짜별 컨디션·실행루틴·가전·분담 | `daily_conditions`+`routine_items`+`daily_reports`(조회조합) | `GET /api/v1/care/calendar/{month}` [기존, Stub] | FUC-B-CAL-001 |

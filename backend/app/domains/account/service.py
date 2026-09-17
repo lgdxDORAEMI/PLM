@@ -83,8 +83,10 @@ class AccountService(AccountServicePort):
         now = datetime.now(timezone.utc)
         if invitation.used_at is not None or invitation.expires_at < now:
             raise DomainConflictError("만료되었거나 이미 사용된 초대 링크입니다.")
-        self.repository.mark_invitation_used(invitation.invitation_id, used_at=now)
+        # 연동(link_partner)을 먼저 시도한다 — 순서를 반대로 하면 연동이 실패해도
+        # (예: 남편이 이미 다른 아내와 연동됨) 토큰이 먼저 소진돼 재시도가 막힌다.
         self.repository.link_partner(invitation.wife_user_id, husband_user_id)
+        self.repository.mark_invitation_used(invitation.invitation_id, used_at=now)
         # 남편 표시 이름은 Stub이 모르는 값이라 지어내지 않는다.
         return PartnerLinkResponse(status=PartnerLinkStatus.LINKED, partner_display_name=None)
 

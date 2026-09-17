@@ -2,6 +2,7 @@ from datetime import date
 from typing import Protocol
 
 from .schemas import (
+    CalendarDay,
     ConditionInput,
     ConditionResponse,
     DailyReportResponse,
@@ -38,6 +39,8 @@ class CareRepository(Protocol):
     def update_sleep_environment(
         self, user_id: str, routine_item_id: str, payload: SleepEnvironmentInput
     ) -> RoutineItemResponse: ...
+
+    def list_calendar_days(self, user_id: str, month: str) -> list[CalendarDay]: ...
 
     def get_report(self, user_id: str, target_date: date) -> DailyReportResponse | None: ...
 

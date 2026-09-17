@@ -165,6 +165,27 @@ class RoutineItemResponse(BaseModel):
     payload: dict[str, Any]
 
 
+def condition_index_from_scores(scores: dict[str, int]) -> ConditionIndex:
+    """B-CAL-001의 4단계 컨디션 지수 계산 — 계산식이 문서상 미확정(04_3 개발순서 #2,
+    DB_ERD_스키마.md)이라 팀 확정 전까지 쓰는 임시 규칙이다: 통증·구역감·피로감
+    6종(mood 제외 — 방향이 반대라 단순 평균에 섞으면 왜곡됨)의 평균을 4구간으로
+    나눈다. 실제 계산식이 정해지면 이 함수만 바꾸면 된다(Stub/Supabase 양쪽이
+    공유하므로 한 곳만 고치면 된다)."""
+
+    burden_fields = ("nausea", "waist_pain", "pelvis_pain", "leg_pain", "wrist_pain", "fatigue")
+    values = [scores[field] for field in burden_fields if field in scores]
+    if not values:
+        return ConditionIndex.FAIR
+    average = sum(values) / len(values)
+    if average <= 2:
+        return ConditionIndex.GOOD
+    if average <= 3:
+        return ConditionIndex.FAIR
+    if average <= 4:
+        return ConditionIndex.BAD
+    return ConditionIndex.HARD
+
+
 class CalendarMonthResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
