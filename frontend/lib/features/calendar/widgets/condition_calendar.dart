@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../design_system/tokens/app_colors.dart';
+import '../../../design_system/components/app_ink_well.dart';
 import '../../../design_system/tokens/app_radius.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../report/models/daily_record.dart';
@@ -52,7 +53,7 @@ class ConditionCalendar extends StatelessWidget {
               button: record != null,
               label:
                   '${date.day}일${record == null ? ', 기록 없음' : ', ${_levelLabel(record.conditionLevel)}'}',
-              child: InkWell(
+              child: AppInkWell(
                 key: ValueKey('calendar-day-${recordDateKey(date)}'),
                 onTap: record == null ? null : () => onSelected(date),
                 customBorder: const CircleBorder(),

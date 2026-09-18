@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../design_system/tokens/app_colors.dart';
+import '../../../design_system/components/app_ink_well.dart';
 import '../../../design_system/tokens/app_radius.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../models/movement_alert.dart';
@@ -19,7 +20,7 @@ class MovementAlertCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final high = alert.level == MovementAlertLevel.high;
     final color = high ? AppColors.danger : AppColors.warning;
-    return InkWell(
+    return AppInkWell(
       key: interactionKey ?? ValueKey('movement-alert-${alert.id}'),
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.card),

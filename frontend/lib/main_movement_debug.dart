@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 
 import 'core/config/app_config.dart';
 import 'design_system/theme/app_theme.dart';
+import 'design_system/theme/app_scroll_behavior.dart';
 import 'features/movement/browser_camera_frame_source.dart';
 import 'features/movement/browser_live_transport.dart';
 import 'features/movement/movement_screen.dart';
@@ -29,6 +30,7 @@ class _MovementDebugApp extends StatelessWidget {
     return MaterialApp(
       title: 'Movement Debug',
       theme: AppTheme.light,
+      scrollBehavior: const AppScrollBehavior(),
       home: MovementScreen(
         // TODO: PowerShell로 발급받은 access_token을 아래 자리에 붙여넣고 실행할 것.
         backendWsUri: AppConfig.movementLiveStreamUri.replace(

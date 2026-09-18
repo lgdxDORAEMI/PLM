@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../design_system/tokens/app_colors.dart';
+import '../../../design_system/components/app_ink_well.dart';
 import '../../../design_system/tokens/app_radius.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 
@@ -60,7 +61,7 @@ class ConditionMetric extends StatelessWidget {
                     button: true,
                     selected: segmentValue == value,
                     label: '$label ${valueLabels[index]}',
-                    child: InkWell(
+                    child: AppInkWell(
                       onTap: () => onChanged(segmentValue),
                       borderRadius: BorderRadius.circular(AppRadius.pill),
                       child: AnimatedContainer(

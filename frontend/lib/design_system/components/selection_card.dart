@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../tokens/app_colors.dart';
 import '../tokens/app_radius.dart';
 import '../tokens/app_spacing.dart';
+import 'app_ink_well.dart';
 
 /// 단일/복수 선택에 재사용하는 표준 선택 카드다.
 class SelectionCard extends StatelessWidget {
@@ -27,7 +28,7 @@ class SelectionCard extends StatelessWidget {
       button: true,
       selected: selected,
       enabled: onTap != null,
-      child: InkWell(
+      child: AppInkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.button),
         child: AnimatedContainer(

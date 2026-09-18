@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../design_system/components/app_ink_well.dart';
 import '../../../design_system/components/content_frame.dart';
 import '../../../design_system/components/responsive_split_view.dart';
 import '../../../design_system/components/top_app_bar.dart';
@@ -206,7 +207,7 @@ class _BodyLoadCard extends StatelessWidget {
     button: true,
     selected: selected,
     label: '${load.area} ${load.label}',
-    child: InkWell(
+    child: AppInkWell(
       key: ValueKey('health-area-${load.area}'),
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.card),

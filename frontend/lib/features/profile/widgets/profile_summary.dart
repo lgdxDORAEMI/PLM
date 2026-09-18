@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_card.dart';
+import '../../../design_system/components/app_ink_well.dart';
 import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/tokens/app_colors.dart';
@@ -126,7 +127,7 @@ class _SummaryItem extends StatelessWidget {
       child: Semantics(
         button: true,
         label: '$label, $value, 수정',
-        child: InkWell(
+        child: AppInkWell(
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: AppCard(

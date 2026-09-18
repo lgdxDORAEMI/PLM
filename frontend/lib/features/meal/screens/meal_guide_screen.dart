@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../design_system/components/app_ink_well.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/content_frame.dart';
@@ -395,7 +396,7 @@ class _MealAdjustmentEntry extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      child: InkWell(
+      child: AppInkWell(
         key: const ValueKey('meal-alternative-entry'),
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.card),
