@@ -60,7 +60,7 @@ Backend API 상태(`implemented`/`stub`/`planned`)는 `docs/backend/API_IMPLEMEN
 | W-MEAL-003, W-CHAT-001 | `/wife/chat` | MOCK_ONLY | `GET/POST /chat/messages` | **stub** | Backend도 아직 고정 안내 문구만 반환 — 연결해도 실제 AI 응답은 없음 |
 | W-HOUSE-001/001-1/001-2 | `/wife/household` | MOCK_ONLY | `GET /household/today`(조회) + `POST/GET /family/household-requests`, `.../confirm`, `.../complete` | implemented(요청·상태전이 STEP 17) | |
 | W-HEALTH-001 | `/wife/health` | MOCK_ONLY | `GET /health/today` + `PUT /care/routine-items/{id}/execution` | implemented | |
-| W-SLEEP-001~001-5 | `/wife/sleep` | MOCK_ONLY | `GET /sleep/today` + `PUT /care/routine-items/{id}/sleep-environment` | 조회 implemented, override **stub** | |
+| W-SLEEP-001~001-5 | `/wife/sleep` | MOCK_ONLY | `GET /sleep/today` + `PUT /care/routine-items/{id}/sleep-environment` | implemented(override STEP 19) | |
 | W-REPORT-001/001-1 | `/wife/report/:date` | MOCK_ONLY | `POST .../preview`, `.../finalize`, `GET .../daily-reports/{date}` | implemented | 날짜별 Mock 조회 → 실제 API로 교체 가능(Backend는 Record+Condition+Movement에서 파생, STEP 12) |
 | B-CAL-001(Wife) | `/wife/calendar` | MOCK_ONLY | `GET /care/calendar/{month}` | implemented | |
 | B-MOTION-001(Wife) | `/wife/movement` | MOCK_ONLY(Phase 2 Mock으로 명시) | `WS /movement/live/stream`, `GET /live,/events,/report/daily` + `GET/PUT/DELETE /family/motion/*` | **implemented(둘 다)** | Backend는 실제 카메라 연동까지 동작하지만 Frontend는 여전히 Mock — 격차가 가장 큰 화면. STEP 18: WS 연결 시 동의 검사 추가 — 동의 없음/수집 OFF면 close code **4003**, origin/토큰 문제는 1008. 프론트는 4003에서 동의 화면으로 유도하고, 동의 철회 버튼에서 열린 WS를 끊어야 함(NFR-012) |

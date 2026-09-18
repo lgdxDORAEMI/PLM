@@ -286,7 +286,7 @@
 - Source Data: `routine_items.payload`(갱신) + `recommendation_feedback`(이력 기록, MISSING)
 - Authorization: 기본값
 - Error: 422(요청 형식)
-- Status: **stub** — 실제 `routine_items`(Protected) 원본을 모르므로 `title`은 항상 `null`, `category`는 고정값 `meal`, `payload`는 요청을 그대로 반영한다(지어내지 않음). `recommendation_feedback` 테이블이 없어 이력은 저장하지 않는다.
+- Status: **implemented**(STEP 19) — `routine_items`에서 소유자 확인 후 `category`/`title`을 실제 원본으로 채우고, `recommendation_feedback`에 `kind=feedback_kind`로 이력 1행을 남긴다. `routine_items.payload`는 덮어쓰지 않는다. 남의 항목·없는 항목은 404.
 
 ### `PUT /api/v1/care/routine-items/{item_id}/sleep-environment`
 
@@ -299,7 +299,7 @@
 - Source Data: `routine_items.payload`(sleep) + `recommendation_feedback`(kind=sleep_env_override, MISSING)
 - Authorization: 기본값
 - Error: 422(범위 초과: 온도 0~40, 습도 0~100)
-- Status: **stub** — 위와 동일한 이유로 `category=sleep` 고정, `payload`는 요청에서 값이 온 필드만 반영
+- Status: **implemented**(STEP 19) — 위와 동일 방식, `kind=sleep_env_override`. `payload`는 요청에서 값이 온 필드만 기록
 
 ### `POST /api/v1/care/daily-reports/{target_date}/preview`
 
@@ -638,4 +638,4 @@
 - STEP 8 구현 결과 W-PROFILE-003/004를 묶었던 `pregnancy-history` 1개가 화면 단위(due-date/body 관례)에 맞춰 `pregnancy-history`+`pregnancy-count` 2개로 나뉘어, 전체 API는 42개 → **43개**(기존 34 + 신규 9)가 됐다.
 - 프로필 4개(`pregnancy-history`/`pregnancy-count`/`allergies`/`medical-notes`)는 `pregnancy_profiles` 컬럼이 이미 있어 **implemented**(Supabase 실연결)로 구현했다.
 - 나머지 5개(`chat/messages` GET·POST, `care/routine-items/{id}` PUT, `.../sleep-environment` PUT, `account/partner-invitations/{token}/accept` POST)는 지원 테이블이 없거나(chat_messages, recommendation_feedback) 화면 계약 자체가 TBD(H-INVITE-001)라 **stub**(프로세스 메모리, 실제 데이터 지어내지 않음)으로 구현했다.
-- STEP 8 종료 시점 집계: implemented 13 / stub 30 / planned 0. STEP 9에서 Condition 3개가 stub→implemented로 바뀌어 implemented 16 / stub 27(합계 43). STEP 11에서 Guide Query 4개가 신규 implemented로 추가돼 implemented 20 / stub 27(합계 47). STEP 12에서 Record/Report/Calendar/남편 오전 리포트 6개가 stub→implemented로 바뀌어 implemented 26 / stub 21(합계 47). STEP 13에서 파트너 연동 4개(bootstrap/partner-link/invitations 발급·수락)가 stub→implemented로 바뀌어 implemented 30 / stub 17(합계 47). STEP 14에서 모션 동의 4개(`family/motion/privacy`·`/consent`·`/collection`)가 stub→implemented로 바뀌어 implemented 34 / stub 13(합계 47). STEP 17에서 Household 5개·Notification 2개가 stub→implemented로 바뀌어 **최종 집계는 implemented 41 / stub 6 / planned 0**(합계 47). partial은 0개 — `PUT/GET /account/profile`의 `birth_date` 불일치는 여전히 남아 있지만 그 자체가 Stub이므로 partial이 아니라 stub으로 분류한다. 상세 수치와 화면별 매트릭스는 `API_IMPLEMENTATION_MATRIX.md` 참고.
+- STEP 8 종료 시점 집계: implemented 13 / stub 30 / planned 0. STEP 9에서 Condition 3개가 stub→implemented로 바뀌어 implemented 16 / stub 27(합계 43). STEP 11에서 Guide Query 4개가 신규 implemented로 추가돼 implemented 20 / stub 27(합계 47). STEP 12에서 Record/Report/Calendar/남편 오전 리포트 6개가 stub→implemented로 바뀌어 implemented 26 / stub 21(합계 47). STEP 13에서 파트너 연동 4개(bootstrap/partner-link/invitations 발급·수락)가 stub→implemented로 바뀌어 implemented 30 / stub 17(합계 47). STEP 14에서 모션 동의 4개(`family/motion/privacy`·`/consent`·`/collection`)가 stub→implemented로 바뀌어 implemented 34 / stub 13(합계 47). STEP 17에서 Household 5개·Notification 2개가 stub→implemented로 바뀌어 implemented 41 / stub 6(합계 47). STEP 19에서 routine-item 피드백 2개가 stub→implemented로 바뀌어 **최종 집계는 implemented 43 / stub 4 / planned 0**(합계 47). partial은 0개 — `PUT/GET /account/profile`의 `birth_date` 불일치는 여전히 남아 있지만 그 자체가 Stub이므로 partial이 아니라 stub으로 분류한다. 상세 수치와 화면별 매트릭스는 `API_IMPLEMENTATION_MATRIX.md` 참고.

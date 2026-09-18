@@ -10,7 +10,7 @@ Backend는 세 명이 독립적으로 작업할 수 있도록 `account`, `care`,
 | Care | `/api/v1/care` | 컨디션·예정 활동, 실행 기록, Daily report, Calendar |
 | Family | `/api/v1/family` | 가사 요청, 남편 알림·오전 리포트, Motion 동의·수집 설정 |
 
-상세 소유권과 교체 지점은 [DOMAIN_OWNERSHIP.md](DOMAIN_OWNERSHIP.md)를 확인합니다. 2026-09-18 기준 Account(파트너 연동)·Care·Family·Guide 도메인은 Supabase adapter로 교체됐고, Stub이 남은 곳은 `GET/PUT /account/profile`, `PUT /care/routine-items/{id}`·`.../sleep-environment`, Chat뿐입니다(`docs/backend/API_IMPLEMENTATION_MATRIX.md`: implemented 41 / stub 6).
+상세 소유권과 교체 지점은 [DOMAIN_OWNERSHIP.md](DOMAIN_OWNERSHIP.md)를 확인합니다. 2026-09-18 기준 Account(파트너 연동)·Care·Family·Guide 도메인은 Supabase adapter로 교체됐고, Stub이 남은 곳은 `GET/PUT /account/profile`과 Chat뿐입니다(`docs/backend/API_IMPLEMENTATION_MATRIX.md`: implemented 43 / stub 4).
 
 PLM Backend는 FastAPI 기반 서버입니다. 기본 상태 확인, Supabase Auth 토큰 검증, 임산부 프로필 6단계, 당일 컨디션·예정 활동, AI 하루 루틴 생성(룰 엔진 + RAG + OpenAI, 폴백 포함), 4종 가이드 조회, 실행 기록·Daily 리포트·캘린더, 가사 요청·남편 알림·오전 리포트, 파트너 초대/연동, 모션 인식(동의 게이트 포함) API를 제공합니다.
 
@@ -72,6 +72,7 @@ cd ../tools/rag_ingest && ../../backend/.venv/bin/python 02_translate_chunk_embe
 - `GET/PUT /api/v1/care/conditions/{date}`, `PUT .../activities`: 컨디션 7종·예정 활동(`daily_conditions`)
 - `GET /api/v1/meals|household|health|sleep/today`: `routine_items` 읽기 전용 조회(AI 재호출 없음)
 - `PUT /api/v1/care/routine-items/{id}/execution`: 실행 기록(`routine_items.status/completed_by`)
+- `PUT /api/v1/care/routine-items/{id}`, `.../sleep-environment`: 메뉴 수락/거절/재요청·수면 환경 override를 `recommendation_feedback`에 이력으로 기록(2026-09-18). `routine_items` 원본은 읽기만
 - `POST /api/v1/care/daily-reports/{date}/preview|finalize`, `GET .../{date}`: Daily 리포트(확정 시에만 `daily_reports` 1행). `family` 집계는 `household_requests` 실조회(2026-09-18)
 - `GET /api/v1/care/calendar/{month}`: 저장 없이 `daily_conditions`+`daily_reports` 조합. **남편이 호출하면 `partner_links`로 연동된 아내 캘린더를 읽기 전용 반환**(2026-09-18, `app/api/v1/partner_scope.py`)
 
@@ -100,7 +101,6 @@ cd ../tools/rag_ingest && ../../backend/.venv/bin/python 02_translate_chunk_embe
 ## 미구현 영역 (2026-09-18 기준)
 
 - `GET/PUT /account/profile`(6단계 통합 API) — `birth_date` 컬럼 미존재로 Stub. 단계별 API(`/profile/me/*`)는 실연결 완료
-- `PUT /care/routine-items/{id}`(메뉴 수락/거절), `.../sleep-environment` — `recommendation_feedback` 미연결(Stub)
 - 식사 재추천 챗봇(`/chat/messages`) — NFR-027 보관 정책 TBD, AI 담당 영역
 - 컨디션 저장 → 루틴 재생성 자동화(현재는 프론트가 `PUT conditions` 뒤 `POST routine/today`를 따로 호출)
 - ThinQ 가전 연동(Phase 2)
@@ -260,6 +260,7 @@ LLM_API_BASE_URL=
 - **Daily 리포트 `family` 집계**를 하드코딩 0에서 `household_requests` 실조회(누적 funnel)로 교체
 - **남편 캘린더**: `partner_links` 연동 시 아내 캘린더 읽기 전용, 미연동은 본인(빈) 캘린더
 - **루틴 생성 완료 알림**: `POST /routine/today` 성공 직후 첫 생성 `morning_report` / 재생성 `condition_changed` 발송(FUC-W-COND-002/003). `routine.py` 라우트만 수정(커밋 `3d1bb72`, Routine 담당 리뷰 대상)
+- **routine-item 피드백 실연결**: 메뉴 수락/거절/재요청·수면 환경 override → `recommendation_feedback`(implemented 43 / stub 4)
 - **Motion**: `/live/stream` 동의 게이트(4003/1011), `/events`·`/report/daily` 남편 조회 분기(`api/v1/partner_scope.py`로 캘린더 헬퍼 공용화), `rules.yaml` 데모값 MVP 확정. `services/movement/**`·`services/routine/**` 미수정
 - **실 DB drift 발견·보정**: STEP 7 migration 9건 미적용, `daily_routines` unique 제약 누락(42P10) → SQL Editor 수동 적용. 아래 "Supabase 준비" 참고
 - 실 DB에서 AI 루틴 `source=ai` 생성 확인. 아내/남편/제3자 테스트 계정으로 가사 요청→알림, 루틴 생성→오전 리포트 알림, 캘린더·모션 남편 조회, 동의 게이트 수동 검증
