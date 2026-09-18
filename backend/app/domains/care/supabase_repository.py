@@ -61,6 +61,8 @@ TABLE = "daily_conditions"
 ROUTINE_ITEMS_TABLE = "routine_items"
 REPORTS_TABLE = "daily_reports"
 REPORT_KIND = "daily"  # 이 Repository는 W-REPORT-001(Daily)만 다룬다. 오전 리포트(kind=morning)는 family 도메인 소관.
+HOUSEHOLD_REQUESTS_TABLE = "household_requests"
+_CONFIRMED_OR_FURTHER = {"confirmed", "completed"}
 
 EXECUTION_COLUMNS = ("id", "category", "title", "status", "completed_by", "completed_at")
 
@@ -348,10 +350,27 @@ class SupabaseCareRepository(CareRepository):
             "routines": routines,
             "highest_load_area": highest_load_area,
             "motion_cautions": motion_cautions,
-            # Household(가사 요청) 도메인은 아직 실 연결 전이라(별도 STEP) 0으로
-            # 둔다 — 실제로 가족이 분담한 것처럼 지어내지 않는다.
-            "family": FamilyContributionSummary(requested=0, confirmed=0, completed=0),
+            "family": self._family_summary(user_id, target_date),
         }
+
+    def _family_summary(self, user_id: str, target_date: date) -> FamilyContributionSummary:
+        """가사 요청(Household, family 도메인 소유 테이블)에서 그 날짜 분담
+        현황만 센다 — 원본을 복제하지 않고 직접 조회한다(오전 리포트가 Care
+        테이블을 그 자리에서 읽는 projection과 같은 방식). status는
+        unconfirmed→confirmed→completed로만 전이하므로 누적(funnel)
+        집계다: confirmed/completed는 "적어도 그 단계까지 간" 개수다."""
+        rows = self._run(
+            lambda: self.client.table(HOUSEHOLD_REQUESTS_TABLE)
+            .select("status")
+            .eq("wife_user_id", user_id)
+            .eq("date", target_date.isoformat())
+            .execute()
+        )
+        return FamilyContributionSummary(
+            requested=len(rows),
+            confirmed=sum(1 for row in rows if row["status"] in _CONFIRMED_OR_FURTHER),
+            completed=sum(1 for row in rows if row["status"] == "completed"),
+        )
 
     def _movement_summary(self, user_id: str, target_date: date) -> tuple[str | None, list[str]]:
         """Movement(Protected)가 이미 만든 generate_daily_report()를 그대로

@@ -41,6 +41,10 @@ class FamilyServicePort(Protocol):
         self, user_id: str, notification_id: str
     ) -> NotificationResponse: ...
 
+    def notify_routine_ready(
+        self, wife_user_id: str, target_date: date, routine_id: str, *, first_of_day: bool
+    ) -> None: ...
+
     def morning_report(self, user_id: str, target_date: date) -> MorningReportResponse: ...
 
     def motion_privacy(self, user_id: str) -> MotionPrivacyResponse: ...
@@ -136,6 +140,33 @@ class FamilyService(FamilyServicePort):
         if notification is None:
             raise DomainNotFoundError("알림을 찾을 수 없습니다.")
         return notification
+
+    def notify_routine_ready(
+        self, wife_user_id: str, target_date: date, routine_id: str, *, first_of_day: bool
+    ) -> None:
+        """FUC-W-COND-002(첫 생성→오전 리포트)/FUC-W-COND-003(재생성→루틴 변경).
+        남편 미연동이면 스펙대로 조용히 생략한다."""
+        partner = self.repository.get_partner(wife_user_id)
+        if partner is None:
+            return
+        if first_of_day:
+            kind = NotificationType.MORNING_REPORT
+            title, body = "오전 컨디션 리포트가 도착했어요", "오늘의 컨디션과 루틴 요약을 확인해 주세요."
+        else:
+            kind = NotificationType.CONDITION_CHANGED
+            title, body = "아내의 루틴이 변경되었습니다.", "변경된 루틴 요약을 캘린더에서 확인해 주세요."
+        self.repository.add_notification(
+            partner.user_id,
+            NotificationResponse(
+                notification_id=str(uuid4()),
+                type=kind,
+                title=title,
+                body=body,
+                target_date=target_date,
+                reference_id=routine_id,
+                created_at=datetime.now(timezone.utc),
+            ),
+        )
 
     def morning_report(self, user_id: str, target_date: date) -> MorningReportResponse:
         report = self.repository.get_morning_report(user_id, target_date)

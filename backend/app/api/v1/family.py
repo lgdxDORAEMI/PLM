@@ -59,7 +59,10 @@ def create_household_request(
 
 @router.get("/household-requests", response_model=list[HouseholdRequestResponse])
 def list_household_requests(user: User, service: Service) -> list[HouseholdRequestResponse]:
-    return service.list_requests(user.id)
+    try:
+        return service.list_requests(user.id)
+    except Exception as error:
+        raise to_http_exception(error) from error
 
 
 @router.get(
@@ -102,7 +105,10 @@ def complete_household_request(
 
 @router.get("/notifications", response_model=list[NotificationResponse])
 def list_notifications(user: User, service: Service) -> list[NotificationResponse]:
-    return service.notifications(user.id)
+    try:
+        return service.notifications(user.id)
+    except Exception as error:
+        raise to_http_exception(error) from error
 
 
 @router.post("/notifications/{notification_id}/read", response_model=NotificationResponse)

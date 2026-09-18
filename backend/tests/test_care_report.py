@@ -18,7 +18,7 @@ from uuid import uuid4
 
 from httpx import ASGITransport, AsyncClient
 
-from app.api.v1.care import get_care_service
+from app.api.v1.care import _calendar_supabase_client, get_care_service
 from app.core.security import CurrentUser, get_current_user
 from app.domains.care.service import CareService
 from app.domains.care.stub_repository import StubCareRepository
@@ -117,6 +117,8 @@ class FakeSupabaseClient:
             "daily_conditions": [],
             "routine_items": [],
             "daily_reports": [],
+            "partner_links": [],
+            "household_requests": [],
         }
 
     def table(self, name: str) -> FakeTable:
@@ -138,6 +140,11 @@ class FakeSupabaseClient:
         }
         row.update(overrides)
         self.tables["daily_conditions"].append(row)
+
+    def seed_household_request(self, status: str, target_date: date = TARGET_DATE) -> None:
+        self.tables["household_requests"].append(
+            {"wife_user_id": USER, "date": target_date.isoformat(), "status": status}
+        )
 
     def seed_item(self, item_id: str, category: str, status: str = "scheduled", **overrides) -> None:
         row = {
@@ -287,13 +294,32 @@ class ReportApiTest(unittest.IsolatedAsyncioTestCase):
             response = await client.get(f"/api/v1/care/daily-reports/{TARGET_DATE.isoformat()}")
         self.assertEqual(response.status_code, 404)
 
-    async def test_household_domain_not_wired_reports_zero_not_fabricated(self) -> None:
+    async def test_no_household_requests_for_the_date_reports_zero_not_fabricated(self) -> None:
         self.client.seed_condition()
         async with self.http() as client:
             response = await client.post(
                 f"/api/v1/care/daily-reports/{TARGET_DATE.isoformat()}/preview"
             )
         self.assertEqual(response.json()["family"], {"requested": 0, "confirmed": 0, "completed": 0})
+
+    async def test_family_summary_counts_household_requests_as_a_funnel(self) -> None:
+        """status는 unconfirmed→confirmed→completed로만 전이하므로 confirmed/
+        completed는 "그 단계까지 간" 누적 개수다 — 현재 unconfirmed인 것만 빼고
+        전부 confirmed에도 잡히고, completed인 것만 completed에 잡힌다."""
+        self.client.seed_condition()
+        self.client.seed_household_request("unconfirmed")
+        self.client.seed_household_request("confirmed")
+        self.client.seed_household_request("completed")
+        self.client.seed_household_request("completed")
+        self.client.seed_household_request("confirmed", target_date=date(2026, 8, 1))  # 다른 날짜, 제외
+
+        async with self.http() as client:
+            response = await client.post(
+                f"/api/v1/care/daily-reports/{TARGET_DATE.isoformat()}/preview"
+            )
+        self.assertEqual(
+            response.json()["family"], {"requested": 4, "confirmed": 3, "completed": 2}
+        )
 
 
 class CalendarApiTest(unittest.IsolatedAsyncioTestCase):
@@ -302,6 +328,7 @@ class CalendarApiTest(unittest.IsolatedAsyncioTestCase):
         app.dependency_overrides[get_care_service] = lambda: CareService(
             SupabaseCareRepository(self.client, fallback=StubCareRepository())
         )
+        app.dependency_overrides[_calendar_supabase_client] = lambda: self.client
         app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=USER)
         self.addCleanup(app.dependency_overrides.clear)
 
@@ -329,6 +356,32 @@ class CalendarApiTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(days["2026-09-15"]["condition_index"], "hard")
         self.assertTrue(days["2026-09-15"]["has_report"])
         self.assertTrue(days["2026-09-15"]["report_finalized"])
+
+    async def test_linked_husband_sees_wifes_calendar_not_his_own_empty_one(self) -> None:
+        """B-CAL-001(Husband, 읽기 전용): partner_links로 연동된 남편은 자기
+        자신이 아니라 아내의 캘린더를 봐야 한다."""
+        self.client.seed_condition(date(2026, 9, 1))
+        self.client.tables["partner_links"].append(
+            {"husband_user_id": "husband-1", "wife_user_id": USER}
+        )
+
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(id="husband-1")
+        async with self.http() as client:
+            response = await client.get("/api/v1/care/calendar/2026-09")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual({d["target_date"] for d in response.json()["days"]}, {"2026-09-01"})
+
+    async def test_unlinked_husband_sees_his_own_empty_calendar_not_wifes(self) -> None:
+        """연동이 없으면 본인 id 그대로 조회한다 — 아내 데이터가 새지 않는다."""
+        self.client.seed_condition(date(2026, 9, 1))  # 아내(USER) 소유, 연동 없음
+
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(id="husband-1")
+        async with self.http() as client:
+            response = await client.get("/api/v1/care/calendar/2026-09")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["days"], [])
 
 
 if __name__ == "__main__":
