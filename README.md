@@ -37,13 +37,15 @@ MVP는 가전 자동 실행과 홈카메라 기반 실시간 위험 행동 로�
 
 Frontend 제품 UI 작업은 Backend 구현과 분리합니다. Backend가 준비되지 않은 화면은 Mock Data와 Mock Service를 사용하고, 향후 Service 구현 교체만으로 실제 API에 연결할 수 있도록 설계합니다.
 
+웹 UI의 카드·선택 항목은 공통 클리핑 경계 안에서 호버 피드백을 표시하며, 휠·트랙패드·터치 스크롤은 유지하되 화면 스크롤바는 노출하지 않습니다. Tablet·Desktop 상단바의 우측 알림·프로필 액션은 콘텐츠 grid 여백에 맞춰 화면 가장자리와 충분한 간격을 둡니다.
+
 Home의 AI Routine 영역은 `RoutineService` 경계를 통해 데이터를 받고, 현재는 `MockRoutineService`를 사용합니다. 따라서 실제 AI API 없이도 컨디션 입력 → 예정 활동 선택 → 생성 상태 → 4종 가이드 또는 기본 폴백의 UI Flow를 확인할 수 있으며, API 연결 시 화면을 수정하지 않고 Service 구현을 교체할 수 있습니다.
 
 4종 상세 가이드는 하나의 Dashboard Template을 복제하지 않습니다. Meal은 끼니별 추천·근거·수락/다른 메뉴 순환/공유, Household는 직접 수행·가전 추천·가족 위임과 Partner Request 상태, Health는 부담 부위 우선순위와 활동 완료, Sleep은 취침 맥락·환경 항목별 설정·수면 팁에 각각 최적화되어 있습니다. ThinQ 기기 실행은 MVP 밖이므로 Household와 Sleep에서 실제 제어를 제공하지 않으며, 추천값과 local Mock 상태만 확인할 수 있습니다.
 
 Chat은 임신 주차·주의 진단·당일 컨디션을 유지하는 식사 재조정 대화에 집중하고, Report는 핵심 결과 → 실행 루틴 → 하루 인사이트와 가족 참여 순으로 결과 위계를 제공합니다. Calendar는 날짜 선택 → 선택일 기록 → 아내 `/wife/report/:date` 또는 남편 `/husband/report/daily/:date` 상세 흐름으로 연결되며, 선택일의 컨디션·루틴·가전·가족 분담·주의사항을 하나의 좌측 정렬 요약 카드로 표시합니다. 남편 Daily 리포트 상세는 현재 임시 화면입니다. Mobile에서는 세로 흐름을 유지하고 Desktop에서는 Calendar와 선택일 상세를 7:5 2-column으로 동시에 표시합니다.
 
-남편 영역은 `/husband/calendar`를 기본 홈으로 사용합니다. 알림은 오전 Report 또는 request ID의 가사 Request로 이동하며, 남편 화면에는 Bottom Navigation을 두지 않습니다. 가사 요청은 집안일 카드별로 확인·완료하고, 확인 카드는 파란색, 완료 카드는 초록색 상태 면으로 구분합니다.
+남편 영역은 `/husband/calendar`를 기본 홈으로 사용합니다. 알림은 오전 Report 또는 request ID의 가사 Request로 이동하며, 남편 화면에는 Bottom Navigation을 두지 않습니다. 알림 목록은 컨디션 리포트·가사 요청·루틴 변경을 유형 배지, 아이콘, 배경색으로 구분합니다. 가사 요청은 집안일 카드별로 확인·완료하고, 확인 카드는 파란색, 완료 카드는 초록색 상태 면으로 구분합니다.
 
 실시간 경로는 아내 `/wife/live`, 남편 `/husband/live`입니다. 아내는 하단 실시간 탭으로, 남편은 캘린더에서 오늘 날짜를 선택했을 때 표시되는 버튼으로 진입합니다. 현재 화면 데이터는 Local Mock이고 실제 카메라·MediaPipe·실시간 센서를 실행하지 않습니다. 브라우저 카메라/WebSocket 코드는 `main_movement_debug.dart`의 독립 기술 데모에 남아 있습니다.
 
