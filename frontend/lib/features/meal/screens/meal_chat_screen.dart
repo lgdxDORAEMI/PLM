@@ -72,9 +72,6 @@ class _MealChatScreenState extends State<MealChatScreen> {
         wifeProfileAction: true,
       ),
       body: EmptyDataPreview(
-        title: '아직 대화 내용이 없어요',
-        message: '식사 가이드에서 메뉴를 선택하면 상담을 시작할 수 있어요.',
-        icon: Icons.chat_bubble_outline,
         child: SafeArea(
           top: false,
           child: ResponsivePageContent(
@@ -90,54 +87,69 @@ class _MealChatScreenState extends State<MealChatScreen> {
                     children: [
                       _MealChatContext(period: widget.mealPeriod),
                       const SizedBox(height: AppSpacing.xxl),
-                      for (final message in _controller.messages) ...[
-                        MealChatBubble(
-                          key: ValueKey(message.id),
-                          message: message.text,
-                          fromUser: message.author == MealChatAuthor.user,
+                      PreviewData(
+                        empty: Text(
+                          '아직 대화 내용이 없어요.',
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: AppColors.textSecondary),
                         ),
-                        const SizedBox(height: AppSpacing.lg),
-                      ],
-                      if (_controller.messages.length == 1 &&
-                          !_controller.responding) ...[
-                        _SuggestedPrompts(onSelected: _send),
-                        const SizedBox(height: AppSpacing.lg),
-                      ],
-                      if (_controller.responding)
-                        const _RespondingIndicator()
-                      else if (_controller.errorMessage != null)
-                        _ChatError(
-                          message: _controller.errorMessage!,
-                          onRetry: () => unawaited(_controller.retry()),
-                        )
-                      else if (_controller.proposal != null) ...[
-                        MealRecommendationCard(
-                          key: const ValueKey('meal-alternative-card'),
-                          recommendation: _controller.proposal!,
-                          compact: true,
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
-                        Row(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Expanded(
-                              child: AppButton(
-                                key: const ValueKey('apply-meal-alternative'),
-                                label: '이걸로 할게요',
-                                onPressed: _applyProposal,
+                            for (final message in _controller.messages) ...[
+                              MealChatBubble(
+                                key: ValueKey(message.id),
+                                message: message.text,
+                                fromUser: message.author == MealChatAuthor.user,
                               ),
-                            ),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              child: AppButton(
-                                label: '다른 메뉴 보기',
-                                variant: AppButtonVariant.secondary,
-                                onPressed: () =>
-                                    unawaited(_controller.requestAnother()),
+                              const SizedBox(height: AppSpacing.lg),
+                            ],
+                            if (_controller.messages.length == 1 &&
+                                !_controller.responding) ...[
+                              _SuggestedPrompts(onSelected: _send),
+                              const SizedBox(height: AppSpacing.lg),
+                            ],
+                            if (_controller.responding)
+                              const _RespondingIndicator()
+                            else if (_controller.errorMessage != null)
+                              _ChatError(
+                                message: _controller.errorMessage!,
+                                onRetry: () => unawaited(_controller.retry()),
+                              )
+                            else if (_controller.proposal != null) ...[
+                              MealRecommendationCard(
+                                key: const ValueKey('meal-alternative-card'),
+                                recommendation: _controller.proposal!,
+                                compact: true,
                               ),
-                            ),
+                              const SizedBox(height: AppSpacing.lg),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: AppButton(
+                                      key: const ValueKey(
+                                        'apply-meal-alternative',
+                                      ),
+                                      label: '이걸로 할게요',
+                                      onPressed: _applyProposal,
+                                    ),
+                                  ),
+                                  const SizedBox(width: AppSpacing.md),
+                                  Expanded(
+                                    child: AppButton(
+                                      label: '다른 메뉴 보기',
+                                      variant: AppButtonVariant.secondary,
+                                      onPressed: () => unawaited(
+                                        _controller.requestAnother(),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
                           ],
                         ),
-                      ],
+                      ),
                     ],
                   ),
                 ),

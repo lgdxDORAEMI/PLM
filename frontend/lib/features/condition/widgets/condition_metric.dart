@@ -13,14 +13,12 @@ class ConditionMetric extends StatelessWidget {
     required this.value,
     required this.valueLabels,
     required this.onChanged,
-    this.positiveScale = false,
   }) : assert(valueLabels.length == 5);
 
   final String label;
   final int value;
   final List<String> valueLabels;
   final ValueChanged<int> onChanged;
-  final bool positiveScale;
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +68,7 @@ class ConditionMetric extends StatelessWidget {
                         height: 20,
                         decoration: BoxDecoration(
                           color: selected
-                              ? _selectedColorFor(index)
+                              ? _selectedColor
                               : AppColors.borderSubtle,
                           borderRadius: BorderRadius.circular(AppRadius.pill),
                         ),
@@ -86,24 +84,11 @@ class ConditionMetric extends StatelessWidget {
     );
   }
 
-  static const _moodScaleColors = [
-    AppColors.primary200,
-    AppColors.primary300,
-    AppColors.primary400,
-    AppColors.primary500,
-    AppColors.primary600,
-  ];
+  Color get _selectedColor =>
+      value >= 4 ? AppColors.primary500 : AppColors.primary300;
 
-  Color _selectedColorFor(int index) {
-    if (positiveScale) return _moodScaleColors[index];
-    return value >= 4 ? AppColors.primary500 : AppColors.primary300;
-  }
-
-  Color get _statusColor => positiveScale
-      ? _moodScaleColors[value - 1]
-      : value >= 4
-      ? AppColors.primary600
-      : AppColors.textSecondary;
+  Color get _statusColor =>
+      value >= 4 ? AppColors.primary600 : AppColors.textSecondary;
 }
 
 const discomfortLabels = ['괜찮아요', '조금 있어요', '보통이에요', '심해요', '매우 심해요'];

@@ -8,6 +8,9 @@ import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_names.dart';
+import '../../../routing/app_router.dart';
+import '../../../routing/app_session.dart';
+import '../../../shared/widgets/consecutive_tap_detector.dart';
 import '../../invitation/data/partner_connection_store.dart';
 import '../../profile/data/profile_store.dart';
 import '../../profile/models/profile_draft.dart';
@@ -52,7 +55,8 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
           children: [
             _ProfileHeader(
               profile: _profileStore.profile,
-              onTap: () => Navigator.pushNamed(context, RouteNames.wifeProfile),
+              onRoleSwitch: () =>
+                  AppRouter.switchDemoUser(context, ActiveRole.husband),
             ),
             const SizedBox(height: AppSpacing.xxl),
             Text('내 정보', style: Theme.of(context).textTheme.titleMedium),
@@ -122,9 +126,9 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
 }
 
 class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({required this.onTap, required this.profile});
+  const _ProfileHeader({required this.onRoleSwitch, required this.profile});
 
-  final VoidCallback onTap;
+  final VoidCallback onRoleSwitch;
   final ProfileDraft? profile;
 
   @override
@@ -136,37 +140,37 @@ class _ProfileHeader extends StatelessWidget {
         : '${due.year}. ${due.month.toString().padLeft(2, '0')}. '
               '${due.day.toString().padLeft(2, '0')}.';
     return Semantics(
-      button: true,
-      label: '희선님 프로필 수정',
-      child: AppInkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Row(
-          children: [
-            const CircleAvatar(
+      container: true,
+      label: '희선님 프로필 정보',
+      child: Row(
+        children: [
+          ConsecutiveTapDetector(
+            key: const ValueKey('wife-role-switch-avatar'),
+            onTriggered: onRoleSwitch,
+            child: const CircleAvatar(
               radius: 36,
               backgroundColor: AppColors.primary100,
               foregroundColor: AppColors.primary700,
               child: Text('희'),
             ),
-            const SizedBox(width: AppSpacing.lg),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('희선님', style: Theme.of(context).textTheme.headlineSmall),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    '임신 $week주차 · 출산예정일 $dueLabel',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
+          ),
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('희선님', style: Theme.of(context).textTheme.headlineSmall),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  '임신 $week주차 · 출산예정일 $dueLabel',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

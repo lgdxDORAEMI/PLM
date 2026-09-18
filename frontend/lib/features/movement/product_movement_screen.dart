@@ -42,9 +42,6 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
       husbandMenuAction: !_isWife,
     );
     final body = EmptyDataPreview(
-      title: '감지된 움직임이 없어요',
-      message: '움직임이 감지되면 오늘 이벤트 기록이 여기에 표시돼요.',
-      icon: Icons.monitor_heart_outlined,
       child: SafeArea(
         top: false,
         child: ContentFrame(
@@ -161,67 +158,79 @@ class _CurrentStateCard extends StatelessWidget {
   final VoidCallback? onMoveToHousehold;
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      Text('현재 상태', style: Theme.of(context).textTheme.titleLarge),
-      const SizedBox(height: AppSpacing.md),
-      AppCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                const CircleAvatar(
-                  backgroundColor: AppColors.primary100,
-                  foregroundColor: AppColors.primary700,
-                  child: Icon(Icons.accessibility_new),
+  Widget build(BuildContext context) {
+    final previewEmpty = EmptyDataPreview.enabledOf(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('현재 상태', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: AppSpacing.md),
+        AppCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  const CircleAvatar(
+                    backgroundColor: AppColors.primary100,
+                    foregroundColor: AppColors.primary700,
+                    child: Icon(Icons.accessibility_new),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '홈카메라 움직임 감지',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const Text('오늘의 움직임 패턴을 확인해요.'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              if (previewEmpty)
+                Text(
+                  '아직 계산된 움직임 시간이 없어요.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                )
+              else ...[
+                const Row(
+                  children: [
+                    Expanded(child: Text('오늘 서 있거나 움직인 시간')),
+                    Text('2시간 40분 / 권장 2시간'),
+                  ],
                 ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '홈카메라 움직임 감지',
-                        style: Theme.of(context).textTheme.titleMedium,
+                const SizedBox(height: AppSpacing.sm),
+                LinearProgressIndicator(
+                  value: 1,
+                  color: AppColors.warning,
+                  backgroundColor: AppColors.surfaceSubtle,
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Row(
+                  children: [
+                    const Expanded(child: Text('Mock 기준으로 권장보다 40분 많아요.')),
+                    if (onMoveToHousehold != null)
+                      OutlinedButton(
+                        key: const ValueKey('movement-to-household'),
+                        onPressed: onMoveToHousehold,
+                        child: const Text('가전으로 옮기기'),
                       ),
-                      const Text('오늘의 움직임 패턴을 확인해요.'),
-                    ],
-                  ),
+                  ],
                 ),
               ],
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            const Row(
-              children: [
-                Expanded(child: Text('오늘 서 있거나 움직인 시간')),
-                Text('2시간 40분 / 권장 2시간'),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            LinearProgressIndicator(
-              value: 1,
-              color: AppColors.warning,
-              backgroundColor: AppColors.surfaceSubtle,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            Row(
-              children: [
-                const Expanded(child: Text('Mock 기준으로 권장보다 40분 많아요.')),
-                if (onMoveToHousehold != null)
-                  OutlinedButton(
-                    key: const ValueKey('movement-to-household'),
-                    onPressed: onMoveToHousehold,
-                    child: const Text('가전으로 옮기기'),
-                  ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-    ],
-  );
+      ],
+    );
+  }
 }
 
 class _TodayEventLog extends StatelessWidget {
@@ -238,29 +247,42 @@ class _TodayEventLog extends StatelessWidget {
   final ValueChanged<MovementAlert> onOpen;
 
   @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      Text('오늘 이벤트 기록', style: Theme.of(context).textTheme.titleLarge),
-      const SizedBox(height: AppSpacing.xs),
-      Text(
-        '오늘 감지된 부담 가능 행동만 표시해요.',
-        style: Theme.of(
-          context,
-        ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
-      ),
-      const SizedBox(height: AppSpacing.md),
-      for (final event in (showAll ? events : events.take(3))) ...[
-        MovementAlertCard(alert: event, onTap: () => onOpen(event)),
-        const SizedBox(height: AppSpacing.sm),
-      ],
-      if (!showAll && events.length > 3)
-        TextButton.icon(
-          key: const ValueKey('movement-show-all-events'),
-          onPressed: onShowAll,
-          icon: const Icon(Icons.expand_more),
-          label: Text('더보기 (${events.length - 3})'),
+  Widget build(BuildContext context) {
+    final visibleEvents = EmptyDataPreview.enabledOf(context)
+        ? const <MovementAlert>[]
+        : events;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text('오늘 이벤트 기록', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: AppSpacing.xs),
+        Text(
+          '오늘 감지된 부담 가능 행동만 표시해요.',
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
         ),
-    ],
-  );
+        const SizedBox(height: AppSpacing.md),
+        if (visibleEvents.isEmpty)
+          Text(
+            '아직 감지된 이벤트가 없어요.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+          ),
+        for (final event
+            in (showAll ? visibleEvents : visibleEvents.take(3))) ...[
+          MovementAlertCard(alert: event, onTap: () => onOpen(event)),
+          const SizedBox(height: AppSpacing.sm),
+        ],
+        if (!showAll && visibleEvents.length > 3)
+          TextButton.icon(
+            key: const ValueKey('movement-show-all-events'),
+            onPressed: onShowAll,
+            icon: const Icon(Icons.expand_more),
+            label: Text('더보기 (${visibleEvents.length - 3})'),
+          ),
+      ],
+    );
+  }
 }

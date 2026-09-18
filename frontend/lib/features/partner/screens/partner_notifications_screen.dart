@@ -59,27 +59,46 @@ class _PartnerNotificationsScreenState
       ],
     ),
     body: EmptyDataPreview(
-      title: '새로운 알림이 없어요',
-      message: '컨디션 리포트나 가사 요청이 도착하면 여기에 표시돼요.',
-      icon: Icons.notifications_none,
       child: SafeArea(
         top: false,
         child: ResponsivePageContent(
           child: ListView(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
             children: [
-              InfoBanner(
-                title: _controller.unreadCount == 0
-                    ? '새 알림이 없어요'
-                    : '읽지 않은 알림 ${_controller.unreadCount}개',
-                message: '오전 리포트·가사 요청·루틴 변경을 시간순으로 보여드려요.',
-                tone: InfoBannerTone.info,
+              PreviewData(
+                empty: const InfoBanner(
+                  title: '새 알림이 없어요',
+                  message: '알림이 도착하면 시간순으로 표시돼요.',
+                  tone: InfoBannerTone.info,
+                ),
+                child: InfoBanner(
+                  title: _controller.unreadCount == 0
+                      ? '새 알림이 없어요'
+                      : '읽지 않은 알림 ${_controller.unreadCount}개',
+                  message: '오전 리포트·가사 요청·루틴 변경을 시간순으로 보여드려요.',
+                  tone: InfoBannerTone.info,
+                ),
               ),
               const SizedBox(height: AppSpacing.xl),
-              for (final item in _controller.items) ...[
-                _NotificationCard(item: item, onTap: () => _open(item)),
-                const SizedBox(height: AppSpacing.sm),
-              ],
+              PreviewData(
+                empty: Text(
+                  '표시할 알림 카드가 없어요.',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                child: const SizedBox.shrink(),
+              ),
+              for (final item in _controller.items)
+                PreviewData(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                    child: _NotificationCard(
+                      item: item,
+                      onTap: () => _open(item),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

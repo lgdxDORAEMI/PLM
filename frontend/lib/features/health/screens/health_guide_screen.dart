@@ -47,9 +47,6 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
       wifeProfileAction: true,
     ),
     body: EmptyDataPreview(
-      title: '표시할 건강 가이드가 없어요',
-      message: '컨디션 정보가 준비되면 부담 부위에 맞는 활동을 추천해 드려요.',
-      icon: Icons.favorite_border,
       child: SafeArea(
         top: false,
         child: ContentFrame(
@@ -65,28 +62,47 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
                 primary: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      '${_controller.selectedArea}에 맞춘 오늘의 활동',
-                      style: Theme.of(context).textTheme.titleLarge,
+                    Builder(
+                      builder: (context) => Text(
+                        EmptyDataPreview.enabledOf(context)
+                            ? '오늘의 활동'
+                            : '${_controller.selectedArea}에 맞춘 오늘의 활동',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    for (final activity in BodyCareMockData.activitiesFor(
-                      _controller.selectedArea,
-                    ).indexed) ...[
-                      MovementGuideCard(
-                        activity: activity.$2,
-                        featured: activity.$1 == 0,
-                        completed: _controller.isCompleted(activity.$2.id),
-                        onOpen: () => _showGuide(activity.$2),
-                        onComplete: () =>
-                            _controller.toggleCompleted(activity.$2.id),
+                    PreviewData(
+                      empty: Text(
+                        '추천된 활동이 없어요.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                      const SizedBox(height: AppSpacing.md),
-                    ],
-                    const SizedBox(height: AppSpacing.sm),
-                    _BodyAreaSelector(
-                      selectedArea: _controller.selectedArea,
-                      onSelected: _controller.selectArea,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (final activity in BodyCareMockData.activitiesFor(
+                            _controller.selectedArea,
+                          ).indexed) ...[
+                            MovementGuideCard(
+                              activity: activity.$2,
+                              featured: activity.$1 == 0,
+                              completed: _controller.isCompleted(
+                                activity.$2.id,
+                              ),
+                              onOpen: () => _showGuide(activity.$2),
+                              onComplete: () =>
+                                  _controller.toggleCompleted(activity.$2.id),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                          ],
+                          const SizedBox(height: AppSpacing.sm),
+                          _BodyAreaSelector(
+                            selectedArea: _controller.selectedArea,
+                            onSelected: _controller.selectArea,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -98,14 +114,26 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    for (final load in BodyCareMockData.loads) ...[
-                      _BodyLoadCard(
-                        load: load,
-                        selected: load.area == _controller.selectedArea,
-                        onTap: () => _controller.selectArea(load.area),
+                    PreviewData(
+                      empty: Text(
+                        '계산된 집중 부위가 없어요.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
                       ),
-                      const SizedBox(height: AppSpacing.md),
-                    ],
+                      child: Column(
+                        children: [
+                          for (final load in BodyCareMockData.loads) ...[
+                            _BodyLoadCard(
+                              load: load,
+                              selected: load.area == _controller.selectedArea,
+                              onTap: () => _controller.selectArea(load.area),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                          ],
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),

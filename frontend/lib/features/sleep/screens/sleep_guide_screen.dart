@@ -68,9 +68,6 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
         ],
       ),
       body: EmptyDataPreview(
-        title: '표시할 수면 가이드가 없어요',
-        message: '수면 정보가 준비되면 오늘의 환경과 수면 팁을 보여드려요.',
-        icon: Icons.bedtime_outlined,
         child: SafeArea(
           top: false,
           child: ContentFrame(maxWidth: 1200, child: _buildBody()),
@@ -134,21 +131,49 @@ class _SleepContent extends StatelessWidget {
       key: const ValueKey('sleep-guide-content'),
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
       children: [
-        _SleepSummary(guide: guide),
+        PreviewData(
+          empty: Text(
+            '아직 계산된 수면 요약이 없어요.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+          ),
+          child: _SleepSummary(guide: guide),
+        ),
         const SizedBox(height: AppSpacing.xxl),
         Text('AI가 맞춘 오늘의 수면 환경', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: AppSpacing.lg),
-        _EnvironmentGrid(
-          environments: guide.environments,
-          onTap: onEnvironmentTap,
+        PreviewData(
+          empty: Text(
+            '추천된 수면 환경 설정이 없어요.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+          ),
+          child: _EnvironmentGrid(
+            environments: guide.environments,
+            onTap: onEnvironmentTap,
+          ),
         ),
         const SizedBox(height: AppSpacing.xxl),
         Text('오늘의 수면 팁', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: AppSpacing.lg),
-        for (final tip in guide.tips) ...[
-          _SleepTip(text: tip),
-          const SizedBox(height: AppSpacing.md),
-        ],
+        PreviewData(
+          empty: Text(
+            '표시할 수면 팁이 없어요.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+          ),
+          child: Column(
+            children: [
+              for (final tip in guide.tips) ...[
+                _SleepTip(text: tip),
+                const SizedBox(height: AppSpacing.md),
+              ],
+            ],
+          ),
+        ),
       ],
     );
   }

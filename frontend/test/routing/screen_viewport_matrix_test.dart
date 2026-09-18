@@ -100,25 +100,26 @@ void main() {
       );
     }
 
-    final dataRoutes = <String>[
-      RouteNames.wifeHome,
-      RouteNames.mealGuide,
-      RouteNames.householdGuide,
-      RouteNames.healthGuide,
-      RouteNames.sleepGuide,
-      RouteNames.mealChat,
-      RouteNames.dailyReport('2026-09-13'),
-      RouteNames.wifeCalendar,
-      RouteNames.wifeMovement,
-      RouteNames.partnerMorningReport('2026-09-13'),
-      RouteNames.partnerCalendar,
-      RouteNames.partnerNotifications,
-      RouteNames.partnerRequest('demo-request'),
-      RouteNames.husbandRequestResult('demo-request'),
-      RouteNames.partnerMovement,
-    ];
+    final dataRoutes = <String, String>{
+      RouteNames.wifeHome: '임신 주차 정보가 아직 없어요',
+      RouteNames.mealGuide: '아직 생성된 추천 메뉴가 없어요.',
+      RouteNames.householdGuide: '등록된 직접 할 일이 없어요.',
+      RouteNames.healthGuide: '추천된 활동이 없어요.',
+      RouteNames.sleepGuide: '아직 계산된 수면 요약이 없어요.',
+      RouteNames.mealChat: '아직 대화 내용이 없어요.',
+      RouteNames.dailyReport('2026-09-13'): '컨디션과 루틴 기록 카드가 아직 생성되지 않았어요.',
+      RouteNames.wifeCalendar: '이 달에는 기록이 없어요',
+      RouteNames.wifeMovement: '아직 계산된 움직임 시간이 없어요.',
+      RouteNames.partnerMorningReport('2026-09-13'): '공유된 리포트 카드가 아직 없어요.',
+      RouteNames.partnerCalendar: '이 달에는 기록이 없어요',
+      RouteNames.partnerNotifications: '표시할 알림 카드가 없어요.',
+      RouteNames.partnerRequest('demo-request'): '도착한 가사 요청 정보가 없어요.',
+      RouteNames.husbandRequestResult('demo-request'): '표시할 가족 분담 결과 카드가 없어요.',
+      RouteNames.partnerMovement: '아직 계산된 움직임 시간이 없어요.',
+    };
 
-    for (final route in dataRoutes) {
+    for (final entry in dataRoutes.entries) {
+      final route = entry.key;
       if (route.startsWith('/husband/')) {
         _useHusbandSession();
       } else {
@@ -134,11 +135,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(
-        find.byKey(const ValueKey('empty-data-preview')),
-        findsOneWidget,
-        reason: route,
-      );
+      expect(find.textContaining(entry.value), findsOneWidget, reason: route);
+      expect(find.byType(Scaffold), findsWidgets, reason: route);
       expect(tester.takeException(), isNull, reason: route);
     }
   });
@@ -167,7 +165,7 @@ void main() {
     PartnerConnectionStore.instance.reset();
   });
 
-  testWidgets('Menu 프로필 헤더를 탭하면 수정 화면으로 이동한다', (tester) async {
+  testWidgets('Menu 프로필 요약은 이동하지 않고 프로필 수정 항목만 이동한다', (tester) async {
     await tester.pumpWidget(
       MaterialApp(
         initialRoute: RouteNames.wifeMenu,
@@ -178,7 +176,48 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('희선님'));
     await tester.pumpAndSettle();
+    expect(find.byType(ProfileSetupScreen), findsNothing);
+    expect(find.text('프로필 수정'), findsOneWidget);
+
+    await tester.tap(find.text('프로필 수정'));
+    await tester.pumpAndSettle();
     expect(find.byType(ProfileSetupScreen), findsOneWidget);
+  });
+
+  testWidgets('메뉴 프로필 이미지를 다섯 번 누르면 아내와 남편 사용자를 전환한다', (tester) async {
+    _useWifeSession();
+    await tester.pumpWidget(
+      MaterialApp(
+        initialRoute: RouteNames.wifeMenu,
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        onGenerateInitialRoutes: AppRouter.onGenerateInitialRoutes,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final wifeAvatar = find.byKey(const ValueKey('wife-role-switch-avatar'));
+    for (var count = 0; count < 5; count += 1) {
+      await tester.tap(wifeAvatar);
+    }
+    await tester.pumpAndSettle();
+
+    expect(ActiveRoleStore.instance.value, ActiveRole.husband);
+    expect(find.text('컨디션 캘린더'), findsOneWidget);
+    expect(find.byType(NavigationBar), findsNothing);
+
+    await tester.tap(find.byTooltip('메뉴'));
+    await tester.pumpAndSettle();
+    final husbandAvatar = find.byKey(
+      const ValueKey('husband-role-switch-avatar'),
+    );
+    for (var count = 0; count < 5; count += 1) {
+      await tester.tap(husbandAvatar);
+    }
+    await tester.pumpAndSettle();
+
+    expect(ActiveRoleStore.instance.value, ActiveRole.wife);
+    expect(find.text('홈'), findsWidgets);
+    expect(find.byType(NavigationBar), findsOneWidget);
   });
 
   testWidgets('주요 화면은 390px·기기 200%·앱 크게에서 렌더링된다', (tester) async {

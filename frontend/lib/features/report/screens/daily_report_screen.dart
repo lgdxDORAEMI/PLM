@@ -66,9 +66,6 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
       wifeProfileAction: true,
     ),
     body: EmptyDataPreview(
-      title: '이 날의 기록이 없어요',
-      message: '컨디션과 루틴 기록이 생기면 Daily 리포트로 정리해 드려요.',
-      icon: Icons.description_outlined,
       child: SafeArea(
         top: false,
         child: ContentFrame(maxWidth: 1200, child: _buildBody()),
@@ -101,13 +98,24 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
       message: '잠시 후 다시 시도해 주세요.',
       onRetry: _controller.load,
     ),
-    _ => _DailyReportContent(
-      record: _controller.record!,
-      busy:
-          _controller.state == DailyReportViewState.saving ||
-          _controller.state == DailyReportViewState.sharing,
-      onSave: _save,
-      onShare: _share,
+    _ => PreviewData(
+      empty: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+        child: Text(
+          '컨디션과 루틴 기록 카드가 아직 생성되지 않았어요.',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+        ),
+      ),
+      child: _DailyReportContent(
+        record: _controller.record!,
+        busy:
+            _controller.state == DailyReportViewState.saving ||
+            _controller.state == DailyReportViewState.sharing,
+        onSave: _save,
+        onShare: _share,
+      ),
     ),
   };
 

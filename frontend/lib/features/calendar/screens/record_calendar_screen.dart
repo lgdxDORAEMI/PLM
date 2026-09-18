@@ -67,11 +67,6 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen> {
       husbandMenuAction: !isWife,
     );
     final body = EmptyDataPreview(
-      title: '아직 기록된 날짜가 없어요',
-      message: isWife
-          ? '컨디션과 루틴 기록이 생기면 캘린더에서 확인할 수 있어요.'
-          : '아내가 공유한 기록이 생기면 캘린더에서 확인할 수 있어요.',
-      icon: Icons.calendar_month_outlined,
       child: SafeArea(top: false, child: ContentFrame(child: _buildBody())),
     );
     if (isWife) {
@@ -131,7 +126,8 @@ class _CalendarContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selected = controller.selectedRecord;
+    final previewEmpty = EmptyDataPreview.enabledOf(context);
+    final selected = previewEmpty ? null : controller.selectedRecord;
     final month = controller.visibleMonth;
     final expandedCalendar =
         MediaQuery.sizeOf(context).width >= AppBreakpoints.desktop;
@@ -220,7 +216,9 @@ class _CalendarPanel extends StatelessWidget {
       const SizedBox(height: AppSpacing.lg),
       ConditionCalendar(
         month: month,
-        records: controller.records,
+        records: EmptyDataPreview.enabledOf(context)
+            ? const []
+            : controller.records,
         selectedDate: controller.selectedDate,
         onSelected: controller.selectDate,
         comfortable: comfortable,

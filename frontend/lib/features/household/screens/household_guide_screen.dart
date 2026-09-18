@@ -56,9 +56,6 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
         wifeProfileAction: true,
       ),
       body: EmptyDataPreview(
-        title: '등록된 집안일이 없어요',
-        message: '할 일이 생기면 직접 할 일과 가족에게 공유할 일로 나눠 보여드려요.',
-        icon: Icons.checklist_outlined,
         child: SafeArea(
           top: false,
           child: ContentFrame(
@@ -128,16 +125,29 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
         label: '${_controller.directListTasks.length}개 · 가볍게',
       ),
       const SizedBox(height: AppSpacing.md),
-      if (_controller.directListTasks.isEmpty)
-        Text(
-          '직접 할 일을 모두 가족과 나눴어요.',
+      PreviewData(
+        empty: Text(
+          '등록된 직접 할 일이 없어요.',
           style: Theme.of(
             context,
           ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-        )
-      else
-        for (final task in _controller.directListTasks)
-          _DirectTaskListItem(task: task),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (_controller.directListTasks.isEmpty)
+              Text(
+                '직접 할 일을 모두 가족과 나눴어요.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                ),
+              )
+            else
+              for (final task in _controller.directListTasks)
+                _DirectTaskListItem(task: task),
+          ],
+        ),
+      ),
     ],
   );
 
@@ -146,7 +156,18 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
     children: [
       const _SectionTitle(number: 3, title: '가전이 대신합니다', label: '추천 3개'),
       const SizedBox(height: AppSpacing.md),
-      ..._taskCards(HouseholdTaskOwner.appliance),
+      PreviewData(
+        empty: Text(
+          '추천된 가전 작업이 없어요.',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: _taskCards(HouseholdTaskOwner.appliance),
+        ),
+      ),
     ],
   );
 
@@ -159,46 +180,62 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
         label: '${_controller.selectedCount}개 요청',
       ),
       const SizedBox(height: AppSpacing.md),
-      Text('공유할 집안일을 선택해 주세요.', style: Theme.of(context).textTheme.bodyMedium),
-      const SizedBox(height: AppSpacing.md),
-      for (final task in _controller.shareableTasks) ...[
-        HouseholdTaskCard(
-          task: task,
-          selectable: true,
-          onTap: _controller.shared
-              ? null
-              : () => _controller.toggleSelection(task.id),
+      PreviewData(
+        empty: Text(
+          '가족과 나눌 집안일이 없어요.',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
         ),
-        const SizedBox(height: AppSpacing.sm),
-      ],
-      if (_controller.shareError != null) ...[
-        const SizedBox(height: AppSpacing.md),
-        InfoBanner(
-          title: '공유하지 못했어요',
-          message: _controller.shareError,
-          tone: InfoBannerTone.danger,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              '공유할 집안일을 선택해 주세요.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            for (final task in _controller.shareableTasks) ...[
+              HouseholdTaskCard(
+                task: task,
+                selectable: true,
+                onTap: _controller.shared
+                    ? null
+                    : () => _controller.toggleSelection(task.id),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+            ],
+            if (_controller.shareError != null) ...[
+              const SizedBox(height: AppSpacing.md),
+              InfoBanner(
+                title: '공유하지 못했어요',
+                message: _controller.shareError,
+                tone: InfoBannerTone.danger,
+              ),
+            ],
+            const SizedBox(height: AppSpacing.md),
+            AppButton(
+              key: const ValueKey('household-share-button'),
+              label: _controller.sharing
+                  ? '요청 보내는 중…'
+                  : _controller.shared
+                  ? '남편에게 공유했어요'
+                  : '남편에게 공유하기',
+              loading: _controller.sharing,
+              onPressed:
+                  _controller.selectedCount == 0 ||
+                      _controller.shared ||
+                      _controller.sharing
+                  ? null
+                  : _share,
+            ),
+            if (_controller.shared) ...[
+              const SizedBox(height: AppSpacing.lg),
+              const _LiveStatusBanner(),
+            ],
+          ],
         ),
-      ],
-      const SizedBox(height: AppSpacing.md),
-      AppButton(
-        key: const ValueKey('household-share-button'),
-        label: _controller.sharing
-            ? '요청 보내는 중…'
-            : _controller.shared
-            ? '남편에게 공유했어요'
-            : '남편에게 공유하기',
-        loading: _controller.sharing,
-        onPressed:
-            _controller.selectedCount == 0 ||
-                _controller.shared ||
-                _controller.sharing
-            ? null
-            : _share,
       ),
-      if (_controller.shared) ...[
-        const SizedBox(height: AppSpacing.lg),
-        const _LiveStatusBanner(),
-      ],
     ],
   );
 
@@ -305,12 +342,13 @@ class _SectionTitle extends StatelessWidget {
       Expanded(
         child: Text(title, style: Theme.of(context).textTheme.titleLarge),
       ),
-      Text(
-        label,
-        style: Theme.of(
-          context,
-        ).textTheme.labelMedium?.copyWith(color: AppColors.categoryHome),
-      ),
+      if (!EmptyDataPreview.enabledOf(context))
+        Text(
+          label,
+          style: Theme.of(
+            context,
+          ).textTheme.labelMedium?.copyWith(color: AppColors.categoryHome),
+        ),
     ],
   );
 }

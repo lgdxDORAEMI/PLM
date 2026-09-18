@@ -82,9 +82,6 @@ class _PartnerMorningReportScreenState
       ],
     ),
     body: EmptyDataPreview(
-      title: '공유된 리포트가 없어요',
-      message: '아내가 컨디션과 하루 기록을 공유하면 여기에 표시돼요.',
-      icon: Icons.description_outlined,
       child: SafeArea(top: false, child: ResponsivePageContent(child: _body())),
     ),
   );
@@ -105,9 +102,20 @@ class _PartnerMorningReportScreenState
       message: '잠시 후 다시 시도해 주세요.',
       onRetry: _controller.load,
     ),
-    _ => _PartnerReportContent(
-      record: _controller.record!,
-      daily: widget.daily,
+    _ => PreviewData(
+      empty: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+        child: Text(
+          '공유된 리포트 카드가 아직 없어요.',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+        ),
+      ),
+      child: _PartnerReportContent(
+        record: _controller.record!,
+        daily: widget.daily,
+      ),
     ),
   };
 

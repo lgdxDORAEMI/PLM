@@ -27,9 +27,6 @@ class PartnerRequestResultScreen extends StatelessWidget {
         husbandMenuAction: true,
       ),
       body: EmptyDataPreview(
-        title: '완료된 가사 요청이 없어요',
-        message: '집안일을 완료하면 처리 결과가 여기에 표시돼요.',
-        icon: Icons.task_alt_outlined,
         child: SafeArea(
           top: false,
           child: ResponsivePageContent(
@@ -59,19 +56,27 @@ class PartnerRequestResultScreen extends StatelessWidget {
                   tone: InfoBannerTone.success,
                 ),
                 const SizedBox(height: AppSpacing.xl),
-                AppCard(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '가족 분담 요약',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      _count('요청받은 집안일', request.tasks.length),
-                      _count('내가 확인한 항목', request.confirmedCount),
-                      _count('내가 완료한 항목', request.completedCount),
-                    ],
+                PreviewData(
+                  empty: Text(
+                    '표시할 가족 분담 결과 카드가 없어요.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  child: AppCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '가족 분담 요약',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        _count('요청받은 집안일', request.tasks.length),
+                        _count('내가 확인한 항목', request.confirmedCount),
+                        _count('내가 완료한 항목', request.completedCount),
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.xl),

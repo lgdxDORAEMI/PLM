@@ -16,9 +16,15 @@ void main() {
         home: Scaffold(
           appBar: TopAppBar(title: '테스트 화면'),
           body: EmptyDataPreview(
-            title: '표시할 데이터가 없어요',
-            message: '데이터가 생기면 여기에 표시돼요.',
-            child: Text('Mock 데이터'),
+            child: Column(
+              children: [
+                Text('유지되는 화면 구조'),
+                PreviewData(
+                  empty: Text('생성된 카드가 없어요'),
+                  child: Text('Mock 데이터 카드'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -30,17 +36,18 @@ void main() {
     }
     await tester.pump();
 
-    expect(find.byKey(const ValueKey('empty-data-preview')), findsOneWidget);
-    expect(find.text('표시할 데이터가 없어요'), findsOneWidget);
-    expect(find.text('Mock 데이터'), findsNothing);
+    expect(find.text('유지되는 화면 구조'), findsOneWidget);
+    expect(find.text('생성된 카드가 없어요'), findsOneWidget);
+    expect(find.text('Mock 데이터 카드'), findsNothing);
 
     for (var count = 0; count < 5; count += 1) {
       await tester.tap(trigger);
     }
     await tester.pump();
 
-    expect(find.byKey(const ValueKey('empty-data-preview')), findsNothing);
-    expect(find.text('Mock 데이터'), findsOneWidget);
+    expect(find.text('유지되는 화면 구조'), findsOneWidget);
+    expect(find.text('생성된 카드가 없어요'), findsNothing);
+    expect(find.text('Mock 데이터 카드'), findsOneWidget);
   });
 
   test('탭 간격이 길어지면 연속 횟수를 처음부터 센다', () {
