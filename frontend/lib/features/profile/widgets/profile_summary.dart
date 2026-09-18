@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_card.dart';
 import '../../../design_system/components/app_ink_well.dart';
-import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_spacing.dart';
@@ -31,12 +30,6 @@ class ProfileSummary extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const InfoBanner(
-              title: '입력한 내용을 확인해 주세요',
-              message: '출산예정일로 임신 주차가 자동 계산돼요. 언제든 수정할 수 있어요.',
-              tone: InfoBannerTone.info,
-            ),
-            const SizedBox(height: AppSpacing.xl),
             _SummaryItem(
               label: draft.dueDate == null ? '출산예정일 (마지막 생리일 기준)' : '출산예정일',
               value: _dateValue(draft),
@@ -78,7 +71,7 @@ class ProfileSummary extends StatelessWidget {
             AppButton(label: completeLabel, onPressed: onComplete),
             const SizedBox(height: AppSpacing.md),
             Text(
-              '임신 주차가 바뀌면 루틴 기준이 자동으로 업데이트돼요.',
+              '출산예정일로 임신 주차가 자동 계산되며 언제든 수정할 수 있어요. 임신 주차가 바뀌면 루틴 기준도 자동으로 업데이트돼요.',
               textAlign: TextAlign.center,
               style: Theme.of(
                 context,

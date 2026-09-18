@@ -86,7 +86,7 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
             _MenuRow(
               icon: Icons.settings_outlined,
               title: '설정',
-              description: '알림 · 연결된 가전 · 고객센터',
+              description: '글자 크기 조정',
               onTap: () =>
                   Navigator.pushNamed(context, RouteNames.wifeSettings),
             ),

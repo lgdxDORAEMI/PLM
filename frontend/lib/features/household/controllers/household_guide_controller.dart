@@ -13,7 +13,6 @@ class HouseholdGuideController extends ChangeNotifier {
           title: '식탁 위 정리 — 서서 5분',
           description: '짧게 서서 할 수 있는 가벼운 정리',
           owner: HouseholdTaskOwner.self,
-          selected: true,
         ),
         HouseholdTask(
           id: 'water-plants',
@@ -64,7 +63,13 @@ class HouseholdGuideController extends ChangeNotifier {
   String? get shareError => _shareError;
   List<HouseholdTask> tasksFor(HouseholdTaskOwner owner) =>
       _tasks.where((task) => task.owner == owner).toList(growable: false);
-  int get selectedCount => _tasks.where((task) => task.selected).length;
+  int get selectedCount => _selectedPartnerTasks.length;
+
+  List<HouseholdTask> get _selectedPartnerTasks => _tasks
+      .where(
+        (task) => task.owner == HouseholdTaskOwner.partner && task.selected,
+      )
+      .toList(growable: false);
 
   void toggleSelection(String id) {
     _update(id, (task) => task.copyWith(selected: !task.selected));
@@ -77,7 +82,7 @@ class HouseholdGuideController extends ChangeNotifier {
     _shareError = null;
     notifyListeners();
     try {
-      final selected = _tasks.where((task) => task.selected).toList();
+      final selected = _selectedPartnerTasks;
       final result = await requestService.send(
         tasks: selected.map((task) => task.title).toList(growable: false),
         reason: '오늘은 허리 통증이 있어 무거운 물건을 들지 않는 게 좋아요.',
@@ -87,7 +92,7 @@ class HouseholdGuideController extends ChangeNotifier {
       _shared = true;
       _tasks = [
         for (final task in _tasks)
-          if (task.selected)
+          if (task.owner == HouseholdTaskOwner.partner && task.selected)
             task.copyWith(status: HouseholdTaskStatus.shared)
           else
             task,
@@ -109,7 +114,7 @@ class HouseholdGuideController extends ChangeNotifier {
     if (requestId == null) return;
     _tasks = [
       for (final task in _tasks)
-        if (task.selected)
+        if (task.owner == HouseholdTaskOwner.partner && task.selected)
           task.copyWith(
             status: switch (requestService.progressForTask(
               requestId,

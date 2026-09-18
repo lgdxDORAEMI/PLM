@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../design_system/components/app_button.dart';
 import '../../design_system/components/app_card.dart';
 import '../../design_system/components/content_frame.dart';
-import '../../design_system/components/info_banner.dart';
 import '../../design_system/components/responsive_split_view.dart';
 import '../../design_system/components/top_app_bar.dart';
 import '../../design_system/components/wife_navigation_scaffold.dart';
@@ -28,6 +27,7 @@ class ProductMovementScreen extends StatefulWidget {
 
 class _ProductMovementScreenState extends State<ProductMovementScreen> {
   late final RealtimeAlertController _controller;
+  bool _showAllEvents = false;
 
   bool get _isWife => widget.role == AppUserRole.wife;
 
@@ -54,6 +54,7 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
       showBack: !_isWife,
       onBack: _isWife ? null : _backToPartnerCalendar,
       wifeProfileAction: _isWife,
+      husbandMenuAction: !_isWife,
     );
     final body = SafeArea(
       top: false,
@@ -62,13 +63,6 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
           children: [
-            const InfoBanner(
-              title: '홈카메라 활동 감지',
-              message: '영상은 저장하지 않고 움직임 패턴만 인식해요. 의료 진단 기능이 아닙니다.',
-              tone: InfoBannerTone.info,
-              icon: Icons.videocam_outlined,
-            ),
-            const SizedBox(height: AppSpacing.xxl),
             ResponsiveSplitView(
               primaryFlex: 7,
               secondaryFlex: 5,
@@ -81,13 +75,6 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
                     onChanged: _isWife ? _controller.setDetectionEnabled : null,
                     onMoveToHousehold: _isWife ? _moveToHousehold : null,
                   ),
-                  const SizedBox(height: AppSpacing.xxl),
-                  _LatestEventSection(
-                    event: _controller.latestEvent,
-                    onOpen: _controller.latestEvent == null
-                        ? null
-                        : () => _showAlert(_controller.latestEvent!),
-                  ),
                 ],
               ),
               secondary: Column(
@@ -95,10 +82,19 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
                 children: [
                   _TodayEventLog(
                     events: _controller.todayAlerts,
+                    showAll: _showAllEvents,
+                    onShowAll: () => setState(() => _showAllEvents = true),
                     onOpen: _showAlert,
                   ),
                 ],
               ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            Text(
+              '홈카메라는 영상을 저장하지 않고 움직임 패턴만 인식해요. 의료 진단 기능이 아닙니다.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
             ),
           ],
         ),
@@ -257,35 +253,17 @@ class _CurrentStateCard extends StatelessWidget {
   );
 }
 
-class _LatestEventSection extends StatelessWidget {
-  const _LatestEventSection({required this.event, required this.onOpen});
-
-  final MovementAlert? event;
-  final VoidCallback? onOpen;
-
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      Text('최근 이벤트', style: Theme.of(context).textTheme.titleLarge),
-      const SizedBox(height: AppSpacing.md),
-      if (event == null)
-        const AppCard(child: Text('표시할 Mock 이벤트가 없어요.'))
-      else
-        MovementAlertCard(
-          key: const ValueKey('movement-latest-event'),
-          interactionKey: const ValueKey('movement-latest-event-open'),
-          alert: event!,
-          onTap: onOpen!,
-        ),
-    ],
-  );
-}
-
 class _TodayEventLog extends StatelessWidget {
-  const _TodayEventLog({required this.events, required this.onOpen});
+  const _TodayEventLog({
+    required this.events,
+    required this.showAll,
+    required this.onShowAll,
+    required this.onOpen,
+  });
 
   final List<MovementAlert> events;
+  final bool showAll;
+  final VoidCallback onShowAll;
   final ValueChanged<MovementAlert> onOpen;
 
   @override
@@ -301,10 +279,17 @@ class _TodayEventLog extends StatelessWidget {
         ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
       ),
       const SizedBox(height: AppSpacing.md),
-      for (final event in events) ...[
+      for (final event in (showAll ? events : events.take(3))) ...[
         MovementAlertCard(alert: event, onTap: () => onOpen(event)),
         const SizedBox(height: AppSpacing.sm),
       ],
+      if (!showAll && events.length > 3)
+        TextButton.icon(
+          key: const ValueKey('movement-show-all-events'),
+          onPressed: onShowAll,
+          icon: const Icon(Icons.expand_more),
+          label: Text('더보기 (${events.length - 3})'),
+        ),
     ],
   );
 }

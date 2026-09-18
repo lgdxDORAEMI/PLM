@@ -20,7 +20,11 @@ class PartnerRequestResultScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final request = PartnerRequestStore.instance.request(requestId);
     return Scaffold(
-      appBar: TopAppBar(title: '요청 완료', onBack: () => _goCalendar(context)),
+      appBar: TopAppBar(
+        title: '요청 완료',
+        onBack: () => _goCalendar(context),
+        husbandMenuAction: true,
+      ),
       body: SafeArea(
         top: false,
         child: ResponsivePageContent(

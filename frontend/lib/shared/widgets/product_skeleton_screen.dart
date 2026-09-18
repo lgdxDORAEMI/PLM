@@ -214,8 +214,8 @@ class ProductSkeletonScreen extends StatelessWidget {
     if (shell == SkeletonShell.wife) {
       return [
         PopupMenuButton<String>(
-          tooltip: '프로필 메뉴',
-          icon: const Icon(Icons.account_circle_outlined),
+          tooltip: '메뉴',
+          icon: const Icon(Icons.menu),
           onSelected: (route) => Navigator.pushNamed(context, route),
           itemBuilder: (_) => [
             const PopupMenuItem(

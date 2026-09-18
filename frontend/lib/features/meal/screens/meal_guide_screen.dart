@@ -157,10 +157,8 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
                 const SizedBox(height: AppSpacing.lg),
                 _RecommendationActions(
                   decision: _controller.selectedDecision,
-                  shared: _controller.selectedIsShared,
                   onAccept: _controller.acceptSelected,
                   onAdjust: _controller.showNextRecommendation,
-                  onShare: _controller.shareSelected,
                 ),
               ],
             );
@@ -247,17 +245,13 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
 class _RecommendationActions extends StatelessWidget {
   const _RecommendationActions({
     required this.decision,
-    required this.shared,
     required this.onAccept,
     required this.onAdjust,
-    required this.onShare,
   });
 
   final MealDecision decision;
-  final bool shared;
   final VoidCallback onAccept;
   final VoidCallback onAdjust;
-  final VoidCallback onShare;
 
   @override
   Widget build(BuildContext context) {
@@ -293,14 +287,6 @@ class _RecommendationActions extends StatelessWidget {
               ),
             ),
           ],
-        ),
-        const SizedBox(height: AppSpacing.md),
-        AppButton(
-          key: const ValueKey('meal-share-button'),
-          label: shared ? '남편에게 공유했어요' : '남편에게 메뉴 공유',
-          icon: shared ? Icons.check : Icons.share_outlined,
-          variant: AppButtonVariant.tertiary,
-          onPressed: shared ? null : onShare,
         ),
       ],
     );

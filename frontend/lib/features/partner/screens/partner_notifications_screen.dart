@@ -47,6 +47,7 @@ class _PartnerNotificationsScreenState
     appBar: TopAppBar(
       title: '알림',
       onBack: _handleBack,
+      husbandMenuAction: true,
       actions: [
         TextButton(
           onPressed: _controller.unreadCount == 0

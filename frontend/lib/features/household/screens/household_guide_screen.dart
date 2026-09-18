@@ -61,14 +61,12 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
           child: ListView(
             padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
             children: [
-              _PainBanner(shared: _controller.shared),
-              const SizedBox(height: AppSpacing.xxl),
               LayoutBuilder(
                 builder: (context, constraints) {
                   final sections = [
                     _directSection(),
-                    _applianceSection(),
                     _partnerSection(),
+                    _applianceSection(),
                   ];
                   if (constraints.maxWidth < AppBreakpoints.desktop) {
                     return Column(
@@ -94,6 +92,15 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
                   );
                 },
               ),
+              const SizedBox(height: AppSpacing.xl),
+              Text(
+                _controller.shared
+                    ? '오늘은 허리 통증이 있어요. 무리한 일은 가족과 나눠요.'
+                    : '오늘은 허리 통증이 있는 날이에요. 가전 실행 대신 부담을 줄이는 방법을 추천해요.',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
+              ),
             ],
           ),
         ),
@@ -110,21 +117,16 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
         label: _controller.shared ? '함께 진행 중' : '2개 · 가볍게',
       ),
       const SizedBox(height: AppSpacing.md),
-      ..._taskCards(HouseholdTaskOwner.self, selectable: true),
+      ..._taskCards(HouseholdTaskOwner.self),
     ],
   );
 
   Widget _applianceSection() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      const _SectionTitle(number: 2, title: '가전이 대신합니다', label: '추천 3개'),
+      const _SectionTitle(number: 3, title: '가전이 대신합니다', label: '추천 3개'),
       const SizedBox(height: AppSpacing.md),
       ..._taskCards(HouseholdTaskOwner.appliance),
-      const InfoBanner(
-        title: '가전 실행은 아직 지원하지 않아요',
-        message: 'MVP에서는 부담을 줄일 수 있는 가전 수행 방법만 추천해요.',
-        tone: InfoBannerTone.neutral,
-      ),
     ],
   );
 
@@ -132,16 +134,14 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       _SectionTitle(
-        number: 3,
+        number: 2,
         title: '가족과 나누기',
         label: '${_controller.selectedCount}개 요청',
       ),
       const SizedBox(height: AppSpacing.md),
+      Text('공유할 집안일을 선택해 주세요.', style: Theme.of(context).textTheme.bodyMedium),
+      const SizedBox(height: AppSpacing.md),
       ..._taskCards(HouseholdTaskOwner.partner, selectable: true),
-      const SizedBox(height: AppSpacing.md),
-      Text('함께 부탁할 항목을 골라주세요', style: Theme.of(context).textTheme.titleMedium),
-      const SizedBox(height: AppSpacing.md),
-      ..._taskCards(HouseholdTaskOwner.self, selectable: true),
       if (_controller.shareError != null) ...[
         const SizedBox(height: AppSpacing.md),
         InfoBanner(
@@ -225,25 +225,6 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
       Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
     }
   }
-}
-
-class _PainBanner extends StatelessWidget {
-  const _PainBanner({required this.shared});
-  final bool shared;
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(AppSpacing.pageMobile),
-    decoration: BoxDecoration(
-      color: AppColors.primary50,
-      borderRadius: BorderRadius.circular(AppRadius.hero),
-    ),
-    child: Text(
-      shared ? '오늘은 허리 통증이 있어요 · 무리한 일은 가족과 나눠요' : '오늘은 허리 통증이 있는 날',
-      style: Theme.of(
-        context,
-      ).textTheme.titleLarge?.copyWith(color: AppColors.primary600),
-    ),
-  );
 }
 
 class _SectionTitle extends StatelessWidget {

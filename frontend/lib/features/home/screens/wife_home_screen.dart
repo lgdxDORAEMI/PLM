@@ -91,7 +91,7 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
         actions: [
           IconButton(
             tooltip: '메뉴',
-            icon: const Icon(Icons.account_circle_outlined),
+            icon: const Icon(Icons.menu),
             onPressed: () => Navigator.pushNamed(
               context,
               RouteNames.menu(returnLocation: RouteNames.wifeHome),

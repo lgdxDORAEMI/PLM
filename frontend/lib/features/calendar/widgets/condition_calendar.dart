@@ -40,8 +40,9 @@ class ConditionCalendar extends StatelessWidget {
           itemCount: leading + days,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 7,
-            mainAxisSpacing: AppSpacing.sm,
-            crossAxisSpacing: AppSpacing.sm,
+            mainAxisExtent: 44,
+            mainAxisSpacing: AppSpacing.xs,
+            crossAxisSpacing: AppSpacing.xs,
           ),
           itemBuilder: (context, index) {
             if (index < leading) return const SizedBox.shrink();

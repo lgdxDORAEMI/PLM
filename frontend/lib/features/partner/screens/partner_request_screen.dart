@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../design_system/components/app_badge.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_card.dart';
-import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/tokens/app_colors.dart';
@@ -45,7 +44,11 @@ class _PartnerRequestScreenState extends State<PartnerRequestScreen> {
   Widget build(BuildContext context) {
     final request = _controller.request;
     return Scaffold(
-      appBar: TopAppBar(title: '가사 요청', onBack: _handleBack),
+      appBar: TopAppBar(
+        title: '가사 요청',
+        onBack: _handleBack,
+        husbandMenuAction: true,
+      ),
       body: SafeArea(
         top: false,
         child: ResponsivePageContent(
@@ -80,13 +83,6 @@ class _PartnerRequestScreenState extends State<PartnerRequestScreen> {
                   context,
                 ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
               ),
-              const SizedBox(height: AppSpacing.lg),
-              InfoBanner(
-                title: '오늘 요청한 이유',
-                message: request.reason,
-                tone: InfoBannerTone.warning,
-                icon: Icons.favorite_outline,
-              ),
               const SizedBox(height: AppSpacing.xl),
               Text('부탁한 집안일', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: AppSpacing.md),
@@ -97,32 +93,6 @@ class _PartnerRequestScreenState extends State<PartnerRequestScreen> {
                   onComplete: () => _confirmCompletion(task),
                 ),
                 const SizedBox(height: AppSpacing.sm),
-              ],
-              const SizedBox(height: AppSpacing.lg),
-              AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '참고 정보',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(request.supportingInfo),
-                  ],
-                ),
-              ),
-              if (request.confirmedCount > 0) ...[
-                const SizedBox(height: AppSpacing.lg),
-                InfoBanner(
-                  title: request.completedCount == request.tasks.length
-                      ? '모든 요청이 가족 기록에 반영됐어요'
-                      : '확인 상태가 희선님 화면에 반영됐어요',
-                  message: '요청 내용은 완료 후에도 다시 볼 수 있어요.',
-                  tone: request.completedCount == request.tasks.length
-                      ? InfoBannerTone.success
-                      : InfoBannerTone.info,
-                ),
               ],
               if (request.status == PartnerRequestStatus.completed) ...[
                 const SizedBox(height: AppSpacing.xl),

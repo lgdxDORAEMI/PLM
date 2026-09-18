@@ -24,11 +24,13 @@ void main() {
         RouteNames.wifeHome,
         RouteNames.wifeCalendar,
         RouteNames.husbandCalendar,
+        RouteNames.husbandMenu,
         RouteNames.husbandDailyReportPattern,
         RouteNames.roleSwitchPattern,
       ]),
     );
     expect(RouteNames.husbandCalendar, startsWith('/husband/'));
+    expect(RouteNames.husbandMenu, startsWith('/husband/'));
     expect(RouteNames.partnerCalendar, RouteNames.husbandCalendar);
   });
 

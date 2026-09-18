@@ -70,7 +70,7 @@ class ConditionMetric extends StatelessWidget {
                         height: 20,
                         decoration: BoxDecoration(
                           color: selected
-                              ? _selectedColor
+                              ? _selectedColorFor(index)
                               : AppColors.borderSubtle,
                           borderRadius: BorderRadius.circular(AppRadius.pill),
                         ),
@@ -86,14 +86,21 @@ class ConditionMetric extends StatelessWidget {
     );
   }
 
-  Color get _selectedColor => positiveScale
-      ? AppColors.success
-      : value >= 4
-      ? AppColors.primary500
-      : AppColors.primary300;
+  static const _moodScaleColors = [
+    AppColors.danger,
+    AppColors.warning,
+    AppColors.textSecondary,
+    AppColors.primary400,
+    AppColors.success,
+  ];
+
+  Color _selectedColorFor(int index) {
+    if (positiveScale) return _moodScaleColors[index];
+    return value >= 4 ? AppColors.primary500 : AppColors.primary300;
+  }
 
   Color get _statusColor => positiveScale
-      ? AppColors.success
+      ? _moodScaleColors[value - 1]
       : value >= 4
       ? AppColors.primary600
       : AppColors.textSecondary;

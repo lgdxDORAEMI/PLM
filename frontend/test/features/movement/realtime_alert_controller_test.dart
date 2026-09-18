@@ -6,8 +6,8 @@ void main() {
     final controller = RealtimeAlertController();
     final existingAlerts = controller.todayAlerts;
     expect(controller.detectionEnabled, isTrue);
-    expect(existingAlerts, hasLength(3));
-    expect(controller.latestEvent?.id, 'back-load');
+    expect(existingAlerts, hasLength(5));
+    expect(existingAlerts.first.id, 'back-load');
 
     controller.setDetectionEnabled(false);
 

@@ -43,5 +43,21 @@ abstract final class MovementMockData {
       time: '오전 08:03',
       level: MovementAlertLevel.caution,
     ),
+    MovementAlert(
+      id: 'repeated-bending',
+      title: '반복해서 숙이는 동작이 감지되었어요',
+      description: '짧은 시간 동안 허리를 여러 번 숙였어요.',
+      suggestion: '바닥 물건은 가족에게 부탁하거나 집게 도구를 사용해 주세요.',
+      time: '오전 07:42',
+      level: MovementAlertLevel.high,
+    ),
+    MovementAlert(
+      id: 'rest-needed',
+      title: '휴식이 필요한 활동량이에요',
+      description: '쉬는 시간 없이 움직임이 이어졌어요.',
+      suggestion: '편한 자세로 앉아 10분 정도 쉬어 주세요.',
+      time: '오전 07:10',
+      level: MovementAlertLevel.caution,
+    ),
   ];
 }

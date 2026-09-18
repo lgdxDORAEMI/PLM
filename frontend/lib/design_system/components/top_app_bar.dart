@@ -14,6 +14,7 @@ class TopAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onBack,
     this.actions,
     this.wifeProfileAction = false,
+    this.husbandMenuAction = false,
   });
 
   final String title;
@@ -21,6 +22,7 @@ class TopAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onBack;
   final List<Widget>? actions;
   final bool wifeProfileAction;
+  final bool husbandMenuAction;
 
   @override
   Size get preferredSize => const Size.fromHeight(56);
@@ -55,10 +57,11 @@ class TopAppBar extends StatelessWidget implements PreferredSizeWidget {
             )
           : null,
       actions: [
+        ...?actions,
         if (wifeProfileAction)
           IconButton(
-            tooltip: '프로필 메뉴',
-            icon: const Icon(Icons.account_circle_outlined),
+            tooltip: '메뉴',
+            icon: const Icon(Icons.menu),
             onPressed: () {
               final location = ModalRoute.of(context)?.settings.name;
               Navigator.pushNamed(
@@ -67,7 +70,13 @@ class TopAppBar extends StatelessWidget implements PreferredSizeWidget {
               );
             },
           ),
-        ...?actions,
+        if (husbandMenuAction)
+          IconButton(
+            tooltip: '메뉴',
+            icon: const Icon(Icons.menu),
+            onPressed: () =>
+                Navigator.pushNamed(context, RouteNames.husbandMenu),
+          ),
       ],
     );
   }

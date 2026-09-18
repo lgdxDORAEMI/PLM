@@ -8,6 +8,8 @@ import 'package:plm_frontend/features/partner/data/partner_notification_store.da
 import 'package:plm_frontend/features/partner/data/partner_request_store.dart';
 import 'package:plm_frontend/features/partner/models/partner_request.dart';
 import 'package:plm_frontend/features/partner/screens/partner_morning_report_screen.dart';
+import 'package:plm_frontend/features/settings/controllers/app_text_scale_store.dart';
+import 'package:plm_frontend/features/settings/models/app_font_size.dart';
 import 'package:plm_frontend/routing/app_router.dart';
 import 'package:plm_frontend/routing/app_session.dart';
 import 'package:plm_frontend/routing/route_names.dart';
@@ -18,6 +20,7 @@ void main() {
     PartnerNotificationStore.instance.reset();
     PartnerConnectionStore.instance.reset();
     CalendarSelectionStore.instance.reset();
+    AppTextScaleStore.instance.reset();
     AuthSessionStore.instance.update(
       accountId: 'husband-test',
       roles: {ActiveRole.husband},
@@ -108,9 +111,38 @@ void main() {
     await _pumpRoute(tester, RouteNames.husbandCalendar);
 
     expect(find.byTooltip('알림'), findsOneWidget);
+    expect(find.byTooltip('메뉴'), findsOneWidget);
     expect(find.byTooltip('프로필'), findsNothing);
     expect(find.byType(NavigationBar), findsNothing);
     expect(find.text('이 날 리포트 보기'), findsOneWidget);
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('calendar-day-2026-09-13')))
+          .height,
+      44,
+    );
+    expect(
+      tester
+          .getBottomRight(find.byKey(const ValueKey('calendar-month-panel')))
+          .dy,
+      lessThanOrEqualTo(tester.view.physicalSize.height),
+    );
+  });
+
+  testWidgets('남편 메뉴에는 글자 크기 조정 기능만 표시한다', (tester) async {
+    await _pumpRoute(tester, RouteNames.husbandCalendar);
+
+    await tester.tap(find.byTooltip('메뉴'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('글자 크기'), findsOneWidget);
+    expect(find.text('프로필 수정'), findsNothing);
+    expect(find.text('남편 초대하기'), findsNothing);
+    expect(find.text('LG전자  ·  이용약관  ·  개인정보처리방침'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('font-size-large')));
+    await tester.pump();
+    expect(AppTextScaleStore.instance.value, AppFontSize.large);
   });
 
   testWidgets('가사 요청은 집안일별로 확인·완료하고 상태 색상을 구분한다', (tester) async {
@@ -119,6 +151,10 @@ void main() {
       find.byKey(const ValueKey('notification-request-demo-request')),
     );
     await tester.pumpAndSettle();
+
+    expect(find.text('오늘 요청한 이유'), findsNothing);
+    expect(find.text('참고 정보'), findsNothing);
+    expect(find.textContaining('확인 상태가 희선님 화면에 반영'), findsNothing);
 
     const taskIds = ['heavy-grocery', 'table-cleanup', 'water-plants'];
     final requestStore = PartnerRequestStore.instance;
