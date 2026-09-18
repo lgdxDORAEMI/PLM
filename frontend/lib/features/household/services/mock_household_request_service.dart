@@ -53,9 +53,14 @@ class MockHouseholdRequestService implements HouseholdRequestService {
   }
 
   @override
-  HouseholdRequestProgress? progressFor(String requestId) {
+  HouseholdRequestProgress? progressForTask(
+    String requestId,
+    String taskTitle,
+  ) {
     final request = _store.request(requestId);
-    return switch (request.status) {
+    final matching = request.tasks.where((task) => task.title == taskTitle);
+    if (matching.isEmpty) return null;
+    return switch (matching.first.status) {
       PartnerRequestStatus.requested => HouseholdRequestProgress.requested,
       PartnerRequestStatus.confirmed => HouseholdRequestProgress.confirmed,
       PartnerRequestStatus.completed => HouseholdRequestProgress.completed,

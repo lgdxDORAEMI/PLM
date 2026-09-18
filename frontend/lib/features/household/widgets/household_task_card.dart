@@ -23,7 +23,7 @@ class HouseholdTaskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visual = _visual(task.owner);
+    final visual = _visual(task);
     return InkWell(
       key: ValueKey('household-task-${task.id}'),
       onTap: onTap,
@@ -91,19 +91,29 @@ class HouseholdTaskCard extends StatelessWidget {
     },
   };
 
-  _TaskVisual _visual(HouseholdTaskOwner owner) => switch (owner) {
-    HouseholdTaskOwner.self => const _TaskVisual(
-      AppColors.primary600,
-      AppColors.primary50,
+  _TaskVisual _visual(HouseholdTask task) => switch (task.status) {
+    HouseholdTaskStatus.confirmed => const _TaskVisual(
+      AppColors.info,
+      AppColors.infoBackground,
     ),
-    HouseholdTaskOwner.appliance => const _TaskVisual(
-      AppColors.categoryHome,
-      AppColors.categoryHomeBackground,
+    HouseholdTaskStatus.done => const _TaskVisual(
+      AppColors.success,
+      AppColors.successBackground,
     ),
-    HouseholdTaskOwner.partner => const _TaskVisual(
-      AppColors.categorySleep,
-      AppColors.categorySleepBackground,
-    ),
+    _ => switch (task.owner) {
+      HouseholdTaskOwner.self => const _TaskVisual(
+        AppColors.primary600,
+        AppColors.primary50,
+      ),
+      HouseholdTaskOwner.appliance => const _TaskVisual(
+        AppColors.categoryHome,
+        AppColors.categoryHomeBackground,
+      ),
+      HouseholdTaskOwner.partner => const _TaskVisual(
+        AppColors.categorySleep,
+        AppColors.categorySleepBackground,
+      ),
+    },
   };
 }
 

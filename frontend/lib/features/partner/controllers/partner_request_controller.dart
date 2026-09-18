@@ -16,33 +16,33 @@ class PartnerRequestController extends ChangeNotifier {
 
   PartnerRequestData get request => _request;
 
-  /// 남편 DB 문서에 따라 요청 카드 전체를 하나의 상태로 전환한다.
-  void confirm() {
-    _save(
-      _request.copyWith(
-        tasks: [
-          for (final task in _request.tasks)
-            if (task.status == PartnerRequestStatus.requested)
-              task.copyWith(status: PartnerRequestStatus.confirmed)
-            else
-              task,
-        ],
-      ),
-    );
-  }
+  /// 선택한 집안일만 확인 처리해 다른 카드의 진행 상태를 보존한다.
+  void confirmTask(String taskId) => _updateTaskStatus(
+    taskId,
+    from: PartnerRequestStatus.requested,
+    to: PartnerRequestStatus.confirmed,
+  );
 
-  void complete() {
-    _save(
-      _request.copyWith(
-        tasks: [
-          for (final task in _request.tasks)
-            if (task.status == PartnerRequestStatus.confirmed)
-              task.copyWith(status: PartnerRequestStatus.completed)
-            else
-              task,
-        ],
-      ),
-    );
+  /// 확인된 집안일만 완료할 수 있도록 상태 순서를 강제한다.
+  void completeTask(String taskId) => _updateTaskStatus(
+    taskId,
+    from: PartnerRequestStatus.confirmed,
+    to: PartnerRequestStatus.completed,
+  );
+
+  void _updateTaskStatus(
+    String taskId, {
+    required PartnerRequestStatus from,
+    required PartnerRequestStatus to,
+  }) {
+    final tasks = [
+      for (final task in _request.tasks)
+        if (task.id == taskId && task.status == from)
+          task.copyWith(status: to)
+        else
+          task,
+    ];
+    _save(_request.copyWith(tasks: tasks));
   }
 
   void _save(PartnerRequestData value) {

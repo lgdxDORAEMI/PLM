@@ -91,7 +91,11 @@ class _PartnerRequestScreenState extends State<PartnerRequestScreen> {
               Text('부탁한 집안일', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: AppSpacing.md),
               for (final task in request.tasks) ...[
-                _PartnerTaskCard(task: task),
+                _PartnerTaskCard(
+                  task: task,
+                  onConfirm: () => _controller.confirmTask(task.id),
+                  onComplete: () => _confirmCompletion(task),
+                ),
                 const SizedBox(height: AppSpacing.sm),
               ],
               const SizedBox(height: AppSpacing.lg),
@@ -120,19 +124,9 @@ class _PartnerRequestScreenState extends State<PartnerRequestScreen> {
                       : InfoBannerTone.info,
                 ),
               ],
-              const SizedBox(height: AppSpacing.xl),
-              switch (request.status) {
-                PartnerRequestStatus.requested => AppButton(
-                  key: const ValueKey('husband-request-confirm'),
-                  label: '요청 확인하기',
-                  onPressed: _controller.confirm,
-                ),
-                PartnerRequestStatus.confirmed => AppButton(
-                  key: const ValueKey('husband-request-complete'),
-                  label: '요청 완료하기',
-                  onPressed: _confirmCompletion,
-                ),
-                PartnerRequestStatus.completed => AppButton(
+              if (request.status == PartnerRequestStatus.completed) ...[
+                const SizedBox(height: AppSpacing.xl),
+                AppButton(
                   label: '완료 결과 보기',
                   variant: AppButtonVariant.secondary,
                   onPressed: () => Navigator.pushReplacementNamed(
@@ -140,7 +134,7 @@ class _PartnerRequestScreenState extends State<PartnerRequestScreen> {
                     RouteNames.husbandRequestResult(request.id),
                   ),
                 ),
-              },
+              ],
             ],
           ),
         ),
@@ -148,12 +142,12 @@ class _PartnerRequestScreenState extends State<PartnerRequestScreen> {
     );
   }
 
-  Future<void> _confirmCompletion() async {
+  Future<void> _confirmCompletion(PartnerRequestTask task) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('이 일을 다 하셨나요?'),
-        content: const Text('요청 카드의 모든 집안일을 완료로 표시할까요?'),
+        content: Text('${task.title}\n\n이 집안일을 완료로 표시할까요?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
@@ -167,11 +161,13 @@ class _PartnerRequestScreenState extends State<PartnerRequestScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    _controller.complete();
-    Navigator.pushReplacementNamed(
-      context,
-      RouteNames.husbandRequestResult(_controller.request.id),
-    );
+    _controller.completeTask(task.id);
+    if (_controller.request.status == PartnerRequestStatus.completed) {
+      Navigator.pushReplacementNamed(
+        context,
+        RouteNames.husbandRequestResult(_controller.request.id),
+      );
+    }
   }
 
   void _handleBack() {
@@ -184,38 +180,82 @@ class _PartnerRequestScreenState extends State<PartnerRequestScreen> {
 }
 
 class _PartnerTaskCard extends StatelessWidget {
-  const _PartnerTaskCard({required this.task});
+  const _PartnerTaskCard({
+    required this.task,
+    required this.onConfirm,
+    required this.onComplete,
+  });
 
   final PartnerRequestTask task;
+  final VoidCallback onConfirm;
+  final VoidCallback onComplete;
 
   @override
-  Widget build(BuildContext context) => AppCard(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                task.title,
-                style: Theme.of(context).textTheme.titleMedium,
+  Widget build(BuildContext context) {
+    final (backgroundColor, borderColor) = switch (task.status) {
+      PartnerRequestStatus.requested => (
+        AppColors.surface,
+        AppColors.borderSubtle,
+      ),
+      PartnerRequestStatus.confirmed => (
+        AppColors.infoBackground,
+        AppColors.info,
+      ),
+      PartnerRequestStatus.completed => (
+        AppColors.successBackground,
+        AppColors.success,
+      ),
+    };
+    return AppCard(
+      key: ValueKey('partner-request-task-${task.id}'),
+      backgroundColor: backgroundColor,
+      borderColor: borderColor,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  task.title,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
               ),
-            ),
-            _StatusBadge(status: task.status),
-          ],
-        ),
-        if (task.description.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            task.description,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+              _StatusBadge(status: task.status),
+            ],
           ),
+          if (task.description.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              task.description,
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+            ),
+          ],
+          if (task.status != PartnerRequestStatus.completed) ...[
+            const SizedBox(height: AppSpacing.lg),
+            AppButton(
+              key: ValueKey(
+                task.status == PartnerRequestStatus.requested
+                    ? 'husband-request-confirm-${task.id}'
+                    : 'husband-request-complete-${task.id}',
+              ),
+              label: task.status == PartnerRequestStatus.requested
+                  ? '확인하기'
+                  : '완료했어요',
+              variant: task.status == PartnerRequestStatus.requested
+                  ? AppButtonVariant.secondary
+                  : AppButtonVariant.primary,
+              onPressed: task.status == PartnerRequestStatus.requested
+                  ? onConfirm
+                  : onComplete,
+            ),
+          ],
         ],
-      ],
-    ),
-  );
+      ),
+    );
+  }
 }
 
 class _StatusBadge extends StatelessWidget {

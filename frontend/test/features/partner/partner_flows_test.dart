@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plm_frontend/design_system/components/app_card.dart';
+import 'package:plm_frontend/design_system/tokens/app_colors.dart';
 import 'package:plm_frontend/features/calendar/data/calendar_selection_store.dart';
 import 'package:plm_frontend/features/invitation/data/partner_connection_store.dart';
 import 'package:plm_frontend/features/partner/data/partner_notification_store.dart';
@@ -93,41 +95,51 @@ void main() {
     expect(find.text('이 날 리포트 보기'), findsOneWidget);
   });
 
-  testWidgets('가사 요청은 카드 전체를 확인·완료하고 결과 전체 화면으로 이동한다', (tester) async {
+  testWidgets('가사 요청은 집안일별로 확인·완료하고 상태 색상을 구분한다', (tester) async {
     await _pumpRoute(tester, RouteNames.husbandNotifications);
     await tester.tap(
       find.byKey(const ValueKey('notification-request-demo-request')),
     );
     await tester.pumpAndSettle();
 
-    final confirm = find.byKey(const ValueKey('husband-request-confirm'));
-    await tester.scrollUntilVisible(
-      confirm,
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.tap(confirm);
-    await tester.pumpAndSettle();
+    const taskIds = ['heavy-grocery', 'table-cleanup', 'water-plants'];
+    final requestStore = PartnerRequestStore.instance;
+
+    await _tapTaskAction(tester, 'husband-request-confirm-${taskIds.first}');
     expect(
-      PartnerRequestStore.instance.request('demo-request').status,
-      PartnerRequestStatus.confirmed,
+      requestStore.request('demo-request').tasks.map((task) => task.status),
+      [
+        PartnerRequestStatus.confirmed,
+        PartnerRequestStatus.requested,
+        PartnerRequestStatus.requested,
+      ],
+    );
+    expect(
+      tester
+          .widget<AppCard>(
+            find.byKey(ValueKey('partner-request-task-${taskIds.first}')),
+          )
+          .backgroundColor,
+      AppColors.infoBackground,
     );
 
-    final complete = find.byKey(const ValueKey('husband-request-complete'));
-    await tester.scrollUntilVisible(
-      complete,
-      300,
-      scrollable: find.byType(Scrollable).first,
+    await _tapTaskAction(tester, 'husband-request-complete-${taskIds.first}');
+    await _acceptCompletionDialog(tester);
+    expect(find.text('가사 요청을 완료했어요'), findsNothing);
+    expect(
+      tester
+          .widget<AppCard>(
+            find.byKey(ValueKey('partner-request-task-${taskIds.first}')),
+          )
+          .backgroundColor,
+      AppColors.successBackground,
     );
-    await tester.tap(complete);
-    await tester.pumpAndSettle();
-    await tester.tap(
-      find.descendant(
-        of: find.byType(AlertDialog),
-        matching: find.widgetWithText(FilledButton, '완료했어요'),
-      ),
-    );
-    await tester.pumpAndSettle();
+
+    for (final taskId in taskIds.skip(1)) {
+      await _tapTaskAction(tester, 'husband-request-confirm-$taskId');
+      await _tapTaskAction(tester, 'husband-request-complete-$taskId');
+      await _acceptCompletionDialog(tester);
+    }
 
     expect(find.text('가사 요청을 완료했어요'), findsOneWidget);
     expect(find.text('반영 위치'), findsOneWidget);
@@ -138,6 +150,27 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('컨디션 캘린더'), findsOneWidget);
   });
+}
+
+Future<void> _tapTaskAction(WidgetTester tester, String key) async {
+  final action = find.byKey(ValueKey(key));
+  await tester.scrollUntilVisible(
+    action,
+    300,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.tap(action);
+  await tester.pumpAndSettle();
+}
+
+Future<void> _acceptCompletionDialog(WidgetTester tester) async {
+  await tester.tap(
+    find.descendant(
+      of: find.byType(AlertDialog),
+      matching: find.widgetWithText(FilledButton, '완료했어요'),
+    ),
+  );
+  await tester.pumpAndSettle();
 }
 
 Future<void> _pumpRoute(WidgetTester tester, String route) async {

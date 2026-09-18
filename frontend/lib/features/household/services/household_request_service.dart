@@ -16,5 +16,5 @@ abstract interface class HouseholdRequestService implements Listenable {
     required String supportingInfo,
   });
 
-  HouseholdRequestProgress? progressFor(String requestId);
+  HouseholdRequestProgress? progressForTask(String requestId, String taskTitle);
 }

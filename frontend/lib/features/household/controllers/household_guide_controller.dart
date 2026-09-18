@@ -107,15 +107,22 @@ class HouseholdGuideController extends ChangeNotifier {
   void _syncPartnerProgress() {
     final requestId = _lastRequestId;
     if (requestId == null) return;
-    final progress = requestService.progressFor(requestId);
-    final status = switch (progress) {
-      HouseholdRequestProgress.confirmed => HouseholdTaskStatus.confirmed,
-      HouseholdRequestProgress.completed => HouseholdTaskStatus.done,
-      _ => HouseholdTaskStatus.shared,
-    };
     _tasks = [
       for (final task in _tasks)
-        if (task.selected) task.copyWith(status: status) else task,
+        if (task.selected)
+          task.copyWith(
+            status: switch (requestService.progressForTask(
+              requestId,
+              task.title,
+            )) {
+              HouseholdRequestProgress.confirmed =>
+                HouseholdTaskStatus.confirmed,
+              HouseholdRequestProgress.completed => HouseholdTaskStatus.done,
+              _ => HouseholdTaskStatus.shared,
+            },
+          )
+        else
+          task,
     ];
     notifyListeners();
   }

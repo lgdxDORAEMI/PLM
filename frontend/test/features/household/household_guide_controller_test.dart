@@ -38,7 +38,28 @@ void main() {
       requestId: controller.lastRequestId!,
     );
     addTearDown(partner.dispose);
-    partner.confirm();
+    final firstTask = partner.request.tasks.first;
+    partner.confirmTask(firstTask.id);
+    expect(
+      controller.tasks
+          .singleWhere((task) => task.title == firstTask.title)
+          .status,
+      HouseholdTaskStatus.confirmed,
+    );
+    expect(
+      controller.tasks.where(
+        (task) => task.selected && task.title != firstTask.title,
+      ),
+      everyElement(
+        predicate<HouseholdTask>(
+          (task) => task.status == HouseholdTaskStatus.shared,
+        ),
+      ),
+    );
+
+    for (final task in partner.request.tasks.skip(1)) {
+      partner.confirmTask(task.id);
+    }
     expect(
       controller.tasks.where((task) => task.selected),
       everyElement(
@@ -47,7 +68,27 @@ void main() {
         ),
       ),
     );
-    partner.complete();
+    partner.completeTask(firstTask.id);
+    expect(
+      controller.tasks
+          .singleWhere((task) => task.title == firstTask.title)
+          .status,
+      HouseholdTaskStatus.done,
+    );
+    expect(
+      controller.tasks.where(
+        (task) => task.selected && task.title != firstTask.title,
+      ),
+      everyElement(
+        predicate<HouseholdTask>(
+          (task) => task.status == HouseholdTaskStatus.confirmed,
+        ),
+      ),
+    );
+
+    for (final task in partner.request.tasks.skip(1)) {
+      partner.completeTask(task.id);
+    }
     expect(
       controller.tasks.where((task) => task.selected),
       everyElement(

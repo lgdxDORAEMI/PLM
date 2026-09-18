@@ -16,6 +16,8 @@ class AppCard extends StatelessWidget {
     this.variant = AppCardVariant.outlined,
     this.onTap,
     this.semanticLabel,
+    this.backgroundColor,
+    this.borderColor,
   });
 
   final Widget child;
@@ -23,18 +25,23 @@ class AppCard extends StatelessWidget {
   final AppCardVariant variant;
   final VoidCallback? onTap;
   final String? semanticLabel;
+  final Color? backgroundColor;
+  final Color? borderColor;
 
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(AppRadius.card);
     final content = Container(
       decoration: BoxDecoration(
-        color: switch (variant) {
-          AppCardVariant.outlined || AppCardVariant.raised => AppColors.surface,
-          AppCardVariant.subtle => AppColors.surfaceSubtle,
-        },
+        color:
+            backgroundColor ??
+            switch (variant) {
+              AppCardVariant.outlined ||
+              AppCardVariant.raised => AppColors.surface,
+              AppCardVariant.subtle => AppColors.surfaceSubtle,
+            },
         border: variant == AppCardVariant.outlined
-            ? Border.all(color: AppColors.borderSubtle)
+            ? Border.all(color: borderColor ?? AppColors.borderSubtle)
             : null,
         borderRadius: radius,
         boxShadow: variant == AppCardVariant.raised
