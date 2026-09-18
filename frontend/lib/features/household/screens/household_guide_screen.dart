@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_dialog.dart';
 import '../../../design_system/components/content_frame.dart';
+import '../../../design_system/components/empty_data_preview.dart';
 import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/components/wife_navigation_scaffold.dart';
@@ -54,54 +55,64 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
         onBack: _handleBack,
         wifeProfileAction: true,
       ),
-      body: SafeArea(
-        top: false,
-        child: ContentFrame(
-          maxWidth: 1200,
-          child: ListView(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-            children: [
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final sections = [
-                    _directSection(),
-                    _partnerSection(),
-                    _applianceSection(),
-                  ];
-                  if (constraints.maxWidth < AppBreakpoints.desktop) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: EmptyDataPreview(
+        title: '등록된 집안일이 없어요',
+        message: '할 일이 생기면 직접 할 일과 가족에게 공유할 일로 나눠 보여드려요.',
+        icon: Icons.checklist_outlined,
+        child: SafeArea(
+          top: false,
+          child: ContentFrame(
+            maxWidth: 1200,
+            child: ListView(
+              key: const ValueKey('household-guide-scroll'),
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+              children: [
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final sections = [
+                      _directSection(),
+                      _partnerSection(),
+                      _applianceSection(),
+                    ];
+                    if (constraints.maxWidth < AppBreakpoints.desktop) {
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          sections[0],
+                          const SizedBox(height: AppSpacing.xl),
+                          sections[1],
+                          const SizedBox(height: AppSpacing.xl),
+                          sections[2],
+                        ],
+                      );
+                    }
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        sections[0],
-                        const SizedBox(height: AppSpacing.xl),
-                        sections[1],
-                        const SizedBox(height: AppSpacing.xl),
-                        sections[2],
+                        for (
+                          var index = 0;
+                          index < sections.length;
+                          index++
+                        ) ...[
+                          Expanded(child: sections[index]),
+                          if (index < sections.length - 1)
+                            const SizedBox(width: AppSpacing.xl),
+                        ],
                       ],
                     );
-                  }
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      for (var index = 0; index < sections.length; index++) ...[
-                        Expanded(child: sections[index]),
-                        if (index < sections.length - 1)
-                          const SizedBox(width: AppSpacing.xl),
-                      ],
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              Text(
-                _controller.shared
-                    ? '오늘은 허리 통증이 있어요. 무리한 일은 가족과 나눠요.'
-                    : '오늘은 허리 통증이 있는 날이에요. 가전 실행 대신 부담을 줄이는 방법을 추천해요.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
-              ),
-            ],
+                  },
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                Text(
+                  _controller.shared
+                      ? '오늘은 허리 통증이 있어요. 무리한 일은 가족과 나눠요.'
+                      : '오늘은 허리 통증이 있는 날이에요. 가전 실행 대신 부담을 줄이는 방법을 추천해요.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -114,10 +125,19 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
       _SectionTitle(
         number: 1,
         title: '오늘은 이것만 직접',
-        label: _controller.shared ? '함께 진행 중' : '2개 · 가볍게',
+        label: '${_controller.directListTasks.length}개 · 가볍게',
       ),
       const SizedBox(height: AppSpacing.md),
-      ..._taskCards(HouseholdTaskOwner.self),
+      if (_controller.directListTasks.isEmpty)
+        Text(
+          '직접 할 일을 모두 가족과 나눴어요.',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+        )
+      else
+        for (final task in _controller.directListTasks)
+          _DirectTaskListItem(task: task),
     ],
   );
 
@@ -141,7 +161,16 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
       const SizedBox(height: AppSpacing.md),
       Text('공유할 집안일을 선택해 주세요.', style: Theme.of(context).textTheme.bodyMedium),
       const SizedBox(height: AppSpacing.md),
-      ..._taskCards(HouseholdTaskOwner.partner, selectable: true),
+      for (final task in _controller.shareableTasks) ...[
+        HouseholdTaskCard(
+          task: task,
+          selectable: true,
+          onTap: _controller.shared
+              ? null
+              : () => _controller.toggleSelection(task.id),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+      ],
       if (_controller.shareError != null) ...[
         const SizedBox(height: AppSpacing.md),
         InfoBanner(
@@ -173,12 +202,11 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
     ],
   );
 
-  List<Widget> _taskCards(HouseholdTaskOwner owner, {bool selectable = false}) {
+  List<Widget> _taskCards(HouseholdTaskOwner owner) {
     return [
       for (final task in _controller.tasksFor(owner)) ...[
         HouseholdTaskCard(
           task: task,
-          onTap: selectable ? () => _controller.toggleSelection(task.id) : null,
           trailingLabel: owner == HouseholdTaskOwner.appliance ? '가전 추천' : null,
         ),
         const SizedBox(height: AppSpacing.sm),
@@ -225,6 +253,34 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
       Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
     }
   }
+}
+
+class _DirectTaskListItem extends StatelessWidget {
+  const _DirectTaskListItem({required this.task});
+
+  final HouseholdTask task;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    key: ValueKey('household-direct-list-${task.id}'),
+    padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 6,
+          height: 6,
+          margin: const EdgeInsets.only(top: 8),
+          decoration: const BoxDecoration(
+            color: AppColors.categoryHome,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(child: Text(task.title)),
+      ],
+    ),
+  );
 }
 
 class _SectionTitle extends StatelessWidget {

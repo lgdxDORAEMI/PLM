@@ -63,13 +63,23 @@ class HouseholdGuideController extends ChangeNotifier {
   String? get shareError => _shareError;
   List<HouseholdTask> tasksFor(HouseholdTaskOwner owner) =>
       _tasks.where((task) => task.owner == owner).toList(growable: false);
-  int get selectedCount => _selectedPartnerTasks.length;
-
-  List<HouseholdTask> get _selectedPartnerTasks => _tasks
+  List<HouseholdTask> get directListTasks => _shareableTasks
       .where(
-        (task) => task.owner == HouseholdTaskOwner.partner && task.selected,
+        (task) =>
+            task.status != HouseholdTaskStatus.shared &&
+            task.status != HouseholdTaskStatus.confirmed &&
+            task.status != HouseholdTaskStatus.done,
       )
       .toList(growable: false);
+  List<HouseholdTask> get shareableTasks => List.unmodifiable(_shareableTasks);
+  int get selectedCount => _selectedShareTasks.length;
+
+  List<HouseholdTask> get _shareableTasks => _tasks
+      .where((task) => task.owner != HouseholdTaskOwner.appliance)
+      .toList(growable: false);
+
+  List<HouseholdTask> get _selectedShareTasks =>
+      _shareableTasks.where((task) => task.selected).toList(growable: false);
 
   void toggleSelection(String id) {
     _update(id, (task) => task.copyWith(selected: !task.selected));
@@ -82,7 +92,7 @@ class HouseholdGuideController extends ChangeNotifier {
     _shareError = null;
     notifyListeners();
     try {
-      final selected = _selectedPartnerTasks;
+      final selected = _selectedShareTasks;
       final result = await requestService.send(
         tasks: selected.map((task) => task.title).toList(growable: false),
         reason: '오늘은 허리 통증이 있어 무거운 물건을 들지 않는 게 좋아요.',
@@ -92,7 +102,7 @@ class HouseholdGuideController extends ChangeNotifier {
       _shared = true;
       _tasks = [
         for (final task in _tasks)
-          if (task.owner == HouseholdTaskOwner.partner && task.selected)
+          if (task.owner != HouseholdTaskOwner.appliance && task.selected)
             task.copyWith(status: HouseholdTaskStatus.shared)
           else
             task,
@@ -114,7 +124,7 @@ class HouseholdGuideController extends ChangeNotifier {
     if (requestId == null) return;
     _tasks = [
       for (final task in _tasks)
-        if (task.owner == HouseholdTaskOwner.partner && task.selected)
+        if (task.owner != HouseholdTaskOwner.appliance && task.selected)
           task.copyWith(
             status: switch (requestService.progressForTask(
               requestId,

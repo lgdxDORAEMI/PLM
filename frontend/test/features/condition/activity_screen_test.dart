@@ -17,6 +17,8 @@ void main() {
     );
 
     expect(find.text('예정 활동 수정'), findsOneWidget);
+    expect(find.textContaining('활동을 반영할게요'), findsNothing);
+    expect(find.textContaining('Mock 루틴'), findsNothing);
 
     final semantics = tester.widget<Semantics>(
       find

@@ -87,11 +87,11 @@ class ConditionMetric extends StatelessWidget {
   }
 
   static const _moodScaleColors = [
-    AppColors.danger,
-    AppColors.warning,
-    AppColors.textSecondary,
+    AppColors.primary200,
+    AppColors.primary300,
     AppColors.primary400,
-    AppColors.success,
+    AppColors.primary500,
+    AppColors.primary600,
   ];
 
   Color _selectedColorFor(int index) {

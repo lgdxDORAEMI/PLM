@@ -29,6 +29,23 @@ void main() {
     expect(controller.selectedDecision, MealDecision.accepted);
   });
 
+  test('다른 메뉴를 보여줘도 상단 추천 근거는 최초 메뉴 기준을 유지한다', () async {
+    final controller = MealGuideController(
+      service: const MockMealService(),
+      store: store,
+      initialPeriod: MealPeriod.breakfast,
+    );
+    addTearDown(controller.dispose);
+
+    await controller.load();
+    final originalContext = controller.recommendationContext;
+
+    controller.showNextRecommendation();
+
+    expect(controller.selectedRecommendation?.id, isNot(originalContext?.id));
+    expect(controller.recommendationContext, same(originalContext));
+  });
+
   test('대체 메뉴를 적용하면 Meal Store에 선택 결과를 보관한다', () async {
     final current = MockMealService.guide.recommendationFor(
       MealPeriod.breakfast,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plm_frontend/debug/empty_data_preview_store.dart';
 import 'package:plm_frontend/features/invitation/data/partner_connection_store.dart';
 import 'package:plm_frontend/features/calendar/data/calendar_selection_store.dart';
 import 'package:plm_frontend/features/profile/data/profile_store.dart';
@@ -87,6 +88,60 @@ void main() {
       }
     });
   }
+
+  testWidgets('조회 화면 전체가 빈 데이터 미리보기를 표시한다', (tester) async {
+    final previewStore = EmptyDataPreviewStore.instance;
+    previewStore.reset();
+    addTearDown(previewStore.reset);
+    final startedAt = DateTime(2026, 9, 18, 12);
+    for (var count = 0; count < 5; count += 1) {
+      previewStore.registerTitleTap(
+        now: startedAt.add(Duration(milliseconds: count)),
+      );
+    }
+
+    final dataRoutes = <String>[
+      RouteNames.wifeHome,
+      RouteNames.mealGuide,
+      RouteNames.householdGuide,
+      RouteNames.healthGuide,
+      RouteNames.sleepGuide,
+      RouteNames.mealChat,
+      RouteNames.dailyReport('2026-09-13'),
+      RouteNames.wifeCalendar,
+      RouteNames.wifeMovement,
+      RouteNames.partnerMorningReport('2026-09-13'),
+      RouteNames.partnerCalendar,
+      RouteNames.partnerNotifications,
+      RouteNames.partnerRequest('demo-request'),
+      RouteNames.husbandRequestResult('demo-request'),
+      RouteNames.partnerMovement,
+    ];
+
+    for (final route in dataRoutes) {
+      if (route.startsWith('/husband/')) {
+        _useHusbandSession();
+      } else {
+        _useWifeSession();
+      }
+      await tester.pumpWidget(
+        MaterialApp(
+          key: ValueKey('empty:$route'),
+          initialRoute: route,
+          onGenerateRoute: AppRouter.onGenerateRoute,
+          onGenerateInitialRoutes: AppRouter.onGenerateInitialRoutes,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('empty-data-preview')),
+        findsOneWidget,
+        reason: route,
+      );
+      expect(tester.takeException(), isNull, reason: route);
+    }
+  });
 
   testWidgets('Menu 이전 경로와 연동 상태가 내부 Route 상태와 일치한다', (tester) async {
     await tester.pumpWidget(

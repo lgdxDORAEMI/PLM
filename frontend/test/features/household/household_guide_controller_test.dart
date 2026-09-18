@@ -13,6 +13,11 @@ void main() {
     addTearDown(controller.dispose);
     addTearDown(PartnerRequestStore.instance.clear);
 
+    expect(
+      controller.directListTasks.map((task) => task.id),
+      contains('heavy-items'),
+    );
+    controller.toggleSelection('clear-table');
     await controller.shareSelected();
 
     expect(controller.shared, isTrue);
@@ -24,8 +29,19 @@ void main() {
     final sharedTasks = PartnerRequestStore.instance
         .request(controller.lastRequestId!)
         .tasks;
-    expect(sharedTasks, hasLength(1));
-    expect(sharedTasks.single.title, '장보기 · 무거운 것 옮기기');
+    expect(sharedTasks, hasLength(2));
+    expect(
+      sharedTasks.map((task) => task.title),
+      containsAll(['식탁 위 정리 — 서서 5분', '장보기 · 무거운 것 옮기기']),
+    );
+    expect(
+      controller.directListTasks.map((task) => task.id),
+      isNot(containsAll(['clear-table', 'heavy-items'])),
+    );
+    expect(
+      controller.directListTasks.map((task) => task.id),
+      contains('water-plants'),
+    );
     expect(
       controller.tasks.where((task) => task.selected),
       everyElement(

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../design_system/components/app_bottom_sheet.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/content_frame.dart';
+import '../../../design_system/components/empty_data_preview.dart';
 import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/components/wife_navigation_scaffold.dart';
 import '../../../design_system/tokens/app_colors.dart';
@@ -66,9 +67,14 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
           ),
         ],
       ),
-      body: SafeArea(
-        top: false,
-        child: ContentFrame(maxWidth: 1200, child: _buildBody()),
+      body: EmptyDataPreview(
+        title: '표시할 수면 가이드가 없어요',
+        message: '수면 정보가 준비되면 오늘의 환경과 수면 팁을 보여드려요.',
+        icon: Icons.bedtime_outlined,
+        child: SafeArea(
+          top: false,
+          child: ContentFrame(maxWidth: 1200, child: _buildBody()),
+        ),
       ),
     );
   }

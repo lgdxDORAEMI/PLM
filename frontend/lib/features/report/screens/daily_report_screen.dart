@@ -6,6 +6,7 @@ import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_card.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/content_frame.dart';
+import '../../../design_system/components/empty_data_preview.dart';
 import '../../../design_system/components/responsive_split_view.dart';
 import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/components/wife_navigation_scaffold.dart';
@@ -64,9 +65,14 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
       onBack: _handleBack,
       wifeProfileAction: true,
     ),
-    body: SafeArea(
-      top: false,
-      child: ContentFrame(maxWidth: 1200, child: _buildBody()),
+    body: EmptyDataPreview(
+      title: '이 날의 기록이 없어요',
+      message: '컨디션과 루틴 기록이 생기면 Daily 리포트로 정리해 드려요.',
+      icon: Icons.description_outlined,
+      child: SafeArea(
+        top: false,
+        child: ContentFrame(maxWidth: 1200, child: _buildBody()),
+      ),
     ),
   );
 

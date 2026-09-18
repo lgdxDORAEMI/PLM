@@ -6,6 +6,7 @@ import '../../../design_system/components/app_ink_well.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/content_frame.dart';
+import '../../../design_system/components/empty_data_preview.dart';
 import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_split_view.dart';
 import '../../../design_system/components/section_header.dart';
@@ -66,24 +67,29 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
         onBack: _handleBack,
         wifeProfileAction: true,
       ),
-      body: SafeArea(
-        top: false,
-        child: ContentFrame(
-          maxWidth: 1200,
-          child: switch (_controller.state) {
-            MealGuideViewState.loading => const AppLoadingState(
-              message: '오늘의 메뉴를 준비하고 있어요',
-            ),
-            MealGuideViewState.error => AppErrorState(
-              title: '메뉴를 불러오지 못했어요',
-              message: '잠시 후 다시 시도해 주세요.',
-              onRetry: _controller.load,
-            ),
-            MealGuideViewState.ready =>
-              _controller.showDetails
-                  ? _buildRecommendation()
-                  : _buildPeriodSelection(),
-          },
+      body: EmptyDataPreview(
+        title: '추천할 메뉴가 없어요',
+        message: '컨디션 정보가 준비되면 끼니별 추천 메뉴를 보여드려요.',
+        icon: Icons.restaurant_menu_outlined,
+        child: SafeArea(
+          top: false,
+          child: ContentFrame(
+            maxWidth: 1200,
+            child: switch (_controller.state) {
+              MealGuideViewState.loading => const AppLoadingState(
+                message: '오늘의 메뉴를 준비하고 있어요',
+              ),
+              MealGuideViewState.error => AppErrorState(
+                title: '메뉴를 불러오지 못했어요',
+                message: '잠시 후 다시 시도해 주세요.',
+                onRetry: _controller.load,
+              ),
+              MealGuideViewState.ready =>
+                _controller.showDetails
+                    ? _buildRecommendation()
+                    : _buildPeriodSelection(),
+            },
+          ),
         ),
       ),
     );
@@ -135,6 +141,7 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
 
   Widget _buildRecommendation() {
     final recommendation = _controller.selectedRecommendation!;
+    final recommendationContext = _controller.recommendationContext!;
     return ListView(
       key: const ValueKey('meal-recommendation-detail'),
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
@@ -165,7 +172,7 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
             final contextPanel = Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _RecommendationReason(recommendation: recommendation),
+                _RecommendationReason(recommendation: recommendationContext),
                 const SizedBox(height: AppSpacing.lg),
                 _MealAdjustmentEntry(onTap: _openMealChat),
                 const SizedBox(height: AppSpacing.xxl),
@@ -176,7 +183,7 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _RecommendationReason(recommendation: recommendation),
+                  _RecommendationReason(recommendation: recommendationContext),
                   const SizedBox(height: AppSpacing.xxl),
                   recommendationPanel,
                   const SizedBox(height: AppSpacing.lg),

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/content_frame.dart';
+import '../../../design_system/components/empty_data_preview.dart';
 import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_split_view.dart';
 import '../../../design_system/components/section_header.dart';
@@ -99,44 +100,49 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
           ),
         ],
       ),
-      body: SafeArea(
-        top: false,
-        child: ContentFrame(
-          maxWidth: 1200,
-          child: LayoutBuilder(
-            builder: (context, constraints) => ListView(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-              children: [
-                PregnancyWeekHero(
-                  userName: _data.userName,
-                  week: pregnancyWeek,
-                ),
-                const SizedBox(height: AppSpacing.xxl),
-                if (constraints.maxWidth < AppBreakpoints.desktop) ...[
-                  _conditionSection(hasTodayCare),
-                  const SizedBox(height: AppSpacing.xxl),
-                  ..._primaryContent(hasTodayCare),
-                  const SizedBox(height: AppSpacing.huge),
-                  _weekContext(pregnancyWeek),
-                ] else
-                  ResponsiveSplitView(
-                    primaryFlex: 8,
-                    secondaryFlex: 4,
-                    gap: AppSpacing.xxl,
-                    primary: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: _primaryContent(hasTodayCare),
-                    ),
-                    secondary: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _conditionSection(hasTodayCare),
-                        const SizedBox(height: AppSpacing.xxl),
-                        _weekContext(pregnancyWeek),
-                      ],
-                    ),
+      body: EmptyDataPreview(
+        title: '오늘 표시할 정보가 없어요',
+        message: '컨디션을 입력하면 맞춤 루틴과 임신 주차 정보가 표시돼요.',
+        icon: Icons.home_outlined,
+        child: SafeArea(
+          top: false,
+          child: ContentFrame(
+            maxWidth: 1200,
+            child: LayoutBuilder(
+              builder: (context, constraints) => ListView(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                children: [
+                  PregnancyWeekHero(
+                    userName: _data.userName,
+                    week: pregnancyWeek,
                   ),
-              ],
+                  const SizedBox(height: AppSpacing.xxl),
+                  if (constraints.maxWidth < AppBreakpoints.desktop) ...[
+                    _conditionSection(hasTodayCare),
+                    const SizedBox(height: AppSpacing.xxl),
+                    ..._primaryContent(hasTodayCare),
+                    const SizedBox(height: AppSpacing.huge),
+                    _weekContext(pregnancyWeek),
+                  ] else
+                    ResponsiveSplitView(
+                      primaryFlex: 8,
+                      secondaryFlex: 4,
+                      gap: AppSpacing.xxl,
+                      primary: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: _primaryContent(hasTodayCare),
+                      ),
+                      secondary: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _conditionSection(hasTodayCare),
+                          const SizedBox(height: AppSpacing.xxl),
+                          _weekContext(pregnancyWeek),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),

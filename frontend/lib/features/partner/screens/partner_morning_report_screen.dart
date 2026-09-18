@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../design_system/components/app_badge.dart';
 import '../../../design_system/components/app_card.dart';
 import '../../../design_system/components/app_state_view.dart';
+import '../../../design_system/components/empty_data_preview.dart';
 import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/components/top_app_bar.dart';
@@ -80,7 +81,12 @@ class _PartnerMorningReportScreenState
         ),
       ],
     ),
-    body: SafeArea(top: false, child: ResponsivePageContent(child: _body())),
+    body: EmptyDataPreview(
+      title: '공유된 리포트가 없어요',
+      message: '아내가 컨디션과 하루 기록을 공유하면 여기에 표시돼요.',
+      icon: Icons.description_outlined,
+      child: SafeArea(top: false, child: ResponsivePageContent(child: _body())),
+    ),
   );
 
   Widget _body() => switch (_controller.state) {

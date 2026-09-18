@@ -41,6 +41,14 @@ class MealGuideController extends ChangeNotifier {
     return _selectedRecommendations[period] ?? guide.recommendationFor(period);
   }
 
+  /// 메뉴를 교체해도 최초 추천을 만든 컨디션 근거는 화면 상단에 유지한다.
+  MealRecommendation? get recommendationContext {
+    final period = _selectedPeriod;
+    final guide = _data;
+    if (period == null || guide == null) return null;
+    return guide.recommendationFor(period);
+  }
+
   /// Mock/API 교체와 무관하게 화면은 동일한 Loading/Ready/Error 상태를 사용한다.
   Future<void> load() async {
     _state = MealGuideViewState.loading;

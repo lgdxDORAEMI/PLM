@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../design_system/components/app_button.dart';
 import '../../design_system/components/app_card.dart';
 import '../../design_system/components/content_frame.dart';
+import '../../design_system/components/empty_data_preview.dart';
 import '../../design_system/components/responsive_split_view.dart';
 import '../../design_system/components/top_app_bar.dart';
 import '../../design_system/components/wife_navigation_scaffold.dart';
@@ -26,26 +27,10 @@ class ProductMovementScreen extends StatefulWidget {
 }
 
 class _ProductMovementScreenState extends State<ProductMovementScreen> {
-  late final RealtimeAlertController _controller;
+  final RealtimeAlertController _controller = RealtimeAlertController();
   bool _showAllEvents = false;
 
   bool get _isWife => widget.role == AppUserRole.wife;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = RealtimeAlertController()..addListener(_refresh);
-  }
-
-  @override
-  void dispose() {
-    _controller
-      ..removeListener(_refresh)
-      ..dispose();
-    super.dispose();
-  }
-
-  void _refresh() => setState(() {});
 
   @override
   Widget build(BuildContext context) {
@@ -56,47 +41,50 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
       wifeProfileAction: _isWife,
       husbandMenuAction: !_isWife,
     );
-    final body = SafeArea(
-      top: false,
-      child: ContentFrame(
-        maxWidth: 1200,
-        child: ListView(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-          children: [
-            ResponsiveSplitView(
-              primaryFlex: 7,
-              secondaryFlex: 5,
-              gap: AppSpacing.xxl,
-              primary: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _CurrentStateCard(
-                    active: _controller.detectionEnabled,
-                    onChanged: _isWife ? _controller.setDetectionEnabled : null,
-                    onMoveToHousehold: _isWife ? _moveToHousehold : null,
-                  ),
-                ],
+    final body = EmptyDataPreview(
+      title: '감지된 움직임이 없어요',
+      message: '움직임이 감지되면 오늘 이벤트 기록이 여기에 표시돼요.',
+      icon: Icons.monitor_heart_outlined,
+      child: SafeArea(
+        top: false,
+        child: ContentFrame(
+          maxWidth: 1200,
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+            children: [
+              ResponsiveSplitView(
+                primaryFlex: 7,
+                secondaryFlex: 5,
+                gap: AppSpacing.xxl,
+                primary: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _CurrentStateCard(
+                      onMoveToHousehold: _isWife ? _moveToHousehold : null,
+                    ),
+                  ],
+                ),
+                secondary: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _TodayEventLog(
+                      events: _controller.todayAlerts,
+                      showAll: _showAllEvents,
+                      onShowAll: () => setState(() => _showAllEvents = true),
+                      onOpen: _showAlert,
+                    ),
+                  ],
+                ),
               ),
-              secondary: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _TodayEventLog(
-                    events: _controller.todayAlerts,
-                    showAll: _showAllEvents,
-                    onShowAll: () => setState(() => _showAllEvents = true),
-                    onOpen: _showAlert,
-                  ),
-                ],
+              const SizedBox(height: AppSpacing.xl),
+              Text(
+                '홈카메라는 영상을 저장하지 않고 움직임 패턴만 인식해요. 의료 진단 기능이 아닙니다.',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
               ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            Text(
-              '홈카메라는 영상을 저장하지 않고 움직임 패턴만 인식해요. 의료 진단 기능이 아닙니다.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -168,14 +156,8 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
 }
 
 class _CurrentStateCard extends StatelessWidget {
-  const _CurrentStateCard({
-    required this.active,
-    this.onChanged,
-    required this.onMoveToHousehold,
-  });
+  const _CurrentStateCard({required this.onMoveToHousehold});
 
-  final bool active;
-  final ValueChanged<bool>? onChanged;
   final VoidCallback? onMoveToHousehold;
 
   @override
@@ -201,21 +183,12 @@ class _CurrentStateCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        active ? '활동 감지 ON' : '활동 감지 OFF',
+                        '홈카메라 움직임 감지',
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
-                      Text(
-                        active
-                            ? '오늘의 움직임 패턴을 감지하고 있어요.'
-                            : '새로운 감지만 중단되며 기존 기록은 유지돼요.',
-                      ),
+                      const Text('오늘의 움직임 패턴을 확인해요.'),
                     ],
                   ),
-                ),
-                Switch(
-                  key: const ValueKey('movement-mock-switch'),
-                  value: active,
-                  onChanged: onChanged,
                 ),
               ],
             ),
@@ -228,24 +201,22 @@ class _CurrentStateCard extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
             LinearProgressIndicator(
-              value: active ? 1 : 0,
+              value: 1,
               color: AppColors.warning,
               backgroundColor: AppColors.surfaceSubtle,
             ),
-            if (active) ...[
-              const SizedBox(height: AppSpacing.lg),
-              Row(
-                children: [
-                  const Expanded(child: Text('Mock 기준으로 권장보다 40분 많아요.')),
-                  if (onMoveToHousehold != null)
-                    OutlinedButton(
-                      key: const ValueKey('movement-to-household'),
-                      onPressed: onMoveToHousehold,
-                      child: const Text('가전으로 옮기기'),
-                    ),
-                ],
-              ),
-            ],
+            const SizedBox(height: AppSpacing.lg),
+            Row(
+              children: [
+                const Expanded(child: Text('Mock 기준으로 권장보다 40분 많아요.')),
+                if (onMoveToHousehold != null)
+                  OutlinedButton(
+                    key: const ValueKey('movement-to-household'),
+                    onPressed: onMoveToHousehold,
+                    child: const Text('가전으로 옮기기'),
+                  ),
+              ],
+            ),
           ],
         ),
       ),

@@ -5,7 +5,7 @@ import 'package:plm_frontend/features/movement/widgets/movement_alert_card.dart'
 import 'package:plm_frontend/routing/route_context.dart';
 
 void main() {
-  testWidgets('아내 실시간 화면은 오늘 로그와 수집 상태만 표시한다', (tester) async {
+  testWidgets('아내 실시간 화면은 오늘 로그와 움직임 요약을 표시한다', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(home: ProductMovementScreen(role: AppUserRole.wife)),
     );
@@ -22,11 +22,9 @@ void main() {
     expect(find.textContaining('어제'), findsNothing);
     expect(find.text('확인함'), findsNothing);
     expect(find.text('기기 상태'), findsNothing);
-
-    await tester.tap(find.byKey(const ValueKey('movement-mock-switch')));
-    await tester.pumpAndSettle();
-    expect(find.text('활동 감지 OFF'), findsOneWidget);
-    expect(find.textContaining('기존 기록은 유지'), findsOneWidget);
+    expect(find.byType(Switch), findsNothing);
+    expect(find.textContaining('활동 감지 ON'), findsNothing);
+    expect(find.textContaining('활동 감지 OFF'), findsNothing);
     expect(find.text('오늘 이벤트 기록'), findsOneWidget);
 
     final showAllButton = find.byKey(
@@ -49,5 +47,19 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(find.text('추천 행동'), findsNothing);
+  });
+
+  testWidgets('남편 실시간 화면에도 홈카메라 스위치를 표시하지 않는다', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: ProductMovementScreen(role: AppUserRole.husband)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(Switch), findsNothing);
+    expect(find.textContaining('활동 감지 ON'), findsNothing);
+    expect(find.textContaining('활동 감지 OFF'), findsNothing);
+    expect(find.text('오늘 이벤트 기록'), findsOneWidget);
   });
 }

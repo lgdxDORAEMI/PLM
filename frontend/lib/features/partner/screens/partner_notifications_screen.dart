@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../design_system/components/app_badge.dart';
 import '../../../design_system/components/app_card.dart';
 import '../../../design_system/components/app_ink_well.dart';
+import '../../../design_system/components/empty_data_preview.dart';
 import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/components/top_app_bar.dart';
@@ -57,25 +58,30 @@ class _PartnerNotificationsScreenState
         ),
       ],
     ),
-    body: SafeArea(
-      top: false,
-      child: ResponsivePageContent(
-        child: ListView(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-          children: [
-            InfoBanner(
-              title: _controller.unreadCount == 0
-                  ? '새 알림이 없어요'
-                  : '읽지 않은 알림 ${_controller.unreadCount}개',
-              message: '오전 리포트·가사 요청·루틴 변경을 시간순으로 보여드려요.',
-              tone: InfoBannerTone.info,
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            for (final item in _controller.items) ...[
-              _NotificationCard(item: item, onTap: () => _open(item)),
-              const SizedBox(height: AppSpacing.sm),
+    body: EmptyDataPreview(
+      title: '새로운 알림이 없어요',
+      message: '컨디션 리포트나 가사 요청이 도착하면 여기에 표시돼요.',
+      icon: Icons.notifications_none,
+      child: SafeArea(
+        top: false,
+        child: ResponsivePageContent(
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+            children: [
+              InfoBanner(
+                title: _controller.unreadCount == 0
+                    ? '새 알림이 없어요'
+                    : '읽지 않은 알림 ${_controller.unreadCount}개',
+                message: '오전 리포트·가사 요청·루틴 변경을 시간순으로 보여드려요.',
+                tone: InfoBannerTone.info,
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              for (final item in _controller.items) ...[
+                _NotificationCard(item: item, onTap: () => _open(item)),
+                const SizedBox(height: AppSpacing.sm),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     ),
