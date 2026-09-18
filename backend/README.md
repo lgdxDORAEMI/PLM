@@ -172,11 +172,13 @@ LLM_API_BASE_URL=
 
 ## Supabase 준비
 
-1. Supabase SQL Editor에서 `supabase/migrations/*.sql` 5건을 파일명 순서로 적용합니다. 마지막 `20260917000002_grant_service_role.sql`을 빼면 service_role이 `42501 permission denied`를 받습니다.
+1. Supabase SQL Editor에서 `supabase/migrations/*.sql` **15건 전부**를 파일명(타임스탬프) 순서로 적용합니다. `20260917000002_grant_service_role.sql`을 빼면 service_role이 `42501 permission denied`를 받습니다. migration은 CLI로 자동 적용되지 않으므로 파일을 추가한 사람이 실제 프로젝트에도 반영해야 합니다.
 2. `backend/.env`에 URL, service role key, OpenAI 키(`LLM_API_KEY`)를 입력합니다.
 3. 로그인으로 발급받은 access token을 프로필 요청의 `Authorization: Bearer <token>`에 전달합니다.
 
-현재 migration은 프로필 1~6단계 컬럼, `daily_conditions`, `daily_routines`, `routine_items`, `pregnancy_knowledge`(pgvector)와 권한을 포함합니다. 모션 관련 테이블은 [Supabase 설계 메모](../supabase/README.md)에만 있으며 실제 migration은 없습니다.
+현재 migration은 프로필 1~6단계 컬럼, `daily_conditions`, `daily_routines`, `routine_items`, `pregnancy_knowledge`(pgvector), 권한(6건, `20260915000000`~`20260917000002`)에 더해 STEP 7의 신규 테이블 9건(`profiles`, `partner_invitations`, `partner_links`, `household_requests`(+items), `daily_reports`, `notifications`, `motion_consents`, `chat_messages`, `recommendation_feedback`; `20260917010000`~`010800`)을 포함합니다.
+
+**실 DB drift 확인(2026-09-18)**: 실서비스 프로젝트에 STEP 7 migration 9건이 미적용 상태였고, `daily_routines`에는 `unique (user_id, date)` 제약이 빠져 있어 `POST /routine/today`의 upsert가 `42P10`으로 실패했습니다. 둘 다 SQL Editor에서 수동 보정했습니다(`alter table public.daily_routines add constraint daily_routines_user_id_date_key unique (user_id, date);`). `create table if not exists`는 이미 있는 테이블의 제약을 고치지 않으므로, 새 환경에서 같은 증상이 나면 `information_schema`로 실제 컬럼·제약을 migration 파일과 대조하세요.
 
 ## 테스트
 

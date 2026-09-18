@@ -58,7 +58,7 @@ Backend API 상태(`implemented`/`stub`/`planned`)는 `docs/backend/API_IMPLEMEN
 | W-CALLBACK-001 | Home 내부 상태 | MOCK_ONLY | `POST /routine/today`(재시도) | implemented | |
 | W-MEAL-001/002 | `/wife/meal` | MOCK_ONLY | `GET /meals/today` | implemented | Query Layer(STEP 11)가 이미 준비돼 있음 |
 | W-MEAL-003, W-CHAT-001 | `/wife/chat` | MOCK_ONLY | `GET/POST /chat/messages` | **stub** | Backend도 아직 고정 안내 문구만 반환 — 연결해도 실제 AI 응답은 없음 |
-| W-HOUSE-001/001-1/001-2 | `/wife/household` | MOCK_ONLY | `GET /household/today`(조회) + `POST/GET /family/household-requests`, `.../confirm`, `.../complete` | 조회 implemented, 요청·상태전이 **stub** | |
+| W-HOUSE-001/001-1/001-2 | `/wife/household` | MOCK_ONLY | `GET /household/today`(조회) + `POST/GET /family/household-requests`, `.../confirm`, `.../complete` | implemented(요청·상태전이 STEP 17) | |
 | W-HEALTH-001 | `/wife/health` | MOCK_ONLY | `GET /health/today` + `PUT /care/routine-items/{id}/execution` | implemented | |
 | W-SLEEP-001~001-5 | `/wife/sleep` | MOCK_ONLY | `GET /sleep/today` + `PUT /care/routine-items/{id}/sleep-environment` | 조회 implemented, override **stub** | |
 | W-REPORT-001/001-1 | `/wife/report/:date` | MOCK_ONLY | `POST .../preview`, `.../finalize`, `GET .../daily-reports/{date}` | implemented | 날짜별 Mock 조회 → 실제 API로 교체 가능(Backend는 Record+Condition+Movement에서 파생, STEP 12) |
@@ -71,11 +71,11 @@ Backend API 상태(`implemented`/`stub`/`planned`)는 `docs/backend/API_IMPLEMEN
 | Screen ID | Route | Frontend 연결 상태 | 대응 Backend API | Backend API 상태 | 비고 |
 |---|---|---|---|---|---|
 | H-INVITE-001(`/partner/join`) | `/partner/join?token=...` | NOT_APPLICABLE(의도적 비활성) | `POST /account/partner-invitations/{token}/accept` | implemented | Backend는 준비됐지만 Frontend는 "개발중" 안내만 표시(SCREEN_IMPLEMENTATION_MAP.md에 이미 의도적으로 비활성화라고 명시) — 화면·인증 복귀 계약 자체가 Backend 쪽에서도 TBD |
-| B-CAL-001(Partner) | `/partner/calendar` | MOCK_ONLY | `GET /care/calendar/{month}` | implemented(단, 남편 role 필터링은 Backend도 아직 없음) | |
+| B-CAL-001(Partner) | `/partner/calendar` | MOCK_ONLY | `GET /care/calendar/{month}` | implemented(STEP 17: 남편 토큰으로 호출하면 연동된 아내 캘린더 반환) | |
 | B-MOTION-001(Partner) | `/partner/movement` | MOCK_ONLY(Phase 2 Mock) | `GET /movement/events,/report/daily` | implemented(남편 role 필터링은 Backend도 아직 없음) | |
 | H-REPORT-001 | `/partner/report/:date` | MOCK_ONLY | `GET /family/morning-reports/{date}` | implemented(STEP 12, family authorization+projection) | Backend는 이미 원본 비노출·정성 요약까지 구현됨 — 연결 우선순위 높음 |
-| H-NOTI-001 | `/partner/notifications` | MOCK_ONLY | `GET /family/notifications`, `POST .../read` | **stub** | |
-| H-REQUEST-001/001-1/001-2, H-REQUEST-002 | `/partner/requests/:requestId` | MOCK_ONLY | `GET .../household-requests/{id}`, `.../confirm`, `.../complete` | **stub** | |
+| H-NOTI-001 | `/partner/notifications` | MOCK_ONLY | `GET /family/notifications`, `POST .../read` | implemented(STEP 17) | 알림 3종 전부 Backend에서 발송됨(가사 요청/오전 리포트/루틴 변경) |
+| H-REQUEST-001/001-1/001-2, H-REQUEST-002 | `/partner/requests/:requestId` | MOCK_ONLY | `GET .../household-requests/{id}`, `.../confirm`, `.../complete` | implemented(STEP 17) | |
 
 ---
 
@@ -91,7 +91,7 @@ Backend 쪽 검증(자동 테스트)이 끝난 상태라 Frontend Repository만 
 6. B-CAL-001(Wife/Partner) — 캘린더(STEP 12)
 7. B-MOTION-001의 동의/수집 설정(`GET/PUT/DELETE /family/motion/*`, STEP 14) — 단, 실시간 스트림 자체는 이미 Backend가 실동작하므로 Frontend Mock을 걷어내는 효과가 가장 큼
 
-다음 후보(Backend가 `stub`이라 Frontend 연결을 먼저 해도 실제 저장은 안 됨 — Backend Repository를 Supabase adapter로 먼저 바꿔야 의미 있음): W-CHAT-001/003, H-NOTI-001, H-REQUEST-001/002, W-HOUSE-001의 요청 전송·상태 전이.
+다음 후보(Backend가 `stub`이라 Frontend 연결을 먼저 해도 실제 저장은 안 됨): W-CHAT-001/003만 남음. H-NOTI-001, H-REQUEST-001/002, W-HOUSE-001 요청 전송·상태 전이는 STEP 17에서 Backend가 implemented로 바뀌어 연결 가능하다. 특히 W-TASK-001의 'AI 하루 루틴 만들기'(`planned_activity_controller.dart`, 아직 Mock)를 `POST /routine/today`에 연결하면 남편 알림(오전 리포트/루틴 변경)이 실제로 발송된다.
 
 ## 이번 STEP에서 만든 코드
 

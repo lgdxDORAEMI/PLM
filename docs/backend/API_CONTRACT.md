@@ -386,7 +386,7 @@
 - Source Data: `household_requests`+`household_request_items`(MISSING, `routine_item_id`로 `routine_items` FK 재사용)
 - Authorization: 기본값
 - Error: 409(파트너 미연동)
-- Status: **stub**
+- Status: **implemented** — `household_requests` 실 연결(STEP 17). 남편 연동(`partner_links`) 없으면 409, 생성 시 남편에게 `household_request` 알림 1건 발송
 
 ### `GET /api/v1/family/household-requests`
 
@@ -399,7 +399,7 @@
 - Source Data: `household_requests`(MISSING)
 - Authorization: 기본값
 - Error: 없음
-- Status: **stub**
+- Status: **implemented** — `household_requests`를 wife/husband 양쪽 user_id로 조회(STEP 17)
 
 ### `GET /api/v1/family/household-requests/{request_id}`
 
@@ -412,7 +412,7 @@
 - Source Data: `household_requests`+`household_request_items`(MISSING)
 - Authorization: 기본값(요청·수신 당사자만)
 - Error: 403(권한 없는 부부 조합), 404
-- Status: **stub**
+- Status: **implemented** — 요청 소유 부부가 아니면 403(STEP 17)
 
 ### `POST /api/v1/family/household-requests/{request_id}/confirm`
 
@@ -425,7 +425,7 @@
 - Source Data: `household_requests.status`(MISSING)
 - Authorization: 기본값(수신 남편만)
 - Error: 403, 409(이미 확인/완료됨)
-- Status: **stub**
+- Status: **implemented** — 수신 남편만 가능, 이미 completed면 409. `household_requests.status/confirmed_at`과 각 `household_request_items.status` 갱신(STEP 17)
 
 ### `POST /api/v1/family/household-requests/{request_id}/complete`
 
@@ -438,7 +438,7 @@
 - Source Data: `household_requests.status`(MISSING) + `routine_items.status/completed_by=husband`(동기화)
 - Authorization: 기본값(수신 남편만)
 - Error: 403, 409(미확인 상태에서 완료 시도)
-- Status: **stub**
+- Status: **implemented** — confirmed 상태에서만 가능, 그 외 409. 상태 변화 자체는 새 알림을 만들지 않는다(FUC-H-NOTI-001 제약, STEP 17)
 
 ---
 
@@ -472,7 +472,7 @@
 - Source Data: `notifications`(MISSING)
 - Authorization: 기본값
 - Error: 없음
-- Status: **stub**
+- Status: **implemented** — `notifications`를 `recipient_user_id`로 조회, `created_at` 내림차순(STEP 17). 발송 트리거 3종: 가사 요청 생성(`household_request`), 하루 첫 루틴 생성(`morning_report`), 루틴 재생성(`condition_changed`) — 뒤 둘은 `POST /routine/today` 성공 직후 발송(FUC-W-COND-002/003)
 
 ### `POST /api/v1/family/notifications/{notification_id}/read`
 
@@ -485,7 +485,7 @@
 - Source Data: `notifications.read_at`(MISSING)
 - Authorization: 기본값
 - Error: 404
-- Status: **stub**
+- Status: **implemented** — `id`+`recipient_user_id`로 갱신, 남의 알림이면 404(STEP 17)
 
 ---
 
@@ -629,12 +629,13 @@
 
 ## 요약
 
-- 작성일: 2026-09-17 (STEP 5 초안, STEP 8에서 8개 planned API 구현, STEP 9·STEP 10·STEP 11(2026-09-18)에서 갱신)
+- 작성일: 2026-09-17 (STEP 5 초안, STEP 8에서 8개 planned API 구현, STEP 9·STEP 10·STEP 11·STEP 17(2026-09-18)에서 갱신)
 - STEP 9: `GET/PUT /care/conditions/{date}`, `PUT /care/conditions/{date}/activities`가 실제 `daily_conditions`에 연결됐다. `app/services/routine/inputs.py`(Protected)가 같은 테이블·같은 컬럼명을 읽으므로 호환성을 확인하는 통합 테스트를 추가했다(`tests/test_care_condition.py`). Care 도메인의 나머지 메서드(execution/report/routine-item 피드백/캘린더)는 여전히 Stub — 같은 Repository 안에서 fallback으로 위임한다.
 - STEP 10: 프로필 1~6단계 필드를 화면설계서·DB와 재대조해 신규 컬럼/migration이 필요 없음을 확정하고, 회귀·남편 비공개 테스트를 추가했다(코드 변경 없음, `tests/test_profile.py`만 확장).
 - STEP 11: `GET /api/v1/meals/today`·`/household/today`·`/health/today`·`/sleep/today` 4개를 신규 구현했다(`app/domains/guide/**`, `app/api/v1/guide.py`) — `routine_items`를 읽기 전용으로 조회하는 Query Layer이며 새 테이블도, AI 재호출도 없다. 전체 API가 43개 → **47개**가 됐다.
 - STEP 12: Record(`PUT .../routine-items/{id}/execution`), Report(`POST .../preview`·`.../finalize`, `GET .../daily-reports/{date}`), Calendar(`GET .../calendar/{month}`), 남편 오전 리포트(`GET /family/morning-reports/{date}`) 6개를 stub→implemented로 전환했다. 새 테이블은 만들지 않았다 — Record는 `routine_items` 컬럼을 직접 갱신, Report는 Record+Condition+Movement에서 매번 계산, Calendar는 조회 조합, 남편 리포트는 `partner_links` 기반 projection이다.
+- STEP 17: Household 5개·Notification 2개를 stub→implemented로 전환했다(`household_requests`/`household_request_items`/`notifications` 실 연결, `app/domains/family/supabase_repository.py`). 같은 STEP에서 (1) `GET /care/calendar/{month}`가 남편 호출 시 `partner_links`로 연동된 아내 캘린더를 읽기 전용 조회하도록 분기(계약 변경 없음), (2) Daily 리포트 `family` 집계를 `household_requests` 실조회(누적 funnel: requested=그날 전체, confirmed=confirmed 이상, completed=completed)로 교체, (3) `POST /routine/today` 성공 직후 남편 알림 발송(첫 생성 `morning_report`, 재생성 `condition_changed`; 남편 미연동 시 생략, 발송 실패해도 201 유지)을 연결했다 — 라우트 응답 계약은 모두 그대로다.
 - STEP 8 구현 결과 W-PROFILE-003/004를 묶었던 `pregnancy-history` 1개가 화면 단위(due-date/body 관례)에 맞춰 `pregnancy-history`+`pregnancy-count` 2개로 나뉘어, 전체 API는 42개 → **43개**(기존 34 + 신규 9)가 됐다.
 - 프로필 4개(`pregnancy-history`/`pregnancy-count`/`allergies`/`medical-notes`)는 `pregnancy_profiles` 컬럼이 이미 있어 **implemented**(Supabase 실연결)로 구현했다.
 - 나머지 5개(`chat/messages` GET·POST, `care/routine-items/{id}` PUT, `.../sleep-environment` PUT, `account/partner-invitations/{token}/accept` POST)는 지원 테이블이 없거나(chat_messages, recommendation_feedback) 화면 계약 자체가 TBD(H-INVITE-001)라 **stub**(프로세스 메모리, 실제 데이터 지어내지 않음)으로 구현했다.
-- STEP 8 종료 시점 집계: implemented 13 / stub 30 / planned 0. STEP 9에서 Condition 3개가 stub→implemented로 바뀌어 implemented 16 / stub 27(합계 43). STEP 11에서 Guide Query 4개가 신규 implemented로 추가돼 implemented 20 / stub 27(합계 47). STEP 12에서 Record/Report/Calendar/남편 오전 리포트 6개가 stub→implemented로 바뀌어 implemented 26 / stub 21(합계 47). STEP 13에서 파트너 연동 4개(bootstrap/partner-link/invitations 발급·수락)가 stub→implemented로 바뀌어 implemented 30 / stub 17(합계 47). STEP 14에서 모션 동의 4개(`family/motion/privacy`·`/consent`·`/collection`)가 stub→implemented로 바뀌어 **최종 집계는 implemented 34 / stub 13 / planned 0**(합계 47). partial은 0개 — `PUT/GET /account/profile`의 `birth_date` 불일치는 여전히 남아 있지만 그 자체가 Stub이므로 partial이 아니라 stub으로 분류한다. 상세 수치와 화면별 매트릭스는 `API_IMPLEMENTATION_MATRIX.md` 참고.
+- STEP 8 종료 시점 집계: implemented 13 / stub 30 / planned 0. STEP 9에서 Condition 3개가 stub→implemented로 바뀌어 implemented 16 / stub 27(합계 43). STEP 11에서 Guide Query 4개가 신규 implemented로 추가돼 implemented 20 / stub 27(합계 47). STEP 12에서 Record/Report/Calendar/남편 오전 리포트 6개가 stub→implemented로 바뀌어 implemented 26 / stub 21(합계 47). STEP 13에서 파트너 연동 4개(bootstrap/partner-link/invitations 발급·수락)가 stub→implemented로 바뀌어 implemented 30 / stub 17(합계 47). STEP 14에서 모션 동의 4개(`family/motion/privacy`·`/consent`·`/collection`)가 stub→implemented로 바뀌어 implemented 34 / stub 13(합계 47). STEP 17에서 Household 5개·Notification 2개가 stub→implemented로 바뀌어 **최종 집계는 implemented 41 / stub 6 / planned 0**(합계 47). partial은 0개 — `PUT/GET /account/profile`의 `birth_date` 불일치는 여전히 남아 있지만 그 자체가 Stub이므로 partial이 아니라 stub으로 분류한다. 상세 수치와 화면별 매트릭스는 `API_IMPLEMENTATION_MATRIX.md` 참고.

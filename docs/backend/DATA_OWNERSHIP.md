@@ -30,8 +30,8 @@
 | 식사 가이드 표시(끼니·메뉴·영양태그) | Meal | `routine_items`(category=meal) | W-MEAL-001, W-MEAL-002 | DERIVED | 자체 테이블 불필요 |
 | 메뉴 수락/거절/재요청 이력 | Meal | `recommendation_feedback`(MISSING) | W-MEAL-002, W-CHAT-001 | SOURCE | 신규 테이블, NFR-014(이력 최소 항목) |
 | 가사 3분류 표시(직접/가전/가족) | Household | `routine_items`(category=household) | W-HOUSE-001 | DERIVED | 자체 테이블 불필요 |
-| 가사 요청(이유·상태 전이) | Household | `household_requests`(MISSING) | W-HOUSE-001, H-REQUEST-001 | SOURCE | 신규 테이블. 아내가 쓰고 남편이 상태를 갱신하는 양방향 공유 SOURCE(복제 아님) |
-| 가사 요청 항목 | Household | `household_request_items`(MISSING) | 위와 동일 | SOURCE | `routine_item_id`로 `routine_items` FK 재사용 — 항목 제목/설명 원본 복제 금지 |
+| 가사 요청(이유·상태 전이) | Household | `household_requests`(STEP 7 migration, STEP 17 실연결) | W-HOUSE-001, H-REQUEST-001 | SOURCE | 신규 테이블. 아내가 쓰고 남편이 상태를 갱신하는 양방향 공유 SOURCE(복제 아님) |
+| 가사 요청 항목 | Household | `household_request_items`(STEP 7 migration, STEP 17 실연결) | 위와 동일 | SOURCE | `routine_item_id`로 `routine_items` FK 재사용 — 항목 제목/설명 원본 복제 금지 |
 | 건강 가이드 표시(부위·활동·소요시간) | Health | `routine_items`(category=health) | W-HEALTH-001 | DERIVED | 자체 테이블 불필요 |
 | 수면 가이드 표시(취침시간·환경 5항목) | Sleep | `routine_items`(category=sleep) | W-SLEEP-001 | DERIVED | 자체 테이블 불필요 |
 | 수면 환경 override 이력 | Sleep | `recommendation_feedback`(kind=sleep_env_override) | W-SLEEP-001 팝업 | SOURCE | Meal 이력과 테이블 공유 — 도메인별 별도 이력 테이블 생성 금지 |
@@ -41,7 +41,7 @@
 | 캘린더 월간 조회 | Calendar | `daily_conditions` + `routine_items` + `daily_reports`(조회 조합) | B-CAL-001 | VIEW | 저장 테이블 없음 — 신규 Calendar 테이블 생성 금지 |
 | 파트너 연동 상태 | Family | `partner_links`(MISSING) | B-ENTRY-001, W-MENU-001, 남편 접근 권한 판단 전체 | SOURCE | 신규 테이블, `unique(husband_user_id)`로 중복 연동 방지 |
 | 초대 토큰 | Family | `partner_invitations`(MISSING) | W-INVITE-001, B-ENTRY-001(남편) | SOURCE | 신규 테이블, NFR-026(72시간·1회성) |
-| 알림(오전리포트/가사요청/컨디션변경) | Notification | `notifications`(MISSING) | H-NOTI-001 | EVENT | 트리거 발생 시점마다 행 생성, 상태 변경이 새 알림을 만들지 않음(`DOMAIN_OWNERSHIP.md` 원칙) |
+| 알림(오전리포트/가사요청/컨디션변경) | Notification | `notifications`(STEP 7 migration, STEP 17 실연결) | H-NOTI-001 | EVENT | 트리거 발생 시점마다 행 생성, 상태 변경이 새 알림을 만들지 않음(`DOMAIN_OWNERSHIP.md` 원칙) |
 | 챗봇 대화 이력 | Chat | `chat_messages`(MISSING) | W-CHAT-001 | SOURCE | NFR-027: 원문은 Report에 반영 안 함, 보관·파기 기준 TBD |
 | 임계 이벤트(자세·부담라벨·지속시간) | Movement | `posture_events` | B-MOTION-001, W-REPORT-002 | EVENT | "위험한 순간만 저장" 원칙 — `burden_label='Normal'` 행 없음. Protected |
 | 자세 기준선(캘리브레이션) | Movement | `posture_calibration_profiles` | `WS /movement/live/stream` 캘리브레이션 단계 | SOURCE | 최신 1행을 현재 기준선으로 사용. Protected |
@@ -124,11 +124,11 @@ NFR-008(민감정보 암호화)·NFR-010(민감정보 분리 관리)·NFR-013(�
 | 데이터 | 화면 | 분류 | Source | 비고 |
 |---|---|---|---|---|
 | 남편 본인 role·표시 이름 | B-ENTRY-001, 전역 | **OWNED BY HUSBAND** | `profiles`(user_id=남편) | 초대 수락(`link_partner`) 시점에 `role='husband'`로 처음 생성됨(STEP 13) |
-| 알림 수신함 | H-NOTI-001 | **OWNED BY HUSBAND** | `notifications`(recipient_user_id=남편) | 본인만 보는 이벤트 로그. 아직 Stub(별도 STEP) |
+| 알림 수신함 | H-NOTI-001 | **OWNED BY HUSBAND** | `notifications`(recipient_user_id=남편) | 본인만 보는 이벤트 로그. STEP 17 실연결 — 발송 3종(가사 요청/오전 리포트/루틴 변경) |
 | 초대 토큰 검증·연동 상태 | B-ENTRY-001(수락) | **OWNED BY HUSBAND**(수락 행위) / 관계는 공유 | `partner_invitations`, `partner_links` | 토큰은 아내가 발급하지만 "이 초대를 쓸지"는 남편의 행위 — STEP 13에서 실 연결 |
-| 가사 요청 | H-REQUEST-001/002 | **SHARED / event**(양방향 쓰기) | `household_requests`(+`items`) | 아내가 만들고 남편이 상태를 전이(요청됨→확인됨→완료됨) — 어느 한쪽 소유가 아니라 같은 행을 공유. 아직 Stub |
+| 가사 요청 | H-REQUEST-001/002 | **SHARED / event**(양방향 쓰기) | `household_requests`(+`items`) | 아내가 만들고 남편이 상태를 전이(요청됨→확인됨→완료됨) — 어느 한쪽 소유가 아니라 같은 행을 공유. STEP 17 실연결 |
 | 오전 리포트 | H-REPORT-001 | **SHARED projection** | `partner_links`(authorization) → `pregnancy_profiles`+`daily_conditions`+`routine_items`(그 자리에서 읽음) | STEP 12에서 구현 완료. 남편용 복제 테이블 없음 |
-| 캘린더(읽기 전용) | B-CAL-001 | **SHARED projection**(예정) | `daily_conditions`+`daily_reports` | STEP 12에서 아내용은 구현, 남편 role 필터링(수정 금지)은 아직 없음 — TBD |
+| 캘린더(읽기 전용) | B-CAL-001 | **SHARED projection**(예정) | `daily_conditions`+`daily_reports` | STEP 12에서 아내용 구현, STEP 17에서 남편 분기(`partner_links` 연동 시 아내 캘린더 읽기 전용) 구현 |
 | 홈캠 조회(읽기 전용) | B-MOTION-001(남편) | **SHARED projection**(예정) | `posture_events` | 아직 남편 role 조회 권한 분기 없음 — TBD |
 | 임신 주수 | H-REPORT-001 | **DERIVED** | `pregnancy_profiles.due_date` 기준 계산 | 저장 안 함 |
 | 진입 목적지(destination) | B-ENTRY-001 | **DERIVED** | role+profile+partner_link 조합 계산 | 저장 안 함 |
