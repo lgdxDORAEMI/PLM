@@ -9,8 +9,13 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from app.services.routine.inputs import ACTIVITY_CODES, CUSTOM_ACTIVITY
+
 # 2026-09-17.1: 4종 한 번 호출 → 카테고리별 4회 동시 호출(생성 8.6초로 타임아웃 잦음)
-PROMPT_VERSION = "2026-09-17.1"
+# 2026-09-18.1: item_key 값 목록 고정(S1), 가사 키 = 활동 코드표(S6), 예정 활동을 {code, label}로 전달
+# 2026-09-18.2: 웰컴 카드 팁 호출 추가(S7)
+# 2026-09-18.3: 팁에서 스트레칭·운동·메뉴·가사·취침 제외(가이드와 중복 방지)
+PROMPT_VERSION = "2026-09-18.3"
 CATEGORIES = ("meal", "household", "health", "sleep")
 
 
@@ -29,10 +34,11 @@ def _arr(items: dict[str, Any]) -> dict[str, Any]:
 
 _STR = {"type": "string"}
 # item_key는 이전 루틴과 새 루틴을 item_key로 비교(diff)하므로 호출마다 같은 값이어야 한다.
-# household는 활동 코드표 9종이 미확정이라 열거하지 못한다 → 자유 문자열 + service._normalize_item_keys가 접두사 보정.
 MEAL_KEYS = ("meal:breakfast", "meal:lunch", "meal:dinner", "meal:snack")
 HEALTH_KEYS = ("health:waist", "health:pelvis", "health:leg", "health:wrist", "health:whole", "health:rest")  # rest는 fallback.yaml과 동일
 SLEEP_KEY = "sleep:main"
+# S6: 활동 코드표 9종 + 직접 입력(custom). 직접 입력이 여러 개면 service._normalize_item_keys가 :2를 붙인다.
+HOUSEHOLD_KEYS = tuple(f"household:{code}" for code in (*ACTIVITY_CODES.values(), CUSTOM_ACTIVITY))
 _INT = {"type": "integer"}
 _SOURCE_IDS = _arr(_INT)
 
@@ -55,7 +61,7 @@ _MEAL_ITEM = _obj(
 )
 _HOUSEHOLD_ITEM = _obj(
     {
-        "item_key": _STR,
+        "item_key": {"type": "string", "enum": list(HOUSEHOLD_KEYS)},
         "title": _STR,
         "payload": _obj(
             {
@@ -109,6 +115,18 @@ ROUTINE_SCHEMA: dict[str, Any] = _obj(
 )
 
 
+# S7(R4): 웰컴 카드 "오늘 시도해보세요" 팁 1개(FUC-W-HOME-001). 4종 루틴과 별도 호출·별도 실패 처리.
+TIP_SCHEMA: dict[str, Any] = _obj({"tip": _obj({"text": _STR, "source_ids": _SOURCE_IDS})})
+# 팁은 4종 가이드와 겹치지 않는 생활 행동만. 스트레칭·운동은 건강 가이드(영상 포함, S_stretching_video),
+# 메뉴는 식사 가이드, 집안일 분담은 가사 가이드, 취침은 수면 가이드가 맡는다(09-18 결정).
+TIP_REQUEST = (
+    "위 정보로 홈 화면 '오늘 시도해보세요' 팁 1개를 작성. 오늘 가장 불편한 컨디션 1가지에 대해 오늘 바로 할 수 있는 "
+    "생활 행동 1개를 한 문장(40자 안팎)으로. 예: 수분 섭취, 일을 짧게 나눠 쉬기, 앉거나 서는 자세, 옷차림, 실내 환경. "
+    "스트레칭·운동·체조, 식사 메뉴·음식, 집안일 분담, 취침 시각은 다른 가이드가 다루므로 쓰지 않는다. "
+    "진단·처방·약·수치는 쓰지 않는다. 확정 규칙을 어기지 않는다."
+)
+
+
 def category_schema(category: str) -> dict[str, Any]:
     """카테고리 1개만 담은 strict 스키마. 응답은 {category: ...} 모양."""
     return _obj({category: ROUTINE_SCHEMA["properties"][category]})
@@ -118,7 +136,7 @@ SYSTEM_PROMPT = """당신은 임산부의 하루 생활 루틴을 설계하는 �
 - 출력은 주어진 JSON 스키마만. 한국어.
 - meal: 아침·점심·저녁 각 1개 이상. 금지(exclude) 재료는 절대 포함하지 않는다. 제한(limit)은 양을 줄이고 이유를 적는다.
 - household: 사용자가 고른 예정 활동을 각각 owner(self=직접, appliance=가전, partner=가족)로 분류한다. 금지 가사는 self로 두지 않는다.
-- household의 item_key는 `household:<영문 소문자 활동코드>` 형식으로 쓴다(예: household:laundry). 같은 활동은 항상 같은 코드.
+- household: planned_activities의 각 항목({code, label})마다 1개. item_key는 `household:<code>`(예: household:laundry), 직접 입력(code=custom)은 household:custom. title·설명은 label을 기준으로 쓴다.
 - health: 통증이 높은 부위 우선. 금지 활동은 넣지 않는다. 5~15분 내 활동.
 - sleep: 권장 취침 시각, 환경(조명·온도·습도·소리·공기청정기) 제안값, 팁.
 - 근거 자료(참고 문단)가 주어지면 그 내용에 기반해 작성하고, 사용한 문단의 id만 source_ids에 넣는다. 자료가 없으면 빈 배열.
@@ -131,8 +149,10 @@ def build_user_prompt(
     constraints: dict[str, list[dict[str, str]]] | None = None,
     chunks: list[dict[str, Any]] | None = None,
     category: str | None = None,
+    request: str | None = None,
 ) -> str:
-    """① facts + ② constraints + ③ chunks → 사용자 메시지 1개. category를 주면 그 카테고리만 요청한다."""
+    """① facts + ② constraints + ③ chunks → 사용자 메시지 1개. category를 주면 그 카테고리만 요청한다.
+    request를 주면 마지막 요청 문장을 그것으로 바꾼다(S7 팁)."""
     parts = ["## 사용자 정보(오늘)", json.dumps(facts, ensure_ascii=False)]
     if constraints and any(constraints.values()):
         parts += ["## 확정 규칙(반드시 준수)", json.dumps(constraints, ensure_ascii=False)]
@@ -140,5 +160,5 @@ def build_user_prompt(
         lines = [f"[id={c['id']}] ({c.get('category', '')}) {c['content']}" for c in chunks]
         parts += ["## 참고 문단", "\n\n".join(lines)]
     target = category or "meal·household·health·sleep"
-    parts += ["## 요청", f"위 정보로 오늘의 {target} 루틴을 JSON 스키마에 맞게 작성."]
+    parts += ["## 요청", request or f"위 정보로 오늘의 {target} 루틴을 JSON 스키마에 맞게 작성."]
     return "\n".join(parts)

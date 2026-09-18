@@ -41,6 +41,11 @@ Service = Annotated[RoutineService, Depends(get_routine_service)]
 Family = Annotated[FamilyServicePort, Depends(get_family_service)]
 
 
+def _with_regeneration_flag(routine: dict[str, Any]) -> dict[str, Any]:
+    """S4(R2): revision 2 이상 = 같은 날 재생성. 호출 측(남편 알림·변경 배너)이 이 값으로 분기한다."""
+    return {**routine, "is_regeneration": int(routine.get("revision") or 1) > 1}
+
+
 @router.get("/today")
 def read_today(user: User, service: Service) -> dict[str, Any]:
     """오늘 저장된 4종 가이드. 홈 화면 재진입·새로고침용. 없으면 404 → 앱은 컨디션 CTA를 보여준다."""
@@ -51,7 +56,7 @@ def read_today(user: User, service: Service) -> dict[str, Any]:
         raise _storage_unavailable() from error
     if routine is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "오늘 생성된 루틴이 없습니다.")
-    return routine
+    return _with_regeneration_flag(routine)
 
 
 @router.post("/today", status_code=status.HTTP_201_CREATED)
@@ -59,8 +64,7 @@ async def generate_today(user: User, service: Service, family: Family) -> dict[s
     """컨디션·예정 활동 저장 후 호출. AI 실패 시에도 폴백 루틴을 저장해 항상 4종을 돌려준다."""
     today = dates.today_kst()
     try:
-        existed = repository.get_routine(service.supabase, user.id, today) is not None
-        saved = await service.generate_today(user.id, today)
+        saved = _with_regeneration_flag(await service.generate_today(user.id, today))
     except ProfileMissingError as error:
         raise HTTPException(status.HTTP_409_CONFLICT, "출산예정일(프로필 1단계)을 먼저 저장해 주세요.") from error
     except ConditionMissingError as error:
@@ -69,9 +73,13 @@ async def generate_today(user: User, service: Service, family: Family) -> dict[s
         logger.exception("루틴 저장 실패")
         raise _storage_unavailable() from error
 
-    # FUC-W-COND-002: 알림 전송이 실패해도 루틴 생성 자체는 성공으로 처리한다.
-    try:
-        family.notify_routine_ready(user.id, today, str(saved["id"]), first_of_day=not existed)
-    except Exception:
-        logger.exception("루틴 생성 알림 발송 실패")
+    # S5(R3): 폴백(source != ai)은 AI 실패라 앱이 W-CALLBACK-001·재시도를 띄운다 → 남편 알림을 보내지 않는다.
+    # 첫 알림 종류는 "오늘 AI 루틴이 처음 나왔는가"로 정한다. 폴백 뒤 재시도 성공도 오전 리포트(FUC-W-COND-002),
+    # AI 루틴이 이미 있었으면 루틴 변경(FUC-W-COND-003). 알림 실패는 루틴 생성 성공에 영향을 주지 않는다.
+    if saved["source"] == "ai":
+        try:
+            first = not repository.has_ai_routine_before(service.supabase, user.id, today, int(saved["revision"]))
+            family.notify_routine_ready(user.id, today, str(saved["id"]), first_of_day=first)
+        except Exception:
+            logger.exception("루틴 생성 알림 발송 실패")
     return saved

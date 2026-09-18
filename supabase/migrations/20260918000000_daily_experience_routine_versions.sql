@@ -1,4 +1,4 @@
--- 웬즈데이 AI S3 (R1·R2): 하루 루틴을 버전별로 쌓는다. 설계: docs/ai_wednesday/AI_wednesday_pipeline.md §3 S3
+-- 웬즈데이 AI S3 (R1·R2): 하루 루틴을 버전별로 쌓는다. 설계: docs/ai_wednesday/Ai_wednesday_pipeline_v3.md §3 S3
 -- FUC-W-COND-003(확정 전 수정 = 재생성), FUC-W-COND-004(확정 후 재입력 = 덮어쓰지 않고 새 루틴).
 --
 -- daily_routines: 생성할 때마다 새 행(revision +1). 같은 (user_id, date)에서 revision이 가장 큰 행이 현재 루틴이다.

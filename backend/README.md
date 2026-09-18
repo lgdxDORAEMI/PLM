@@ -46,7 +46,7 @@ AI 루틴은 2026-09-18 실 DB 검증에서 `source=ai`로 생성을 확인했�
 - `POST /api/v1/routine/today`: 프로필 + 오늘 컨디션으로 루틴 생성·저장. AI 실패·10초 초과 시 전일 루틴 → 기본 템플릿 순으로 폴백해 항상 4종을 반환
 - 파이프라인: `app/services/routine/` — ① `inputs.py` 입력 수집 → ② `rules.py`+`rules.yaml` 룰 엔진(16규칙) → ③ `retriever.py` RAG(OpenAI 임베딩 + RPC `match_pregnancy_knowledge`) → ④ `prompt.py` 프롬프트·JSON 스키마 → ⑤ `generator.py` OpenAI `json_schema strict` 호출 → ⑥ `service.py` 검증(금지 항목·`source_ids` 제거)·폴백 → ⑦ `repository.py` `daily_routines`/`routine_items` 저장
 - 지식 적재(1회성)는 `tools/rag_ingest/`(팀원 패키지). 영문 공개자료 75청크 → 한국어 번역·재청크 → `text-embedding-3-small`(1536) → `pregnancy_knowledge`
-- 설계·진행 기록: [웬즈데이 AI 파이프라인](../docs/ai_wednesday/AI_wednesday_pipeline.md), 테이블: `supabase/migrations/`
+- 설계·진행 기록: [웬즈데이 AI 파이프라인](../docs/ai_wednesday/Ai_wednesday_pipeline_v3.md), 테이블: `supabase/migrations/`
 
 - **생성 완료 알림(2026-09-18)**: `POST /routine/today`가 성공하면 `FamilyService.notify_routine_ready`가 연동된 남편에게 알림을 보냅니다 — 하루 첫 생성은 `morning_report`(FUC-W-COND-002), 재생성은 `condition_changed` "아내의 루틴이 변경되었습니다."(FUC-W-COND-003). 남편 미연동이면 생략, 발송 실패해도 201을 유지합니다. 라우트(`app/api/v1/routine.py`)만 수정했고 `app/services/routine/**`는 그대로입니다
 
@@ -274,7 +274,7 @@ LLM_API_BASE_URL=
 - [API 계약](../docs/api.md)
 - [Architecture](../docs/architecture.md)
 - [Supabase](../supabase/README.md)
-- [웬즈데이 AI 파이프라인](../docs/ai_wednesday/AI_wednesday_pipeline.md)
+- [웬즈데이 AI 파이프라인](../docs/ai_wednesday/Ai_wednesday_pipeline_v3.md)
 - [모션 통합 및 검증](../docs/movement/README.md)
 - [Backend 구현 상태](../docs/backend/BACKEND_STATUS.md) · [API 매트릭스](../docs/backend/API_IMPLEMENTATION_MATRIX.md) · [요구사항 추적](../docs/backend/REQUIREMENT_TRACEABILITY.md)
 - [Frontend API 연결 상태](../docs/frontend/API_INTEGRATION_STATUS.md)

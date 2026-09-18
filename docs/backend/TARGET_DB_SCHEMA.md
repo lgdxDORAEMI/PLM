@@ -3,7 +3,7 @@
 - 작성일: 2026-09-17 (STEP 4)
 - 목적: (1) 아내/남편 화면 DB 스키마, (2) 실제 Supabase migration, (3) 실제 Backend 코드가 사용 중인 데이터를 3-way 비교하고, 이번 MVP의 Target DB Schema를 정의한다.
 - 이 문서는 **설계 문서**이며 migration 파일을 생성하지 않는다. 기존 migration은 수정하지 않는다. 필요한 신규 테이블만 "계획"으로 남긴다.
-- Routine/AI 구조(`daily_routines`/`routine_items`/`pregnancy_knowledge`)는 이 문서에서 재설계하지 않는다 — Routine AI 담당(웬즈데이 AI) 소유다(2026-09-18 개정으로 Protected에서 제외). 재생성 이력 요구(FUC-W-COND-003/004)에 따른 변경은 Routine AI 담당이 `docs/ai_wednesday/AI_wednesday_pipeline.md` §3 S3로 진행한다.
+- Routine/AI 구조(`daily_routines`/`routine_items`/`pregnancy_knowledge`)는 이 문서에서 재설계하지 않는다 — Routine AI 담당(웬즈데이 AI) 소유다(2026-09-18 개정으로 Protected에서 제외). 재생성 이력 요구(FUC-W-COND-003/004)에 따른 변경은 Routine AI 담당이 `docs/ai_wednesday/Ai_wednesday_pipeline_v3.md` §3 S3로 진행한다.
 
 ## 3-way 비교 요약
 

@@ -1,4 +1,4 @@
--- AI 하루 루틴 생성(W-ROUTINE-001/003)에 필요한 테이블. 설계: docs/ai_wednesday/AI_wednesday_pipeline.md, payload 모양: docs/api.md
+-- AI 하루 루틴 생성(W-ROUTINE-001/003)에 필요한 테이블. 설계: docs/ai_wednesday/Ai_wednesday_pipeline_v3.md, payload 모양: docs/api.md
 -- 컨벤션(pregnancy_profiles와 동일): enum은 text + check, 접근은 backend(service role)만 → RLS 켜고 정책 없음.
 -- 값 범위는 backend/app/schemas/*.py 검증과 같게 유지한다.
 

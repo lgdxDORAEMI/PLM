@@ -10,7 +10,15 @@ from openai import AsyncOpenAI
 
 from app.core.config import Settings
 from app.services.llm_service import LLMService
-from app.services.routine.prompt import CATEGORIES, ROUTINE_SCHEMA, SYSTEM_PROMPT, build_user_prompt, category_schema
+from app.services.routine.prompt import (
+    CATEGORIES,
+    ROUTINE_SCHEMA,
+    SYSTEM_PROMPT,
+    TIP_REQUEST,
+    TIP_SCHEMA,
+    build_user_prompt,
+    category_schema,
+)
 
 # NFR-001 p95 10초. 임베딩(③)에도 시간이 들어 LLM 호출은 8초로 잡는다.
 LLM_TIMEOUT_SEC = 8.0
@@ -53,6 +61,16 @@ class OpenAIRoutineGenerator(LLMService):
         own = {k: [c for c in v if c.get("category") == category] for k, v in (constraints or {}).items()}
         prompt = build_user_prompt(facts, own, chunks, category)
         return json.loads(await self.generate(prompt, category_schema(category), f"routine_{category}"))[category]
+
+    async def generate_tip(
+        self,
+        facts: dict[str, Any],
+        constraints: dict[str, list[dict[str, Any]]] | None = None,
+        chunks: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
+        """S7: 웰컴 카드 팁 1개 {text, source_ids}. 실패는 예외로 올리고, 루틴 폴백 여부는 service가 분리해 판단한다."""
+        prompt = build_user_prompt(facts, constraints, chunks, request=TIP_REQUEST)
+        return json.loads(await self.generate(prompt, TIP_SCHEMA, "routine_tip"))["tip"]
 
     async def generate_routine(
         self,

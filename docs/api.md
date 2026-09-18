@@ -157,21 +157,43 @@ OFF면 **4003**(앱 정의 코드)으로 닫아 1008(origin/토큰)과 구분한
 ## AI 하루 루틴 (W-ROUTINE-001/003, W-HOME-001)
 
 모든 요청에 `Authorization: Bearer <Supabase access token>`이 필요합니다. 구현: `backend/app/api/v1/routine.py`,
-파이프라인 설계: `docs/ai_wednesday/AI_wednesday_pipeline.md`.
+파이프라인 설계: `docs/ai_wednesday/Ai_wednesday_pipeline_v3.md`.
 
 | Method | Path | 화면 | 성공 응답 | 설명 |
 | --- | --- | --- | --- | --- |
 | GET | /api/v1/routine/today | 홈 재진입 | 200 루틴 | 오늘(KST) 저장된 4종 가이드. 없으면 404 → 앱은 컨디션 CTA 표시 |
 | POST | /api/v1/routine/today | 예정 활동 선택 완료 직후 | 201 루틴 | 프로필·오늘 컨디션으로 AI 루틴 생성·저장. AI 실패·10초 초과 시 전일 루틴 → 기본 템플릿 순으로 폴백해 **항상 4종을 돌려준다** |
 
+호출 순서 (W-COND-001 → W-TASK-001 → W-HOME-001)
+
+1. `PUT /api/v1/care/conditions/{date}`: 오늘 컨디션 7개 점수 저장
+2. `PUT /api/v1/care/conditions/{date}/activities`: 오늘 예정 활동 저장(`{"activities": ["빨래", "청소", ...]}`). 활동을 안 골라도 빈 목록으로 호출 가능
+3. `POST /api/v1/routine/today`: 루틴 생성. 1번을 하지 않았으면 409(`오늘 컨디션을 먼저 입력해 주세요.`)
+
+예정 활동 코드표 (S6). 앱은 한글 라벨을 그대로 보내고 DB에도 라벨로 저장된다. 루틴 생성 시 백엔드가 코드로 바꾸고, 가사 항목의 `item_key`는 `household:<코드>`가 된다.
+
+| 라벨 | 코드 | 라벨 | 코드 |
+| --- | --- | --- | --- |
+| 장보기 | `groceries` | 쓰레기 배출 | `trash` |
+| 빨래 | `laundry` | 침구 정리 | `bedding` |
+| 청소 | `cleaning` | 화분 관리 | `plants` |
+| 설거지 | `dishes` | 정리 정돈 | `tidying` |
+| 요리 | `cooking` | 직접 입력(목록 밖 라벨) | `custom` |
+
+직접 입력이 여러 개면 `household:custom`, `household:custom:2`처럼 번호가 붙는다. 라벨 글자가 위 표와 다르면(띄어쓰기 포함) 직접 입력으로 처리되므로, 앱은 표의 라벨을 그대로 보낸다.
+
 응답 본문 (두 API 공통)
 
 | 필드 | 설명 |
 | --- | --- |
 | id, date, generated_at | `daily_routines` 행 |
-| source | `ai` / `fallback_prev`(전일 루틴 복사) / `fallback_template`(기본 템플릿). 폴백률(NFR-016) 측정용 |
+| revision | 같은 날짜의 루틴 버전 번호(1부터). 같은 날 다시 POST할 때마다 1씩 커진다. GET은 가장 큰 revision을 돌려준다 |
+| is_regeneration | `revision > 1`이면 `true` = 같은 날 재생성된 루틴. 프론트는 변경 배너, 남편 알림(FUC-W-COND-003)은 이 값으로 분기한다. 첫 생성이면 `false` |
+| change_summary | 직전 버전 대비 변화. `{added, updated, removed, unchanged}` 각각 `item_key` 목록. 첫 생성이면 `null`. `updated`는 제목이 바뀐 항목(완료 기록은 유지) |
+| confirmed_at | '저장하고 마치기'로 확정한 시각. `null` = 확정 전 (확정 API는 아직 없음) |
+| source | `ai` = AI 생성 성공. `fallback_prev`(전일 루틴 복사) / `fallback_template`(기본 템플릿) = **AI 생성 실패**(시간 초과·AI 오류). 처리 기준은 아래 "AI 실패 처리". 폴백률(NFR-016) 측정용 |
 | model | 생성에 쓴 LLM 모델명. 폴백이면 `null` |
-| response | `{meal: [...], household: [...], health: [...], sleep: {...}}`. 각 항목 `{item_key, title, payload, source_ids}`. `payload` 모양은 아래 표. `source_ids`는 근거 문단 `pregnancy_knowledge.id` |
+| response | `{meal: [...], household: [...], health: [...], sleep: {...}, tip: {...} 또는 null}`. `tip`은 웰컴 카드 '오늘 시도해보세요' 팁 1개(아래 표). 나머지 4종은 각 항목 `{item_key, title, payload, source_ids}`. `payload` 모양은 아래 표. `source_ids`는 근거 문단 `pregnancy_knowledge.id` |
 
 `payload` 모양 (카테고리별, 기준 코드 `backend/app/services/routine/prompt.py` `ROUTINE_SCHEMA`)
 
@@ -182,6 +204,8 @@ OFF면 **4003**(앱 정의 코드)으로 닫아 1008(origin/토큰)과 구분한
 | health (배열) | `{bodyArea, loads: [{area, label, value(숫자)}], guide, durationMin(정수), reason}` |
 | sleep (객체 1개) | `{recommendedBedtime, environments: [{type, value, options: [문자열]}], tips: [문자열], reason}` |
 
+`response.tip` (S7, FUC-W-HOME-001): `{text: 문자열(한 문장, 40자 안팎), source_ids: [정수]}` 또는 `null`. 루틴 항목이 아니므로 `item_key`·완료 체크가 없다. `null`인 경우 — 폴백 루틴(`source != ai`), 팁 생성만 실패·지연, 알레르기 금지어 포함 — 앱은 기본 문구를 표시한다. 팁이 `null`이어도 4종 루틴은 정상(`source`는 그대로).
+
 | 상태 코드 | 의미 |
 | --- | --- |
 | 401 | 토큰 없음 또는 유효하지 않음 |
@@ -189,7 +213,19 @@ OFF면 **4003**(앱 정의 코드)으로 닫아 1008(origin/토큰)과 구분한
 | 409 | 프로필 1단계(출산예정일) 또는 오늘 컨디션이 아직 없음 (POST). `detail`에 어느 쪽인지 문구 |
 | 503 | Supabase 설정 누락 또는 연결 실패 |
 
-같은 날 다시 POST하면 `daily_routines`는 덮어쓰고 `routine_items`는 지우고 다시 넣습니다(완료 체크 유지 정책은 W-RECORD-001에서 정함).
+같은 날 다시 POST하면 `daily_routines`에 새 revision 행이 쌓이고(이전 버전은 보존), `routine_items`는 같은 `item_key`의 행을 고쳐 씁니다. 같은 키 항목은 제목이 바뀌어도 완료 기록(`status`·`completed_at`·`completed_by`)이 유지되고, 변화는 `routine_items.change_kind`(`added`/`updated`/`removed`, 변화 없으면 `null`)로 표시됩니다.
+
+AI 실패 처리 (FUC-W-CALLBACK-001, W-CALLBACK-001)
+
+- 백엔드는 AI가 실패해도 폴백 루틴을 저장하고 **201**을 돌려준다(빈 화면 0건, NFR-016). HTTP 오류로 실패를 알리지 않는다.
+- 앱은 POST 응답의 `source`로 판단한다.
+  - `source == "ai"`: 정상. 홈에 4종 가이드를 표시한다.
+  - `source != "ai"`: AI 실패. 실패 안내 화면(W-CALLBACK-001)과 '다시 시도하기'를 띄운다.
+- '다시 시도하기' = 같은 `POST /api/v1/routine/today`를 다시 호출한다(저장된 컨디션·예정 활동을 그대로 쓴다). 성공하면 `source == "ai"`, `revision`이 1 커진 응답이 온다.
+- 재시도하지 않거나 연속 실패하면 **이미 받은 응답의 `response`(폴백 루틴)를 그대로 표시**한다. 앱 자체 목업 폴백은 쓰지 않는다.
+- `GET /api/v1/routine/today`도 같은 규칙: 마지막 버전의 `source`가 `ai`가 아니면 실패 안내를 띄울 수 있다.
+- 남편 알림(FUC-W-COND-002/003)은 `source == "ai"`일 때만 백엔드가 보낸다. 오늘 첫 AI 루틴이면 오전 리포트, 이미 AI 루틴이 있었으면 루틴 변경 알림이다(폴백 뒤 재시도 성공은 오전 리포트).
+- 컨디션 수정 시 일부 가이드만 다시 만드는 경우의 `source` 의미는 S10에서 추가한다.
 
 로컬 Flutter Web의 임의 개발 포트를 허용합니다.
 허용 origin은 `http://localhost[:port]`, `http://127.0.0.1[:port]`입니다.

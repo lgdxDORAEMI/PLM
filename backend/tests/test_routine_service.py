@@ -17,6 +17,7 @@ from app.domains.family.service import FamilyService
 from app.domains.family.stub_repository import StubFamilyRepository
 from app.main import app
 from app.services.routine import repository
+from app.services.routine.inputs import to_activities
 from app.services.routine.rules import apply_rules
 from app.services.routine.service import RoutineService, _normalize_item_keys, load_template, validate
 
@@ -104,12 +105,18 @@ class FakeOpenAI:
         self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._chat))
         self.routine_json, self.fail = routine_json, fail
         self.chat_calls: list[dict] = []
+        self.tip_fail = False
+        self.tip_json = '{"tip": {"text": "허리가 뻐근하면 30분마다 일어나 가볍게 몸을 풀어요", "source_ids": [11, 999]}}'
 
     async def _embed(self, model, input):
         return SimpleNamespace(data=[SimpleNamespace(embedding=[0.0] * 1536) for _ in input])
 
     async def _chat(self, **kwargs):
         self.chat_calls.append(kwargs)
+        if kwargs["response_format"]["json_schema"]["name"] == "routine_tip" and not self.fail:
+            if self.tip_fail:
+                raise RuntimeError("tip down")
+            return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=self.tip_json))])
         if self.fail:
             raise RuntimeError("insufficient_quota")
         return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content=self.routine_json))])
@@ -180,6 +187,17 @@ class ValidateTest(unittest.TestCase):
         self.assertEqual([e["item_key"] for e in out["health"]], ["health:waist", "health:waist:2"])
         self.assertEqual(len(repository.to_items({**out, "household": [], "sleep": {}})), 6)
 
+    def test_activity_labels_to_codes(self) -> None:
+        """S6: DB의 한글 라벨 9종 → 코드, 이미 코드면 그대로, 목록 밖(직접 입력)은 custom + 원문 라벨."""
+        self.assertEqual(to_activities(["빨래", "쓰레기 배출", " 정리 정돈 ", "laundry", "강아지 산책", ""]), [
+            {"code": "laundry", "label": "빨래"},
+            {"code": "trash", "label": "쓰레기 배출"},
+            {"code": "tidying", "label": "정리 정돈"},
+            {"code": "laundry", "label": "laundry"},
+            {"code": "custom", "label": "강아지 산책"},
+        ])
+        self.assertEqual(to_activities(None), [])
+
     def test_normalizes_household_item_key(self) -> None:
         out = _normalize_item_keys({"household": [
             {"item_key": "laundry"}, {"item_key": "household:dishes"}, {"item_key": ""},
@@ -216,11 +234,57 @@ class RoutineServiceTest(unittest.TestCase):
         openai = FakeOpenAI(json.dumps(AI_ROUTINE, ensure_ascii=False))
         asyncio.run(make_service(self.db, openai).generate_today(USER, TODAY))
         names = sorted(c["response_format"]["json_schema"]["name"] for c in openai.chat_calls)
-        self.assertEqual(names, ["routine_health", "routine_household", "routine_meal", "routine_sleep"])
+        self.assertEqual(names, ["routine_health", "routine_household", "routine_meal", "routine_sleep", "routine_tip"])
         prompts = {c["response_format"]["json_schema"]["name"]: c["messages"][1]["content"] for c in openai.chat_calls}
         # 허리 4 → health의 activity:walk 규칙은 health 호출에만 들어간다
         self.assertIn("activity:walk", prompts["routine_health"])
         self.assertNotIn("activity:walk", prompts["routine_meal"])
+
+    def test_tip_included_with_ai_routine(self) -> None:
+        """S7: AI 성공이면 response.tip = {text, source_ids}. 없는 source_id(999)는 제거."""
+        import json
+        saved = asyncio.run(make_service(self.db, FakeOpenAI(json.dumps(AI_ROUTINE, ensure_ascii=False))).generate_today(USER, TODAY))
+        self.assertEqual(saved["source"], "ai")
+        self.assertEqual(saved["response"]["tip"]["source_ids"], [11])
+        self.assertIn("허리", saved["response"]["tip"]["text"])
+        self.assertNotIn("tip", {i["category"] for i in self.db.tables["routine_items"]})  # 팁은 항목이 아님
+
+    def test_tip_failure_keeps_ai_routine(self) -> None:
+        """S7: 팁 호출만 실패하면 tip=None, 루틴은 폴백하지 않고 source=ai."""
+        import json
+        openai = FakeOpenAI(json.dumps(AI_ROUTINE, ensure_ascii=False))
+        openai.tip_fail = True
+        saved = asyncio.run(make_service(self.db, openai).generate_today(USER, TODAY))
+        self.assertEqual((saved["source"], saved["response"]["tip"]), ("ai", None))
+
+    def test_tip_with_banned_word_is_dropped(self) -> None:
+        """S7: 알레르기 금지어(갑각류 keywords: 새우)가 든 팁은 None."""
+        import json
+        openai = FakeOpenAI(json.dumps(AI_ROUTINE, ensure_ascii=False))
+        openai.tip_json = '{"tip": {"text": "점심에 새우를 곁들여 단백질을 챙겨요", "source_ids": []}}'
+        saved = asyncio.run(make_service(self.db, openai).generate_today(USER, TODAY))
+        self.assertIsNone(saved["response"]["tip"])
+
+    def test_slow_tip_is_dropped_without_delaying_routine(self) -> None:
+        """S7: 루틴이 끝난 뒤 팁을 TIP_GRACE_SEC만 기다린다. 늦으면 tip=None, 루틴은 ai 그대로."""
+        import json
+        from app.services.routine import service as routine_service
+        openai = FakeOpenAI(json.dumps(AI_ROUTINE, ensure_ascii=False))
+        fast_chat = openai._chat
+
+        async def slow_tip(**kwargs):
+            if kwargs["response_format"]["json_schema"]["name"] == "routine_tip":
+                await asyncio.sleep(0.5)
+            return await fast_chat(**kwargs)
+
+        openai.chat = SimpleNamespace(completions=SimpleNamespace(create=slow_tip))
+        with patch.object(routine_service, "TIP_GRACE_SEC", 0.05):
+            saved = asyncio.run(make_service(self.db, openai).generate_today(USER, TODAY))
+        self.assertEqual((saved["source"], saved["response"]["tip"]), ("ai", None))
+
+    def test_fallback_has_no_tip(self) -> None:
+        saved = asyncio.run(make_service(self.db, FakeOpenAI("", fail=True)).generate_today(USER, TODAY))
+        self.assertEqual((saved["source"], saved["response"]["tip"]), ("fallback_template", None))
 
     def test_llm_failure_uses_template_when_no_previous(self) -> None:
         service = make_service(self.db, FakeOpenAI("", fail=True))
@@ -330,7 +394,19 @@ class RoutineApiTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(created.json()["source"], "fallback_template")
             fetched = await client.get("/api/v1/routine/today")
             self.assertEqual(fetched.status_code, 200)
-            self.assertEqual(set(fetched.json()["response"]), {"meal", "household", "health", "sleep"})
+            self.assertEqual(set(fetched.json()["response"]), {"meal", "household", "health", "sleep", "tip"})
+
+    async def test_response_has_revision_and_regeneration_flags(self) -> None:
+        """S4(R2): 첫 생성은 revision 1·is_regeneration false·change_summary null, 재생성은 2·true·변경 요약."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost") as client:
+            first = (await client.post("/api/v1/routine/today")).json()
+            self.assertEqual((first["revision"], first["is_regeneration"], first["change_summary"]), (1, False, None))
+            second = (await client.post("/api/v1/routine/today")).json()
+            self.assertEqual((second["revision"], second["is_regeneration"]), (2, True))
+            self.assertEqual(set(second["change_summary"]), {"added", "updated", "removed", "unchanged"})
+            fetched = (await client.get("/api/v1/routine/today")).json()
+        self.assertEqual((fetched["revision"], fetched["is_regeneration"]), (2, True))
+        self.assertEqual(fetched["change_summary"], second["change_summary"])
 
     async def test_post_without_condition_409(self) -> None:
         self.db.tables["daily_conditions"] = []
@@ -340,8 +416,13 @@ class RoutineApiTest(unittest.IsolatedAsyncioTestCase):
             self.assertIn("컨디션", response.json()["detail"])
         self.assertEqual(self.family_repository.list_notifications(HUSBAND), [])
 
+    def use_ai(self) -> None:
+        import json
+        self.service = make_service(self.db, FakeOpenAI(json.dumps(AI_ROUTINE, ensure_ascii=False)))
+
     async def test_first_generation_notifies_morning_report_then_regeneration_notifies_change(self) -> None:
         """FUC-W-COND-002: 하루 첫 생성 → 오전 리포트 알림. FUC-W-COND-003: 재생성 → 루틴 변경 알림."""
+        self.use_ai()
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost") as client:
             created = await client.post("/api/v1/routine/today")
             self.assertEqual(created.status_code, 201)
@@ -353,6 +434,22 @@ class RoutineApiTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual((await client.post("/api/v1/routine/today")).status_code, 201)
         types = sorted(n.type for n in self.family_repository.list_notifications(HUSBAND))
         self.assertEqual(types, ["condition_changed", "morning_report"])
+
+    async def test_fallback_sends_no_notification(self) -> None:
+        """S5: 폴백(source != ai)은 AI 실패 → 앱이 실패 화면·재시도를 띄우므로 남편 알림을 보내지 않는다."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost") as client:
+            created = await client.post("/api/v1/routine/today")
+        self.assertEqual(created.json()["source"], "fallback_template")
+        self.assertEqual(self.family_repository.list_notifications(HUSBAND), [])
+
+    async def test_ai_success_after_fallback_is_morning_report(self) -> None:
+        """S5: 폴백 뒤 재시도 성공은 revision 2여도 오늘 첫 AI 루틴 → 오전 리포트(루틴 변경 아님)."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost") as client:
+            await client.post("/api/v1/routine/today")            # 1: 폴백
+            self.use_ai()
+            retried = (await client.post("/api/v1/routine/today")).json()  # 2: AI 성공
+        self.assertEqual((retried["revision"], retried["source"]), (2, "ai"))
+        self.assertEqual([n.type for n in self.family_repository.list_notifications(HUSBAND)], ["morning_report"])
 
     async def test_unlinked_wife_generation_sends_nothing(self) -> None:
         app.dependency_overrides[get_family_service] = lambda: FamilyService(StubFamilyRepository())
@@ -366,10 +463,11 @@ class RoutineApiTest(unittest.IsolatedAsyncioTestCase):
                 raise RuntimeError("notifications down")
 
         app.dependency_overrides[get_family_service] = lambda: BrokenFamily()
+        self.use_ai()
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost") as client:
             response = await client.post("/api/v1/routine/today")
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(set(response.json()["response"]), {"meal", "household", "health", "sleep"})
+        self.assertEqual(set(response.json()["response"]), {"meal", "household", "health", "sleep", "tip"})
 
 
 if __name__ == "__main__":

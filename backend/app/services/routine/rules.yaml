@@ -6,7 +6,7 @@
 # effect: exclude(금지) / limit(제한) / require(반드시 포함). target 형식 "종류:값". reason은 LLM에 그대로 넘긴다.
 # keywords(선택, exclude용): 검증(⑥)이 항목 이름(title·nutritionTags)에서 찾을 단어. target 값("갑각류")은 자동 포함.
 #   설명문(reason 등)은 검사하지 않는다 — "갑각류를 피했어요" 같은 문장으로 식단이 지워지던 문제(2026-09-17).
-# 규칙이 20개를 넘으면 테이블로 옮긴다(docs/ai_wednesday/AI_wednesday_pipeline.md §4).
+# 규칙이 20개를 넘으면 테이블로 옮긴다(docs/ai_wednesday/Ai_wednesday_pipeline_v3.md §4).
 rules:
   - category: meal
     when: {allergies_any: [갑각류]}

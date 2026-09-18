@@ -20,7 +20,7 @@ FK_VIOLATION = "23503"
 def get_routine(client: Client, user_id: str, on: date) -> dict[str, Any] | None:
     rows = (
         client.table("daily_routines")
-        .select("id, date, source, model, generated_at, response")
+        .select("id, date, revision, source, model, generated_at, confirmed_at, change_summary, response")
         .eq("user_id", user_id)
         .eq("date", on.isoformat())
         .order("revision", desc=True)
@@ -29,6 +29,22 @@ def get_routine(client: Client, user_id: str, on: date) -> dict[str, Any] | None
         .data
     )
     return rows[0] if rows else None
+
+
+def has_ai_routine_before(client: Client, user_id: str, on: date, revision: int) -> bool:
+    """그날 이 revision 전에 AI가 만든 루틴이 있었는가. 남편 알림 종류(오전 리포트 vs 루틴 변경) 판단용(S5)."""
+    rows = (
+        client.table("daily_routines")
+        .select("id")
+        .eq("user_id", user_id)
+        .eq("date", on.isoformat())
+        .eq("source", "ai")
+        .lt("revision", revision)
+        .limit(1)
+        .execute()
+        .data
+    )
+    return bool(rows)
 
 
 def get_latest_before(client: Client, user_id: str, before: date) -> dict[str, Any] | None:
