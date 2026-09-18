@@ -1,0 +1,31 @@
+%% 서비스 흐름도(아내): PLM 진입 분기
+%% 관련 기능: FUC-B-ENTRY-001, FUC-W-PROFILE-009 / 관련 UC: UC17
+%% 전제: ThinQ 계정 로그인 상태에서만 진입점(홈 배너·메뉴 항목)이 노출되며, 서비스 해지 시 둘 다 미노출된다.
+%% 핵심 규칙:
+%%   - 아내는 '임산부 프로필 등록 완료 여부'로 최초/기존 사용자를 판단한다.
+%%   - 프로필이 최종 저장되기 전에 앱이 종료된 경우 작성 중이던 Step을 복원하지 않고 1단계부터 다시 시작한다(FUC-W-PROFILE-009).
+%%   - 최초 등록을 마친 뒤에는 항상 홈 화면으로 진입한다(UC17 A1).
+flowchart TD
+    classDef user fill:#E8F0FE,stroke:#4285F4,color:#1a1a1a;
+    classDef system fill:#F1F3F4,stroke:#5f6368,color:#1a1a1a;
+    classDef decision fill:#FEF7E0,stroke:#F9AB00,color:#1a1a1a;
+    classDef terminal fill:#E6F4EA,stroke:#34A853,color:#1a1a1a;
+    classDef external fill:#FCE8E6,stroke:#EA4335,color:#1a1a1a,stroke-dasharray: 4 3;
+
+    Start(["시작: 아내가 ThinQ 앱 실행(로그인 상태)"]):::terminal --> EXTQ
+
+    subgraph EXT["외부 시스템"]
+        EXTQ["ThinQ 앱: PLM 진입점 노출<br/>① 홈 배너(ThinQ PLAY 배너 하단 '시작하기')<br/>② 메뉴 리스트(제품 및 앱 활용 &gt; PLM, NEW 배지)<br/>※ 서비스 해지 시 둘 다 미노출"]:::external
+    end
+
+    EXTQ --> U1(["아내: Pregnancy Life Mode 선택"]):::user
+    U1 --> A["시스템: 프로필 등록 상태 조회<br/>(B-ENTRY-001, FUC-B-ENTRY-001)"]:::system
+    A --> Err{"시스템: 상태 조회에 성공했는가?"}:::decision
+    Err -- "서버 오류" --> ErrS["시스템: 오류 안내 및 재시도 요청 (UC17 E1)"]:::system
+    ErrS --> A
+    Err -- "성공" --> W1{"시스템: 프로필 등록이 최종 완료되었는가?"}:::decision
+
+    W1 -- "아니오(최초 진입 또는 작성 중 종료)" --> W2["시스템: 프로필 등록 1/6로 이동<br/>(작성 중이던 Step은 복원하지 않음)<br/>(W-PROFILE-001, mode = onboarding)"]:::system
+    W2 --> EndW1(["다음 흐름: 01_프로필등록및메뉴"]):::terminal
+    W1 -- "예" --> W3["시스템: 홈 화면으로 이동<br/>(W-HOME-001)"]:::system
+    W3 --> EndW2(["다음 흐름: 02_AI하루루틴생성"]):::terminal

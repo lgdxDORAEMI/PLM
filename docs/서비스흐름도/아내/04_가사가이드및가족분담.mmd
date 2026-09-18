@@ -1,0 +1,51 @@
+%% 서비스 흐름도(아내): 가사 가이드 3분류 → '가족과 나누기' 항목 남편에게 요청 → 요청 진행 상태 조회
+%% 관련 기능: FUC-W-HOUSE-001(3분류), FUC-W-HOUSE-002(가사 가이드 가전 실행, Phase 2), FUC-W-HOUSE-003(요청 카드 전송),
+%%           FUC-W-HOUSE-003-1(전송 완료 팝업), FUC-W-RECORD-001, FUC-W-RECORD-002(남편 요청 진행 상태 반영) / 관련 UC: UC3, UC5, UC6, UC12
+%% 핵심 규칙:
+%%   - 남편에게 공유할 수 있는 항목은 '③ 가족과 나누기' 탭에 있는 부탁할 항목 리스트뿐이다(기본 선택 상태).
+%%     ① 직접 수행·② 가전 수행 항목은 공유 대상이 아니며 선택 패널에 표시하지 않는다.
+%%   - 남편 계정이 연동되지 않았으면 전송할 수 없다(UC5 E1). 연결 해제 기능은 없다.
+%%   - 남편의 확인·완료 처리로 상태가 바뀌어도 아내에게 **알림을 보내지 않는다**. 아내가 화면을 조회할 때 최신 상태를 반영한다(FUC-W-RECORD-002).
+%%   - ② 가사 가이드 가전 실행(FUC-W-HOUSE-002, 지금 시작/예약/야간·일괄 실행)은 Phase 2다. MVP는 '가전 수행 추천' 표시까지만 제공한다.
+%%   - 남편 측 처리 흐름은 남편/03_가사요청처리 참조.
+flowchart TD
+    classDef user fill:#E8F0FE,stroke:#4285F4,color:#1a1a1a;
+    classDef system fill:#F1F3F4,stroke:#5f6368,color:#1a1a1a;
+    classDef decision fill:#FEF7E0,stroke:#F9AB00,color:#1a1a1a;
+    classDef terminal fill:#E6F4EA,stroke:#34A853,color:#1a1a1a;
+    classDef external fill:#FCE8E6,stroke:#EA4335,color:#1a1a1a,stroke-dasharray: 4 3;
+
+    Start(["시작: 홈의 가사 가이드 진입<br/>(W-HOUSE-001)"]):::terminal --> A["시스템: 당일 컨디션·예정 활동 기준 3분류 표시<br/>① 오늘은 이것만 직접 ② 가전이 대신합니다 ③ 가족과 나누기<br/>+ 컨디션 근거 배너 (FUC-W-HOUSE-001)"]:::system
+
+    A --> Br{"아내: 어떤 분류를 처리하는가?"}:::decision
+
+    Br -- "① 직접 수행" --> Self(["아내: 직접 수행 후 완료 체크 (FUC-W-RECORD-001)"]):::user
+    Self --> EndSelf(["다음 흐름: 08_루틴실행기록및리포트"]):::terminal
+
+    Br -- "② 가전 수행" --> Dev["시스템: 가전 수행 추천 항목과 담당 가전 표시(MVP 범위)<br/>※ 실행 버튼(지금 시작/예약/야간)·일괄 실행은 Phase 2<br/>(FUC-W-HOUSE-002)"]:::system
+    Dev -.Phase 2.-> ThinQ
+
+    subgraph EXTD["외부 시스템 (Phase 2)"]
+        ThinQ["ThinQ 연동 가전: 실행 명령 수신 및 결과 회신"]:::external
+    end
+
+    Dev --> EndDev(["종료: MVP는 추천 표시까지, 실제 실행은 아내가 수동 수행"]):::terminal
+
+    Br -- "③ 가족과 나누기" --> Link{"시스템: 남편 계정이 연동되어 있는가?"}:::decision
+    Link -- "미연동" --> NoLink["시스템: 전송 불가 안내 + 계정 연동(남편 초대) 요청<br/>(UC5 E1)"]:::system
+    NoLink --> EndNo(["다음 흐름: 01_프로필등록및메뉴(메뉴 → 남편 연동 행)"]):::terminal
+    Link -- "연동됨" --> Panel["시스템: 공유 선택 패널 표시<br/>('가족과 나누기' 탭의 부탁할 항목 리스트만, 기본 선택 상태)<br/>① 직접 수행·② 가전 수행 항목은 표시하지 않음"]:::system
+    Panel --> B(["아내: 공유할 항목 체크 후 '남편에게 공유하기'<br/>(여러 항목을 하나의 요청으로 묶어 전송 가능)<br/>(FUC-W-HOUSE-003)"]):::user
+    B --> C["시스템: 요청 이유(당일 컨디션)와 보조 정보를 자동 첨부해<br/>요청 카드 구성 → 남편 계정에 전송 + 남편 알림 '가사 요청 도착' 생성"]:::system
+    C --> CSend{"시스템: 전송 성공했는가?"}:::decision
+    CSend -- "실패" --> CFail["시스템: 요청은 저장하고 전송 실패 고지 + 재전송 안내<br/>(FUC-W-HOUSE-003-1, UC5 E2)"]:::system
+    CFail --> B
+    CSend -- "성공" --> C1["시스템: 딤 배경 팝업으로 전송 항목 수·수신자·도착 위치 안내<br/>(W-HOUSE-003-1, FUC-W-HOUSE-003-1)"]:::system
+    C1 --> C2(["아내: '확인' → 가사 가이드 복귀<br/>(요청 항목은 진행 상태로 전환, 요청 상태 = 미확인)"]):::user
+
+    %% ── 요청 진행 상태 조회(알림 없음) ─────────────────────────────
+    C2 --> HusbandSide["남편 측 처리: 확인 → 완료<br/>(남편/03_가사요청처리, 상태 변화 알림 없음)"]:::system
+    HusbandSide -.상태 저장.-> J
+    Revisit(["아내: 나중에 가사 가이드를 다시 조회"]):::user --> J
+    J["시스템: 조회 시점의 최신 상태 반영<br/>완료 = 초록 / 확인 = 파랑 / 직접 수행(공유 대상 아님) = 핑크<br/>(FUC-W-RECORD-002, 요청일의 기록에 가족 분담으로 자동 집계)"]:::system
+    J --> End(["다음 흐름: 08_루틴실행기록및리포트<br/>(요청일 Daily 리포트·캘린더의 가족 분담 내역에 반영,<br/>요청일 리포트가 이미 확정됐어도 조회 시 최신 상태로 반영)"]):::terminal
