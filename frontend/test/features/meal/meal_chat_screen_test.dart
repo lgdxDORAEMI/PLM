@@ -3,6 +3,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:plm_frontend/features/meal/screens/meal_chat_screen.dart';
 
 void main() {
+  testWidgets('하단 챗봇 탭으로 직접 진입하면 뒤로가기 버튼을 숨긴다', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: MealChatScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('뒤로 가기'), findsNothing);
+  });
+
+  testWidgets('가이드에서 진입한 챗봇만 뒤로가기 버튼을 표시한다', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: MealChatScreen(returnRoute: '/wife/meal/breakfast'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('뒤로 가기'), findsOneWidget);
+  });
+
   testWidgets('입력한 메시지와 mock AI 응답을 대화 목록에 누적한다', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: MealChatScreen()));
     await tester.pumpAndSettle();

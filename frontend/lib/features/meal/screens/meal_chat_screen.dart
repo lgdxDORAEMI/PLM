@@ -21,10 +21,16 @@ import '../widgets/meal_chat_bubble.dart';
 import '../widgets/meal_recommendation_card.dart';
 
 class MealChatScreen extends StatefulWidget {
-  const MealChatScreen({super.key, this.service, this.mealPeriod});
+  const MealChatScreen({
+    super.key,
+    this.service,
+    this.mealPeriod,
+    this.returnRoute,
+  });
 
   final MealChatService? service;
   final MealPeriod? mealPeriod;
+  final String? returnRoute;
 
   @override
   State<MealChatScreen> createState() => _MealChatScreenState();
@@ -68,7 +74,8 @@ class _MealChatScreenState extends State<MealChatScreen> {
       currentIndex: 2,
       appBar: TopAppBar(
         title: '챗봇',
-        onBack: _handleBack,
+        showBack: widget.returnRoute != null,
+        onBack: widget.returnRoute == null ? null : _handleBack,
         wifeProfileAction: true,
       ),
       body: EmptyDataPreview(
@@ -215,7 +222,7 @@ class _MealChatScreenState extends State<MealChatScreen> {
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
     } else {
-      Navigator.pushReplacementNamed(context, RouteNames.mealGuide);
+      Navigator.pushReplacementNamed(context, widget.returnRoute!);
     }
   }
 }

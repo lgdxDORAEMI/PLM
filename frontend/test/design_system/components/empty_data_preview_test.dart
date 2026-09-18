@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:plm_frontend/debug/empty_data_preview_store.dart';
 import 'package:plm_frontend/design_system/components/empty_data_preview.dart';
 import 'package:plm_frontend/design_system/components/top_app_bar.dart';
+import 'package:plm_frontend/features/home/widgets/pregnancy_week_hero.dart';
 
 void main() {
   final store = EmptyDataPreviewStore.instance;
@@ -59,5 +60,23 @@ void main() {
     store.registerTitleTap(now: startedAt.add(const Duration(seconds: 2)));
 
     expect(store.enabled, isFalse);
+  });
+
+  testWidgets('빈 데이터 모드에서는 프로필 이름과 임신 주차를 숨긴다', (tester) async {
+    for (var count = 0; count < 5; count += 1) {
+      store.registerTitleTap();
+    }
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: EmptyDataPreview(
+          child: PregnancyWeekHero(userName: '희선', week: 28),
+        ),
+      ),
+    );
+
+    expect(find.textContaining('희선'), findsNothing);
+    expect(find.textContaining('28주차'), findsNothing);
+    expect(find.textContaining('프로필 정보를'), findsOneWidget);
   });
 }

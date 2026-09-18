@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../design_system/components/app_card.dart';
 import '../../../design_system/components/app_ink_well.dart';
+import '../../../design_system/components/empty_data_preview.dart';
 import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/components/top_app_bar.dart';
@@ -47,63 +48,72 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: TopAppBar(title: '메뉴', onBack: _close),
-    body: SafeArea(
-      top: false,
-      child: ResponsivePageContent(
-        child: ListView(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-          children: [
-            _ProfileHeader(
-              profile: _profileStore.profile,
-              onRoleSwitch: () =>
-                  AppRouter.switchDemoUser(context, ActiveRole.husband),
-            ),
-            const SizedBox(height: AppSpacing.xxl),
-            Text('내 정보', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.md),
-            _MenuRow(
-              icon: Icons.person_outline,
-              title: '프로필 수정',
-              description: '출산예정일 · 신체 정보 · 주의 진단',
-              onTap: () => Navigator.pushNamed(context, RouteNames.wifeProfile),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            if (_connection.isLinked)
-              const InfoBanner(
-                key: ValueKey('partner-linked-state'),
-                title: '연준님과 연결됐어요',
-                message: '오늘 컨디션 · 집안일 요청 · 하루 리포트를 함께 봐요.',
-                tone: InfoBannerTone.success,
-              )
-            else
-              _MenuRow(
-                key: const ValueKey('partner-unlinked-state'),
-                icon: Icons.person_add_alt,
-                title: '남편 초대하기',
-                description: 'ThinQ 알림으로 초대장을 보내 계정 연결',
-                onTap: () =>
-                    Navigator.pushNamed(context, RouteNames.wifeInvite),
+    body: EmptyDataPreview(
+      child: Builder(
+        builder: (context) {
+          final profileAvailable = !EmptyDataPreview.enabledOf(context);
+          return SafeArea(
+            top: false,
+            child: ResponsivePageContent(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                children: [
+                  _ProfileHeader(
+                    profile: profileAvailable ? _profileStore.profile : null,
+                    profileAvailable: profileAvailable,
+                    onRoleSwitch: () =>
+                        AppRouter.switchDemoUser(context, ActiveRole.husband),
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+                  Text('내 정보', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: AppSpacing.md),
+                  _MenuRow(
+                    icon: Icons.person_outline,
+                    title: '프로필 수정',
+                    description: '출산예정일 · 신체 정보 · 주의 진단',
+                    onTap: () =>
+                        Navigator.pushNamed(context, RouteNames.wifeProfile),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  if (_connection.isLinked)
+                    const InfoBanner(
+                      key: ValueKey('partner-linked-state'),
+                      title: '연준님과 연결됐어요',
+                      message: '오늘 컨디션 · 집안일 요청 · 하루 리포트를 함께 봐요.',
+                      tone: InfoBannerTone.success,
+                    )
+                  else
+                    _MenuRow(
+                      key: const ValueKey('partner-unlinked-state'),
+                      icon: Icons.person_add_alt,
+                      title: '남편 초대하기',
+                      description: 'ThinQ 알림으로 초대장을 보내 계정 연결',
+                      onTap: () =>
+                          Navigator.pushNamed(context, RouteNames.wifeInvite),
+                    ),
+                  const SizedBox(height: AppSpacing.xxl),
+                  Text('앱 설정', style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: AppSpacing.md),
+                  _MenuRow(
+                    icon: Icons.settings_outlined,
+                    title: '설정',
+                    description: '글자 크기 조정',
+                    onTap: () =>
+                        Navigator.pushNamed(context, RouteNames.wifeSettings),
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+                  Text(
+                    'LG전자  ·  이용약관  ·  개인정보처리방침',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textTertiary,
+                    ),
+                  ),
+                ],
               ),
-            const SizedBox(height: AppSpacing.xxl),
-            Text('앱 설정', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.md),
-            _MenuRow(
-              icon: Icons.settings_outlined,
-              title: '설정',
-              description: '글자 크기 조정',
-              onTap: () =>
-                  Navigator.pushNamed(context, RouteNames.wifeSettings),
             ),
-            const SizedBox(height: AppSpacing.xxl),
-            Text(
-              'LG전자  ·  이용약관  ·  개인정보처리방침',
-              textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     ),
   );
@@ -126,32 +136,41 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
 }
 
 class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader({required this.onRoleSwitch, required this.profile});
+  const _ProfileHeader({
+    required this.onRoleSwitch,
+    required this.profile,
+    required this.profileAvailable,
+  });
 
   final VoidCallback onRoleSwitch;
   final ProfileDraft? profile;
+  final bool profileAvailable;
 
   @override
   Widget build(BuildContext context) {
     final due = profile?.effectiveDueDate;
-    final week = profile?.pregnancyWeekAt(DateTime.now()) ?? 28;
+    final week = profile?.pregnancyWeekAt(DateTime.now());
     final dueLabel = due == null
-        ? '2026. 12. 20.'
+        ? null
         : '${due.year}. ${due.month.toString().padLeft(2, '0')}. '
               '${due.day.toString().padLeft(2, '0')}.';
+    final hasProfileValues =
+        profileAvailable && week != null && dueLabel != null;
     return Semantics(
       container: true,
-      label: '희선님 프로필 정보',
+      label: hasProfileValues ? '희선님 프로필 정보' : '프로필 정보 없음',
       child: Row(
         children: [
           ConsecutiveTapDetector(
             key: const ValueKey('wife-role-switch-avatar'),
             onTriggered: onRoleSwitch,
-            child: const CircleAvatar(
+            child: CircleAvatar(
               radius: 36,
               backgroundColor: AppColors.primary100,
               foregroundColor: AppColors.primary700,
-              child: Text('희'),
+              child: hasProfileValues
+                  ? const Text('희')
+                  : const Icon(Icons.person_outline),
             ),
           ),
           const SizedBox(width: AppSpacing.lg),
@@ -159,10 +178,15 @@ class _ProfileHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('희선님', style: Theme.of(context).textTheme.headlineSmall),
+                Text(
+                  hasProfileValues ? '희선님' : '프로필 정보가 없어요',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  '임신 $week주차 · 출산예정일 $dueLabel',
+                  hasProfileValues
+                      ? '임신 $week주차 · 출산예정일 $dueLabel'
+                      : '데이터 연결 후 이름과 임신 정보가 표시돼요.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,
                   ),

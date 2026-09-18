@@ -240,12 +240,7 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
 
   Future<void> _openMealChat() async {
     final period = _controller.selectedPeriod;
-    final route = Uri(
-      path: RouteNames.mealChat,
-      queryParameters: period == null
-          ? null
-          : {'source': 'meal', 'period': period.name},
-    ).toString();
+    final route = RouteNames.chatFromGuide('meal', mealPeriod: period?.name);
     await Navigator.pushNamed(context, route);
     if (mounted) _controller.showAppliedRecommendation();
   }

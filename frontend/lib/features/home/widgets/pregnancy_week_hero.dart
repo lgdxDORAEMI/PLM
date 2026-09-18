@@ -20,12 +20,10 @@ class PregnancyWeekHero extends StatelessWidget {
     final hasPregnancyWeek = !EmptyDataPreview.enabledOf(context);
     final statusText = hasPregnancyWeek
         ? '$userName님,\n오늘 임신 $week주차예요'
-        : '$userName님,\n임신 주차 정보가 아직 없어요';
+        : '프로필 정보를\n불러오지 못했어요';
     return Semantics(
       container: true,
-      label: hasPregnancyWeek
-          ? '$userName님, 현재 임신 $week주차'
-          : '$userName님, 임신 주차 정보 없음',
+      label: hasPregnancyWeek ? '$userName님, 현재 임신 $week주차' : '프로필 정보 없음',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

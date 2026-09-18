@@ -57,6 +57,10 @@ abstract final class RouteNames {
       '${husbandRequest(id)}/result';
   static String mealDetail(String mealKey) =>
       '/wife/meal/${Uri.encodeComponent(mealKey)}';
+  static String chatFromGuide(String guide, {String? mealPeriod}) => Uri(
+    path: mealChat,
+    queryParameters: {'source': guide, 'period': ?mealPeriod},
+  ).toString();
   static String roleSwitch(String targetRole) =>
       '/role/switch/${Uri.encodeComponent(targetRole)}';
 

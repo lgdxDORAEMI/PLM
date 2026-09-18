@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plm_frontend/debug/empty_data_preview_store.dart';
 import 'package:plm_frontend/features/profile/controllers/profile_setup_controller.dart';
 import 'package:plm_frontend/features/profile/data/profile_store.dart';
 import 'package:plm_frontend/features/profile/models/profile_draft.dart';
@@ -8,7 +9,10 @@ import 'package:plm_frontend/features/entry/services/mock_entry_service.dart';
 import 'package:plm_frontend/routing/route_context.dart';
 
 void main() {
-  setUp(ProfileStore.instance.reset);
+  setUp(() {
+    ProfileStore.instance.reset();
+    EmptyDataPreviewStore.instance.reset();
+  });
 
   test('필수 Profile 입력을 검증한 뒤 Summary까지 이동한다', () {
     final controller = ProfileSetupController(mode: ProfileMode.create);
@@ -77,6 +81,23 @@ void main() {
     expect(find.text('신장'), findsOneWidget);
     expect(find.text('체중 (임신 전)'), findsOneWidget);
     expect(find.text('생년월일'), findsOneWidget);
+  });
+
+  testWidgets('빈 데이터 모드에서는 저장된 프로필 입력값을 노출하지 않는다', (tester) async {
+    ProfileStore.instance.save(ProfileDraft.mockEdit());
+    for (var count = 0; count < 5; count += 1) {
+      EmptyDataPreviewStore.instance.registerTitleTap();
+    }
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ProfileSetupScreen(mode: ProfileMode.edit, initialStep: 6),
+      ),
+    );
+
+    expect(find.text('프로필 정보를 불러오지 못했어요'), findsOneWidget);
+    expect(find.textContaining('165'), findsNothing);
+    expect(find.textContaining('55'), findsNothing);
   });
 
   test('수정 Mode는 저장된 Profile을 불러오고 이전 단계로 이동한다', () {

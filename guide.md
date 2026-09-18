@@ -41,9 +41,13 @@ flutter run -d chrome
 
 실행하면 `/`이 canonical `/entry`로 정규화되고 Mock Bootstrap이 사용자 상태를 확인합니다. 새 사용자는 실제 Entry 화면에서 `시작하기`를 눌러 Profile Setup으로 이동하고, Profile을 완료한 재방문 사용자는 `/wife/home`으로 바로 이동합니다. 알 수 없는 경로도 안전하게 `/entry`로 복구됩니다. ThinQ Host/실제 Session Adapter는 아직 없으므로 역할별 직접 URL 접근 차단은 보장하지 않습니다. Browser 주소의 `/wife/home`, `/wife/menu`, `/wife/report/2026-09-13`, `/partner/calendar`, `/partner/requests/demo-request`를 직접 열어 Mock UI를 확인할 수 있습니다.
 
-온보딩에서 출산예정일 또는 마지막 생리 시작일을 입력할 수 있습니다. LMP만 입력하면 예정일을 280일 뒤로 계산합니다. 예정일, 100~220cm 신장, 30~250kg 임신 전 체중, 초산/경산, 단태/다태가 모두 유효해야 완료 사용자로 판정합니다. 완료 Profile은 Demo 전용 브라우저 localStorage의 `plm.demo.profile.v1` 키에 저장되어 새로고침 후에도 Home/Menu의 임신 주수와 재방문 분기가 유지됩니다. 서버 영속 저장과 계정 간 동기화는 아직 제공하지 않습니다.
+온보딩에서 출산예정일 또는 마지막 생리 시작일을 입력할 수 있습니다. LMP만 입력하면 예정일을 280일 뒤로 계산합니다. 예정일, 100~220cm 신장, 30~250kg 임신 전 체중, 초산/경산, 단태/다태가 모두 유효해야 완료 사용자로 판정합니다. Backend에는 `/api/v1/profile/me` 단계별 API와 `pregnancy_profiles` DB 저장이 구현되어 있지만 생년월일을 저장할 `birth_date` 계약·컬럼은 아직 없고, 현재 Frontend도 이 API를 호출하지 않습니다. 완료 Profile은 Demo 전용 브라우저 localStorage의 `plm.demo.profile.v1` 키에 저장되어 새로고침 후에도 Home/Menu의 임신 주수와 재방문 분기가 유지됩니다. 따라서 현재 화면의 프로필은 서버 계정과 동기화되지 않습니다.
 
 새 사용자 상태를 다시 시연하려면 Chrome 개발자 도구의 `Application` → `Local Storage`에서 현재 origin의 `plm.demo.profile.v1` 항목을 삭제하고 `/entry`를 새로고침합니다. Profile Setup을 끝내면 같은 코드에서 완료 사용자 상태로 전환되며, 이후 `/entry` 재진입 시 Home으로 이동합니다. 브라우저 저장소 접근이 차단된 환경에서는 현재 실행 중인 메모리 상태만 유지되고 새로고침 후 Entry로 돌아올 수 있습니다.
+
+DB 응답이 없는 화면을 확인하는 빈 데이터 미리보기는 상단 제목을 1초 이내에 5번 선택해 전환합니다. 이 모드에서는 Home과 Menu의 사용자 이름·임신 주차·출산예정일 및 프로필 수정 화면의 저장된 입력값을 Mock 값으로 대체하지 않고 숨기며, 일반 안내 문구만 표시합니다. 다시 5번 선택하면 Local Mock 화면으로 돌아갑니다.
+
+`/wife/chat`을 직접 열거나 하단 챗봇 탭으로 이동하면 뒤로가기 버튼이 없습니다. 식사 가이드에서는 `/wife/chat?source=meal&period={mealPeriod}`로 이동하며 이 경우에만 뒤로가기가 활성화됩니다. `household`, `health`, `sleep` source도 동일한 복귀 규칙을 지원하므로 해당 가이드에서 챗봇 진입 UI가 추가될 때 같은 Route helper를 사용합니다.
 
 `/wife/home`의 AI Routine은 실제 AI API가 없어도 실행됩니다. 당일 컨디션 미입력 시 컨디션 CTA가 표시되고, 입력과 예정 활동 선택을 마치면 `MockRoutineService`가 식사·가사·건강·수면 가이드를 제공합니다. Service 오류 시 화면을 비우지 않고 기본 Routine과 재시도 버튼을 표시합니다.
 

@@ -190,10 +190,32 @@ abstract final class AppRouter {
     return [onGenerateRoute(RouteSettings(name: normalized))];
   }
 
+  /// 제품 화면 전환은 짧은 fade와 수평 이동을 함께 사용한다.
+  /// 운영체제에서 애니메이션 줄이기를 켠 경우에는 전환 효과를 생략한다.
   static Route<dynamic> _page(String name, Widget screen) =>
-      MaterialPageRoute<void>(
+      PageRouteBuilder<void>(
         settings: RouteSettings(name: name),
-        builder: (_) => screen,
+        transitionDuration: const Duration(milliseconds: 220),
+        reverseTransitionDuration: const Duration(milliseconds: 180),
+        pageBuilder: (_, animation, secondaryAnimation) => screen,
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          if (MediaQuery.disableAnimationsOf(context)) return child;
+          final curved = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeInCubic,
+          );
+          return FadeTransition(
+            opacity: curved,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0.035, 0),
+                end: Offset.zero,
+              ).animate(curved),
+              child: child,
+            ),
+          );
+        },
       );
 
   static String _homeFor(ActiveRole role) => role == ActiveRole.husband
@@ -328,7 +350,10 @@ abstract final class AppRouter {
       final period = MealPeriod.values
           .where((item) => item.name == uri.queryParameters['period'])
           .firstOrNull;
-      return MealChatScreen(mealPeriod: period);
+      return MealChatScreen(
+        mealPeriod: period,
+        returnRoute: _guideRouteFor(uri.queryParameters['source'], period),
+      );
     }
     if (parts.length == 3 && parts[0] == 'wife' && parts[1] == 'report') {
       return DailyReportScreen(date: parts[2]);
@@ -364,6 +389,19 @@ abstract final class AppRouter {
     }
     return const _RoutePlaceholder(title: '화면을 준비 중입니다');
   }
+
+  /// 검증된 가이드 진입만 챗봇의 뒤로가기 문맥으로 인정한다.
+  static String? _guideRouteFor(String? source, MealPeriod? period) =>
+      switch (source) {
+        'meal' =>
+          period == null
+              ? RouteNames.mealGuide
+              : RouteNames.mealDetail(period.name),
+        'household' => RouteNames.householdGuide,
+        'health' => RouteNames.healthGuide,
+        'sleep' => RouteNames.sleepGuide,
+        _ => null,
+      };
 }
 
 class _RoutePlaceholder extends StatelessWidget {

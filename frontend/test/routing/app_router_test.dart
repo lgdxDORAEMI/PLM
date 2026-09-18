@@ -178,6 +178,32 @@ void main() {
     expect(find.text('식사 상세 화면 준비 중'), findsNothing);
   });
 
+  testWidgets('챗봇은 검증된 가이드 진입 문맥에서만 뒤로가기를 표시한다', (tester) async {
+    ProfileStore.instance.save(ProfileDraft.mockEdit());
+
+    await tester.pumpWidget(
+      MaterialApp(
+        key: const ValueKey('direct-chat-app'),
+        initialRoute: RouteNames.mealChat,
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        onGenerateInitialRoutes: AppRouter.onGenerateInitialRoutes,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('뒤로 가기'), findsNothing);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        key: const ValueKey('guide-chat-app'),
+        initialRoute: RouteNames.chatFromGuide('meal', mealPeriod: 'breakfast'),
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        onGenerateInitialRoutes: AppRouter.onGenerateInitialRoutes,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('뒤로 가기'), findsOneWidget);
+  });
+
   testWidgets('명시적 전환은 대상 역할 홈으로 가고 이전 stack을 제거한다', (tester) async {
     ProfileStore.instance.save(ProfileDraft.mockEdit());
     AuthSessionStore.instance.update(
