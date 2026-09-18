@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/content_frame.dart';
+import '../../../design_system/components/empty_data_preview.dart';
 import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_split_view.dart';
 import '../../../design_system/components/section_header.dart';
@@ -99,44 +100,53 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
           ),
         ],
       ),
-      body: SafeArea(
-        top: false,
-        child: ContentFrame(
-          maxWidth: 1200,
-          child: LayoutBuilder(
-            builder: (context, constraints) => ListView(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-              children: [
-                PregnancyWeekHero(
-                  userName: _data.userName,
-                  week: pregnancyWeek,
-                ),
-                const SizedBox(height: AppSpacing.xxl),
-                if (constraints.maxWidth < AppBreakpoints.desktop) ...[
-                  _conditionSection(hasTodayCare),
-                  const SizedBox(height: AppSpacing.xxl),
-                  ..._primaryContent(hasTodayCare),
-                  const SizedBox(height: AppSpacing.huge),
-                  _weekContext(pregnancyWeek),
-                ] else
-                  ResponsiveSplitView(
-                    primaryFlex: 8,
-                    secondaryFlex: 4,
-                    gap: AppSpacing.xxl,
-                    primary: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: _primaryContent(hasTodayCare),
+      body: EmptyDataPreview(
+        child: SafeArea(
+          top: false,
+          child: ContentFrame(
+            maxWidth: 1200,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final previewEmpty = EmptyDataPreview.enabledOf(context);
+                final effectiveHasTodayCare = hasTodayCare && !previewEmpty;
+                return ListView(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                  children: [
+                    PregnancyWeekHero(
+                      userName: _data.userName,
+                      week: pregnancyWeek,
                     ),
-                    secondary: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _conditionSection(hasTodayCare),
-                        const SizedBox(height: AppSpacing.xxl),
-                        _weekContext(pregnancyWeek),
-                      ],
-                    ),
-                  ),
-              ],
+                    const SizedBox(height: AppSpacing.xxl),
+                    if (constraints.maxWidth < AppBreakpoints.desktop) ...[
+                      _conditionSection(effectiveHasTodayCare),
+                      const SizedBox(height: AppSpacing.xxl),
+                      ..._primaryContent(effectiveHasTodayCare),
+                      const SizedBox(height: AppSpacing.huge),
+                      _weekContext(pregnancyWeek, showData: !previewEmpty),
+                    ] else
+                      ResponsiveSplitView(
+                        primaryFlex: 8,
+                        secondaryFlex: 4,
+                        gap: AppSpacing.xxl,
+                        primary: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: _primaryContent(effectiveHasTodayCare),
+                        ),
+                        secondary: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _conditionSection(effectiveHasTodayCare),
+                            const SizedBox(height: AppSpacing.xxl),
+                            _weekContext(
+                              pregnancyWeek,
+                              showData: !previewEmpty,
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                );
+              },
             ),
           ),
         ),
@@ -157,7 +167,7 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
   List<Widget> _primaryContent(bool hasTodayCare) =>
       hasTodayCare ? _routineContent() : _todayCarePrompt();
 
-  Widget _weekContext(int pregnancyWeek) => Column(
+  Widget _weekContext(int pregnancyWeek, {required bool showData}) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       const SectionHeader(
@@ -165,17 +175,25 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
         description: '임신 주차와 오늘 상태를 바탕으로 확인하는 보조 정보예요.',
       ),
       const SizedBox(height: AppSpacing.lg),
-      PregnancyWeekTipCard(
-        week: pregnancyWeek,
-        tips: pregnancyWeek == _data.pregnancyWeek
-            ? _data.weekTips
-            : const [
-                '임신 주수에 따라 몸의 변화가 조금씩 달라질 수 있어요.',
-                '불편함이 지속되면 진료 때 상담해 주세요.',
-              ],
-        caution: _data.caution,
-        todayTip: _data.todayTip,
-      ),
+      if (showData)
+        PregnancyWeekTipCard(
+          week: pregnancyWeek,
+          tips: pregnancyWeek == _data.pregnancyWeek
+              ? _data.weekTips
+              : const [
+                  '임신 주수에 따라 몸의 변화가 조금씩 달라질 수 있어요.',
+                  '불편함이 지속되면 진료 때 상담해 주세요.',
+                ],
+          caution: _data.caution,
+          todayTip: _data.todayTip,
+        )
+      else
+        Text(
+          '임신 주차가 등록되면 주차별 정보가 표시돼요.',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+        ),
     ],
   );
 

@@ -60,7 +60,7 @@ Backend API 상태(`implemented`/`stub`/`planned`)는 `docs/backend/API_IMPLEMEN
 | W-MEAL-003, W-CHAT-001 | `/wife/chat` | MOCK_ONLY | `GET/POST /chat/messages` | **stub** | Backend도 아직 고정 안내 문구만 반환 — 연결해도 실제 AI 응답은 없음 |
 | W-HOUSE-001/001-1/001-2 | `/wife/household` | MOCK_ONLY | `GET /household/today`(조회) + `POST/GET /family/household-requests`, `.../confirm`, `.../complete` | implemented(요청·상태전이 STEP 17) | |
 | W-HEALTH-001 | `/wife/health` | MOCK_ONLY | `GET /health/today` + `PUT /care/routine-items/{id}/execution` | implemented | |
-| W-SLEEP-001~001-5 | `/wife/sleep` | MOCK_ONLY | `GET /sleep/today` + `PUT /care/routine-items/{id}/sleep-environment` | 조회 implemented, override **stub** | |
+| W-SLEEP-001~001-5 | `/wife/sleep` | MOCK_ONLY | `GET /sleep/today` + `PUT /care/routine-items/{id}/sleep-environment` | implemented(override STEP 19) | |
 | W-REPORT-001/001-1 | `/wife/report/:date` | MOCK_ONLY | `POST .../preview`, `.../finalize`, `GET .../daily-reports/{date}` | implemented | 날짜별 Mock 조회 → 실제 API로 교체 가능(Backend는 Record+Condition+Movement에서 파생, STEP 12) |
 | B-CAL-001(Wife) | `/wife/calendar` | MOCK_ONLY | `GET /care/calendar/{month}` | implemented | |
 | B-MOTION-001(Wife) | `/wife/movement` | MOCK_ONLY(Phase 2 Mock으로 명시) | `WS /movement/live/stream`, `GET /live,/events,/report/daily` + `GET/PUT/DELETE /family/motion/*` | **implemented(둘 다)** | Backend는 실제 카메라 연동까지 동작하지만 Frontend는 여전히 Mock — 격차가 가장 큰 화면. STEP 18: WS 연결 시 동의 검사 추가 — 동의 없음/수집 OFF면 close code **4003**, origin/토큰 문제는 1008. 프론트는 4003에서 동의 화면으로 유도하고, 동의 철회 버튼에서 열린 WS를 끊어야 함(NFR-012) |
@@ -72,7 +72,7 @@ Backend API 상태(`implemented`/`stub`/`planned`)는 `docs/backend/API_IMPLEMEN
 |---|---|---|---|---|---|
 | H-INVITE-001(`/partner/join`) | `/partner/join?token=...` | NOT_APPLICABLE(의도적 비활성) | `POST /account/partner-invitations/{token}/accept` | implemented | Backend는 준비됐지만 Frontend는 "개발중" 안내만 표시(SCREEN_IMPLEMENTATION_MAP.md에 이미 의도적으로 비활성화라고 명시) — 화면·인증 복귀 계약 자체가 Backend 쪽에서도 TBD |
 | B-CAL-001(Partner) | `/partner/calendar` | MOCK_ONLY | `GET /care/calendar/{month}` | implemented(STEP 17: 남편 토큰으로 호출하면 연동된 아내 캘린더 반환) | |
-| B-MOTION-001(Partner) | `/partner/movement` | MOCK_ONLY(Phase 2 Mock) | `GET /movement/events,/report/daily` | implemented(STEP 18: 남편 토큰으로 호출하면 연동된 아내 데이터 반환) | `ProductMovementScreen`의 Mock 데이터를 이 두 API로 교체하면 됨. 참고: `ROUTE_MAP.md`는 PHASE_2, `renew/01_MVP.md`는 Phase 1 — 프론트/기획이 범위 확인 필요 |
+| B-MOTION-001(Partner) | `/partner/movement` | MOCK_ONLY(Phase 2 Mock) | `GET /movement/events,/report/daily` | implemented(STEP 18: 남편 토큰으로 호출하면 연동된 아내 데이터 반환) | `ProductMovementScreen`의 Mock 데이터를 이 두 API로 교체하면 됨. 참고: `ROUTE_MAP.md`는 PHASE_2, `docs/requirements/01_MVP.md`는 Phase 1 — 프론트/기획이 범위 확인 필요 |
 | H-REPORT-001 | `/partner/report/:date` | MOCK_ONLY | `GET /family/morning-reports/{date}` | implemented(STEP 12, family authorization+projection) | Backend는 이미 원본 비노출·정성 요약까지 구현됨 — 연결 우선순위 높음 |
 | H-NOTI-001 | `/partner/notifications` | MOCK_ONLY | `GET /family/notifications`, `POST .../read` | implemented(STEP 17) | 알림 3종 전부 Backend에서 발송됨(가사 요청/오전 리포트/루틴 변경) |
 | H-REQUEST-001/001-1/001-2, H-REQUEST-002 | `/partner/requests/:requestId` | MOCK_ONLY | `GET .../household-requests/{id}`, `.../confirm`, `.../complete` | implemented(STEP 17) | |

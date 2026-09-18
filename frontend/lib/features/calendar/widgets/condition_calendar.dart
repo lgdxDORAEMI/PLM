@@ -13,12 +13,14 @@ class ConditionCalendar extends StatelessWidget {
     required this.records,
     required this.selectedDate,
     required this.onSelected,
+    this.comfortable = false,
   });
 
   final DateTime month;
   final List<DailyRecord> records;
   final DateTime selectedDate;
   final ValueChanged<DateTime> onSelected;
+  final bool comfortable;
 
   @override
   Widget build(BuildContext context) {
@@ -33,16 +35,17 @@ class ConditionCalendar extends StatelessWidget {
               Expanded(child: Center(child: Text(label))),
           ],
         ),
-        const SizedBox(height: AppSpacing.md),
+        SizedBox(height: comfortable ? AppSpacing.xl : AppSpacing.md),
         GridView.builder(
+          key: const ValueKey('calendar-day-grid'),
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           itemCount: leading + days,
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 7,
-            mainAxisExtent: 44,
-            mainAxisSpacing: AppSpacing.xs,
-            crossAxisSpacing: AppSpacing.xs,
+            mainAxisExtent: comfortable ? 60 : 44,
+            mainAxisSpacing: comfortable ? AppSpacing.sm : AppSpacing.xs,
+            crossAxisSpacing: comfortable ? AppSpacing.sm : AppSpacing.xs,
           ),
           itemBuilder: (context, index) {
             if (index < leading) return const SizedBox.shrink();
@@ -71,15 +74,23 @@ class ConditionCalendar extends StatelessWidget {
                   alignment: Alignment.center,
                   child: Text(
                     '${date.day}',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: record == null
-                          ? AppColors.textDisabled
-                          : record.conditionLevel == ConditionLevel.difficult ||
-                                record.conditionLevel == ConditionLevel.bad
-                          ? AppColors.textInverse
-                          : AppColors.textPrimary,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    ),
+                    style:
+                        (comfortable
+                                ? Theme.of(context).textTheme.titleSmall
+                                : Theme.of(context).textTheme.bodyMedium)
+                            ?.copyWith(
+                              color: record == null
+                                  ? AppColors.textDisabled
+                                  : record.conditionLevel ==
+                                            ConditionLevel.difficult ||
+                                        record.conditionLevel ==
+                                            ConditionLevel.bad
+                                  ? AppColors.textInverse
+                                  : AppColors.textPrimary,
+                              fontWeight: selected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                            ),
                   ),
                 ),
               ),

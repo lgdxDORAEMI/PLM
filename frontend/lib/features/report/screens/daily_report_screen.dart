@@ -6,6 +6,7 @@ import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_card.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/content_frame.dart';
+import '../../../design_system/components/empty_data_preview.dart';
 import '../../../design_system/components/responsive_split_view.dart';
 import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/components/wife_navigation_scaffold.dart';
@@ -64,9 +65,11 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
       onBack: _handleBack,
       wifeProfileAction: true,
     ),
-    body: SafeArea(
-      top: false,
-      child: ContentFrame(maxWidth: 1200, child: _buildBody()),
+    body: EmptyDataPreview(
+      child: SafeArea(
+        top: false,
+        child: ContentFrame(maxWidth: 1200, child: _buildBody()),
+      ),
     ),
   );
 
@@ -95,13 +98,24 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
       message: '잠시 후 다시 시도해 주세요.',
       onRetry: _controller.load,
     ),
-    _ => _DailyReportContent(
-      record: _controller.record!,
-      busy:
-          _controller.state == DailyReportViewState.saving ||
-          _controller.state == DailyReportViewState.sharing,
-      onSave: _save,
-      onShare: _share,
+    _ => PreviewData(
+      empty: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+        child: Text(
+          '컨디션과 루틴 기록 카드가 아직 생성되지 않았어요.',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+        ),
+      ),
+      child: _DailyReportContent(
+        record: _controller.record!,
+        busy:
+            _controller.state == DailyReportViewState.saving ||
+            _controller.state == DailyReportViewState.sharing,
+        onSave: _save,
+        onShare: _share,
+      ),
     ),
   };
 

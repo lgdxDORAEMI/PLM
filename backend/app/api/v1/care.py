@@ -24,8 +24,8 @@ from app.domains.care.supabase_repository import SupabaseCareRepository
 from app.services.supabase_service import get_supabase_service
 
 router = APIRouter(prefix="/care", tags=["care"])
-# Record/Report/Household는 아직 이 Stub에 남아 있다 — Condition만 실제 DB로
-# 옮겼다(STEP 9). 모듈 싱글턴으로 둬야 재시작 전까지 상태가 유지된다(기존과 동일).
+# Care 도메인은 전부 Supabase 실연결이다. Stub은 SupabaseCareRepository의 fallback
+# 인터페이스용으로만 남아 있다(모듈 싱글턴, 기존과 동일).
 _stub_repository = StubCareRepository()
 
 STORAGE_UNAVAILABLE = "컨디션 저장소에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요."
@@ -93,8 +93,11 @@ def set_execution(
 def update_routine_item(
     item_id: str, payload: RoutineItemUpdateInput, user: User, service: Service
 ) -> RoutineItemResponse:
-    """FUC-W-MEAL-003/004: 챗봇이 제안한 대체 메뉴 수락/거절/재요청 반영 계약(Stub)."""
-    return service.update_routine_item(user.id, item_id, payload)
+    """FUC-W-MEAL-003/004: 메뉴 수락/거절/재요청을 recommendation_feedback에 기록한다."""
+    try:
+        return service.update_routine_item(user.id, item_id, payload)
+    except Exception as error:
+        raise to_http_exception(error) from error
 
 
 @router.put(
@@ -103,8 +106,11 @@ def update_routine_item(
 def update_sleep_environment(
     item_id: str, payload: SleepEnvironmentInput, user: User, service: Service
 ) -> RoutineItemResponse:
-    """FUC-W-SLEEP-001-1: 수면 환경 AI 권장값 override 계약(Stub)."""
-    return service.update_sleep_environment(user.id, item_id, payload)
+    """FUC-W-SLEEP-001-1: 수면 환경 override를 recommendation_feedback에 기록한다."""
+    try:
+        return service.update_sleep_environment(user.id, item_id, payload)
+    except Exception as error:
+        raise to_http_exception(error) from error
 
 
 @router.post("/daily-reports/{target_date}/preview", response_model=DailyReportResponse)

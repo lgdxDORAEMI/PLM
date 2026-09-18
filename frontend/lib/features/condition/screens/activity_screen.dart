@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_input.dart';
 import '../../../design_system/components/app_ink_well.dart';
-import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/tokens/app_colors.dart';
@@ -121,14 +120,6 @@ class _ActivityScreenState extends State<ActivityScreen> {
                 ],
               ),
             ],
-            const SizedBox(height: AppSpacing.xl),
-            InfoBanner(
-              title: _controller.selected.isEmpty
-                  ? '예정 활동이 없어도 괜찮아요'
-                  : '${_controller.selected.length}개 활동을 반영할게요',
-              message: '실제 AI 호출 없이 Mock 루틴을 생성합니다.',
-              tone: InfoBannerTone.info,
-            ),
             const SizedBox(height: AppSpacing.xl),
             AppButton(
               key: const ValueKey('activity-submit-button'),

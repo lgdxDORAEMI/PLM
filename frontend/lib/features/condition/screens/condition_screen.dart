@@ -116,7 +116,6 @@ class _ConditionScreenState extends State<ConditionScreen> {
                     label: '기분',
                     value: draft.mood,
                     valueLabels: moodLabels,
-                    positiveScale: true,
                     onChanged: _controller.updateMood,
                   ),
                   const SizedBox(height: AppSpacing.xxxl),

@@ -1,7 +1,6 @@
-"""Care 도메인의 Condition(STEP 9) + Record/Report/Calendar(STEP 12)를 실제 DB에
-연결한다. routine-item 피드백(수면 환경 override, 메뉴 피드백)만 지원 테이블
-(recommendation_feedback)이 아직 없어 fallback(Stub)에 위임한다 —
-BACKEND_COLLABORATION.md "테이블 단위로 쪼개 진행" 원칙.
+"""Care 도메인의 Condition(STEP 9) + Record/Report/Calendar(STEP 12) +
+routine-item 피드백(recommendation_feedback, STEP 19)을 실제 DB에 연결한다.
+fallback(Stub)은 인터페이스 호환용으로만 남아 있고 더 이상 위임하지 않는다.
 
 STEP 12 원칙:
 - Record는 `routine_items.status/completed_by/completed_at`을 SOURCE로 직접
@@ -52,6 +51,9 @@ from .schemas import (
     PlannedActivitiesInput,
     RoutineExecutionInput,
     RoutineExecutionResponse,
+    RoutineItemResponse,
+    RoutineItemUpdateInput,
+    SleepEnvironmentInput,
     condition_index_from_scores,
 )
 
@@ -62,6 +64,7 @@ ROUTINE_ITEMS_TABLE = "routine_items"
 REPORTS_TABLE = "daily_reports"
 REPORT_KIND = "daily"  # 이 Repository는 W-REPORT-001(Daily)만 다룬다. 오전 리포트(kind=morning)는 family 도메인 소관.
 HOUSEHOLD_REQUESTS_TABLE = "household_requests"
+FEEDBACK_TABLE = "recommendation_feedback"
 _CONFIRMED_OR_FURTHER = {"confirmed", "completed"}
 
 EXECUTION_COLUMNS = ("id", "category", "title", "status", "completed_by", "completed_at")
@@ -204,14 +207,54 @@ class SupabaseCareRepository(CareRepository):
             completed_at=row.get("completed_at"),
         )
 
-    # --- routine-item 피드백(수면 환경 override, 메뉴 피드백)은 지원 테이블
-    # (recommendation_feedback)이 아직 없어 Stub에 위임한다. STEP 12 범위 밖. ---
+    # --- routine-item 피드백(메뉴 수락/거절/재요청, 수면 환경 override):
+    # recommendation_feedback에 이력만 남긴다. routine_items(Protected)는 소유자
+    # 확인·응답용으로 읽기만 하고 payload를 덮어쓰지 않는다 — 원본 추천은 그대로,
+    # 사용자의 반응은 별도 SOURCE(DATA_OWNERSHIP.md 항목 7). ---
 
-    def update_routine_item(self, user_id, routine_item_id, payload):
-        return self.fallback.update_routine_item(user_id, routine_item_id, payload)
+    def update_routine_item(
+        self, user_id: str, routine_item_id: str, payload: RoutineItemUpdateInput
+    ) -> RoutineItemResponse:
+        return self._record_feedback(user_id, routine_item_id, payload.feedback_kind.value, payload.payload)
 
-    def update_sleep_environment(self, user_id, routine_item_id, payload):
-        return self.fallback.update_sleep_environment(user_id, routine_item_id, payload)
+    def update_sleep_environment(
+        self, user_id: str, routine_item_id: str, payload: SleepEnvironmentInput
+    ) -> RoutineItemResponse:
+        overrides = {k: v for k, v in payload.model_dump().items() if v is not None}
+        return self._record_feedback(user_id, routine_item_id, "sleep_env_override", overrides)
+
+    def _record_feedback(
+        self, user_id: str, routine_item_id: str, kind: str, payload: dict[str, Any]
+    ) -> RoutineItemResponse:
+        rows = self._run(
+            lambda: self.client.table(ROUTINE_ITEMS_TABLE)
+            .select("id,category,title")
+            .eq("id", routine_item_id)
+            .eq("user_id", user_id)
+            .limit(1)
+            .execute()
+        )
+        if not rows:
+            raise DomainNotFoundError("루틴 항목을 찾을 수 없습니다.")
+        item = rows[0]
+        self._run(
+            lambda: self.client.table(FEEDBACK_TABLE)
+            .insert(
+                {
+                    "user_id": user_id,
+                    "routine_item_id": routine_item_id,
+                    "kind": kind,
+                    "payload": payload,
+                }
+            )
+            .execute()
+        )
+        return RoutineItemResponse(
+            routine_item_id=item["id"],
+            category=item["category"],
+            title=item["title"],
+            payload=payload,
+        )
 
     # --- Report: daily_reports에는 계산 결과만 담는다. 미리보기는 저장하지 않는다 ---
 

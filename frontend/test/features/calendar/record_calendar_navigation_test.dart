@@ -121,4 +121,66 @@ void main() {
     expect(detail.dx, greaterThan(calendar.dx));
     expect((detail.dy - calendar.dy).abs(), lessThan(1));
   });
+
+  testWidgets('아내와 남편 캘린더는 Desktop에서 날짜 셀과 패널 여백을 확대한다', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    tester.view.physicalSize = const Size(390, 900);
+    await tester.pumpWidget(
+      MaterialApp(
+        key: const ValueKey('wife-calendar-mobile'),
+        initialRoute: RouteNames.wifeCalendar,
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        onGenerateInitialRoutes: AppRouter.onGenerateInitialRoutes,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('calendar-day-2026-09-13')))
+          .height,
+      44,
+    );
+
+    tester.view.physicalSize = const Size(1280, 900);
+    await tester.pumpWidget(
+      MaterialApp(
+        key: const ValueKey('wife-calendar-desktop'),
+        initialRoute: RouteNames.wifeCalendar,
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        onGenerateInitialRoutes: AppRouter.onGenerateInitialRoutes,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('calendar-day-2026-09-13')))
+          .height,
+      60,
+    );
+
+    AuthSessionStore.instance.update(
+      accountId: 'calendar-husband',
+      roles: {ActiveRole.husband},
+      husbandLinked: true,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        key: const ValueKey('husband-calendar-desktop'),
+        initialRoute: RouteNames.partnerCalendar,
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        onGenerateInitialRoutes: AppRouter.onGenerateInitialRoutes,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('calendar-day-2026-09-13')))
+          .height,
+      60,
+    );
+    expect(tester.takeException(), isNull);
+  });
 }

@@ -14,6 +14,7 @@ class HouseholdTaskCard extends StatelessWidget {
     this.actionLabel,
     this.onAction,
     this.trailingLabel,
+    this.selectable = false,
   });
 
   final HouseholdTask task;
@@ -21,6 +22,7 @@ class HouseholdTaskCard extends StatelessWidget {
   final String? actionLabel;
   final VoidCallback? onAction;
   final String? trailingLabel;
+  final bool selectable;
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +69,7 @@ class HouseholdTaskCard extends StatelessWidget {
                   context,
                 ).textTheme.labelMedium?.copyWith(color: visual.foreground),
               )
-            else if (onTap != null)
+            else if (selectable)
               Icon(
                 task.selected ? Icons.check_box : Icons.check_box_outline_blank,
                 color: task.selected

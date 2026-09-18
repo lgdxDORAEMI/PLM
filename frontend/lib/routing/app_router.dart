@@ -78,6 +78,17 @@ abstract final class AppRouter {
     return true;
   }
 
+  /// Local Mock 시연에서만 아내·남편 Demo 사용자를 교체하고 대상 Home으로 이동한다.
+  static bool switchDemoUser(BuildContext context, ActiveRole targetRole) {
+    final auth = AuthSessionStore.instance;
+    auth.update(
+      accountId: targetRole == ActiveRole.wife ? 'demo-wife' : 'demo-husband',
+      roles: {targetRole},
+      husbandLinked: targetRole == ActiveRole.husband,
+    );
+    return switchRole(context, targetRole);
+  }
+
   /// ThinQ/시연 세션의 최초 목적지를 계산한다.
   static String resolveLaunchRoute(
     AppLaunchState state, {

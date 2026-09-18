@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../design_system/components/app_badge.dart';
 import '../../../design_system/components/app_card.dart';
 import '../../../design_system/components/app_state_view.dart';
+import '../../../design_system/components/empty_data_preview.dart';
 import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/components/top_app_bar.dart';
@@ -80,7 +81,9 @@ class _PartnerMorningReportScreenState
         ),
       ],
     ),
-    body: SafeArea(top: false, child: ResponsivePageContent(child: _body())),
+    body: EmptyDataPreview(
+      child: SafeArea(top: false, child: ResponsivePageContent(child: _body())),
+    ),
   );
 
   Widget _body() => switch (_controller.state) {
@@ -99,9 +102,20 @@ class _PartnerMorningReportScreenState
       message: '잠시 후 다시 시도해 주세요.',
       onRetry: _controller.load,
     ),
-    _ => _PartnerReportContent(
-      record: _controller.record!,
-      daily: widget.daily,
+    _ => PreviewData(
+      empty: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+        child: Text(
+          '공유된 리포트 카드가 아직 없어요.',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+        ),
+      ),
+      child: _PartnerReportContent(
+        record: _controller.record!,
+        daily: widget.daily,
+      ),
     ),
   };
 

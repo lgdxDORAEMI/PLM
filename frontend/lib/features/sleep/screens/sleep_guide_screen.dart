@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../design_system/components/app_bottom_sheet.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/content_frame.dart';
+import '../../../design_system/components/empty_data_preview.dart';
 import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/components/wife_navigation_scaffold.dart';
 import '../../../design_system/tokens/app_colors.dart';
@@ -66,9 +67,11 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
           ),
         ],
       ),
-      body: SafeArea(
-        top: false,
-        child: ContentFrame(maxWidth: 1200, child: _buildBody()),
+      body: EmptyDataPreview(
+        child: SafeArea(
+          top: false,
+          child: ContentFrame(maxWidth: 1200, child: _buildBody()),
+        ),
       ),
     );
   }
@@ -128,21 +131,49 @@ class _SleepContent extends StatelessWidget {
       key: const ValueKey('sleep-guide-content'),
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
       children: [
-        _SleepSummary(guide: guide),
+        PreviewData(
+          empty: Text(
+            '아직 계산된 수면 요약이 없어요.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+          ),
+          child: _SleepSummary(guide: guide),
+        ),
         const SizedBox(height: AppSpacing.xxl),
         Text('AI가 맞춘 오늘의 수면 환경', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: AppSpacing.lg),
-        _EnvironmentGrid(
-          environments: guide.environments,
-          onTap: onEnvironmentTap,
+        PreviewData(
+          empty: Text(
+            '추천된 수면 환경 설정이 없어요.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+          ),
+          child: _EnvironmentGrid(
+            environments: guide.environments,
+            onTap: onEnvironmentTap,
+          ),
         ),
         const SizedBox(height: AppSpacing.xxl),
         Text('오늘의 수면 팁', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: AppSpacing.lg),
-        for (final tip in guide.tips) ...[
-          _SleepTip(text: tip),
-          const SizedBox(height: AppSpacing.md),
-        ],
+        PreviewData(
+          empty: Text(
+            '표시할 수면 팁이 없어요.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+          ),
+          child: Column(
+            children: [
+              for (final tip in guide.tips) ...[
+                _SleepTip(text: tip),
+                const SizedBox(height: AppSpacing.md),
+              ],
+            ],
+          ),
+        ),
       ],
     );
   }

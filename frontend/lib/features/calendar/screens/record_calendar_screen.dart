@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/content_frame.dart';
+import '../../../design_system/components/empty_data_preview.dart';
 import '../../../design_system/components/responsive_split_view.dart';
 import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/components/wife_navigation_scaffold.dart';
+import '../../../design_system/tokens/app_breakpoints.dart';
 import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_context.dart';
@@ -64,7 +66,9 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen> {
       wifeProfileAction: isWife,
       husbandMenuAction: !isWife,
     );
-    final body = SafeArea(top: false, child: ContentFrame(child: _buildBody()));
+    final body = EmptyDataPreview(
+      child: SafeArea(top: false, child: ContentFrame(child: _buildBody())),
+    );
     if (isWife) {
       return WifeNavigationScaffold(
         currentIndex: 3,
@@ -122,11 +126,16 @@ class _CalendarContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final selected = controller.selectedRecord;
+    final previewEmpty = EmptyDataPreview.enabledOf(context);
+    final selected = previewEmpty ? null : controller.selectedRecord;
     final month = controller.visibleMonth;
+    final expandedCalendar =
+        MediaQuery.sizeOf(context).width >= AppBreakpoints.desktop;
     return ListView(
       key: const ValueKey('record-calendar-content'),
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+      padding: EdgeInsets.symmetric(
+        vertical: expandedCalendar ? AppSpacing.xxl : AppSpacing.xl,
+      ),
       children: [
         Text(
           '날짜를 선택하면 그날의 기록을 바로 확인할 수 있어요.',
@@ -134,13 +143,17 @@ class _CalendarContent extends StatelessWidget {
             context,
           ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
         ),
-        const SizedBox(height: AppSpacing.xl),
+        SizedBox(height: expandedCalendar ? AppSpacing.xxxl : AppSpacing.xl),
         ResponsiveSplitView(
           key: const ValueKey('calendar-detail-layout'),
-          primaryFlex: 7,
+          primaryFlex: expandedCalendar ? 8 : 7,
           secondaryFlex: 5,
-          gap: AppSpacing.xxl,
-          primary: _CalendarPanel(controller: controller, month: month),
+          gap: expandedCalendar ? AppSpacing.huge : AppSpacing.xxl,
+          primary: _CalendarPanel(
+            controller: controller,
+            month: month,
+            comfortable: expandedCalendar,
+          ),
           secondary: selected == null
               ? const AppEmptyState(
                   title: '이 달에는 기록이 없어요',
@@ -163,10 +176,15 @@ class _CalendarContent extends StatelessWidget {
 }
 
 class _CalendarPanel extends StatelessWidget {
-  const _CalendarPanel({required this.controller, required this.month});
+  const _CalendarPanel({
+    required this.controller,
+    required this.month,
+    required this.comfortable,
+  });
 
   final RecordCalendarController controller;
   final DateTime month;
+  final bool comfortable;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -198,11 +216,14 @@ class _CalendarPanel extends StatelessWidget {
       const SizedBox(height: AppSpacing.lg),
       ConditionCalendar(
         month: month,
-        records: controller.records,
+        records: EmptyDataPreview.enabledOf(context)
+            ? const []
+            : controller.records,
         selectedDate: controller.selectedDate,
         onSelected: controller.selectDate,
+        comfortable: comfortable,
       ),
-      const SizedBox(height: AppSpacing.xl),
+      SizedBox(height: comfortable ? AppSpacing.xxl : AppSpacing.xl),
       const ConditionLegend(),
     ],
   );

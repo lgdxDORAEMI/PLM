@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../debug/empty_data_preview_store.dart';
 import '../../routing/route_names.dart';
 import '../tokens/app_breakpoints.dart';
 import '../tokens/app_colors.dart';
@@ -38,11 +39,19 @@ class TopAppBar extends StatelessWidget implements PreferredSizeWidget {
     };
 
     return AppBar(
-      title: Text(
-        title,
-        style: Theme.of(
-          context,
-        ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+      title: GestureDetector(
+        key: const ValueKey('empty-data-preview-trigger'),
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _handleTitleTap(context),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          child: Text(
+            title,
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+          ),
+        ),
       ),
       automaticallyImplyLeading: false,
       backgroundColor: AppColors.surface,
@@ -79,5 +88,15 @@ class TopAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
       ],
     );
+  }
+
+  void _handleTitleTap(BuildContext context) {
+    final enabled = EmptyDataPreviewStore.instance.registerTitleTap();
+    if (enabled == null) return;
+
+    final message = enabled ? '빈 데이터 미리보기를 시작했어요.' : 'Mock 데이터 화면으로 돌아왔어요.';
+    ScaffoldMessenger.maybeOf(context)
+      ?..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 }

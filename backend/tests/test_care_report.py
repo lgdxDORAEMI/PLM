@@ -68,6 +68,10 @@ class FakeTable:
         self._op, self._payload = "update", values
         return self
 
+    def insert(self, row: dict) -> "FakeTable":
+        self._op, self._payload = "insert", row
+        return self
+
     def upsert(self, row: dict, on_conflict: str = "", default_to_null: bool = True) -> "FakeTable":
         self._op, self._payload = "upsert", {**row, "__on_conflict__": on_conflict}
         return self
@@ -85,6 +89,10 @@ class FakeTable:
         return True
 
     def execute(self) -> SimpleNamespace:
+        if self._op == "insert":
+            new_row = {"id": str(uuid4()), "created_at": "2026-09-18T00:00:00+00:00", **self._payload}
+            self._rows.append(new_row)
+            return SimpleNamespace(data=[new_row])
         if self._op == "update":
             matched = [row for row in self._rows if self._matches(row)]
             for row in matched:
@@ -120,6 +128,7 @@ class FakeSupabaseClient:
             "daily_reports": [],
             "partner_links": [],
             "household_requests": [],
+            "recommendation_feedback": [],
         }
 
     def table(self, name: str) -> FakeTable:
@@ -226,6 +235,70 @@ class RecordApiTest(unittest.IsolatedAsyncioTestCase):
                 "/api/v1/care/routine-items/item-1/execution", json={"status": "completed"}
             )
         self.assertEqual(response.status_code, 404)
+
+
+class FeedbackApiTest(unittest.IsolatedAsyncioTestCase):
+    """메뉴 수락/거절/재요청·수면 환경 override는 recommendation_feedback에 이력으로만
+    남고, routine_items(Protected) 원본은 바뀌지 않는다."""
+
+    def setUp(self) -> None:
+        self.client = FakeSupabaseClient()
+        app.dependency_overrides[get_care_service] = lambda: CareService(
+            SupabaseCareRepository(self.client, fallback=StubCareRepository())
+        )
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=USER)
+        self.addCleanup(app.dependency_overrides.clear)
+
+    def http(self) -> AsyncClient:
+        return AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost")
+
+    async def test_meal_feedback_is_recorded_with_real_item_title(self) -> None:
+        self.client.seed_item("item-1", "meal", title="현미밥과 나물", payload={"reason": "원본"})
+        async with self.http() as client:
+            response = await client.put(
+                "/api/v1/care/routine-items/item-1",
+                json={"feedback_kind": "meal_replace", "payload": {"from": "현미밥", "to": "죽"}},
+            )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["category"], "meal")
+        self.assertEqual(body["title"], "현미밥과 나물")  # Stub 시절 null이던 값이 실제 원본에서 옴
+
+        stored = self.client.tables["recommendation_feedback"]
+        self.assertEqual(len(stored), 1)
+        self.assertEqual(stored[0]["kind"], "meal_replace")
+        self.assertEqual(stored[0]["routine_item_id"], "item-1")
+        self.assertEqual(stored[0]["user_id"], USER)
+        # 원본 추천은 그대로 — Protected 테이블에 쓰지 않는다.
+        self.assertEqual(self.client.tables["routine_items"][0]["payload"], {"reason": "원본"})
+
+    async def test_sleep_override_records_only_provided_fields(self) -> None:
+        self.client.seed_item("item-2", "sleep")
+        async with self.http() as client:
+            response = await client.put(
+                "/api/v1/care/routine-items/item-2/sleep-environment",
+                json={"temperature": 22.5, "lighting": "dim"},
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["payload"], {"lighting": "dim", "temperature": 22.5})
+        stored = self.client.tables["recommendation_feedback"][0]
+        self.assertEqual(stored["kind"], "sleep_env_override")
+        self.assertNotIn("humidity", stored["payload"])
+
+    async def test_feedback_on_unknown_or_foreign_item_is_404_and_writes_nothing(self) -> None:
+        self.client.seed_item("item-1", "meal")
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(id="wife-2")
+        async with self.http() as client:
+            foreign = await client.put(
+                "/api/v1/care/routine-items/item-1",
+                json={"feedback_kind": "meal_accept"},
+            )
+            missing = await client.put(
+                "/api/v1/care/routine-items/nope/sleep-environment", json={"sound": "rain"}
+            )
+        self.assertEqual(foreign.status_code, 404)
+        self.assertEqual(missing.status_code, 404)
+        self.assertEqual(self.client.tables["recommendation_feedback"], [])
 
 
 class ReportApiTest(unittest.IsolatedAsyncioTestCase):
