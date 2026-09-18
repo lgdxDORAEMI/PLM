@@ -45,7 +45,14 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     '대두',
     '없어요',
   ];
-  static const _medicalOptions = ['임신성 당뇨 경계', '빈혈', '고혈압', '조기진통', '역류성 식도염'];
+  static const _medicalOptions = [
+    '임신성 당뇨 경계',
+    '빈혈',
+    '고혈압',
+    '조기진통',
+    '역류성 식도염',
+    '없어요',
+  ];
 
   @override
   void initState() {

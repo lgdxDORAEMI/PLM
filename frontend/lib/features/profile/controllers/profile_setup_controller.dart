@@ -69,7 +69,14 @@ class ProfileSetupController extends ChangeNotifier {
 
   void toggleMedicalCondition(String value) {
     final next = {..._draft.medicalConditions};
-    next.contains(value) ? next.remove(value) : next.add(value);
+    if (value == '없어요') {
+      next
+        ..clear()
+        ..add(value);
+    } else {
+      next.remove('없어요');
+      next.contains(value) ? next.remove(value) : next.add(value);
+    }
     _update(_draft.copyWith(medicalConditions: next));
   }
 

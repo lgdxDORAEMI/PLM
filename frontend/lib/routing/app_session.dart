@@ -11,9 +11,14 @@ class AuthSessionStore extends ChangeNotifier {
   static final instance = AuthSessionStore._();
 
   // ThinQ 연동 전의 로컬 시연 계정. 실제 인증 결과로 교체해야 한다.
-  String? _accountId = 'demo-wife';
-  Set<ActiveRole> _roles = {ActiveRole.wife};
-  bool _husbandLinked = false;
+  // String? _accountId = 'demo-wife';
+  // Set<ActiveRole> _roles = {ActiveRole.wife};
+  // bool _husbandLinked = false;
+
+  // 남편 계정이 연결되어 있으면 남편 역할을 허용한다. 실제 인증 결과로 교체해야 한다.
+  String? _accountId = 'demo-husband';
+  Set<ActiveRole> _roles = {ActiveRole.husband};
+  bool _husbandLinked = true;
 
   String? get accountId => _accountId;
   bool get isAuthenticated => _accountId != null;

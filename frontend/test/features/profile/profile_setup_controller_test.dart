@@ -51,6 +51,20 @@ void main() {
     expect(controller.draft.allergies, {'없어요'});
   });
 
+  test('주의 진단의 없어요와 진단 항목은 함께 선택되지 않는다', () {
+    final controller = ProfileSetupController(mode: ProfileMode.create);
+    addTearDown(controller.dispose);
+
+    controller
+      ..toggleMedicalCondition('빈혈')
+      ..toggleMedicalCondition('고혈압')
+      ..toggleMedicalCondition('없어요');
+    expect(controller.draft.medicalConditions, {'없어요'});
+
+    controller.toggleMedicalCondition('조기진통');
+    expect(controller.draft.medicalConditions, {'조기진통'});
+  });
+
   test('수정 Mode는 저장된 Profile을 불러오고 이전 단계로 이동한다', () {
     ProfileStore.instance.save(ProfileDraft.mockEdit());
     final controller = ProfileSetupController(mode: ProfileMode.edit);
