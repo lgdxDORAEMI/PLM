@@ -44,6 +44,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSock
 from mediapipe.tasks.python.vision import RunningMode
 
 from app.api.v1.family import get_family_service
+from app.api.v1.partner_scope import DataOwnerUserId
 from app.core.config import ALLOWED_ORIGIN_REGEX
 from app.core.security import CurrentUser, get_current_user, get_user_from_token
 from app.domains.errors import DomainStorageError
@@ -229,25 +230,27 @@ def get_live_state(
 
 @router.get("/events", response_model=list[PostureEvent])
 def list_events(
-    user: CurrentUser = Depends(get_current_user),
+    owner_id: DataOwnerUserId,
     event_store: EventStore = Depends(get_event_store),
 ) -> list[PostureEvent]:
+    """B-MOTION-001: 남편은 partner_links로 연동된 아내의 이벤트를 읽기 전용 조회(partner_scope)."""
     try:
-        return event_store.list_events(uuid.UUID(user.id))
+        return event_store.list_events(uuid.UUID(owner_id))
     except EventStorageError as error:
         raise _storage_unavailable() from error
 
 
 @router.get("/report/daily", response_model=DailyReportSummary)
 def get_daily_report(
+    owner_id: DataOwnerUserId,
     target_date: date_type | None = Query(default=None, alias="date"),
-    user: CurrentUser = Depends(get_current_user),
     event_store: EventStore = Depends(get_event_store),
 ) -> DailyReportSummary:
-    """일일 리포트 조회 (§5.9). date 쿼리 파라미터가 없으면 오늘(UTC 기준) 리포트."""
+    """일일 리포트 조회 (§5.9). date 쿼리 파라미터가 없으면 오늘(UTC 기준) 리포트.
+    남편은 연동된 아내의 리포트를 본다(partner_scope)."""
     try:
         return generate_daily_report(
-            event_store, uuid.UUID(user.id), target_date or datetime.now(timezone.utc).date()
+            event_store, uuid.UUID(owner_id), target_date or datetime.now(timezone.utc).date()
         )
     except EventStorageError as error:
         raise _storage_unavailable() from error

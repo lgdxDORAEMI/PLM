@@ -18,7 +18,8 @@ from uuid import uuid4
 
 from httpx import ASGITransport, AsyncClient
 
-from app.api.v1.care import _calendar_supabase_client, get_care_service
+from app.api.v1.care import get_care_service
+from app.api.v1.partner_scope import get_partner_scope_client
 from app.core.security import CurrentUser, get_current_user
 from app.domains.care.service import CareService
 from app.domains.care.stub_repository import StubCareRepository
@@ -328,7 +329,7 @@ class CalendarApiTest(unittest.IsolatedAsyncioTestCase):
         app.dependency_overrides[get_care_service] = lambda: CareService(
             SupabaseCareRepository(self.client, fallback=StubCareRepository())
         )
-        app.dependency_overrides[_calendar_supabase_client] = lambda: self.client
+        app.dependency_overrides[get_partner_scope_client] = lambda: self.client
         app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=USER)
         self.addCleanup(app.dependency_overrides.clear)
 

@@ -1,11 +1,10 @@
 from datetime import date
 from typing import Annotated
 
-import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
-from postgrest.exceptions import APIError
 
 from app.api.v1.domain_errors import to_http_exception
+from app.api.v1.partner_scope import DataOwnerUserId
 from app.core.security import CurrentUser, get_current_user
 from app.domains.care.schemas import (
     CalendarMonthResponse,
@@ -133,48 +132,11 @@ def read_report(target_date: date, user: User, service: Service) -> DailyReportR
         raise to_http_exception(error) from error
 
 
-def _resolve_calendar_owner(user_id: str, client) -> str:
-    """B-CAL-001(Husband, 읽기 전용): 남편이 조회하면 연동된 아내의 캘린더를
-    본다 — partner_links가 유일한 관계 SOURCE다(가사요청·오전리포트
-    authorization과 같은 기준). 아내이거나 연동이 없으면 본인 id 그대로
-    쓴다(기존 동작 유지, 쓰기 API가 없어 권한 분기는 조회 하나로 충분하다)."""
-    try:
-        rows = (
-            client.table("partner_links")
-            .select("wife_user_id")
-            .eq("husband_user_id", user_id)
-            .limit(1)
-            .execute()
-            .data
-        )
-    except (APIError, httpx.HTTPError) as error:
-        # 이 함수는 FastAPI 의존성으로 쓰여 라우트 본문의 try/except를 거치지
-        # 않으므로, DomainStorageError가 아니라 HTTPException을 직접 던진다
-        # (get_care_service의 기존 컨벤션과 동일).
-        raise _storage_unavailable() from error
-    return rows[0]["wife_user_id"] if rows else user_id
-
-
-def _calendar_supabase_client():
-    try:
-        return get_supabase_service().client
-    except ValueError as error:
-        raise _storage_unavailable() from error
-
-
-def get_calendar_target_user_id(
-    user: User, client=Depends(_calendar_supabase_client)
-) -> str:
-    return _resolve_calendar_owner(user.id, client)
-
-
-CalendarTarget = Annotated[str, Depends(get_calendar_target_user_id)]
-
-
 @router.get("/calendar/{month}", response_model=CalendarMonthResponse)
 def read_calendar(
-    month: str, target_user_id: CalendarTarget, service: Service
+    month: str, target_user_id: DataOwnerUserId, service: Service
 ) -> CalendarMonthResponse:
+    """B-CAL-001: 남편은 partner_links로 연동된 아내 캘린더를 읽기 전용 조회(partner_scope)."""
     try:
         return service.calendar(target_user_id, month)
     except Exception as error:
