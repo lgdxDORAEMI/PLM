@@ -6,7 +6,7 @@ class MockSleepService implements SleepService {
 
   static const guide = SleepGuideData(
     summaryTitle: '오늘은 충분한 휴식이 필요해요',
-    summary: '어젯밤 3회 깼고, 28주차 좌측위 권장 구간이에요',
+    summary: '28주차에 권장되는 왼쪽 옆으로 눕는 자세를 반영했어요',
     recommendedBedtime: '오후 10시 30분',
     environments: [
       SleepEnvironmentSetting(

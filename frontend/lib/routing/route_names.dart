@@ -27,6 +27,7 @@ abstract final class RouteNames {
   static const wifeSettings = '/wife/settings';
 
   static const husbandCalendar = '/husband/calendar';
+  static const husbandMenu = '/husband/menu';
   static const husbandMovement = '/husband/live';
   static const husbandNotifications = '/husband/notifications';
   static const husbandMorningReportPattern = '/husband/report/morning/:date';

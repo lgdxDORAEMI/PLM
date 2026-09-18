@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../design_system/tokens/app_colors.dart';
+import '../../../design_system/components/app_ink_well.dart';
 import '../../../design_system/tokens/app_radius.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 
@@ -60,7 +61,7 @@ class ConditionMetric extends StatelessWidget {
                     button: true,
                     selected: segmentValue == value,
                     label: '$label ${valueLabels[index]}',
-                    child: InkWell(
+                    child: AppInkWell(
                       onTap: () => onChanged(segmentValue),
                       borderRadius: BorderRadius.circular(AppRadius.pill),
                       child: AnimatedContainer(
@@ -69,7 +70,7 @@ class ConditionMetric extends StatelessWidget {
                         height: 20,
                         decoration: BoxDecoration(
                           color: selected
-                              ? _selectedColor
+                              ? _selectedColorFor(index)
                               : AppColors.borderSubtle,
                           borderRadius: BorderRadius.circular(AppRadius.pill),
                         ),
@@ -85,14 +86,21 @@ class ConditionMetric extends StatelessWidget {
     );
   }
 
-  Color get _selectedColor => positiveScale
-      ? AppColors.success
-      : value >= 4
-      ? AppColors.primary500
-      : AppColors.primary300;
+  static const _moodScaleColors = [
+    AppColors.danger,
+    AppColors.warning,
+    AppColors.textSecondary,
+    AppColors.primary400,
+    AppColors.success,
+  ];
+
+  Color _selectedColorFor(int index) {
+    if (positiveScale) return _moodScaleColors[index];
+    return value >= 4 ? AppColors.primary500 : AppColors.primary300;
+  }
 
   Color get _statusColor => positiveScale
-      ? AppColors.success
+      ? _moodScaleColors[value - 1]
       : value >= 4
       ? AppColors.primary600
       : AppColors.textSecondary;

@@ -12,7 +12,7 @@
 }
 ```
 
-현재 PC에서는 예시 경로 대신 `C:/Users/sara1/flutter`를 사용합니다. macOS/Linux에서는 `/Users/사용자명/development/flutter` 등 실제 설치 경로를 사용합니다.
+Windows에서는 `C:/development/flutter`, macOS/Linux에서는 `/Users/사용자명/development/flutter`처럼 각 작업자의 실제 설치 경로를 사용자 설정에 지정합니다.
 
 터미널 실행을 위해 각자의 PATH에도 SDK의 `bin` 폴더를 추가합니다. SDK가 PATH에서 정상 검색되면 사용자 설정의 `dart.flutterSdkPath`는 생략할 수 있습니다. PATH를 변경한 후 편집기를 완전히 종료하고 다시 실행합니다. 기존 프로세스에 변경이 반영되지 않으면 로그아웃하거나 PC를 재시작합니다.
 

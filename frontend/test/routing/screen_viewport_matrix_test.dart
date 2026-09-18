@@ -5,6 +5,8 @@ import 'package:plm_frontend/features/calendar/data/calendar_selection_store.dar
 import 'package:plm_frontend/features/profile/data/profile_store.dart';
 import 'package:plm_frontend/features/profile/models/profile_draft.dart';
 import 'package:plm_frontend/features/profile/screens/profile_setup_screen.dart';
+import 'package:plm_frontend/features/settings/models/app_font_size.dart';
+import 'package:plm_frontend/features/settings/widgets/app_text_scale_frame.dart';
 import 'package:plm_frontend/routing/app_router.dart';
 import 'package:plm_frontend/routing/app_session.dart';
 import 'package:plm_frontend/routing/route_names.dart';
@@ -19,6 +21,7 @@ void main() {
     RouteNames.partnerInvite,
     RouteNames.wifeInvite,
     RouteNames.wifeMenu,
+    RouteNames.wifeSettings,
     RouteNames.wifeHome,
     RouteNames.condition,
     RouteNames.activity,
@@ -33,6 +36,7 @@ void main() {
     RouteNames.partnerJoin,
     RouteNames.partnerMorningReport('2026-09-13'),
     RouteNames.partnerCalendar,
+    RouteNames.husbandMenu,
     RouteNames.partnerNotifications,
     RouteNames.partnerRequest('demo-request'),
     RouteNames.partnerMovement,
@@ -63,13 +67,21 @@ void main() {
             initialRoute: route,
             onGenerateRoute: AppRouter.onGenerateRoute,
             onGenerateInitialRoutes: AppRouter.onGenerateInitialRoutes,
+            builder: (context, child) => AppTextScaleFrame(
+              appScale: AppFontSize.large.scale,
+              child: child!,
+            ),
           ),
         );
         await tester.pumpAndSettle();
         expect(tester.takeException(), isNull, reason: '$width: $route');
         expect(find.byType(Scaffold), findsWidgets, reason: route);
-        if (route.startsWith('/partner/')) {
-          expect(find.byTooltip('프로필 메뉴'), findsNothing, reason: route);
+        if (route.startsWith('/husband/')) {
+          expect(
+            find.byTooltip('메뉴'),
+            route == RouteNames.husbandMenu ? findsNothing : findsOneWidget,
+            reason: route,
+          );
           expect(find.byType(NavigationBar), findsNothing, reason: route);
         }
       }
@@ -114,7 +126,7 @@ void main() {
     expect(find.byType(ProfileSetupScreen), findsOneWidget);
   });
 
-  testWidgets('주요 화면은 390px·200% 글자 확대에서 렌더링된다', (tester) async {
+  testWidgets('주요 화면은 390px·기기 200%·앱 크게에서 렌더링된다', (tester) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = const Size(390, 900);
     addTearDown(tester.view.resetPhysicalSize);
@@ -136,7 +148,10 @@ void main() {
             data: MediaQuery.of(
               context,
             ).copyWith(textScaler: const TextScaler.linear(2)),
-            child: child!,
+            child: AppTextScaleFrame(
+              appScale: AppFontSize.large.scale,
+              child: child!,
+            ),
           ),
         ),
       );

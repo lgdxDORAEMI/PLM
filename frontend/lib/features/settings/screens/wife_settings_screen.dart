@@ -1,11 +1,33 @@
-import '../../../shared/widgets/product_skeleton_screen.dart';
+import 'package:flutter/material.dart';
 
-class WifeSettingsScreen extends ProductSkeletonScreen {
-  const WifeSettingsScreen({super.key})
-    : super(
-        requirementIds: const [],
-        title: '설정',
-        description: '상세 요구사항이 확정될 때까지 임의 설정 항목을 만들지 않습니다.',
-        statusLabel: 'BLOCKED · PHASE 2',
-      );
+import '../../../design_system/components/responsive_page_content.dart';
+import '../../../design_system/components/top_app_bar.dart';
+import '../../../design_system/tokens/app_spacing.dart';
+import '../../../routing/route_names.dart';
+import '../widgets/font_size_selector.dart';
+
+class WifeSettingsScreen extends StatelessWidget {
+  const WifeSettingsScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: TopAppBar(title: '설정', onBack: () => _close(context)),
+    body: const SafeArea(
+      top: false,
+      child: ResponsivePageContent(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
+          child: FontSizeSelector(),
+        ),
+      ),
+    ),
+  );
+
+  static void _close(BuildContext context) {
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      Navigator.pushReplacementNamed(context, RouteNames.wifeMenu);
+    }
+  }
 }

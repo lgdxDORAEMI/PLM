@@ -1,6 +1,6 @@
-# Requirement Traceability (STEP 16 — 최종 검증)
+# Requirement Traceability (STEP 16 — 최종 검증, STEP 17 갱신)
 
-- 작성일: 2026-09-18
+- 작성일: 2026-09-18 (STEP 17에서 Household/Notification 실연결·남편 캘린더 분기·family 집계·루틴 생성 알림 반영)
 - 기준 문서 7종(서비스 흐름도 제외):
   1. `docs/requirements/아내_화면설계서.pdf`
   2. `docs/requirements/남편_화면설계서.pdf`
@@ -36,18 +36,18 @@
 | Wife | W-PROFILE-006 | FUC-W-PROFILE-006 | UC1 | 주의진단, 메모 | `pregnancy_profiles.medical_conditions/medical_note` | `PUT /profile/me/medical-notes` | 동일 | PASS |
 | Wife | W-PROFILE-007 | FUC-W-PROFILE-007/008 | UC1 | 1~6단계 요약 | `pregnancy_profiles` | `GET /profile/me` | `test_profile.py::test_full_six_step_completion_flow`, `test_husband_cannot_read_wifes_profile` | PASS |
 | Wife | W-INVITE-001 | FUC-W-INVITE-001 | UC15 | 초대 토큰/URL/만료 | `partner_invitations` | `POST /account/partner-invitations` | `test_account_partner_link.py::test_issued_invitation_has_72h_expiry_and_is_unused` | PASS |
-| Wife | W-HOME-001 | FUC-W-HOME-001/002 | UC2, UC3, UC7 | 인사말, 주차, 컨디션 요약, 루틴 4종, "일정 마치기" | `pregnancy_profiles`+`daily_conditions`+`daily_routines`/`routine_items` | `GET /routine/today` + `GET /care/conditions/{date}` + `POST /care/daily-reports/{date}/preview` | `test_routine_service.py`, `test_care_condition.py`, `test_care_report.py::ReportApiTest` | PARTIAL — 표시 요소 전부 PASS이지만 `family` 분담 집계는 Household 미연결로 항상 0 |
+| Wife | W-HOME-001 | FUC-W-HOME-001/002 | UC2, UC3, UC7 | 인사말, 주차, 컨디션 요약, 루틴 4종, "일정 마치기" | `pregnancy_profiles`+`daily_conditions`+`daily_routines`/`routine_items` | `GET /routine/today` + `GET /care/conditions/{date}` + `POST /care/daily-reports/{date}/preview` | `test_routine_service.py`, `test_care_condition.py`, `test_care_report.py::ReportApiTest` | PASS — `family` 집계도 `household_requests` 실조회(STEP 17) |
 | Wife | W-COND-001 | FUC-W-COND-001 | UC2 | 입덧/허리/골반/다리/손목/피로/기분 | `daily_conditions` | `GET/PUT /care/conditions/{date}` | `test_care_condition.py`(14개: create/read/update/validation/auth/isolation/KST 경계) | PASS |
 | Wife | W-TASK-001 | FUC-W-TASK-001 | UC3 | 예정 활동 | `daily_conditions.planned_activities` | `PUT /care/conditions/{date}/activities` + `POST /routine/today` | `test_care_condition.py::test_save_activities_requires_condition_first`, `test_routine_service.py` | PASS |
 | Wife | W-MEAL-001 | FUC-W-MEAL-001 | UC3, UC11 | 끼니별 요약 | `routine_items`(category=meal) | `GET /meals/today` | `test_guide_query.py` | PASS |
 | Wife | W-MEAL-002 | FUC-W-MEAL-002 | UC3, UC11 | 메뉴/이유/영양태그 | `routine_items.payload` | `GET /meals/today` | 동일 | PASS |
 | Wife | W-CHAT-001(재추천+공통, 병합) | FUC-W-MEAL-003, FUC-W-CHAT-001/002 | UC4, UC11 | 대화, 대체 메뉴 | `chat_messages`(MISSING, 인메모리) | `GET/POST /chat/messages` | `test_backend_skeleton.py::test_chat_message_round_trip_does_not_fabricate_ai_reply` | STUB |
-| Wife | W-HOUSE-001 | FUC-W-HOUSE-001/003 | UC3, UC5, UC12 | 3분류, 공유 요청 | `routine_items`(category=household), `household_requests`(MISSING) | `GET /household/today` + `POST/GET /family/household-requests`,`.../confirm`,`.../complete` | `test_guide_query.py`(조회), `test_backend_skeleton.py::test_household_request_has_only_confirm_and_complete_transitions`(Stub) | PARTIAL |
+| Wife | W-HOUSE-001 | FUC-W-HOUSE-001/003 | UC3, UC5, UC12 | 3분류, 공유 요청 | `routine_items`(category=household), `household_requests`(+items) | `GET /household/today` + `POST/GET /family/household-requests`,`.../confirm`,`.../complete` | `test_guide_query.py`(조회), `test_family_household_request.py`(6개: 생성→확인→완료 영속화, 미연동 409, 타인 403, 완료 후 재확인 409, 목록, 503) | PASS |
 | Wife | W-HEALTH-001 | FUC-W-HEALTH-001/002 | UC3, UC6, UC11 | 부위 부담, 완료 체크 | `routine_items`(category=health) | `GET /health/today` + `PUT /care/routine-items/{id}/execution` | `test_guide_query.py`, `test_care_report.py::RecordApiTest`(6개) | PASS |
 | Wife | W-SLEEP-001(본문+팝업, 병합) | FUC-W-SLEEP-001/001-1/002 | UC3, UC11, UC12 | 수면 가이드, 환경 override | `routine_items`(category=sleep), `recommendation_feedback`(MISSING) | `GET /sleep/today` + `PUT /care/routine-items/{id}/sleep-environment` | `test_guide_query.py`(조회), `test_backend_skeleton.py::test_routine_item_feedback_and_sleep_environment_echo_request_only`(Stub) | PARTIAL |
 | Wife | B-CAL-001(Wife) | FUC-B-CAL-001 | UC7, UC10 | 날짜별 컨디션 색상, 실행 루틴 | `daily_conditions`+`daily_reports`(VIEW, 저장 없음) | `GET /care/calendar/{month}` | `test_care_report.py::CalendarApiTest` | PASS |
-| Wife | W-REPORT-001 | FUC-W-REPORT-001/001-1/002 | UC7 | 실행 통계, 최다 부담 부위, 가족 분담 | `daily_reports`(확정 시만 저장) | `POST .../preview`,`.../finalize`,`GET .../{date}` | `test_care_report.py::ReportApiTest`(6개) | PARTIAL — `family` 집계는 항상 0(Household 미연결) |
-| Wife | B-MOTION-001(Wife) | FUC-B-MOTION-001 | UC13 | ON/OFF, 누적시간, 알림 | `posture_calibration_profiles`/`posture_events`(Protected)+`motion_consents` | `WS /movement/live/stream`,`GET /live,/events,/report/daily` + `GET/PUT/DELETE /family/motion/*` | `test_movement_api.py`, `test_movement_supabase_store.py`, `test_family_motion_consent.py`(8개) | PARTIAL — WS 연결 게이트와 동의값 미연동(TBD), Frontend는 여전히 Mock |
+| Wife | W-REPORT-001 | FUC-W-REPORT-001/001-1/002 | UC7 | 실행 통계, 최다 부담 부위, 가족 분담 | `daily_reports`(확정 시만 저장) | `POST .../preview`,`.../finalize`,`GET .../{date}` | `test_care_report.py::ReportApiTest`(7개, funnel 집계 포함) | PASS |
+| Wife | B-MOTION-001(Wife) | FUC-B-MOTION-001 | UC13 | ON/OFF, 누적시간, 알림 | `posture_calibration_profiles`/`posture_events`(Protected)+`motion_consents` | `WS /movement/live/stream`,`GET /live,/events,/report/daily` + `GET/PUT/DELETE /family/motion/*` | `test_movement_api.py`(WS 5 + 동의 게이트 4 + 남편 분기 3), `test_movement_supabase_store.py`, `test_family_motion_consent.py`(8개) | PASS — WS 연결 시 동의/수집 검사(STEP 18). Frontend는 여전히 Mock |
 | Wife | W-CALLBACK-001 | FUC-W-CALLBACK-001 | UC11 | 재시도, 폴백 | `daily_routines.source` | `POST /routine/today`(재호출) | `test_routine_service.py::RoutineServiceTest`(폴백 3종) | PASS |
 | Wife | W-MENU-001 | FUC-W-MENU-001 | UC1(연계) | 프로필 요약, 연동 상태 | `pregnancy_profiles`+`partner_links` | `GET /profile/me` + `GET /account/partner-link` | `test_profile.py`, `test_account_partner_link.py` | PASS |
 | Wife | W-SETTING-001 | FUC-W-SETTING-001 | — | 없음 | — | 없음 | — | PHASE_2 |
@@ -57,12 +57,12 @@
 | Actor | Screen | FUC | Use Case | Data | DB | API | Test | Status |
 |---|---|---|---|---|---|---|---|---|
 | Husband | B-ENTRY-001(초대 수락) | FUC-H-INVITE-001 | UC16 | 토큰 검증, 계정 연동 | `partner_invitations`+`partner_links` | `POST /account/partner-invitations/{token}/accept` | `test_account_partner_link.py::InvitationLifecycleTest`(6개) | TBD — API는 PASS 수준이지만 화면·인증 복귀 흐름 자체가 문서상 미확정 |
-| Husband | B-CAL-001(Husband) | FUC-B-CAL-001 | UC7, UC10 | 날짜별 기록 조회(읽기전용) | Wife B-CAL-001과 동일 | `GET /care/calendar/{month}` | `test_care_report.py::CalendarApiTest` | PARTIAL — 남편 role 필터링(수정 금지) 미구현 |
-| Husband | H-NOTI-001 | FUC-H-NOTI-001/002 | UC8, UC9, UC14 | 알림 목록 | `notifications`(MISSING) | `GET /family/notifications`,`POST .../read` | 없음(Stub 경로만, 전용 테스트 없음) | STUB |
+| Husband | B-CAL-001(Husband) | FUC-B-CAL-001 | UC7, UC10 | 날짜별 기록 조회(읽기전용) | Wife B-CAL-001과 동일 | `GET /care/calendar/{month}` | `test_care_report.py::CalendarApiTest`(연동 남편→아내 캘린더, 미연동→빈 캘린더) | PASS — `partner_links`로 연동된 남편은 아내 캘린더 읽기 전용 조회(STEP 17). 쓰기 API가 없어 수정 금지는 자동 충족 |
+| Husband | H-NOTI-001 | FUC-H-NOTI-001/002 | UC8, UC9, UC14 | 알림 목록 | `notifications` | `GET /family/notifications`,`POST .../read` | `test_family_notification.py`(9개: 생성·격리·읽음·404·최신순·503, 루틴 생성 알림 3종), `test_routine_service.py`(첫 생성/재생성 알림 4개) | PASS — 알림 3종 전부 발송: 가사 요청, 오전 리포트(첫 루틴 생성), 루틴 변경(재생성) |
 | Husband | H-REPORT-001 | FUC-H-REPORT-001 | UC8 | 주차, 컨디션 요약, 가이드 요약 | `partner_links`+`pregnancy_profiles`+`daily_conditions`+`routine_items`(projection) | `GET /family/morning-reports/{date}` | `test_family_morning_report.py`(5개) | PASS |
-| Husband | H-REQUEST-001 | FUC-H-REQUEST-001/002 | UC9 | 요청 확인/완료 | `household_requests`(MISSING) | `GET .../household-requests/{id}`,`.../confirm`,`.../complete` | `test_backend_skeleton.py::test_household_request_has_only_confirm_and_complete_transitions` | STUB |
+| Husband | H-REQUEST-001 | FUC-H-REQUEST-001/002 | UC9 | 요청 확인/완료 | `household_requests`(+items) | `GET .../household-requests/{id}`,`.../confirm`,`.../complete` | `test_family_household_request.py` | PASS |
 | Husband | H-REQUEST-002 | FUC-H-REQUEST-003 | UC9 | 완료 결과 요약 | 위와 동일 | `complete` 응답 재사용 | 위와 동일 | TBD — 화면설계서 원문에 본문 섹션 자체가 없음 |
-| Husband | B-MOTION-001(Husband) | FUC-B-MOTION-001 | UC13 | 조회 전용 누적시간 | `posture_events`(Protected) | `GET /movement/events,/report/daily` | `test_movement_api.py` | PARTIAL — 남편 role 필터링 미구현 |
+| Husband | B-MOTION-001(Husband) | FUC-B-MOTION-001 | UC13 | 조회 전용 누적시간 | `posture_events`(Protected) | `GET /movement/events,/report/daily` | `test_movement_api.py`(연동 남편→아내 이벤트·리포트, 미연동→빈 결과), `test_partner_scope.py` | PASS — `partner_links` 연동 시 아내 데이터 읽기 전용(STEP 18) |
 
 ---
 
@@ -125,16 +125,16 @@ STEP 15에서 `Widget → Store → Repository 인터페이스 → (Mock|Api)Rep
 | Routine / Routine Item(Routine AI 소유) | **READY** | 미수정 확인, 기존 테스트 전부 통과. AI 실호출 1회만 OpenAI 크레딧 대기(기능 결함 아님, 외부 자원 문제) |
 | Meal / Household(조회) / Health / Sleep(조회) — Guide Query | **READY** | 4개 API 전부 실 연결·테스트 완비(STEP 11), AI 재호출 없이 `routine_items` 읽기 전용 |
 | Record | **READY** | `routine_items` 직접 갱신, 별도 로그 테이블 없이 완결(STEP 12) |
-| Report / Calendar | **PARTIAL** | 핵심 로직은 READY 수준이나 `family`(가사 분담) 집계가 Household 미연결로 항상 0으로 고정됨 — Household가 STUB에서 벗어나야 완전해짐 |
-| Household(요청·상태전이) | **BLOCKED** | `household_requests`/`household_request_items` migration은 있으나 Repository가 여전히 Stub(인메모리) — Report/Calendar의 가족 분담 집계도 이 때문에 막혀 있음 |
+| Report / Calendar | **READY** | `family` 집계를 `household_requests` 실조회로 교체, 남편 캘린더 읽기 전용 분기 추가(STEP 17) |
+| Household(요청·상태전이) | **READY** | `household_requests`/`household_request_items` 실 연결, 생성→확인→완료 전이·권한·409/403 테스트 완비(STEP 17) |
 | Family/Relationship(연동) | **READY** | bootstrap·partner-link·초대 발급/수락 전부 실 DB, 72시간·1회성·중복연동 거절까지 테스트 완비(STEP 13) |
-| Notification | **BLOCKED** | 여전히 Stub, 전용 테스트 없음. H-NOTI-001이 이 상태에 막혀 있음 |
+| Notification | **READY** | `notifications` 실 연결. 발송 트리거 3종(가사 요청/오전 리포트/루틴 변경) 전부 구현·테스트(STEP 17). 오전 리포트·루틴 변경 알림은 `POST /routine/today` 성공 직후 발송(FUC-W-COND-002/003) |
 | Report(남편 오전) | **READY** | family authorization + projection 원칙으로 완결, 원본 비노출 검증까지 포함(STEP 12) |
 | Chat | **BLOCKED** | 지원 테이블 없음(NFR-027 보관 정책 자체가 TBD라 실 연결의 전제조건이 아직 없음) |
-| Movement(Protected) | **READY** | 알고리즘·핵심 데이터 흐름 불변, 전체 회귀 테스트 통과. 동의값↔WS 게이트 연동만 별도 합의 필요(PARTIAL 요인이지만 Protected 정책상 이번 범위 밖) |
+| Movement(Protected) | **READY** | 알고리즘·핵심 데이터 흐름 불변, 전체 회귀 테스트 통과. STEP 18에서 동의↔WS 게이트 연동·남편 조회 분기 완료(라우트 계층만 수정, `services/movement/**` 불변). 임계값은 데모값으로 MVP 확정 |
 | Motion Consent | **READY** | `motion_consents` 실 연결, 카메라 데이터 미저장 재확인(STEP 14) |
 | Frontend Integration | **PARTIAL** | 아키텍처 경계와 패턴은 READY 수준(Condition 1개 화면 증명 완료)이나 나머지 30개 화면은 여전히 MOCK_ONLY — 화면별 로딩/오류 UI 추가가 남은 선행 작업 |
 
 ### 전체 요약
 
-**READY 9 / PARTIAL 2 / BLOCKED 3** (Domain 14개 기준). BLOCKED 3개(Household 요청·Notification·Chat)는 전부 "migration은 있지만 Repository가 여전히 Stub"인 동일한 성격의 공백이며, `BACKEND_COLLABORATION.md`의 "테이블 단위로 쪼개 진행" 원칙에 따라 다음 작업 우선순위로 그대로 넘긴다. PARTIAL 2개(Report/Calendar, Frontend Integration) 중 Report/Calendar의 가족 분담 집계는 Household가 풀리면 자동으로 해소된다. Movement의 WS 게이트-동의 연동 미결은 Protected 모듈 정책상 이번 범위 밖이라 별도 합의 항목으로만 남기고 Movement 자체의 READY 판정에는 포함하지 않았다(카메라 데이터 미저장·알고리즘 불변이라는 이번 도메인의 핵심 기준은 전부 충족).
+STEP 16 시점 **READY 9 / PARTIAL 2 / BLOCKED 3** → STEP 17 시점 **READY 12 / PARTIAL 1 / BLOCKED 1** (Domain 14개 기준). Household·Notification이 BLOCKED에서 READY로, Report/Calendar가 PARTIAL에서 READY로 올라갔다(가족 분담 집계는 "자동 해소"가 아니라 `care/supabase_repository.py`의 하드코딩 0을 `household_requests` 조회로 직접 교체해야 했다). 남은 BLOCKED는 Chat 1개(AI 담당 영역, NFR-027 TBD), PARTIAL은 Frontend Integration 1개다. STEP 18에서 Movement의 남은 두 항목(동의↔WS 게이트, 남편 조회 분기)을 소유자가 직접 마무리해 B-MOTION-001 아내/남편 행 모두 PASS가 됐다.

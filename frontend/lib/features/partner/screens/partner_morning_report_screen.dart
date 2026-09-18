@@ -70,6 +70,7 @@ class _PartnerMorningReportScreenState
     appBar: TopAppBar(
       title: widget.daily ? 'Daily 리포트' : '오전 리포트',
       onBack: _handleBack,
+      husbandMenuAction: true,
       actions: [
         IconButton(
           tooltip: '알림',

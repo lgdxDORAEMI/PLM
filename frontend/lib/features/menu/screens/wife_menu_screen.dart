@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../design_system/components/app_card.dart';
+import '../../../design_system/components/app_ink_well.dart';
 import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/components/top_app_bar.dart';
@@ -85,7 +86,7 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
             _MenuRow(
               icon: Icons.settings_outlined,
               title: '설정',
-              description: '알림 · 연결된 가전 · 고객센터',
+              description: '글자 크기 조정',
               onTap: () =>
                   Navigator.pushNamed(context, RouteNames.wifeSettings),
             ),
@@ -137,7 +138,7 @@ class _ProfileHeader extends StatelessWidget {
     return Semantics(
       button: true,
       label: '희선님 프로필 수정',
-      child: InkWell(
+      child: AppInkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Row(
@@ -189,7 +190,7 @@ class _MenuRow extends StatelessWidget {
   Widget build(BuildContext context) => Semantics(
     button: true,
     label: '$title, $description',
-    child: InkWell(
+    child: AppInkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: AppCard(

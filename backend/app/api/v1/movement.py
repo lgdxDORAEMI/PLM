@@ -43,8 +43,12 @@ import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect, status
 from mediapipe.tasks.python.vision import RunningMode
 
+from app.api.v1.family import get_family_service
+from app.api.v1.partner_scope import DataOwnerUserId
 from app.core.config import ALLOWED_ORIGIN_REGEX
 from app.core.security import CurrentUser, get_current_user, get_user_from_token
+from app.domains.errors import DomainStorageError
+from app.domains.family.service import FamilyServicePort
 from app.schemas.movement import DailyReportSummary, LiveAccumulatedState, PostureEvent
 from app.services.movement.calibration import CalibrationCollector, CalibrationStorageError, SupabaseCalibrationStore
 from app.services.movement.events import EventStorageError, EventStore, SupabaseEventStore
@@ -58,6 +62,7 @@ _ORIGIN_PATTERN = re.compile(ALLOWED_ORIGIN_REGEX)
 router = APIRouter(prefix="/movement", tags=["movement"])
 
 STORAGE_UNAVAILABLE = "모션 인식 저장소에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요."
+WS_CLOSE_CONSENT_REQUIRED = 4003  # 동의 없음 또는 수집 OFF (1008=origin/토큰, 1011=서버 오류)
 
 # SupabaseEventStore/SupabaseCalibrationStore는 SupabaseService만 들고 있고
 # .client(실제 연결)는 첫 DB 요청 때 지연 생성하므로, SUPABASE_* 환경변수가
@@ -118,6 +123,7 @@ async def stream_live(
     manager: SessionManager = Depends(get_session_manager),
     extractor: PoseExtractor = Depends(get_pose_extractor),
     supabase: SupabaseService = Depends(get_supabase_service),
+    family: FamilyServicePort = Depends(get_family_service),
 ) -> None:
     if not _is_allowed_origin(websocket.headers.get("origin")):
         await websocket.close(code=1008)
@@ -133,6 +139,18 @@ async def stream_live(
         user = get_user_from_token(token, supabase)
     except HTTPException:
         await websocket.close(code=1008)
+        return
+
+    # NFR-012 / DOMAIN_OWNERSHIP.md: 동의(motion_consents)가 없거나 수집 OFF면 연결 자체를
+    # 거부한다. 코드 4003(앱 정의)으로 닫아 origin/토큰 실패(1008)와 구분한다 — 프론트가
+    # "동의가 필요해요" 안내를 띄울 수 있게. 동의 조회가 실패하면 열어주지 않고 1011로 닫는다.
+    try:
+        privacy = family.motion_privacy(user.id)
+    except DomainStorageError:
+        await websocket.close(code=1011)
+        return
+    if not (privacy.consent_granted and privacy.collection_enabled):
+        await websocket.close(code=WS_CLOSE_CONSENT_REQUIRED)
         return
 
     global _current_session_id
@@ -212,25 +230,27 @@ def get_live_state(
 
 @router.get("/events", response_model=list[PostureEvent])
 def list_events(
-    user: CurrentUser = Depends(get_current_user),
+    owner_id: DataOwnerUserId,
     event_store: EventStore = Depends(get_event_store),
 ) -> list[PostureEvent]:
+    """B-MOTION-001: 남편은 partner_links로 연동된 아내의 이벤트를 읽기 전용 조회(partner_scope)."""
     try:
-        return event_store.list_events(uuid.UUID(user.id))
+        return event_store.list_events(uuid.UUID(owner_id))
     except EventStorageError as error:
         raise _storage_unavailable() from error
 
 
 @router.get("/report/daily", response_model=DailyReportSummary)
 def get_daily_report(
+    owner_id: DataOwnerUserId,
     target_date: date_type | None = Query(default=None, alias="date"),
-    user: CurrentUser = Depends(get_current_user),
     event_store: EventStore = Depends(get_event_store),
 ) -> DailyReportSummary:
-    """일일 리포트 조회 (§5.9). date 쿼리 파라미터가 없으면 오늘(UTC 기준) 리포트."""
+    """일일 리포트 조회 (§5.9). date 쿼리 파라미터가 없으면 오늘(UTC 기준) 리포트.
+    남편은 연동된 아내의 리포트를 본다(partner_scope)."""
     try:
         return generate_daily_report(
-            event_store, uuid.UUID(user.id), target_date or datetime.now(timezone.utc).date()
+            event_store, uuid.UUID(owner_id), target_date or datetime.now(timezone.utc).date()
         )
     except EventStorageError as error:
         raise _storage_unavailable() from error

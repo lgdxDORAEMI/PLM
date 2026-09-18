@@ -8,11 +8,7 @@ class MockMealService implements MealService, MealChatService {
 
   static const _cautions = [
     MealCaution(title: '회 · 육회 등 날것', description: '배탈이 나도 쓸 수 있는 약이 적어요'),
-    MealCaution(
-      title: '커피',
-      description: '하루 1잔까지는 괜찮아요 · 오늘 0잔 마셨어요',
-      badge: '1잔 남음',
-    ),
+    MealCaution(title: '커피', description: '하루 1잔까지는 괜찮아요.'),
     MealCaution(title: '단 음료 · 디저트', description: '임당 경계라 혈당이 빠르게 올라요'),
   ];
 

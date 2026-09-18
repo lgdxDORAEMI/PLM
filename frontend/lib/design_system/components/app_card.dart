@@ -4,6 +4,7 @@ import '../tokens/app_colors.dart';
 import '../tokens/app_elevation.dart';
 import '../tokens/app_radius.dart';
 import '../tokens/app_spacing.dart';
+import 'app_ink_well.dart';
 
 enum AppCardVariant { outlined, subtle, raised }
 
@@ -54,7 +55,7 @@ class AppCard extends StatelessWidget {
     return Semantics(
       button: true,
       label: semanticLabel,
-      child: InkWell(onTap: onTap, borderRadius: radius, child: content),
+      child: AppInkWell(onTap: onTap, borderRadius: radius, child: content),
     );
   }
 }

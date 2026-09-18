@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:plm_frontend/features/sleep/screens/sleep_guide_screen.dart';
 
 void main() {
-  testWidgets('환경 항목별 Sheet에서 추천값을 변경하고 기기 실행은 비활성화한다', (tester) async {
+  testWidgets('환경 항목별 Sheet에서 추천값을 변경하고 전체 실행을 요청한다', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: SleepGuideScreen()));
     await tester.pumpAndSettle();
 
@@ -21,15 +21,13 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('23°C'), findsOneWidget);
 
-    final startButton = find.byKey(const ValueKey('sleep-start-button'));
-    await tester.scrollUntilVisible(
-      startButton,
-      300,
-      scrollable: find.byType(Scrollable).first,
-    );
-    final button = tester.widget<FilledButton>(
-      find.descendant(of: startButton, matching: find.byType(FilledButton)),
-    );
-    expect(button.onPressed, isNull);
+    expect(find.text('탭하면 변경'), findsNothing);
+    expect(find.textContaining('MVP 범위'), findsNothing);
+    expect(find.textContaining('깼'), findsNothing);
+    expect(find.textContaining('수면 루틴 실행은 준비 중'), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('sleep-run-all-button')));
+    await tester.pump();
+    expect(find.text('추천 수면 환경 전체 실행을 시작했어요.'), findsOneWidget);
   });
 }

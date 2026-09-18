@@ -9,9 +9,12 @@ from unittest.mock import patch
 from httpx import ASGITransport, AsyncClient
 from postgrest.exceptions import APIError
 
+from app.api.v1.family import get_family_service
 from app.api.v1.routine import get_routine_service
 from app.core.config import Settings
 from app.core.security import CurrentUser, get_current_user
+from app.domains.family.service import FamilyService
+from app.domains.family.stub_repository import StubFamilyRepository
 from app.main import app
 from app.services.routine import repository
 from app.services.routine.rules import apply_rules
@@ -19,6 +22,7 @@ from app.services.routine.service import RoutineService, _normalize_item_keys, l
 
 TODAY = date(2026, 9, 16)
 USER = "user-1"
+HUSBAND = "husband-1"
 
 
 class FakeQuery:
@@ -305,8 +309,11 @@ class RoutineApiTest(unittest.IsolatedAsyncioTestCase):
         self.db = FakeSupabase()
         seed(self.db)
         self.service = make_service(self.db, FakeOpenAI("", fail=True))
+        self.family_repository = StubFamilyRepository()
+        self.family_repository.link_for_demo(USER, HUSBAND)
         app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=USER)
         app.dependency_overrides[get_routine_service] = lambda: self.service
+        app.dependency_overrides[get_family_service] = lambda: FamilyService(self.family_repository)
         self.addAsyncCleanup(self._cleanup)
         patcher = patch("app.utils.dates.today_kst", return_value=TODAY)
         patcher.start()
@@ -331,6 +338,38 @@ class RoutineApiTest(unittest.IsolatedAsyncioTestCase):
             response = await client.post("/api/v1/routine/today")
             self.assertEqual(response.status_code, 409)
             self.assertIn("컨디션", response.json()["detail"])
+        self.assertEqual(self.family_repository.list_notifications(HUSBAND), [])
+
+    async def test_first_generation_notifies_morning_report_then_regeneration_notifies_change(self) -> None:
+        """FUC-W-COND-002: 하루 첫 생성 → 오전 리포트 알림. FUC-W-COND-003: 재생성 → 루틴 변경 알림."""
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost") as client:
+            created = await client.post("/api/v1/routine/today")
+            self.assertEqual(created.status_code, 201)
+            first = self.family_repository.list_notifications(HUSBAND)
+            self.assertEqual([n.type for n in first], ["morning_report"])
+            self.assertEqual(first[0].reference_id, created.json()["id"])
+            self.assertEqual(first[0].target_date, TODAY)
+
+            self.assertEqual((await client.post("/api/v1/routine/today")).status_code, 201)
+        types = sorted(n.type for n in self.family_repository.list_notifications(HUSBAND))
+        self.assertEqual(types, ["condition_changed", "morning_report"])
+
+    async def test_unlinked_wife_generation_sends_nothing(self) -> None:
+        app.dependency_overrides[get_family_service] = lambda: FamilyService(StubFamilyRepository())
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost") as client:
+            self.assertEqual((await client.post("/api/v1/routine/today")).status_code, 201)
+        self.assertEqual(self.family_repository.list_notifications(HUSBAND), [])
+
+    async def test_notification_failure_does_not_break_routine_response(self) -> None:
+        class BrokenFamily:
+            def notify_routine_ready(self, *args, **kwargs):
+                raise RuntimeError("notifications down")
+
+        app.dependency_overrides[get_family_service] = lambda: BrokenFamily()
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost") as client:
+            response = await client.post("/api/v1/routine/today")
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(set(response.json()["response"]), {"meal", "household", "health", "sleep"})
 
 
 if __name__ == "__main__":

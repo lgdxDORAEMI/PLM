@@ -3,10 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../design_system/components/app_bottom_sheet.dart';
-import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/content_frame.dart';
-import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/components/wife_navigation_scaffold.dart';
 import '../../../design_system/tokens/app_colors.dart';
@@ -59,6 +57,14 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
         title: '수면 가이드',
         onBack: _handleBack,
         wifeProfileAction: true,
+        actions: [
+          IconButton(
+            key: const ValueKey('sleep-run-all-button'),
+            tooltip: '수면 환경 전체 실행',
+            onPressed: _runAll,
+            icon: const Icon(Icons.play_arrow_rounded),
+          ),
+        ],
       ),
       body: SafeArea(
         top: false,
@@ -94,6 +100,13 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
     );
   }
 
+  /// 현재 추천된 수면 환경 전체 실행 요청을 사용자에게 즉시 확인시킨다.
+  void _runAll() {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('추천 수면 환경 전체 실행을 시작했어요.')));
+  }
+
   void _handleBack() {
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
@@ -117,23 +130,7 @@ class _SleepContent extends StatelessWidget {
       children: [
         _SleepSummary(guide: guide),
         const SizedBox(height: AppSpacing.xxl),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(
-              child: Text(
-                'AI가 맞춘 오늘의 수면 환경',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-            ),
-            Text(
-              '탭하면 변경',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
-            ),
-          ],
-        ),
+        Text('AI가 맞춘 오늘의 수면 환경', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: AppSpacing.lg),
         _EnvironmentGrid(
           environments: guide.environments,
@@ -146,19 +143,6 @@ class _SleepContent extends StatelessWidget {
           _SleepTip(text: tip),
           const SizedBox(height: AppSpacing.md),
         ],
-        const SizedBox(height: AppSpacing.xl),
-        const InfoBanner(
-          title: '수면 환경은 추천값으로만 제공돼요',
-          message: '실제 조명·에어컨·공기청정기 실행은 MVP 범위에 포함되지 않아요.',
-          tone: InfoBannerTone.neutral,
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        const AppButton(
-          key: ValueKey('sleep-start-button'),
-          label: '수면 루틴 실행은 준비 중이에요',
-          onPressed: null,
-          icon: Icons.lock_clock_outlined,
-        ),
       ],
     );
   }

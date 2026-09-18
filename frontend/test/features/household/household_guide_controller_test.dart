@@ -21,10 +21,11 @@ void main() {
       PartnerNotificationStore.instance.items.first.requestId,
       controller.lastRequestId,
     );
-    expect(
-      PartnerRequestStore.instance.request(controller.lastRequestId!).tasks,
-      isNotEmpty,
-    );
+    final sharedTasks = PartnerRequestStore.instance
+        .request(controller.lastRequestId!)
+        .tasks;
+    expect(sharedTasks, hasLength(1));
+    expect(sharedTasks.single.title, '장보기 · 무거운 것 옮기기');
     expect(
       controller.tasks.where((task) => task.selected),
       everyElement(

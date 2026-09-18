@@ -62,6 +62,7 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen> {
       showBack: false,
       actions: isWife ? null : _partnerActions(),
       wifeProfileAction: isWife,
+      husbandMenuAction: !isWife,
     );
     final body = SafeArea(top: false, child: ContentFrame(child: _buildBody()));
     if (isWife) {

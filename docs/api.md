@@ -86,6 +86,15 @@ Swagger UI: `/docs`, OpenAPI schema: `/openapi.json`.
 전에 `Origin` 헤더를 따로 확인한다(2026-09-15 추가, 아래 HTTP CORS와 동일한 규칙 재사용).
 허용되지 않은 origin이거나 origin이 없으면 코드 1008(정책 위반)로 바로 닫는다.
 
+토큰 검증 뒤에는 `motion_consents`를 확인한다(2026-09-18 추가, NFR-012): 동의가 없거나 수집이
+OFF면 **4003**(앱 정의 코드)으로 닫아 1008(origin/토큰)과 구분한다 — 클라이언트는 4003에서
+동의 화면으로 유도하면 된다. 동의 조회 자체가 실패하면 열어주지 않고 1011로 닫는다. 검사는
+연결 시점 한 번이므로, 스트림 중 철회 시에는 클라이언트가 WS를 끊어야 한다.
+
+`GET /events`·`GET /report/daily`는 호출자가 `partner_links`에 남편으로 등록돼 있으면 연동된
+아내의 데이터를 돌려준다(2026-09-18 추가, `app/api/v1/partner_scope.py` — 캘린더와 같은 규칙).
+미연동이면 본인 데이터(남편은 사실상 빈 결과). `/live`는 데모 단일 세션이라 그대로다.
+
 ### `/report/daily` 집계 방식
 
 `(posture_type, burden_label)` 조합별로 그날 이벤트를 묶어 `count`/`total_duration_sec`/

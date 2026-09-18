@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../design_system/tokens/app_colors.dart';
+import '../../../design_system/components/app_ink_well.dart';
 import '../../../design_system/tokens/app_radius.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../models/sleep_guide.dart';
@@ -20,7 +21,7 @@ class SleepEnvironmentCard extends StatelessWidget {
     return Semantics(
       button: true,
       label: '${setting.label} ${setting.value}',
-      child: InkWell(
+      child: AppInkWell(
         key: ValueKey('sleep-environment-${setting.type.name}'),
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.card),

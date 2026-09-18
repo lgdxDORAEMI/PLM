@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_input.dart';
+import '../../../design_system/components/app_ink_well.dart';
 import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/components/top_app_bar.dart';
@@ -200,7 +201,7 @@ class _ActivityCard extends StatelessWidget {
     button: true,
     selected: selected,
     label: activity,
-    child: InkWell(
+    child: AppInkWell(
       key: ValueKey('activity-$activity'),
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.card),

@@ -24,6 +24,7 @@ import '../features/profile/screens/profile_setup_screen.dart';
 import '../features/report/screens/daily_report_screen.dart';
 import '../features/routine/screens/routine_fallback_screen.dart';
 import '../features/settings/screens/wife_settings_screen.dart';
+import '../features/settings/screens/husband_menu_screen.dart';
 import '../features/sleep/screens/sleep_guide_screen.dart';
 import 'app_session.dart';
 import 'route_context.dart';
@@ -56,6 +57,7 @@ abstract final class AppRouter {
     RouteNames.sleepGuide,
     RouteNames.dailyReportPattern,
     RouteNames.husbandCalendar,
+    RouteNames.husbandMenu,
     RouteNames.husbandMovement,
     RouteNames.husbandNotifications,
     RouteNames.husbandMorningReportPattern,
@@ -247,6 +249,7 @@ abstract final class AppRouter {
   };
   static const _husbandPages = <String>{
     RouteNames.husbandCalendar,
+    RouteNames.husbandMenu,
     RouteNames.husbandMovement,
     RouteNames.husbandNotifications,
   };
@@ -329,6 +332,7 @@ abstract final class AppRouter {
     if (path == RouteNames.husbandCalendar) {
       return const PartnerCalendarScreen();
     }
+    if (path == RouteNames.husbandMenu) return const HusbandMenuScreen();
     if (path == RouteNames.husbandNotifications) {
       return const PartnerNotificationsScreen();
     }

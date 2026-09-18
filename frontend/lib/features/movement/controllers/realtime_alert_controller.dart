@@ -8,7 +8,6 @@ class RealtimeAlertController extends ChangeNotifier {
   bool get detectionEnabled => _detectionEnabled;
   List<MovementAlert> get alerts => MovementMockData.alerts;
   List<MovementAlert> get todayAlerts => alerts;
-  MovementAlert? get latestEvent => todayAlerts.firstOrNull;
 
   /// API 연결 전에도 수집 ON/OFF와 기존 로그 보존 규칙을 같은 상태로 표현한다.
   void setDetectionEnabled(bool value) {

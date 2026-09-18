@@ -4,6 +4,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.v1.domain_errors import to_http_exception
+from app.api.v1.partner_scope import DataOwnerUserId
 from app.core.security import CurrentUser, get_current_user
 from app.domains.care.schemas import (
     CalendarMonthResponse,
@@ -132,8 +133,11 @@ def read_report(target_date: date, user: User, service: Service) -> DailyReportR
 
 
 @router.get("/calendar/{month}", response_model=CalendarMonthResponse)
-def read_calendar(month: str, user: User, service: Service) -> CalendarMonthResponse:
+def read_calendar(
+    month: str, target_user_id: DataOwnerUserId, service: Service
+) -> CalendarMonthResponse:
+    """B-CAL-001: 남편은 partner_links로 연동된 아내 캘린더를 읽기 전용 조회(partner_scope)."""
     try:
-        return service.calendar(user.id, month)
+        return service.calendar(target_user_id, month)
     except Exception as error:
         raise to_http_exception(error) from error

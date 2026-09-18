@@ -34,11 +34,6 @@ class MealGuideController extends ChangeNotifier {
         : store.decisionFor(recommendation.id);
   }
 
-  bool get selectedIsShared {
-    final recommendation = selectedRecommendation;
-    return recommendation != null && store.isShared(recommendation.id);
-  }
-
   MealRecommendation? get selectedRecommendation {
     final period = _selectedPeriod;
     final guide = _data;
@@ -122,13 +117,6 @@ class MealGuideController extends ChangeNotifier {
         ? 0
         : (currentIndex + 1) % recommendations.length;
     _selectedRecommendations[period] = recommendations[nextIndex];
-    notifyListeners();
-  }
-
-  void shareSelected() {
-    final recommendation = selectedRecommendation;
-    if (recommendation == null) return;
-    store.shareRecommendation(recommendation.id);
     notifyListeners();
   }
 }

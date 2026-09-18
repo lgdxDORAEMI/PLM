@@ -19,8 +19,6 @@ DOMAIN_OWNERSHIP.md 기존 TBD). 그래서 이 파일에서 실제 DB로 연결�
 추가한다"에 해당하는 구조를 갖추고 있어 새로 만들 필요가 없었다 — 이 파일은
 그 경계를 그대로 재사용만 한다(STEP 12의 `_movement_summary`처럼).
 
-household-requests/notifications은 지원 테이블 연동이 아직 이 STEP 범위가
-아니라 fallback(Stub)에 위임한다.
 """
 
 from __future__ import annotations
@@ -35,8 +33,15 @@ from supabase import Client
 from app.domains.errors import DomainForbiddenError, DomainStorageError
 from app.utils import dates
 
-from .repository import FamilyRepository
-from .schemas import MorningReportResponse, MotionPrivacyResponse
+from .repository import FamilyRepository, PartnerIdentity
+from .schemas import (
+    HouseholdRequestCreate,
+    HouseholdRequestItem,
+    HouseholdRequestResponse,
+    MorningReportResponse,
+    MotionPrivacyResponse,
+    NotificationResponse,
+)
 
 CONDITION_COLUMNS = (
     "nausea",
@@ -129,34 +134,186 @@ class SupabaseFamilyRepository(FamilyRepository):
         except (APIError, httpx.HTTPError) as error:
             raise DomainStorageError("오전 리포트 저장소에 연결할 수 없습니다.") from error
 
-    # --- 그 외 Family 메서드: 지원 테이블이 아직 없어 Stub에 위임 ---
+    def get_partner(self, wife_user_id: str) -> PartnerIdentity | None:
+        link_rows = self._run(
+            lambda: self.client.table("partner_links")
+            .select("husband_user_id")
+            .eq("wife_user_id", wife_user_id)
+            .limit(1)
+            .execute()
+        )
+        if not link_rows:
+            return None
+        husband_id = link_rows[0]["husband_user_id"]
+        profile_rows = self._run(
+            lambda: self.client.table("profiles")
+            .select("display_name")
+            .eq("user_id", husband_id)
+            .limit(1)
+            .execute()
+        )
+        display_name = profile_rows[0]["display_name"] if profile_rows else "남편"
+        return PartnerIdentity(user_id=husband_id, display_name=display_name)
 
-    def get_partner(self, wife_user_id: str):
-        return self.fallback.get_partner(wife_user_id)
+    def create_request(
+        self,
+        wife_user_id: str,
+        wife_display_name: str,
+        partner: PartnerIdentity,
+        payload: HouseholdRequestCreate,
+    ) -> HouseholdRequestResponse:
+        request_rows = self._run(
+            lambda: self.client.table("household_requests")
+            .insert(
+                {
+                    "wife_user_id": wife_user_id,
+                    "husband_user_id": partner.user_id,
+                    "date": payload.target_date.isoformat(),
+                    "reason_text": payload.reason,
+                }
+            )
+            .execute()
+        )
+        row = request_rows[0]
+        item_rows = self._run(
+            lambda: self.client.table("household_request_items")
+            .insert(
+                [
+                    {
+                        "request_id": row["id"],
+                        "routine_item_id": item.routine_item_id,
+                        "title": item.title,
+                        "helper_info": item.helper_info,
+                    }
+                    for item in payload.items
+                ]
+            )
+            .execute()
+        )
+        return _build_response(row, item_rows, wife_display_name, partner.display_name)
 
-    def create_request(self, wife_user_id, wife_display_name, partner, payload):
-        return self.fallback.create_request(wife_user_id, wife_display_name, partner, payload)
+    def get_request(self, request_id: str) -> HouseholdRequestResponse | None:
+        rows = self._run(
+            lambda: self.client.table("household_requests")
+            .select("*")
+            .eq("id", request_id)
+            .limit(1)
+            .execute()
+        )
+        if not rows:
+            return None
+        return self._load_response(rows[0])
 
-    def get_request(self, request_id: str):
-        return self.fallback.get_request(request_id)
+    def request_owner_ids(self, request_id: str) -> tuple[str, str] | None:
+        rows = self._run(
+            lambda: self.client.table("household_requests")
+            .select("wife_user_id,husband_user_id")
+            .eq("id", request_id)
+            .limit(1)
+            .execute()
+        )
+        if not rows:
+            return None
+        return (rows[0]["wife_user_id"], rows[0]["husband_user_id"])
 
-    def request_owner_ids(self, request_id: str):
-        return self.fallback.request_owner_ids(request_id)
+    def save_request(self, request: HouseholdRequestResponse) -> None:
+        self._run(
+            lambda: self.client.table("household_requests")
+            .update(
+                {
+                    "status": request.status,
+                    "confirmed_at": _iso(request.confirmed_at),
+                    "completed_at": _iso(request.completed_at),
+                }
+            )
+            .eq("id", request.request_id)
+            .execute()
+        )
+        for item in request.items:
+            self._run(
+                lambda item=item: self.client.table("household_request_items")
+                .update({"status": item.status})
+                .eq("id", item.item_id)
+                .execute()
+            )
 
-    def save_request(self, request) -> None:
-        self.fallback.save_request(request)
+    def list_requests(self, user_id: str) -> list[HouseholdRequestResponse]:
+        as_wife = self._run(
+            lambda: self.client.table("household_requests")
+            .select("*")
+            .eq("wife_user_id", user_id)
+            .execute()
+        )
+        as_husband = self._run(
+            lambda: self.client.table("household_requests")
+            .select("*")
+            .eq("husband_user_id", user_id)
+            .execute()
+        )
+        return [self._load_response(row) for row in as_wife + as_husband]
 
-    def list_requests(self, user_id: str):
-        return self.fallback.list_requests(user_id)
+    def _load_response(self, row: dict[str, Any]) -> HouseholdRequestResponse:
+        item_rows = self._run(
+            lambda: self.client.table("household_request_items")
+            .select("*")
+            .eq("request_id", row["id"])
+            .execute()
+        )
+        husband_rows = self._run(
+            lambda: self.client.table("profiles")
+            .select("display_name")
+            .eq("user_id", row["husband_user_id"])
+            .limit(1)
+            .execute()
+        )
+        husband_name = husband_rows[0]["display_name"] if husband_rows else "남편"
+        return _build_response(row, item_rows, "아내", husband_name)
 
-    def add_notification(self, recipient_user_id: str, notification) -> None:
-        self.fallback.add_notification(recipient_user_id, notification)
+    def add_notification(
+        self, recipient_user_id: str, notification: NotificationResponse
+    ) -> None:
+        self._run(
+            lambda: self.client.table("notifications")
+            .insert(
+                {
+                    "recipient_user_id": recipient_user_id,
+                    "type": notification.type,
+                    "reference_id": notification.reference_id,
+                    "target_date": (
+                        notification.target_date.isoformat()
+                        if notification.target_date
+                        else None
+                    ),
+                    "title": notification.title,
+                    "body": notification.body,
+                }
+            )
+            .execute()
+        )
 
-    def list_notifications(self, recipient_user_id: str):
-        return self.fallback.list_notifications(recipient_user_id)
+    def list_notifications(self, recipient_user_id: str) -> list[NotificationResponse]:
+        rows = self._run(
+            lambda: self.client.table("notifications")
+            .select("*")
+            .eq("recipient_user_id", recipient_user_id)
+            .order("created_at", desc=True)
+            .execute()
+        )
+        return [_build_notification(row) for row in rows]
 
-    def read_notification(self, recipient_user_id: str, notification_id: str, read_at):
-        return self.fallback.read_notification(recipient_user_id, notification_id, read_at)
+    def read_notification(
+        self, recipient_user_id: str, notification_id: str, read_at: datetime
+    ) -> NotificationResponse | None:
+        rows = self._run(
+            lambda: self.client.table("notifications")
+            .update({"read_at": read_at.isoformat()})
+            .eq("id", notification_id)
+            .eq("recipient_user_id", recipient_user_id)
+            .execute()
+        )
+        if not rows:
+            return None
+        return _build_notification(rows[0])
 
     def get_motion_privacy(self, user_id: str) -> MotionPrivacyResponse:
         rows = self._run(
@@ -200,6 +357,52 @@ class SupabaseFamilyRepository(FamilyRepository):
             collection_enabled=saved["collection_enabled"],
             updated_at=saved["updated_at"],
         )
+
+
+def _iso(value: datetime | None) -> str | None:
+    return value.isoformat() if value else None
+
+
+def _build_response(
+    row: dict[str, Any],
+    item_rows: list[dict[str, Any]],
+    wife_display_name: str,
+    husband_display_name: str,
+) -> HouseholdRequestResponse:
+    return HouseholdRequestResponse(
+        request_id=row["id"],
+        target_date=date.fromisoformat(str(row["date"])),
+        requester_display_name=wife_display_name,
+        recipient_display_name=husband_display_name,
+        reason=row["reason_text"],
+        status=row["status"],
+        items=[
+            HouseholdRequestItem(
+                item_id=item["id"],
+                title=item["title"],
+                helper_info=item.get("helper_info"),
+                routine_item_id=item.get("routine_item_id"),
+                status=item["status"],
+            )
+            for item in item_rows
+        ],
+        requested_at=row["requested_at"],
+        confirmed_at=row.get("confirmed_at"),
+        completed_at=row.get("completed_at"),
+    )
+
+
+def _build_notification(row: dict[str, Any]) -> NotificationResponse:
+    return NotificationResponse(
+        notification_id=row["id"],
+        type=row["type"],
+        title=row["title"],
+        body=row["body"],
+        target_date=date.fromisoformat(str(row["target_date"])) if row.get("target_date") else None,
+        reference_id=row["reference_id"],
+        created_at=row["created_at"],
+        read_at=row.get("read_at"),
+    )
 
 
 def _summarize_condition(condition: dict[str, Any]) -> list[str]:

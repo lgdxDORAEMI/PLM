@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../design_system/components/app_ink_well.dart';
 import '../../../design_system/components/content_frame.dart';
 import '../../../design_system/components/responsive_split_view.dart';
 import '../../../design_system/components/top_app_bar.dart';
@@ -82,20 +83,11 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
                     selectedArea: _controller.selectedArea,
                     onSelected: _controller.selectArea,
                   ),
-                  const SizedBox(height: AppSpacing.lg),
-                  Text(
-                    '불편하거나 통증이 심해지면 동작을 멈추고 의료진과 상담해 주세요.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textTertiary,
-                    ),
-                  ),
                 ],
               ),
               secondary: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const _BodySummary(),
-                  const SizedBox(height: AppSpacing.xxl),
                   Text(
                     '오늘의 집중 부위',
                     style: Theme.of(context).textTheme.titleLarge,
@@ -111,6 +103,13 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
                   ],
                 ],
               ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            Text(
+              '오늘은 허리·골반 부담이 큰 날이에요. 임신 주차와 오늘 컨디션을 함께 반영했어요. 불편하거나 통증이 심해지면 동작을 멈추고 의료진과 상담해 주세요.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
             ),
           ],
         ),
@@ -158,40 +157,6 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
       );
 }
 
-class _BodySummary extends StatelessWidget {
-  const _BodySummary();
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.all(AppSpacing.pageMobile),
-    decoration: BoxDecoration(
-      color: AppColors.surface,
-      border: Border.all(color: AppColors.borderSubtle),
-      borderRadius: BorderRadius.circular(AppRadius.hero),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '오늘은 허리·골반이 가장 힘든 날',
-          style: Theme.of(
-            context,
-          ).textTheme.titleLarge?.copyWith(color: AppColors.categoryBody),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        const Text('28주차에 자주 나타나는 치골결합통 구간이고, 오늘 컨디션에서 허리 부담을 높게 표시했어요.'),
-        const SizedBox(height: AppSpacing.md),
-        const Divider(),
-        Text(
-          '임신 주차 · 오늘 컨디션 체크를 함께 반영',
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
-        ),
-      ],
-    ),
-  );
-}
-
 class _BodyLoadCard extends StatelessWidget {
   const _BodyLoadCard({
     required this.load,
@@ -206,7 +171,7 @@ class _BodyLoadCard extends StatelessWidget {
     button: true,
     selected: selected,
     label: '${load.area} ${load.label}',
-    child: InkWell(
+    child: AppInkWell(
       key: ValueKey('health-area-${load.area}'),
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.card),
