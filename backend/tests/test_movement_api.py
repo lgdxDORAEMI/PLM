@@ -29,8 +29,18 @@ import numpy as np
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
-from app.api.v1.movement import get_event_store, get_pose_extractor, get_session_manager
+from app.api.v1.family import get_family_service
+from app.api.v1.movement import (
+    WS_CLOSE_CONSENT_REQUIRED,
+    get_event_store,
+    get_pose_extractor,
+    get_session_manager,
+)
 from app.core.security import CurrentUser, get_current_user
+from app.domains.errors import DomainStorageError
+from app.domains.family.schemas import MotionCollectionInput
+from app.domains.family.service import FamilyService
+from app.domains.family.stub_repository import StubFamilyRepository
 from app.main import app
 from app.services.movement.calibration import LocalFileCalibrationStore, _capture_frames_setting
 from app.services.movement.events import InMemoryEventStore
@@ -128,6 +138,12 @@ class MovementWebSocketTest(unittest.TestCase):
         app.dependency_overrides[get_event_store] = lambda: self.event_store
         app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=_TEST_USER_ID)
         app.dependency_overrides[get_supabase_service] = lambda: _fake_supabase_service(_TEST_USER_ID)
+
+        # NFR-012 게이트: 기본은 동의+수집 ON 상태로 두어 기존 배선 테스트가 그대로 통과한다.
+        self.family = FamilyService(StubFamilyRepository())
+        self.family.grant_motion_consent(_TEST_USER_ID)
+        self.family.set_motion_collection(_TEST_USER_ID, MotionCollectionInput(enabled=True))
+        app.dependency_overrides[get_family_service] = lambda: self.family
 
         self.client = TestClient(app)
         # 이전 테스트 실행이 남긴 기록 때문에 "이미 캘리브레이션 있음"으로
@@ -229,6 +245,35 @@ class MovementWebSocketTest(unittest.TestCase):
                 headers=_ALLOWED_ORIGIN_HEADERS,
             ):
                 pass
+
+    # --- NFR-012: 동의/수집 게이트 ---
+
+    def _connect_close_code(self) -> int:
+        with self.assertRaises(WebSocketDisconnect) as ctx:
+            with self.client.websocket_connect(_STREAM_URL, headers=_ALLOWED_ORIGIN_HEADERS):
+                pass
+        return ctx.exception.code
+
+    def test_no_consent_is_rejected_with_consent_code(self) -> None:
+        self.family.withdraw_motion_consent(_TEST_USER_ID)
+        self.assertEqual(self._connect_close_code(), WS_CLOSE_CONSENT_REQUIRED)
+
+    def test_consent_but_collection_off_is_rejected(self) -> None:
+        self.family.set_motion_collection(_TEST_USER_ID, MotionCollectionInput(enabled=False))
+        self.assertEqual(self._connect_close_code(), WS_CLOSE_CONSENT_REQUIRED)
+
+    def test_consent_and_collection_on_proceeds_to_calibration(self) -> None:
+        with self.client.websocket_connect(_STREAM_URL, headers=_ALLOWED_ORIGIN_HEADERS) as ws:
+            ws.send_bytes(_BLANK_JPEG)
+            self.assertEqual(ws.receive_json()["type"], "calibration_progress")
+
+    def test_consent_lookup_failure_rejects_instead_of_opening(self) -> None:
+        class BrokenFamily:
+            def motion_privacy(self, user_id: str):
+                raise DomainStorageError("down")
+
+        app.dependency_overrides[get_family_service] = lambda: BrokenFamily()
+        self.assertEqual(self._connect_close_code(), 1011)
 
 
 if __name__ == "__main__":
