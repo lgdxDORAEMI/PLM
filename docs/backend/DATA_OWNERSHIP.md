@@ -45,7 +45,7 @@
 | 챗봇 대화 이력 | Chat | `chat_messages`(MISSING) | W-CHAT-001 | SOURCE | NFR-027: 원문은 Report에 반영 안 함, 보관·파기 기준 TBD |
 | 임계 이벤트(자세·부담라벨·지속시간) | Movement | `posture_events` | B-MOTION-001, W-REPORT-002 | EVENT | "위험한 순간만 저장" 원칙 — `burden_label='Normal'` 행 없음. Protected |
 | 자세 기준선(캘리브레이션) | Movement | `posture_calibration_profiles` | `WS /movement/live/stream` 캘리브레이션 단계 | SOURCE | 최신 1행을 현재 기준선으로 사용. Protected |
-| 모션 동의·수집 ON/OFF | Movement | `motion_consents`(MISSING) | B-MOTION-001 | SOURCE | 신규 테이블. 현재 WS 연결 게이트와 미연동 |
+| 모션 동의·수집 ON/OFF | Movement | `motion_consents`(STEP 7 migration, STEP 14 실연결) | B-MOTION-001 | SOURCE | STEP 18: WS 연결 시 이 값을 검사해 동의 없음/수집 OFF면 연결 거부 |
 | 모션 일일 요약(관절 부담) | Movement | — (`posture_events` 집계) | W-REPORT-002, `daily_reports.content` | DERIVED / 확정 시 CACHE | `daily_reports` 확정 시점에 한해 스냅샷으로 고정 저장 — `posture_events` 30일 삭제 후에도 리포트에는 남음 |
 | 모션 세션 상태(진행 중 세션) | Movement | `motion_sessions`(MISSING, 현재는 프로세스 메모리) | `GET /movement/live` | CACHE | 서버 재시작 시 소실, 다중 사용자 미지원. 도입 여부는 `TARGET_DB_SCHEMA.md`에서 NOT_REQUIRED(이번 MVP) |
 
@@ -129,7 +129,7 @@ NFR-008(민감정보 암호화)·NFR-010(민감정보 분리 관리)·NFR-013(�
 | 가사 요청 | H-REQUEST-001/002 | **SHARED / event**(양방향 쓰기) | `household_requests`(+`items`) | 아내가 만들고 남편이 상태를 전이(요청됨→확인됨→완료됨) — 어느 한쪽 소유가 아니라 같은 행을 공유. STEP 17 실연결 |
 | 오전 리포트 | H-REPORT-001 | **SHARED projection** | `partner_links`(authorization) → `pregnancy_profiles`+`daily_conditions`+`routine_items`(그 자리에서 읽음) | STEP 12에서 구현 완료. 남편용 복제 테이블 없음 |
 | 캘린더(읽기 전용) | B-CAL-001 | **SHARED projection**(예정) | `daily_conditions`+`daily_reports` | STEP 12에서 아내용 구현, STEP 17에서 남편 분기(`partner_links` 연동 시 아내 캘린더 읽기 전용) 구현 |
-| 홈캠 조회(읽기 전용) | B-MOTION-001(남편) | **SHARED projection**(예정) | `posture_events` | 아직 남편 role 조회 권한 분기 없음 — TBD |
+| 홈캠 조회(읽기 전용) | B-MOTION-001(남편) | **SHARED projection**(예정) | `posture_events` | STEP 18 구현 — `partner_links` 연동 시 아내 이벤트·리포트 읽기 전용(캘린더와 같은 `partner_scope` 규칙) |
 | 임신 주수 | H-REPORT-001 | **DERIVED** | `pregnancy_profiles.due_date` 기준 계산 | 저장 안 함 |
 | 진입 목적지(destination) | B-ENTRY-001 | **DERIVED** | role+profile+partner_link 조합 계산 | 저장 안 함 |
 | 아내 Profile 원본 | (없음 — 남편 화면에 노출 필드 자체가 없음) | **NOT ACCESSIBLE** | `pregnancy_profiles`(원본) | `profile.py`/`account.py` 어떤 엔드포인트도 타 user_id로 조회 불가(STEP 10 테스트로 확인) |

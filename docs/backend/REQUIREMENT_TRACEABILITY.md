@@ -47,7 +47,7 @@
 | Wife | W-SLEEP-001(본문+팝업, 병합) | FUC-W-SLEEP-001/001-1/002 | UC3, UC11, UC12 | 수면 가이드, 환경 override | `routine_items`(category=sleep), `recommendation_feedback`(MISSING) | `GET /sleep/today` + `PUT /care/routine-items/{id}/sleep-environment` | `test_guide_query.py`(조회), `test_backend_skeleton.py::test_routine_item_feedback_and_sleep_environment_echo_request_only`(Stub) | PARTIAL |
 | Wife | B-CAL-001(Wife) | FUC-B-CAL-001 | UC7, UC10 | 날짜별 컨디션 색상, 실행 루틴 | `daily_conditions`+`daily_reports`(VIEW, 저장 없음) | `GET /care/calendar/{month}` | `test_care_report.py::CalendarApiTest` | PASS |
 | Wife | W-REPORT-001 | FUC-W-REPORT-001/001-1/002 | UC7 | 실행 통계, 최다 부담 부위, 가족 분담 | `daily_reports`(확정 시만 저장) | `POST .../preview`,`.../finalize`,`GET .../{date}` | `test_care_report.py::ReportApiTest`(7개, funnel 집계 포함) | PASS |
-| Wife | B-MOTION-001(Wife) | FUC-B-MOTION-001 | UC13 | ON/OFF, 누적시간, 알림 | `posture_calibration_profiles`/`posture_events`(Protected)+`motion_consents` | `WS /movement/live/stream`,`GET /live,/events,/report/daily` + `GET/PUT/DELETE /family/motion/*` | `test_movement_api.py`, `test_movement_supabase_store.py`, `test_family_motion_consent.py`(8개) | PARTIAL — WS 연결 게이트와 동의값 미연동(TBD), Frontend는 여전히 Mock |
+| Wife | B-MOTION-001(Wife) | FUC-B-MOTION-001 | UC13 | ON/OFF, 누적시간, 알림 | `posture_calibration_profiles`/`posture_events`(Protected)+`motion_consents` | `WS /movement/live/stream`,`GET /live,/events,/report/daily` + `GET/PUT/DELETE /family/motion/*` | `test_movement_api.py`(WS 5 + 동의 게이트 4 + 남편 분기 3), `test_movement_supabase_store.py`, `test_family_motion_consent.py`(8개) | PASS — WS 연결 시 동의/수집 검사(STEP 18). Frontend는 여전히 Mock |
 | Wife | W-CALLBACK-001 | FUC-W-CALLBACK-001 | UC11 | 재시도, 폴백 | `daily_routines.source` | `POST /routine/today`(재호출) | `test_routine_service.py::RoutineServiceTest`(폴백 3종) | PASS |
 | Wife | W-MENU-001 | FUC-W-MENU-001 | UC1(연계) | 프로필 요약, 연동 상태 | `pregnancy_profiles`+`partner_links` | `GET /profile/me` + `GET /account/partner-link` | `test_profile.py`, `test_account_partner_link.py` | PASS |
 | Wife | W-SETTING-001 | FUC-W-SETTING-001 | — | 없음 | — | 없음 | — | PHASE_2 |
@@ -62,7 +62,7 @@
 | Husband | H-REPORT-001 | FUC-H-REPORT-001 | UC8 | 주차, 컨디션 요약, 가이드 요약 | `partner_links`+`pregnancy_profiles`+`daily_conditions`+`routine_items`(projection) | `GET /family/morning-reports/{date}` | `test_family_morning_report.py`(5개) | PASS |
 | Husband | H-REQUEST-001 | FUC-H-REQUEST-001/002 | UC9 | 요청 확인/완료 | `household_requests`(+items) | `GET .../household-requests/{id}`,`.../confirm`,`.../complete` | `test_family_household_request.py` | PASS |
 | Husband | H-REQUEST-002 | FUC-H-REQUEST-003 | UC9 | 완료 결과 요약 | 위와 동일 | `complete` 응답 재사용 | 위와 동일 | TBD — 화면설계서 원문에 본문 섹션 자체가 없음 |
-| Husband | B-MOTION-001(Husband) | FUC-B-MOTION-001 | UC13 | 조회 전용 누적시간 | `posture_events`(Protected) | `GET /movement/events,/report/daily` | `test_movement_api.py` | PARTIAL — 남편 role 필터링 미구현 |
+| Husband | B-MOTION-001(Husband) | FUC-B-MOTION-001 | UC13 | 조회 전용 누적시간 | `posture_events`(Protected) | `GET /movement/events,/report/daily` | `test_movement_api.py`(연동 남편→아내 이벤트·리포트, 미연동→빈 결과), `test_partner_scope.py` | PASS — `partner_links` 연동 시 아내 데이터 읽기 전용(STEP 18) |
 
 ---
 
@@ -131,10 +131,10 @@ STEP 15에서 `Widget → Store → Repository 인터페이스 → (Mock|Api)Rep
 | Notification | **READY** | `notifications` 실 연결. 발송 트리거 3종(가사 요청/오전 리포트/루틴 변경) 전부 구현·테스트(STEP 17). 오전 리포트·루틴 변경 알림은 `POST /routine/today` 성공 직후 발송(FUC-W-COND-002/003) |
 | Report(남편 오전) | **READY** | family authorization + projection 원칙으로 완결, 원본 비노출 검증까지 포함(STEP 12) |
 | Chat | **BLOCKED** | 지원 테이블 없음(NFR-027 보관 정책 자체가 TBD라 실 연결의 전제조건이 아직 없음) |
-| Movement(Protected) | **READY** | 알고리즘·핵심 데이터 흐름 불변, 전체 회귀 테스트 통과. 동의값↔WS 게이트 연동만 별도 합의 필요(PARTIAL 요인이지만 Protected 정책상 이번 범위 밖) |
+| Movement(Protected) | **READY** | 알고리즘·핵심 데이터 흐름 불변, 전체 회귀 테스트 통과. STEP 18에서 동의↔WS 게이트 연동·남편 조회 분기 완료(라우트 계층만 수정, `services/movement/**` 불변). 임계값은 데모값으로 MVP 확정 |
 | Motion Consent | **READY** | `motion_consents` 실 연결, 카메라 데이터 미저장 재확인(STEP 14) |
 | Frontend Integration | **PARTIAL** | 아키텍처 경계와 패턴은 READY 수준(Condition 1개 화면 증명 완료)이나 나머지 30개 화면은 여전히 MOCK_ONLY — 화면별 로딩/오류 UI 추가가 남은 선행 작업 |
 
 ### 전체 요약
 
-STEP 16 시점 **READY 9 / PARTIAL 2 / BLOCKED 3** → STEP 17 시점 **READY 12 / PARTIAL 1 / BLOCKED 1** (Domain 14개 기준). Household·Notification이 BLOCKED에서 READY로, Report/Calendar가 PARTIAL에서 READY로 올라갔다(가족 분담 집계는 "자동 해소"가 아니라 `care/supabase_repository.py`의 하드코딩 0을 `household_requests` 조회로 직접 교체해야 했다). 남은 BLOCKED는 Chat 1개(AI 담당 영역, NFR-027 TBD), PARTIAL은 Frontend Integration 1개다. Movement의 WS 게이트-동의 연동 미결은 Protected 모듈 정책상 이번 범위 밖이라 별도 합의 항목으로만 남기고 Movement 자체의 READY 판정에는 포함하지 않았다(카메라 데이터 미저장·알고리즘 불변이라는 이번 도메인의 핵심 기준은 전부 충족).
+STEP 16 시점 **READY 9 / PARTIAL 2 / BLOCKED 3** → STEP 17 시점 **READY 12 / PARTIAL 1 / BLOCKED 1** (Domain 14개 기준). Household·Notification이 BLOCKED에서 READY로, Report/Calendar가 PARTIAL에서 READY로 올라갔다(가족 분담 집계는 "자동 해소"가 아니라 `care/supabase_repository.py`의 하드코딩 0을 `household_requests` 조회로 직접 교체해야 했다). 남은 BLOCKED는 Chat 1개(AI 담당 영역, NFR-027 TBD), PARTIAL은 Frontend Integration 1개다. STEP 18에서 Movement의 남은 두 항목(동의↔WS 게이트, 남편 조회 분기)을 소유자가 직접 마무리해 B-MOTION-001 아내/남편 행 모두 PASS가 됐다.

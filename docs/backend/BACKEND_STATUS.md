@@ -55,7 +55,7 @@
 | Wife | W-SLEEP-001 (본문+바텀시트 팝업 병합) | FUC-W-SLEEP-001, FUC-W-SLEEP-001-1, FUC-W-SLEEP-002 | 권장 취침시간, 환경 5항목, override 이력, 가전 실행 | `routine_items`(EXISTING, category=sleep), `recommendation_feedback`(MISSING) | `GET /sleep/today`(STEP 11, Query Layer, 실연결). override 저장·가전 실행 API 없음(ThinQ 연동 W-SLEEP-002는 Phase 2) | PARTIAL |
 | Wife | B-CAL-001 | FUC-B-CAL-001 | 날짜별 컨디션 색상, 실행 루틴, 가전, 가족 분담 | `daily_conditions`/`daily_reports`(EXISTING, STEP 12), `household_requests`(EXISTING) | `GET /care/calendar/{month}` (STEP 12, daily_conditions+daily_reports 조합 조회, 새 테이블 없음; STEP 17에서 남편 호출 시 `partner_links` 기반 아내 캘린더 분기) | IMPLEMENTED |
 | Wife | W-REPORT-001 | FUC-W-REPORT-001, FUC-W-REPORT-001-1, FUC-W-REPORT-002 | 실행 통계, 최다 부담 부위, 가족 분담 요약, 홈캠 주의사항 | `daily_reports`(EXISTING, STEP 12) | `POST .../preview`(미저장, NFR-028), `.../finalize`(확정 시에만 1행 저장), `GET .../{date}` (STEP 12, Record+Condition+Movement에서 파생; STEP 17에서 `family` 집계를 `household_requests` 실조회로 교체) | IMPLEMENTED |
-| Wife | B-MOTION-001 | FUC-B-MOTION-001 | ON/OFF, 오늘 누적시간, 임계값 알림 리스트 | `posture_calibration_profiles`/`posture_events`/`motion_consents`(모두 EXISTING) | `WS /movement/live/stream`, `GET /live,/events,/report/daily`(Supabase 연동, 실동작) + `GET/PUT/DELETE /family/motion/*`(STEP 14, `motion_consents` 실연결) | PARTIAL(동의값이 WS 연결 게이트와는 여전히 미연동 — Protected `movement.py` 변경 필요, 별도 합의 TBD) |
+| Wife | B-MOTION-001 | FUC-B-MOTION-001 | ON/OFF, 오늘 누적시간, 임계값 알림 리스트 | `posture_calibration_profiles`/`posture_events`/`motion_consents`(모두 EXISTING) | `WS /movement/live/stream`, `GET /live,/events,/report/daily`(Supabase 연동, 실동작) + `GET/PUT/DELETE /family/motion/*`(STEP 14, `motion_consents` 실연결) | IMPLEMENTED — STEP 18(2026-09-18): WS 연결 시 `motion_consents` 검사(동의 없음/수집 OFF → 4003, 조회 실패 → 1011) |
 | Wife | W-CALLBACK-001 | FUC-W-CALLBACK-001 | 재시도, 전일 루틴/기본 템플릿 폴백 | `daily_routines.source`(EXISTING) | `routine.py` 내부 폴백 로직(Supabase 연동, 실동작 확인됨) | IMPLEMENTED |
 | Wife | W-MENU-001 | FUC-W-MENU-001 | 프로필 요약, 남편 연동 상태 | `pregnancy_profiles`(EXISTING), `partner_links`(MISSING) | `GET /profile/me`(real) + `GET /account/partner-link`(Stub) | PARTIAL |
 | Wife | W-SETTING-001 | FUC-W-SETTING-001 | 플레이스홀더 | - | 없음(문서상 "미반영, Phase 2") | PHASE_2 |
@@ -72,7 +72,7 @@
 | Husband | H-REPORT-001 | FUC-H-REPORT-001 | 주차, 컨디션 요약, 예정 집안일, 4대 가이드 요약 — **원문 내부 모순**: 문서 내 두 버전이 "가이드 요약 포함 여부"를 서로 다르게 서술 | `partner_links`+`pregnancy_profiles`+`daily_conditions`+`routine_items`(모두 EXISTING) | `GET /family/morning-reports/{date}`(STEP 12, family authorization+projection — 복사 저장 없음, 원본 점수 미노출) | IMPLEMENTED |
 | Husband | H-REQUEST-001 (확인+수행 병합) | FUC-H-REQUEST-001, FUC-H-REQUEST-002 | 요청 상태(요청됨→확인됨→완료됨), 요청 목록 | `household_requests`/`household_request_items`(EXISTING) | `POST .../confirm`, `.../complete`, `GET`(STEP 17, Supabase 실연결) | IMPLEMENTED |
 | Husband | H-REQUEST-002(완료 결과) | FUC-H-REQUEST-003 | 완료 처리 요약, 캘린더 반영 | 위와 동일 | 별도 API 없음(원문에 본문 섹션 누락, `complete` 응답 재사용 추정) | TBD |
-| Husband | B-MOTION-001 (조회 전용) | FUC-B-MOTION-001 | 조회 전용 누적시간/알림 | `posture_events`(EXISTING) | `GET /movement/events` 등(real)이나 부부 연동 검증(조회 권한) 로직 없음 | PARTIAL |
+| Husband | B-MOTION-001 (조회 전용) | FUC-B-MOTION-001 | 조회 전용 누적시간/알림 | `posture_events`(EXISTING) | `GET /movement/events`, `/report/daily` — STEP 18: 남편은 `partner_links`로 연동된 아내 데이터를 읽기 전용 조회(`api/v1/partner_scope.py`, 캘린더와 공용) | IMPLEMENTED |
 
 ## Shared Screen Matrix
 
@@ -137,9 +137,9 @@
 - ~~오전 리포트·루틴 변경 알림 발송(FUC-W-COND-002/003)~~ — STEP 17에서 해결. `POST /routine/today` 성공 직후 `FamilyService.notify_routine_ready`가 첫 생성이면 `morning_report`, 재생성이면 `condition_changed`를 남편에게 발송(미연동 시 생략, 발송 실패해도 201). `app/api/v1/routine.py` 라우트만 최소 수정(`app/services/routine/**` 불변)
 - 챗봇(W-CHAT-001) — STEP 8에서 Stub 골격 생성, 실제 AI 응답·이력 영속화는 미구현(NFR-027 보관 정책 TBD)
 - 메뉴 수락/거절 이력, 수면 환경 override 저장 — STEP 8에서 Stub 골격 생성, `recommendation_feedback` 실 연결은 미구현
-- 모션 동의(`motion_consents`)를 WS 연결 게이트에 실제로 연동 — 여전히 미해결(Protected 모듈 합의 필요)
+- ~~모션 동의(`motion_consents`)를 WS 연결 게이트에 실제로 연동~~ — STEP 18에서 해결(`movement.py` `stream_live`, 토큰 검증 직후 `FamilyService.motion_privacy` 재사용). 연결 시점 검사이며, 스트림 도중 철회는 프론트가 WS를 끊는 것으로 처리(NFR-012)
 - ThinQ 가전 실행(W-HOUSE-002, W-SLEEP-002) — Phase 2/MVP 표시까지만
-- 남편 조회 권한(부부 연동 검증) 분기 — `B-CAL-001`(캘린더)은 STEP 17에서 해결(`care.py` `get_calendar_target_user_id`). `B-MOTION-001`/`posture_events` 조회는 여전히 role 구분 없음(Protected `movement.py`, 다음 작업). Profile은 STEP 10에서 남편이 아내 원본에 접근할 경로 자체가 없음을 코드·테스트로 재확인함(`tests/test_profile.py::test_husband_cannot_read_wifes_profile`)
+- 남편 조회 권한(부부 연동 검증) 분기 — `B-CAL-001`(캘린더)은 STEP 17에서 해결(`care.py` `get_calendar_target_user_id`). `B-MOTION-001`(`/movement/events`, `/report/daily`)은 STEP 18에서 해결 — 캘린더 헬퍼를 `api/v1/partner_scope.py`로 공용화해 두 도메인이 같은 규칙을 쓴다. `/live`는 데모 단일 세션이라 제외. Profile은 STEP 10에서 남편이 아내 원본에 접근할 경로 자체가 없음을 코드·테스트로 재확인함(`tests/test_profile.py::test_husband_cannot_read_wifes_profile`)
 
 ## Protected Modules
 
@@ -155,6 +155,6 @@
 - `FUC-W-COND-003` vs 유스케이스 UC2 A1 설명 불일치 — 최신 FUC는 "남편 변경 알림 발송"으로 명시했으나 UC 문서는 미정 (`DOMAIN_OWNERSHIP.md` 기존 TBD)
 - `H-REPORT-001`(남편 화면 DB스키마 PDF): 오전 리포트에 4대 AI 가이드 요약 포함 여부가 같은 화면 ID 내 두 버전에서 서로 다르게 서술됨 — 확정 필요
 - `H-REQUEST-002`(가사 요청 완료 결과): 남편 화면설계서 인덱스에는 있으나 본문 상세 섹션이 문서에 없음 — 별도 API 필요 여부 확인 필요
-- Calendar 4단계 컨디션 지수 계산식, Motion 감지 임계값 — 문서상 수치 미확정 (`DOMAIN_OWNERSHIP.md` 기존 TBD)
+- Calendar 4단계 컨디션 지수 계산식 — 문서상 수치 미확정 (`DOMAIN_OWNERSHIP.md` 기존 TBD). ~~Motion 감지 임계값~~ — STEP 18: MVP 임계값은 `rules.yaml` 데모값으로 확정(소유자 결정). 실서비스 값 재산정은 Phase 2
 - ~~Account Stub의 기본 역할이 Wife로 고정~~ — STEP 13의 `SupabaseAccountRepository._role()`이 이미 `profiles.role`을 조회한다(행이 없으면 Wife 기본값, 남편은 초대 수락 시 `profiles`에 기록). STEP 17 재확인으로 종료
 - `posture_calibration_profiles`/`posture_events`의 `motion_sessions` 연동(§5 가정 1, `/live` 조회를 DB 기반으로 전환할지) — `TARGET_DB_SCHEMA.md`에서 NOT_REQUIRED(이번 MVP)

@@ -531,8 +531,8 @@
 - Response: `{"type":"calibration_progress"|"calibration_done"}` 또는 `{"type":"frame","data":PostureFrameState}`(WebSocket 메시지, 프레임/landmark는 응답에만 존재하고 저장하지 않음 — NFR-011)
 - Source Data: `posture_calibration_profiles`(캘리브레이션 저장) + `posture_events`(임계 이벤트만 저장)
 - Authorization: 쿼리 파라미터 `token`(WebSocket은 헤더 미지원이라 예외)
-- Error: 1008(origin 불허/토큰 무효)
-- Status: **implemented**
+- Error: 1008(origin 불허/토큰 무효), **4003**(동의 없음 또는 수집 OFF — `motion_consents`, STEP 18), 1011(동의 조회 실패)
+- Status: **implemented** — STEP 18에서 연결 시점 동의 게이트 추가(NFR-012). 스트림 도중 철회는 프론트가 WS를 끊는다
 
 ### `GET /api/v1/movement/live`
 
@@ -558,7 +558,7 @@
 - Source Data: `posture_events`
 - Authorization: 기본값
 - Error: 없음
-- Status: **implemented** — 남편 조회 시 부부 연동 검증(권한 분기)은 미구현
+- Status: **implemented** — STEP 18: 남편은 `partner_links`로 연동된 아내 데이터를 읽기 전용 조회(`api/v1/partner_scope.py`, 캘린더와 공용). 미연동 사용자는 본인(빈) 데이터
 
 ### `GET /api/v1/movement/report/daily`
 
@@ -571,7 +571,7 @@
 - Source Data: `posture_events`(집계)
 - Authorization: 기본값
 - Error: 없음
-- Status: **implemented**
+- Status: **implemented** — STEP 18: 남편은 연동된 아내의 리포트(`partner_scope`)
 
 ### `GET /api/v1/family/motion/privacy`
 
@@ -610,7 +610,7 @@
 - Source Data: `motion_consents`
 - Authorization: 기본값
 - Error: 없음
-- Status: **implemented**(STEP 14, 데이터만) — `WS /movement/live/stream`(Protected) 연결 게이트와는 여전히 미연동, 별도 합의 필요(TBD 유지)
+- Status: **implemented** — STEP 18에서 `WS /movement/live/stream` 연결 게이트와 연동: 철회 이후 새 연결은 4003으로 거부된다
 
 ### `PUT /api/v1/family/motion/collection`
 
