@@ -59,6 +59,18 @@ class ProfileDraft {
   DateTime? get effectiveDueDate =>
       dueDate ?? lastPeriodDate?.add(const Duration(days: 280));
 
+  /// 생년월일을 기준으로 기준일의 만 나이를 계산한다.
+  int? ageAt(DateTime date) {
+    final birth = birthDate;
+    if (birth == null) return null;
+    var age = date.year - birth.year;
+    final birthdayPassed =
+        date.month > birth.month ||
+        (date.month == birth.month && date.day >= birth.day);
+    if (!birthdayPassed) age -= 1;
+    return age;
+  }
+
   /// 저장된 예정일을 기준으로 현재 임신 주수를 계산한다.
   int? pregnancyWeekAt(DateTime date) {
     final due = effectiveDueDate;

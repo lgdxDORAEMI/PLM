@@ -1,7 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plm_frontend/features/profile/controllers/profile_setup_controller.dart';
 import 'package:plm_frontend/features/profile/data/profile_store.dart';
 import 'package:plm_frontend/features/profile/models/profile_draft.dart';
+import 'package:plm_frontend/features/profile/screens/profile_setup_screen.dart';
 import 'package:plm_frontend/features/entry/services/mock_entry_service.dart';
 import 'package:plm_frontend/routing/route_context.dart';
 
@@ -65,6 +67,18 @@ void main() {
     expect(controller.draft.medicalConditions, {'조기진통'});
   });
 
+  testWidgets('프로필 2단계는 생년월일과 임신 전 신체 정보를 입력받는다', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ProfileSetupScreen(mode: ProfileMode.create, initialStep: 1),
+      ),
+    );
+
+    expect(find.text('신장'), findsOneWidget);
+    expect(find.text('체중 (임신 전)'), findsOneWidget);
+    expect(find.text('생년월일'), findsOneWidget);
+  });
+
   test('수정 Mode는 저장된 Profile을 불러오고 이전 단계로 이동한다', () {
     ProfileStore.instance.save(ProfileDraft.mockEdit());
     final controller = ProfileSetupController(mode: ProfileMode.edit);
@@ -95,6 +109,8 @@ void main() {
       lmp.add(const Duration(days: 280)),
     );
     expect(controller.draft.pregnancyWeekAt(DateTime(2026, 9, 17)), 26);
+    expect(controller.draft.ageAt(DateTime(2026, 5, 13)), 32);
+    expect(controller.draft.ageAt(DateTime(2026, 5, 14)), 33);
     controller.updateDueDate(DateTime(2026, 12, 25));
     expect(controller.draft.lastPeriodDate, isNull);
     controller.updateLastPeriodDate(lmp);

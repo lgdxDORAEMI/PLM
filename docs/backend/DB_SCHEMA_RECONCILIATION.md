@@ -23,7 +23,7 @@
 | Both | B-ENTRY-001 | 역할, 표시 이름 | `profiles` | 없음 | MISSING | 신규 migration (role/display_name) |
 | Wife | W-PROFILE-001 | 출산예정일, 마지막 생리 시작일 | `pregnancy_profiles` | `pregnancy_profiles`(EXISTING, `20260915000000` + `20260916000000_relax_due_date_constraint`) | EXISTING_MATCH | 없음 |
 | Wife | W-PROFILE-002 | 신장, 임신 전 체중 | `pregnancy_profiles.height_cm/pre_pregnancy_weight_kg` | 동일 컬럼 존재 | EXISTING_MATCH | 없음 |
-| Wife | W-PROFILE-002 | (화면 PDF 서술) 생년월일→나이 | — | 컬럼 없음. 구 ERD 초안(삭제됨)에서 "FR에 없어 제외"로 결정 | TBD | FR 재확인 후 필요하면 컬럼 추가, 아니면 화면설계서 쪽 수정 요청 |
+| Wife | W-PROFILE-002 | 생년월일→나이 | — | 컬럼 없음. 최신 FUC-W-PROFILE-002에서 필수 입력으로 복구 | GAP | `birth_date` 컬럼 migration 및 단계 API Request/Response 확장 |
 | Wife | W-PROFILE-003 | 초산/경산 | `pregnancy_profiles.is_first_pregnancy` | 존재(`20260917000001_routine_tables`) | EXISTING_MATCH | API만 연결 필요(DB는 준비됨) |
 | Wife | W-PROFILE-004 | 단태/쌍태 | `pregnancy_profiles.is_multiple_pregnancy` | 존재 | EXISTING_MATCH | API만 연결 필요 |
 | Wife | W-PROFILE-005 | 알레르기 다중선택 | `pregnancy_profiles.allergies` | 존재(`text[] default '{}'`) | EXISTING_MATCH | API만 연결 필요 |
@@ -50,7 +50,7 @@
 
 | # | 위험 | 판단 | 근거 |
 |---|---|---|---|
-| 1 | 프로필 저장을 `profile.py`(Supabase, 1~2단계 단계별)와 `account.py`(Stub, 6단계 일괄, `birth_date` 요구)가 이중으로 계약함 | DUPLICATE_RISK | 두 계약이 같은 `pregnancy_profiles` 대상을 다른 필드 요구사항으로 다룸. Account 도메인을 실제 구현할 때 `birth_date`를 포함할지부터 먼저 결정해야 두 구현이 갈라지지 않는다 |
+| 1 | 프로필 저장을 `profile.py`(Supabase, 1~2단계 단계별)와 `account.py`(Stub, 6단계 일괄, `birth_date` 요구)가 이중으로 계약함 | DUPLICATE_RISK | 최신 FUC가 `birth_date`를 확정했으므로 `pregnancy_profiles` migration 후 두 계약을 하나로 통합해야 한다 |
 | 2 | 컨디션 캘린더 지수를 별도 테이블에 저장 | 위험 아님(DERIVED_NOT_STORED로 이미 설계) | 구 ERD 초안(삭제됨): "캘린더 4단계 색은 조회 시 계산" |
 | 3 | 모션 요약을 `daily_reports.content`에 스냅샷 저장 | 위험 아님(의도된 설계) | `posture_events` 30일 보존 만료 후에도 캘린더 과거 조회를 지원하기 위한 스냅샷 — 원본 삭제 후에도 리포트에는 남아야 하므로 목적이 다른 저장 |
 | 4 | 가사 요청 항목과 루틴 항목을 각각 저장 | 위험 아님(FK 재사용으로 설계됨) | `household_request_items.routine_item_id` → `routine_items` FK. 신규 테이블 도입 시 이 FK를 지켜야 중복 저장을 피한다 |

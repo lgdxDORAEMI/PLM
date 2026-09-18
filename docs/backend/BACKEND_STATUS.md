@@ -37,7 +37,7 @@
 |---|---|---|---|---|---|---|
 | Wife | B-ENTRY-001 | FUC-B-ENTRY-001 | 로그인 상태, 프로필 완료 여부, 파트너 연동 상태 | `profiles`+`pregnancy_profiles`+`partner_links`(모두 EXISTING) | `GET /account/bootstrap` (STEP 13, Supabase 실연결) | IMPLEMENTED |
 | Wife | W-PROFILE-001 | FUC-W-PROFILE-001 | 출산예정일, 마지막 생리 시작일 | `pregnancy_profiles`(EXISTING) | `PUT /profile/me/due-date` (Supabase 연동) | IMPLEMENTED |
-| Wife | W-PROFILE-002 | FUC-W-PROFILE-002 | 신장, 임신 전 체중, (화면상) 생년월일→나이 | `pregnancy_profiles.height_cm/pre_pregnancy_weight_kg`(EXISTING). 생년월일/나이 컬럼 없음 — STEP 10 재확인: 구 ERD 초안(삭제됨)의 기존 제외 결정에 더해 FUC-W-PROFILE-002 원문도 "임신 전 신장·체중"만 요구하고 생년월일/나이는 언급하지 않아, 화면 목업에만 있고 기능요구사항 근거가 없는 필드로 확정했다. 컬럼·API 추가하지 않음 | `PUT /profile/me/body` (Supabase 연동, 신장·체중만) | PARTIAL |
+| Wife | W-PROFILE-002 | FUC-W-PROFILE-002 | 생년월일→나이, 신장, 임신 전 체중 | `pregnancy_profiles.height_cm/pre_pregnancy_weight_kg`(EXISTING). 최신 FUC-W-PROFILE-002에 생년월일 필수 입력과 나이 계산이 복구됐으나 `birth_date` 컬럼은 아직 없음 | `PUT /profile/me/body` (Supabase 연동, 현재 신장·체중만) | PARTIAL — `birth_date` migration과 단계 API 확장 필요 |
 | Wife | W-PROFILE-003 | FUC-W-PROFILE-003 | 초산/경산 여부 | `pregnancy_profiles.is_first_pregnancy`(EXISTING, migration `20260917000001`) | `PUT /profile/me/pregnancy-history`(STEP 8, Supabase 실연결) | IMPLEMENTED |
 | Wife | W-PROFILE-004 | FUC-W-PROFILE-004 | 단태/쌍태 여부 | `pregnancy_profiles.is_multiple_pregnancy`(EXISTING) | `PUT /profile/me/pregnancy-count`(STEP 8, Supabase 실연결) | IMPLEMENTED |
 | Wife | W-PROFILE-005 | FUC-W-PROFILE-005 | 알레르기 다중 선택 | `pregnancy_profiles.allergies`(EXISTING) | `PUT /profile/me/allergies`(STEP 8, Supabase 실연결) | IMPLEMENTED |
@@ -120,7 +120,7 @@
 
 ## Duplicate Data Risks
 
-1. **프로필 저장 이중 구현**: `profile.py`(Supabase 연동, 1~2단계 단계별 저장)와 `account.py`의 `PUT /account/profile`(Stub, 6단계 일괄 저장, `birth_date` 필수)이 같은 `pregnancy_profiles` 대상 데이터를 서로 다른 계약으로 다룬다. `birth_date`/`age`는 `pregnancy_profiles`에 컬럼이 없고 구 ERD 초안(삭제됨)에서 "FR에 없어 제외"로 결정한 값이라, Account 쪽 실제 구현 시 필드 정합을 다시 맞춰야 한다.
+1. **프로필 저장 이중 구현**: `profile.py`(Supabase 연동, 1~2단계 단계별 저장)와 `account.py`의 `PUT /account/profile`(Stub, 6단계 일괄 저장, `birth_date` 필수)이 같은 `pregnancy_profiles` 대상 데이터를 서로 다른 계약으로 다룬다. 최신 FUC-W-PROFILE-002가 `birth_date`를 필수 입력으로 확정했으므로, `pregnancy_profiles` migration과 단계별 API 계약을 Account 계약에 맞춰 통합해야 한다.
 2. **`posture_calibrations` 명칭 불일치**: 구 ERD 초안(삭제됨)과 실제 migration의 테이블명이 달랐다. 새 migration은 실제 테이블명(`posture_calibration_profiles`)을 기준으로 작성한다.
 3. **컨디션 캘린더 지수**(위험 아님, 확인 완료): `daily_conditions` 원본 점수와 `B-CAL-001`의 4단계 색상 지수는 별도 테이블 없이 조회 시 계산으로 유지하도록 이미 설계돼 있다.
 4. **모션 요약 vs 원본 이벤트**(위험 아님, 확인 완료): `daily_reports.content`의 모션 요약 스냅샷은 `posture_events` 30일 보존 만료 후에도 캘린더 과거 조회를 지원하려는 목적이라 중복 저장이 아니다.

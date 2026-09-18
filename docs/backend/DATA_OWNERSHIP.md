@@ -62,7 +62,7 @@
 5. **가사 요청 항목에 제목·설명을 복제 저장하지 않는다.** `household_request_items.routine_item_id`가 `routine_items`를 FK로 재사용하도록 설계돼 있다.
 6. **모션 요약을 상시 별도 요약 테이블에 저장하지 않는다.** `posture_events`가 SOURCE이고, `daily_reports` 확정 시점에만 스냅샷을 남긴다(그 외에는 매번 계산).
 7. **메뉴 재추천 이력과 수면 환경 override 이력을 도메인별 별도 테이블(`meal_feedback`, `sleep_feedback` 등)로 나누지 않는다.** `recommendation_feedback` 하나를 `kind` 컬럼(`meal_accept`/`meal_reject`/`meal_replace`/`sleep_env_override`)으로 구분해 공용 SOURCE로 쓴다.
-8. **프로필을 두 곳에 별도 형태로 저장하지 않는다.** `account.py`의 Stub(`PUT /account/profile`, 6단계 일괄·`birth_date` 요구)과 `profile.py`(Supabase, 1~2단계 단계별)는 같은 `pregnancy_profiles`를 대상으로 해야 한다 — Account 도메인을 실제 구현할 때 두 계약을 하나로 통합해야 하며, `birth_date`처럼 DB에 없는 필드를 새로 만들지 않는다(구 ERD 초안(삭제됨)에서도 FR 범위 밖으로 제외).
+8. **프로필을 두 곳에 별도 형태로 저장하지 않는다.** `account.py`의 Stub(`PUT /account/profile`, 6단계 일괄·`birth_date` 요구)과 `profile.py`(Supabase, 1~2단계 단계별)는 같은 `pregnancy_profiles`를 대상으로 해야 한다. 최신 FUC-W-PROFILE-002가 `birth_date`를 필수로 확정했으므로 migration으로 컬럼을 추가하고 두 계약을 하나로 통합한다.
 
 ## Derived Data
 

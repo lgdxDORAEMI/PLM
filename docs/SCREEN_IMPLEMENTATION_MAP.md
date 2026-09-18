@@ -1,6 +1,6 @@
 # Screen Implementation Map — 최종 Frontend QA
 
-기준: `docs/requirements/03_유스케이스명세서.md`, `docs/requirements/04_1_기능요구사항명세서.md`, `docs/requirements/04_2_비기능요구사항명세서.md`, `docs/requirements/화면설계서0916.pdf`(34페이지, 각 페이지 이미지), `docs/screens/**`, `docs/development/ROUTE_MAP.md`, `DESIGN.md`, `frontend/lib/**`. 기능·권한은 최신 기능 요구사항, 화면 전환은 ROUTE_MAP, 시각 규칙은 DESIGN.md를 우선한다. Screen ID 접미 상태는 별도 Route가 아니다. UC1의 구형 나이 입력은 최신 FUC-W-PROFILE-002 및 DESIGN.md와 충돌하므로 복원하지 않았다.
+기준: `docs/requirements/03_유스케이스명세서.md`, `docs/requirements/04_1_기능요구사항명세서.md`, `docs/requirements/04_2_비기능요구사항명세서.md`, `docs/requirements/화면설계서0916.pdf`(34페이지, 각 페이지 이미지), `docs/screens/**`, `docs/development/ROUTE_MAP.md`, `DESIGN.md`, `frontend/lib/**`. 기능·권한은 최신 기능 요구사항, 화면 전환은 ROUTE_MAP, 시각 규칙은 DESIGN.md를 우선한다. Screen ID 접미 상태는 별도 Route가 아니다. 프로필 2단계는 생년월일을 입력받아 나이를 자동 계산하며 임신 전 신장·체중과 함께 관리한다.
 
 `구현`의 **MVP UI**는 실제 Flutter 화면/상태와 Mock flow가 있다는 뜻이며 서버 저장·인증·AI·ThinQ 실행을 의미하지 않는다. **부분**은 명시한 계약이 아직 미충족, **Phase 2 Mock**은 실제 분석/제어 없이 상태만 제공, **Host 대기**는 ThinQ 본체가 필요한 화면이다. `QA`의 **3폭**은 390/768/1280px 직접 URL 렌더링·overflow 검사이며 내부 상태는 해당 기능 테스트로 확인했다. 시각 평가는 PDF/PNG의 정보 구조와 DESIGN.md의 토큰·반응형 규칙을 코드 대조한 것이며 실기기 수동 시각/스크린리더 인증을 뜻하지 않는다.
 
@@ -11,7 +11,7 @@ PDF 대조 페이지: p.1 Profile 005, p.2 Motion, p.3 Entry, p.4 Calendar, p.5 
 | B-ENTRY-001 | FUC-B-ENTRY-001 | `/entry` | `features/entry/screens/entry_screen.dart`, `features/entry/widgets/pregnancy_entry_view.dart`, `routing/app_router.dart` | Bootstrap loading·오류·재시도와 실제 responsive Entry. 신규 Wife는 시작하기→Profile, 완료 Wife는 Home으로 자동 이동 | 이번 변경 최종 QA 대기 |
 | B-ENTRY-001-1 | FUC-B-ENTRY-001 | `/entry` responsive state | 동일 | ThinQ 화면을 복제하지 않고 PLM 디자인 토큰으로 서비스 맥락·핵심 기능을 표현; 별도 Route 없음 | 이번 변경 최종 QA 대기 |
 | W-PROFILE-001 | FUC-W-PROFILE-001 | `/onboarding/profile`, `/wife/profile` step 1 | `features/profile/screens/profile_setup_screen.dart`, `features/profile/models/profile_draft.dart` | 예정일/LMP picker·필수 오류·뒤로; LMP+280일 예정일 및 현재 임신 주수 계산 | 3폭·Wizard·계산 단위 |
-| W-PROFILE-002 | FUC-W-PROFILE-002 | 동일 step 2 | 동일 | 신장·임신 전 체중만 입력, 범위 검증; 구형 나이 입력 제거 | 3폭·Wizard |
+| W-PROFILE-002 | FUC-W-PROFILE-002 | 동일 step 2 | 동일 | 생년월일 날짜 선택·신장·임신 전 체중 입력 및 필수값·범위 검증 | 3폭·Wizard |
 | W-PROFILE-003 | FUC-W-PROFILE-003 | 동일 step 3 | 동일 | 초산/경산 단일 선택·미선택 시 다음 버튼 비활성 | Wizard |
 | W-PROFILE-004 | FUC-W-PROFILE-004 | 동일 step 4 | 동일 | 단태/다태 단일 선택·미선택 시 다음 버튼 비활성 | Wizard |
 | W-PROFILE-005 | FUC-W-PROFILE-005 | 동일 step 5 | 동일 | 알레르기 복수 선택·없어요 상호 배타 | 단위 |

@@ -413,6 +413,13 @@ class _BodyFields extends StatelessWidget {
             Expanded(child: weight),
           ],
         ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          '체중은 주차별 변화만 참고하고 별도로 보여드리지 않아요.',
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+        ),
       ],
     );
   }

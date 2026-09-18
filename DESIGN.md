@@ -440,7 +440,7 @@ Partner Notification과 Request는 Tablet/Desktop에서 list와 selected detail�
 | `B-ENTRY-001` | 제품 맥락과 명확한 시작 CTA | `/entry` Route |
 | `B-ENTRY-001-1` | bootstrap 또는 진입 변형 상태 | 별도 Route 아님 |
 | `W-PROFILE-001` | 출산 예정일 입력, 단계 진행 표시 | `/onboarding/profile` 내부 step |
-| `W-PROFILE-002` | 키·임신 전 체중 입력 | 나이 입력 금지, 내부 step |
+| `W-PROFILE-002` | 생년월일·키·임신 전 체중 입력 | 생년월일로 나이 자동 계산, 내부 step |
 | `W-PROFILE-003` | 알레르기 선택/입력 | 내부 step |
 | `W-PROFILE-004` | 질환 선택/입력 | 내부 step |
 | `W-PROFILE-005` | 음식 선호 선택 | 내부 step |
@@ -665,7 +665,7 @@ UI animation은 상태 변화의 원인을 설명하는 데만 사용한다.
 - AI 결과에 근거, fallback, retry 없이 spinner만 표시
 - callback 성공 후 사용자의 맥락과 무관하게 자동 이동
 - `today`, `demo-request` 같은 임시 parameter를 production flow에 사용
-- Profile 2단계에 요구사항에 없는 나이 입력 추가
+- Profile 2단계에서 생년월일 대신 계산된 나이를 직접 입력하게 하는 UI 추가
 - Sleep 화면에 모든 설정을 여는 포괄적 변경 버튼 추가
 - Phase 2 Motion 기능을 완성 기능처럼 노출
 - hover에만 의존하는 핵심 interaction

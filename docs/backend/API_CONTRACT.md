@@ -64,7 +64,7 @@
 - Authorization: 기본값
 - Error: 409(1단계 출산예정일 미저장), 422(범위 초과)
 - Status: **implemented**
-- Notes: 화면설계서 PDF가 서술하는 생년월일/나이 필드는 Request/Response에 없다 — `pregnancy_profiles`에 컬럼이 없고 구 ERD 초안(삭제됨)에서도 FR 범위 밖으로 제외
+- Notes: 최신 FUC-W-PROFILE-002는 생년월일을 필수 입력으로 요구하지만 현재 Request/Response와 `pregnancy_profiles` 컬럼에는 없다. `birth_date` migration과 계약 확장이 필요하다.
 
 ### `PUT /api/v1/profile/me/pregnancy-history`
 
@@ -187,7 +187,7 @@
 - Source Data: `pregnancy_profiles`(의도상 전체), 단 `birth_date`/`age`는 DB 컬럼 없음
 - Authorization: 기본값
 - Error: 없음(현재 Stub 기준)
-- Status: **stub** — **계약 결함 있음**: `birth_date`가 필수 필드인데 `pregnancy_profiles`에 대응 컬럼이 없다. 실제 Supabase adapter로 교체하기 전에 `PUT /profile/me/due-date`·`/body`·`/pregnancy-history`·`/allergies`·`/medical-notes` 5개 단계별 API로 흡수 통합하거나, `birth_date` 요구 자체를 제거해야 한다(`DATA_OWNERSHIP.md` Duplicate Storage 항목 8 참고)
+- Status: **stub** — **계약 결함 있음**: 최신 FUC에서 필수인 `birth_date`의 `pregnancy_profiles` 대응 컬럼이 없다. 실제 Supabase adapter로 교체하기 전에 migration을 추가하고 `PUT /profile/me/body`를 포함한 단계별 API 계약에 흡수 통합해야 한다(`DATA_OWNERSHIP.md` Duplicate Storage 항목 8 참고).
 
 ---
 

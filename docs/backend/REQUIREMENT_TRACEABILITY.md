@@ -29,7 +29,7 @@
 |---|---|---|---|---|---|---|---|---|
 | Wife | B-ENTRY-001 | FUC-B-ENTRY-001 | UC17 | role, 프로필 완료, 연동 상태 | `profiles`, `pregnancy_profiles`, `partner_links` | `GET /account/bootstrap` | `test_account_partner_link.py::RelationshipAuthorizationTest::test_bootstrap_destination_depends_on_partner_links_not_a_copy` | PASS |
 | Wife | W-PROFILE-001 | FUC-W-PROFILE-001 | UC1 | 출산예정일, 마지막 생리 시작일 | `pregnancy_profiles` | `PUT /profile/me/due-date` | `test_profile.py::ProfileApiTest::test_step_by_step_save`, `DueDateInputTest` | PASS |
-| Wife | W-PROFILE-002 | FUC-W-PROFILE-002 | UC1 | 신장, 체중, (화면상) 생년월일→나이 | `pregnancy_profiles` | `PUT /profile/me/body` | `test_profile.py::BodyInputTest`, `test_step_by_step_save` | PARTIAL — 생년월일/나이는 FUC 원문에 근거 없어 의도적 미구현(TBD 아님, 확정된 제외) |
+| Wife | W-PROFILE-002 | FUC-W-PROFILE-002 | UC1 | 생년월일→나이, 신장, 체중 | `pregnancy_profiles` | `PUT /profile/me/body` | `test_profile.py::BodyInputTest`, `test_step_by_step_save` | PARTIAL — 최신 FUC에 복구된 `birth_date` 컬럼·단계 API 미구현 |
 | Wife | W-PROFILE-003 | FUC-W-PROFILE-003 | UC1 | 초산/경산 | `pregnancy_profiles.is_first_pregnancy` | `PUT /profile/me/pregnancy-history` | `test_profile.py::test_steps_3_to_6_require_step_1_first` | PASS |
 | Wife | W-PROFILE-004 | FUC-W-PROFILE-004 | UC1 | 단태/쌍태 | `pregnancy_profiles.is_multiple_pregnancy` | `PUT /profile/me/pregnancy-count` | 동일 | PASS |
 | Wife | W-PROFILE-005 | FUC-W-PROFILE-005 | UC1 | 알레르기 | `pregnancy_profiles.allergies` | `PUT /profile/me/allergies` | 동일 | PASS |
@@ -120,7 +120,7 @@ STEP 15에서 `Widget → Store → Repository 인터페이스 → (Mock|Api)Rep
 
 | Domain | 상태 | 근거 |
 |---|---|---|
-| Profile | **READY** | 1~6단계 전부 PASS, 실 DB 연결·회귀 테스트 완비(STEP 8, 10). 유일한 예외(생년월일/나이)는 요구사항 자체에 근거가 없어 의도적 제외 — 결함 아님 |
+| Profile | **PARTIAL** | 기존 1~6단계 계약은 PASS지만 최신 FUC-W-PROFILE-002에 복구된 생년월일을 Supabase 단계 API와 `pregnancy_profiles`에 반영해야 함 |
 | Condition | **READY** | Create/Read/Update/검증/인증/격리/KST 경계까지 전부 테스트로 커버(STEP 9) |
 | Routine / Routine Item(Protected) | **READY** | 미수정 확인, 기존 테스트 전부 통과. AI 실호출 1회만 OpenAI 크레딧 대기(기능 결함 아님, 외부 자원 문제) |
 | Meal / Household(조회) / Health / Sleep(조회) — Guide Query | **READY** | 4개 API 전부 실 연결·테스트 완비(STEP 11), AI 재호출 없이 `routine_items` 읽기 전용 |

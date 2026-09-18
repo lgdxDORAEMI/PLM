@@ -25,7 +25,7 @@
 | Wife | W-PROFILE-001 | 조회(이어하기 값 프리필) | due_date, last_period_start | `pregnancy_profiles` | `GET /api/v1/profile/me` [기존] | FUC-W-PROFILE-001 |
 | Wife | W-PROFILE-001 | 저장("다음") | due_date, last_period_start | `pregnancy_profiles` | `PUT /api/v1/profile/me/due-date` [기존] | FUC-W-PROFILE-001 |
 | Wife | W-PROFILE-002 | 저장("다음") | height_cm, pre_pregnancy_weight_kg | `pregnancy_profiles` | `PUT /api/v1/profile/me/body` [기존] | FUC-W-PROFILE-002 |
-| Wife | W-PROFILE-002 | (화면상) 생년월일→나이 표시 | birth_date/age | 컬럼 없음(구 ERD 초안(삭제됨)에서도 FR 범위 밖으로 제외) | 없음 — TBD, DB 추가 없이는 API 제안 불가 | FUC-W-PROFILE-002 |
+| Wife | W-PROFILE-002 | 생년월일 입력→나이 계산 | birth_date/age | 컬럼 없음 | 없음 — 최신 FUC-W-PROFILE-002 반영을 위한 DB migration·단계 API 확장 필요 | FUC-W-PROFILE-002 |
 | Wife | W-PROFILE-003 | 저장("다음") | is_first_pregnancy | `pregnancy_profiles` | `PUT /api/v1/profile/me/pregnancy-history` [제안] | FUC-W-PROFILE-003 |
 | Wife | W-PROFILE-004 | 저장("다음") | is_multiple_pregnancy | `pregnancy_profiles` | `PUT /api/v1/profile/me/pregnancy-history` [제안, 003과 같은 리소스] | FUC-W-PROFILE-004 |
 | Wife | W-PROFILE-005 | 저장("다음") | allergies[] | `pregnancy_profiles` | `PUT /api/v1/profile/me/allergies` [제안] | FUC-W-PROFILE-005 |
