@@ -31,6 +31,24 @@ void main() {
     expect(find.text('오늘 아침 리포트가 도착했어요'), findsOneWidget);
     expect(find.text('가사 요청이 도착했어요'), findsOneWidget);
     expect(find.text('오늘 루틴이 변경됐어요'), findsOneWidget);
+    expect(find.text('컨디션 리포트'), findsOneWidget);
+    expect(find.text('가사 요청'), findsOneWidget);
+    expect(find.text('루틴 변경'), findsOneWidget);
+
+    final reportCard = tester.widget<AppCard>(
+      find.descendant(
+        of: find.byKey(const ValueKey('notification-report-2026-09-13')),
+        matching: find.byType(AppCard),
+      ),
+    );
+    final requestCard = tester.widget<AppCard>(
+      find.descendant(
+        of: find.byKey(const ValueKey('notification-request-demo-request')),
+        matching: find.byType(AppCard),
+      ),
+    );
+    expect(reportCard.backgroundColor, AppColors.infoBackground);
+    expect(requestCard.backgroundColor, AppColors.categoryHouseholdBackground);
 
     await tester.tap(
       find.byKey(const ValueKey('notification-routine-2026-09-13')),
