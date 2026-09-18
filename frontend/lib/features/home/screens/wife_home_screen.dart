@@ -213,6 +213,16 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
           ).textTheme.bodyMedium?.copyWith(color: AppColors.textTertiary),
         ),
       ),
+      Align(
+        alignment: Alignment.centerRight,
+        child: TextButton.icon(
+          key: const ValueKey('home-edit-activities'),
+          onPressed: () =>
+              Navigator.pushNamed(context, '${RouteNames.activity}?mode=edit'),
+          icon: const Icon(Icons.edit_outlined),
+          label: const Text('예정 활동 수정'),
+        ),
+      ),
       const SizedBox(height: AppSpacing.lg),
       if (_routineController.isFallback) ...[
         InfoBanner(

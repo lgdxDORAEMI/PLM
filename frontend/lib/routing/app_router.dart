@@ -290,7 +290,9 @@ abstract final class AppRouter {
             : ConditionMode.create,
       );
     }
-    if (path == RouteNames.activity) return const ActivityScreen();
+    if (path == RouteNames.activity) {
+      return ActivityScreen(editing: uri.queryParameters['mode'] == 'edit');
+    }
     if (path == RouteNames.wifeHome) return const WifeHomeScreen();
     if (path == RouteNames.mealGuide) return const MealGuideScreen();
     if (parts.length == 3 && parts[0] == 'wife' && parts[1] == 'meal') {

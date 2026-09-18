@@ -48,6 +48,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('home-routine-success')), findsOneWidget);
+    expect(find.byKey(const ValueKey('home-edit-activities')), findsOneWidget);
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('home-routine-progress')),
       300,

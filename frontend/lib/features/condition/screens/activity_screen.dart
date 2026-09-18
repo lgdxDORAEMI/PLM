@@ -14,7 +14,9 @@ import '../../../routing/route_names.dart';
 import '../controllers/planned_activity_controller.dart';
 
 class ActivityScreen extends StatefulWidget {
-  const ActivityScreen({super.key});
+  const ActivityScreen({super.key, this.editing = false});
+
+  final bool editing;
 
   @override
   State<ActivityScreen> createState() => _ActivityScreenState();
@@ -45,7 +47,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: TopAppBar(
-      title: '오늘 예정 활동',
+      title: widget.editing ? '예정 활동 수정' : '오늘 예정 활동',
       onBack: _handleBack,
       wifeProfileAction: true,
     ),
@@ -129,7 +131,11 @@ class _ActivityScreenState extends State<ActivityScreen> {
             const SizedBox(height: AppSpacing.xl),
             AppButton(
               key: const ValueKey('activity-submit-button'),
-              label: _controller.generating ? '오늘 루틴 만드는 중…' : '오늘 루틴 만들기',
+              label: _controller.generating
+                  ? '오늘 루틴 만드는 중…'
+                  : widget.editing
+                  ? '수정 완료'
+                  : '오늘 루틴 만들기',
               onPressed: _controller.generating ? null : _generate,
             ),
           ],
