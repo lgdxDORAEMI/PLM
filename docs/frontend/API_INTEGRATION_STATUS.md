@@ -72,7 +72,7 @@ Backend API 상태(`implemented`/`stub`/`planned`)는 `docs/backend/API_IMPLEMEN
 |---|---|---|---|---|---|
 | H-INVITE-001(`/partner/join`) | `/partner/join?token=...` | NOT_APPLICABLE(의도적 비활성) | `POST /account/partner-invitations/{token}/accept` | implemented | Backend는 준비됐지만 Frontend는 "개발중" 안내만 표시(SCREEN_IMPLEMENTATION_MAP.md에 이미 의도적으로 비활성화라고 명시) — 화면·인증 복귀 계약 자체가 Backend 쪽에서도 TBD |
 | B-CAL-001(Partner) | `/partner/calendar` | MOCK_ONLY | `GET /care/calendar/{month}` | implemented(STEP 17: 남편 토큰으로 호출하면 연동된 아내 캘린더 반환) | |
-| B-MOTION-001(Partner) | `/partner/movement` | MOCK_ONLY(Phase 2 Mock) | `GET /movement/events,/report/daily` | implemented(STEP 18: 남편 토큰으로 호출하면 연동된 아내 데이터 반환) | `ProductMovementScreen`의 Mock 데이터를 이 두 API로 교체하면 됨. 참고: `ROUTE_MAP.md`는 PHASE_2, `renew/01_MVP.md`는 Phase 1 — 프론트/기획이 범위 확인 필요 |
+| B-MOTION-001(Partner) | `/partner/movement` | MOCK_ONLY(Phase 2 Mock) | `GET /movement/events,/report/daily` | implemented(STEP 18: 남편 토큰으로 호출하면 연동된 아내 데이터 반환) | `ProductMovementScreen`의 Mock 데이터를 이 두 API로 교체하면 됨. 참고: `ROUTE_MAP.md`는 PHASE_2, `docs/requirements/01_MVP.md`는 Phase 1 — 프론트/기획이 범위 확인 필요 |
 | H-REPORT-001 | `/partner/report/:date` | MOCK_ONLY | `GET /family/morning-reports/{date}` | implemented(STEP 12, family authorization+projection) | Backend는 이미 원본 비노출·정성 요약까지 구현됨 — 연결 우선순위 높음 |
 | H-NOTI-001 | `/partner/notifications` | MOCK_ONLY | `GET /family/notifications`, `POST .../read` | implemented(STEP 17) | 알림 3종 전부 Backend에서 발송됨(가사 요청/오전 리포트/루틴 변경) |
 | H-REQUEST-001/001-1/001-2, H-REQUEST-002 | `/partner/requests/:requestId` | MOCK_ONLY | `GET .../household-requests/{id}`, `.../confirm`, `.../complete` | implemented(STEP 17) | |
