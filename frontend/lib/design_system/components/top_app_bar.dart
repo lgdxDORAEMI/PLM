@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../tokens/app_colors.dart';
 import '../../routing/route_names.dart';
+import '../tokens/app_breakpoints.dart';
+import '../tokens/app_colors.dart';
+import '../tokens/app_spacing.dart';
 
 /// 44px 이상의 뒤로가기 hit area를 보장하는 공통 AppBar다.
 class TopAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -25,6 +27,14 @@ class TopAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final windowSize = AppBreakpoints.sizeFor(MediaQuery.sizeOf(context).width);
+    final actionEndPadding = switch (windowSize) {
+      AppWindowSize.mobile => AppSpacing.xs,
+      AppWindowSize.tablet => AppSpacing.pageTablet,
+      AppWindowSize.desktop => AppSpacing.pageDesktop,
+      AppWindowSize.wide => AppSpacing.pageWide,
+    };
+
     return AppBar(
       title: Text(
         title,
@@ -35,6 +45,8 @@ class TopAppBar extends StatelessWidget implements PreferredSizeWidget {
       automaticallyImplyLeading: false,
       backgroundColor: AppColors.surface,
       surfaceTintColor: Colors.transparent,
+      // 넓은 화면에서는 우측 액션을 콘텐츠 grid 여백과 맞춰 가장자리에 붙지 않게 한다.
+      actionsPadding: EdgeInsetsDirectional.only(end: actionEndPadding),
       leading: showBack
           ? IconButton(
               tooltip: '뒤로 가기',
