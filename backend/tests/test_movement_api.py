@@ -297,9 +297,10 @@ class MovementWebSocketTest(unittest.TestCase):
     # --- NFR-012: 동의/수집 게이트 ---
 
     def _connect_close_code(self) -> int:
-        with self.assertRaises(WebSocketDisconnect) as ctx:
-            with self.client.websocket_connect(_STREAM_URL, headers=_ALLOWED_ORIGIN_HEADERS):
-                pass
+        """핸드셰이크는 성공(accept)하고 곧바로 close 프레임이 와야 브라우저가 코드를 읽는다."""
+        with self.client.websocket_connect(_STREAM_URL, headers=_ALLOWED_ORIGIN_HEADERS) as ws:
+            with self.assertRaises(WebSocketDisconnect) as ctx:
+                ws.receive_json()
         return ctx.exception.code
 
     def test_no_consent_is_rejected_with_consent_code(self) -> None:

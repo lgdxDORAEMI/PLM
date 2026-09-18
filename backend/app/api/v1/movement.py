@@ -141,9 +141,14 @@ async def stream_live(
         await websocket.close(code=1008)
         return
 
-    # NFR-012 / DOMAIN_OWNERSHIP.md: 동의(motion_consents)가 없거나 수집 OFF면 연결 자체를
-    # 거부한다. 코드 4003(앱 정의)으로 닫아 origin/토큰 실패(1008)와 구분한다 — 프론트가
-    # "동의가 필요해요" 안내를 띄울 수 있게. 동의 조회가 실패하면 열어주지 않고 1011로 닫는다.
+    global _current_session_id
+    await websocket.accept()
+
+    # NFR-012 / DOMAIN_OWNERSHIP.md: 동의(motion_consents)가 없거나 수집 OFF면 연결을
+    # 거부한다. accept() 뒤에 닫아야 브라우저가 close code를 받는다 — accept 전에 close하면
+    # uvicorn이 HTTP 403으로 바꿔 코드가 사라진다. 4003(앱 정의)으로 origin/토큰 실패(1008,
+    # 핸드셰이크 거부)와 구분해 프론트가 "동의가 필요해요" 안내를 띄울 수 있게 한다.
+    # 동의 조회가 실패하면 열어주지 않고 1011로 닫는다.
     try:
         privacy = family.motion_privacy(user.id)
     except DomainStorageError:
@@ -152,9 +157,6 @@ async def stream_live(
     if not (privacy.consent_granted and privacy.collection_enabled):
         await websocket.close(code=WS_CLOSE_CONSENT_REQUIRED)
         return
-
-    global _current_session_id
-    await websocket.accept()
 
     session_id = manager.start_session(uuid.UUID(user.id))
     _current_session_id = session_id
