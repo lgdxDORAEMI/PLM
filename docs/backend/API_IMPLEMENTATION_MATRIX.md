@@ -78,7 +78,7 @@
 |---|---|---|---|---|
 | Profile | 7 | 0 | 0 | 7 |
 | Account(bootstrap/invite/link/profile) | 4 | 2(`GET`+`PUT /account/profile`만 남음) | 0 | 6 |
-| Routine(Protected) | 2 | 0 | 0 | 2 |
+| Routine(Routine AI 소유) | 2 | 0 | 0 | 2 |
 | Care/Condition/Record/Report/Calendar | 8 | 2(routine-item 피드백·수면 override만 남음) | 0 | 10 |
 | Guide(Meal/Household/Health/Sleep 조회, STEP 11) | 4 | 0 | 0 | 4 |
 | Household | 0 | 5 | 0 | 5 |
@@ -90,7 +90,7 @@
 
 ## Protected 모듈 표시
 
-`routine`(2개) + `movement`(4개, WS/live/events/report·daily) = **6개 API가 Protected**다. 이 문서와 `API_CONTRACT.md`는 이 6개의 계약을 그대로 기록만 했고 변경을 제안하지 않는다. `family.motion.*` 4개(privacy/consent/collection)는 Protected가 아니지만 Protected `movement.py`의 WS 연결 게이트와 아직 연동되지 않은 상태로 남아 있다(`DOMAIN_OWNERSHIP.md` 기존 TBD).
+`movement`(4개, WS/live/events/report·daily) = **4개 API가 Protected**다(2026-09-18 개정: `routine` 2개는 Routine AI 담당 소유로 이관). 이 문서와 `API_CONTRACT.md`는 이 6개의 계약을 그대로 기록만 했고 변경을 제안하지 않는다. `family.motion.*` 4개(privacy/consent/collection)는 Protected가 아니지만 Protected `movement.py`의 WS 연결 게이트와 아직 연동되지 않은 상태로 남아 있다(`DOMAIN_OWNERSHIP.md` 기존 TBD).
 
 ## 우선 구현 후보(stub → implemented 전환)
 

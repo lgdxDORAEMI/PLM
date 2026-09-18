@@ -4,6 +4,7 @@
 - 기준: `docs/backend/DATA_OWNERSHIP.md`(15개 데이터 도메인), `docs/backend/TARGET_DB_SCHEMA.md`(18개 테이블), `docs/backend/API_CONTRACT.md`/`API_IMPLEMENTATION_MATRIX.md`(42개 API).
 - 목적: 확정된 Domain/DB/API를 **2명**의 Backend 작업 영역(A/B) + Shared Protected로 배분해 이후 병렬 개발과 migration 충돌을 막는다.
 - 이 문서는 조직 구조 문서이며 코드를 변경하지 않는다. 기존 `backend/DOMAIN_OWNERSHIP.md`(Account/Care/Family 3분할)를 대체하는 새 배분 기준이다.
+- **2026-09-18 개정(팀 합의)**: 보호(Protected) 대상은 모션 인식 테이블 `posture_calibration_profiles`·`posture_events`와 그 코드뿐이다. Routine AI(`daily_routines`·`routine_items`·`pregnancy_knowledge`, `app/services/routine/**`)는 **Routine AI 담당(웬즈데이 AI) 소유**로 바뀌어 담당자가 단독으로 변경할 수 있다 — 단, FK로 참조하는 테이블 소유자에게는 미리 알린다(§2.4). 이 날짜 이전에 쓴 문서·주석의 "Routine = Protected" 표현은 이 개정으로 대체된다.
 - **개정 메모**: 원래 STEP 6은 3명(User Context / Daily Experience / Relationship·Integration) 기준으로 작성했으나, 인원이 2명으로 줄어 User Context와 Daily Experience를 한 사람이 맡도록 합쳤다. 화면 그룹(User Context / Daily Experience / Relationship) 자체는 인원 수와 무관한 데이터·화면 분류이므로 이름을 바꾸지 않았다 — **누가** 어느 그룹을 맡는지만 바뀌었다. `TARGET_DB_SCHEMA.md`/`DATA_OWNERSHIP.md`/`API_CONTRACT.md`의 내용과 STEP 7에서 이미 만든 migration 9개(파일명의 `user_context`/`daily_experience`/`relationship`/`shared` 태그 포함)는 이 화면 그룹 분류를 그대로 쓰므로 변경하지 않았다.
 
 ## 1. 팀 구성
@@ -12,7 +13,8 @@
 |---|---|---|---|
 | Developer A | Personal Experience (구 User Context + Daily Experience 통합) | Profile, Condition, Calendar, Meal, Household, Health, Sleep, Record, Report | `pregnancy_profiles`, `daily_conditions`, calendar 조회, routine 조회(소비), execution record, `daily_reports` |
 | Developer B | Relationship / Integration | Family, Invitation, Join, Notification, Chat, Frontend API Integration | `partner_links`, `partner_invitations`, `notifications`, `chat_messages` |
-| Shared Protected | (두 담당자 모두의 합의 필요) | Routine AI, Movement Recognition, Auth, 공통 DB Schema, 공통 migration | `daily_routines`, `routine_items`, `pregnancy_knowledge`, `posture_calibration_profiles`, `posture_events`, `auth.users` |
+| Routine AI 담당 | Routine AI(웬즈데이 AI) | 하루 루틴 생성 | `daily_routines`, `routine_items`, `pregnancy_knowledge` (단독 변경 가능) |
+| Protected | (모션 담당 합의 필요) | Movement Recognition, Auth | `posture_calibration_profiles`, `posture_events`, `auth.users` |
 
 **왜 User Context + Daily Experience를 합쳤나**: 이 둘을 한 사람이 맡으면 아내의 "프로필 입력 → 컨디션 입력 → AI 루틴 소비 → 실행 기록 → 리포트/캘린더 조회"로 이어지는 개인 경험 파이프라인 전체를 한 사람이 끝에서 끝까지 갖게 된다. 반대로 User Context + Relationship을 합치는 방안도 있었지만, 그렇게 하면 Calendar(구 User Context)가 Report(구 Daily Experience)를 남의 소유 테이블처럼 참조해야 하는 교차 의존이 그대로 남는다(§6). Daily Experience를 Relationship과 합치는 방안도 검토했으나, Relationship은 가족 관계·인증 경계처럼 보안·권한 판단이 몰려 있는 영역이라 별도로 두는 편이 리뷰 집중도 측면에서 낫다고 판단했다.
 
@@ -38,15 +40,15 @@
 |---|---|---|---|
 | Profile | A | `pregnancy_profiles`, `profiles`(NEW) | `profiles.role`은 bootstrap 판정에 쓰이지만 "사용자가 누구인가"라는 성격상 A 소유 |
 | Condition | A | `daily_conditions` | |
-| Calendar | A | (DERIVED, 조회 조합) | `routine_items`(Protected 소유 테이블)와 같은 A 소유 `daily_reports`를 함께 읽음 — 3명 체제 때 있던 A↔B 교차 의존이 이제 A 내부로 통합됨(§6) |
-| Routine / Routine Item | **Shared Protected** | `daily_routines`, `routine_items` | 변경 금지, A는 읽기만 |
-| Meal / Household / Health / Sleep | A | `routine_items`(category 필터, 읽기), `household_requests`/`household_request_items`(NEW, A가 쓰기), `recommendation_feedback`(NEW) | Household 관련 쓰기 테이블만 A가 소유, `routine_items` 자체는 Protected |
-| Record | A | `routine_items.status/completed_by`(Protected 테이블의 컬럼을 갱신 — 스키마 변경 아니라 행 갱신이라 허용) | |
+| Calendar | A | (DERIVED, 조회 조합) | `routine_items`(Routine AI 소유 테이블)와 같은 A 소유 `daily_reports`를 함께 읽음 — 3명 체제 때 있던 A↔B 교차 의존이 이제 A 내부로 통합됨(§6) |
+| Routine / Routine Item | **Routine AI 담당** | `daily_routines`, `routine_items` | 스키마는 Routine AI 담당이 변경, A는 읽기만 |
+| Meal / Household / Health / Sleep | A | `routine_items`(category 필터, 읽기), `household_requests`/`household_request_items`(NEW, A가 쓰기), `recommendation_feedback`(NEW) | Household 관련 쓰기 테이블만 A가 소유, `routine_items` 자체는 Routine AI 소유 |
+| Record | A | `routine_items.status/completed_by`(Routine AI 테이블의 컬럼을 갱신 — 스키마 변경 아니라 행 갱신이라 허용) | |
 | Report | A | `daily_reports`(NEW) | 오전 리포트(H-REPORT-001, 남편 노출)도 "Report"로 A 소유 — 화면이 남편 대상이어도 데이터 성격상 A. B는 이 데이터를 남편 공유 시점에만 조회 |
 | Family(연동 상태) | B | `partner_links`(NEW) | |
 | Notification | B | `notifications`(NEW) | |
 | Chat | B | `chat_messages`(NEW) | |
-| Movement | **Shared Protected** | `posture_calibration_profiles`, `posture_events`, `motion_consents`(NEW) | `motion_consents`는 현재 `family.py`에 위치하지만 개념적으로 Movement 소관 — 변경 시 Movement 담당(Protected) 리뷰 필요 |
+| Movement | **Protected** | `posture_calibration_profiles`, `posture_events`, `motion_consents`(NEW) | 보호 대상은 `posture_*` 2개뿐. `motion_consents`는 현재 `family.py`에 위치하며 보호 대상 아님(2026-09-18 개정) |
 
 ## 4. 목표 파일 구조(권장, 이번 단계에서 실행하지 않음)
 
@@ -57,14 +59,14 @@ app/
 ├── domains/
 │   ├── personal_experience/  # Developer A: profile(1~6단계 통합), condition, calendar, household, health/sleep 보조, record, report
 │   ├── relationship/         # Developer B: family link, invitation, join, notification, chat
-│   ├── routine/              # Shared Protected — 현재 app/services/routine/** 그대로
-│   └── movement/             # Shared Protected — 현재 app/services/movement/** 그대로
+│   ├── routine/              # Routine AI 담당 — 현재 app/services/routine/** 그대로
+│   └── movement/             # Protected — 현재 app/services/movement/** 그대로
 └── api/v1/
     ├── profile.py             # Developer A (기존 유지, 이미 A 소유와 일치)
     ├── personal_experience.py # Developer A 신규 — condition/calendar/household/record/report를 여기로 흡수 예정(현재 care.py+family.py 일부에서 이관)
     ├── relationship.py        # Developer B 신규 — partner-link/invitation/notification/chat을 여기로 흡수 예정(현재 account.py+family.py 일부에서 이관)
-    ├── routine.py              # Shared Protected — 변경 없음
-    └── movement.py             # Shared Protected — 변경 없음
+    ├── routine.py              # Routine AI 담당
+    └── movement.py             # Protected — 변경 없음
 ```
 
 3명 체제였던 이전 버전은 `user_context.py`/`daily_experience.py`를 별도 파일로 뒀지만, 2명 체제에서는 같은 담당자(A) 소유이므로 `personal_experience.py` 하나로 합쳤다 — 억지로 파일을 둘로 유지할 이유가 없다.
@@ -77,7 +79,7 @@ app/
 |---|---|---|---|
 | A | 24 | `profile.py`(6: me GET·due-date·body·신규 3종) + `account.py`(3: bootstrap·profile GET·profile PUT) + `care.py`(전체 10: conditions·activities·execution·daily-reports·calendar) + `family.py`(5: household-requests) | `profile.py` + 신규 `personal_experience.py` |
 | B | 8 | `account.py`(3: partner-link·invitations POST·invitations accept) + `family.py`(3: notifications·notifications read·morning-reports) + 신규 chat(2) | 신규 `relationship.py` |
-| Shared Protected | 10 | `routine.py`(2) + `movement.py`(4) + `family.py`(4: motion privacy/consent/collection, `family.py` 위치지만 소유는 Protected) | 변경 없음(routine/movement), motion 4개는 향후 `relationship.py`/`personal_experience.py` 이관 시에도 Protected 리뷰 유지 |
+| Shared Protected (2026-09-18: routine 2개는 Routine AI 담당으로 이관) | 10 | `routine.py`(2) + `movement.py`(4) + `family.py`(4: motion privacy/consent/collection, `family.py` 위치지만 소유는 Protected) | 변경 없음(routine/movement), motion 4개는 향후 `relationship.py`/`personal_experience.py` 이관 시에도 Protected 리뷰 유지 |
 
 합계 24+8+10=42로 `API_IMPLEMENTATION_MATRIX.md`의 전체 개수와 일치한다(계산 과정에서 그 문서의 `GET/PUT /account/profile` 한 행을 GET/PUT 두 행으로 분리해 셈이 어긋났던 것을 함께 바로잡았다 — 다른 모든 GET/PUT 쌍과 같은 방식). **A가 B보다 API 개수가 3배 많다(24 vs 8)** — 사용자가 이 배분(User Context+Daily Experience를 A로, Relationship을 B로)을 확인해 확정했다. 실제 작업량은 API 개수만으로 판단하지 않는다: B가 맡은 Chat(완전 신규 기능, NFR-027 정책 확정 필요)과 Relationship 전반(가족 관계·인증 경계 등 보안 민감 로직)은 개수 대비 복잡도가 높다. 개수 불균형이 실제로 부담이 크다면, A 내부에서 Daily Experience 쪽(Meal/Household/Health/Sleep/Record/Report — `care.py`의 execution·daily-reports 6개 + `family.py`의 household-requests 5개, 합계 11개)을 3순위 인원이나 다음 채용 시 우선 분리 후보로 남겨 둔다.
 
@@ -89,7 +91,7 @@ app/
 
 - A의 `GET /account/bootstrap` → B 소유 `partner_links` 읽기
 - A의 Household → B 소유 `partner_links`(요청 대상 남편 확인) 읽기
-- A의 Report(`daily_reports.content`) → Protected `posture_events` 집계 스냅샷 포함
+- A의 Report(`daily_reports.content`) → Protected `posture_events` 집계 스냅샷 포함(읽기만)
 - B의 Notification → A의 트리거 대상 데이터(컨디션 변경, 가사 요청 상태) 참조
 - B의 오전 리포트 조회(`GET /family/morning-reports/{date}`) → A 소유 `daily_conditions`/`routine_items`/`daily_reports` 읽기(남편 공유 시점에만, `partner_links` 확인 후)
 
@@ -97,10 +99,11 @@ app/
 
 ## 7. Protected 모듈(합의 없이 변경 금지)
 
-- `backend/app/services/routine/**`, `backend/app/api/v1/routine.py`
+2026-09-18 개정: Routine AI(`backend/app/services/routine/**`, `backend/app/api/v1/routine.py`, `daily_routines`·`routine_items`·`pregnancy_knowledge`)는 Protected에서 빠져 Routine AI 담당 소유가 됐다.
+
 - `backend/app/services/movement/**`, `backend/app/api/v1/movement.py`
 - `backend/models/**`
 - `backend/app/core/security.py`(Auth) — A/B 누구의 화면 그룹도 아니므로 별도 승인 없이 인증 로직을 바꾸지 않는다
-- 공통 DB Schema(`daily_routines`, `routine_items`, `pregnancy_knowledge`, `posture_calibration_profiles`, `posture_events`) 및 이들을 다루는 migration
+- DB 테이블 `posture_calibration_profiles`, `posture_events` 및 이들을 다루는 migration
 
 세부 운영 규칙(PR·migration 단위, 승인 절차)은 `docs/development/BACKEND_COLLABORATION.md`에 정의한다.

@@ -12,7 +12,7 @@
 3. **아직 없는 API만 신규 제안하며, 기존 경로의 네이밍 컨벤션(도메인 prefix + 리소스명)을 따른다.** 표에서 `[제안]`으로 표시한다. 나머지는 `docs/api.md`/실제 라우터에 이미 있는 `[기존]` 경로다.
 4. **단순 Navigation(화면 전환만 하는 버튼, 팝업 닫기, 약관 링크 등)에는 API를 만들지 않는다.** 표에서 `Navigation-only`로 표시하고 API 열은 `—`로 둔다.
 5. **ThinQ 가전 실행(Phase 2)은 API를 제안하지 않는다.** 표시까지만 MVP 범위이므로 API 열은 `Phase 2 — 미제안`으로 둔다.
-6. **`routine.py`/`movement.py`는 Protected라 이 문서도 새 엔드포인트를 그 파일에 추가하는 것을 전제하지 않는다.** (STEP 11 갱신) 원래는 식사/가사/건강/수면 화면이 `GET /api/v1/routine/today` 응답을 Frontend가 카테고리로 나눠 쓰는 것을 그대로 계약으로 삼았으나, STEP 11에서 화면별 조회 전용 Query Layer(`GET /api/v1/meals/today`, `/household/today`, `/health/today`, `/sleep/today`)를 별도로 구현했다 — `routine.py`는 여전히 손대지 않고, 새 `app/domains/guide/`+`app/api/v1/guide.py`가 `routine_items`(Protected 테이블)를 읽기만 한다. 이 쪽이 실행 상태(완료 체크)까지 최신으로 반영해 더 정확하다(`daily_routines.response`는 AI가 처음 생성한 시점의 스냅샷이라 이후 완료 체크가 반영되지 않음).
+6. **`movement.py`는 Protected, `routine.py`는 Routine AI 담당 소유(2026-09-18 개정)라 이 문서도 새 엔드포인트를 그 파일에 추가하는 것을 전제하지 않는다.** (STEP 11 갱신) 원래는 식사/가사/건강/수면 화면이 `GET /api/v1/routine/today` 응답을 Frontend가 카테고리로 나눠 쓰는 것을 그대로 계약으로 삼았으나, STEP 11에서 화면별 조회 전용 Query Layer(`GET /api/v1/meals/today`, `/household/today`, `/health/today`, `/sleep/today`)를 별도로 구현했다 — `routine.py`는 여전히 손대지 않고, 새 `app/domains/guide/`+`app/api/v1/guide.py`가 `routine_items`(Routine AI 소유 테이블)를 읽기만 한다. 이 쪽이 실행 상태(완료 체크)까지 최신으로 반영해 더 정확하다(`daily_routines.response`는 AI가 처음 생성한 시점의 스냅샷이라 이후 완료 체크가 반영되지 않음).
 
 ---
 

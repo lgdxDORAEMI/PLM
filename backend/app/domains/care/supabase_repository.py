@@ -16,7 +16,7 @@ STEP 12 원칙:
   확정된 것"으로 단순화했다.
 - Calendar는 테이블이 아니라 daily_conditions+daily_reports 조합 조회다.
 
-컬럼 이름은 `app/services/routine/inputs.py`(Protected)의 CONDITION_COLUMNS와
+컬럼 이름은 `app/services/routine/inputs.py`(Routine AI)의 CONDITION_COLUMNS와
 반드시 맞춘다 — Routine Generator가 이 테이블을 그대로 읽는다.
 """
 

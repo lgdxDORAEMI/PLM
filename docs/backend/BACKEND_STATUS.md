@@ -142,9 +142,8 @@
 
 ## Protected Modules
 
-다음은 이번 분석·이후 Skeleton 구축 모두에서 수정하지 않는다.
+다음은 이번 분석·이후 Skeleton 구축 모두에서 수정하지 않는다. (2026-09-18 개정: `backend/app/services/routine/**`, `backend/app/api/v1/routine.py`는 Protected에서 빠져 Routine AI 담당 소유)
 
-- `backend/app/services/routine/**`, `backend/app/api/v1/routine.py`
 - `backend/app/services/movement/**`, `backend/app/api/v1/movement.py`
 - `backend/models/**`
 

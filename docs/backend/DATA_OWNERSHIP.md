@@ -25,8 +25,8 @@
 | 역할(role)·표시 이름 | Profile | `profiles`(MISSING) | B-ENTRY-001, W-MENU-001, 알림 발신자 표시 | SOURCE | 신규 테이블 필요 |
 | 당일 컨디션 7종 + 예정 활동 | Condition | `daily_conditions` | W-COND-001, W-TASK-001, 루틴 생성 입력 | SOURCE | 원문은 남편에게 비노출(NFR-013) |
 | 컨디션 4단계 지수(좋음/보통/나쁨/힘듦) | Condition | — | B-CAL-001, H-REPORT-001 | DERIVED | `daily_conditions` 점수 기준 계산, 계산식 자체는 미확정(TBD) |
-| 하루 루틴 생성 원본(source/model/request_payload/response) | Routine | `daily_routines` | W-HOME-001, W-CALLBACK-001 | SOURCE | Protected, 실동작 |
-| 루틴 항목(카테고리별 payload/status/completed_by) | Routine Item | `routine_items` | Meal/Household/Health/Sleep/Record 전 도메인의 공통 원본 | SOURCE | Protected. 다른 도메인은 `category`로 필터링해서 소비하며 복제 저장 금지 |
+| 하루 루틴 생성 원본(source/model/request_payload/response) | Routine | `daily_routines` | W-HOME-001, W-CALLBACK-001 | SOURCE | Routine AI 소유, 실동작 |
+| 루틴 항목(카테고리별 payload/status/completed_by) | Routine Item | `routine_items` | Meal/Household/Health/Sleep/Record 전 도메인의 공통 원본 | SOURCE | Routine AI 소유. 다른 도메인은 `category`로 필터링해서 소비하며 복제 저장 금지 |
 | 식사 가이드 표시(끼니·메뉴·영양태그) | Meal | `routine_items`(category=meal) | W-MEAL-001, W-MEAL-002 | DERIVED | 자체 테이블 불필요 |
 | 메뉴 수락/거절/재요청 이력 | Meal | `recommendation_feedback`(MISSING) | W-MEAL-002, W-CHAT-001 | SOURCE | 신규 테이블, NFR-014(이력 최소 항목) |
 | 가사 3분류 표시(직접/가전/가족) | Household | `routine_items`(category=household) | W-HOUSE-001 | DERIVED | 자체 테이블 불필요 |
@@ -56,7 +56,7 @@
 화면 DB스키마(PDF)가 화면별로 필드를 서술하고 있어 화면마다 전용 테이블을 만들고 싶어지기 쉽지만, 아래는 이미 다른 SOURCE로 해결 가능하므로 신규 테이블을 만들지 않는다.
 
 1. **컨디션 원본을 남편용 알림/리포트 테이블에 복제 저장하지 않는다.** `daily_conditions`가 SOURCE이고, 남편에게는 `daily_reports`/`notifications`를 통해 허용된 요약만 DERIVED로 내려준다.
-2. **루틴 항목을 카테고리별(식사/가사/건강/수면) 별도 테이블로 쪼개지 않는다.** `routine_items` 하나를 `category` 컬럼으로 구분해 공용 SOURCE로 유지한다(Protected 모듈, 이미 이렇게 구현됨).
+2. **루틴 항목을 카테고리별(식사/가사/건강/수면) 별도 테이블로 쪼개지 않는다.** `routine_items` 하나를 `category` 컬럼으로 구분해 공용 SOURCE로 유지한다(Routine AI 담당 소유, 이미 이렇게 구현됨).
 3. **실행 기록을 `routine_items`와 별도의 execution 로그 테이블로 분리하지 않는다.** `status`/`completed_by`/`completed_at` 컬럼이 이미 있어 이를 갱신하는 것으로 충분하다. `care.py`의 Stub이 `RoutineExecutionResponse`를 별도 메모리 상태로 관리하는 현재 구조는 실제 구현 시 `routine_items` 갱신으로 교체해야 한다.
 4. **캘린더 전용 저장 테이블을 만들지 않는다.** `daily_conditions`/`routine_items`/`daily_reports` 조회 조합(VIEW)으로 처리한다(이미 이렇게 설계됨).
 5. **가사 요청 항목에 제목·설명을 복제 저장하지 않는다.** `household_request_items.routine_item_id`가 `routine_items`를 FK로 재사용하도록 설계돼 있다.

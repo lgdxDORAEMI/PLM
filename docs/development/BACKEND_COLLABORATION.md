@@ -3,6 +3,7 @@
 - 작성일: 2026-09-17 (STEP 6, 2026-09-17 2명 체제로 개정)
 - 기준: `docs/backend/BACKEND_ARCHITECTURE.md`(팀 구성·소유권), `docs/backend/TARGET_DB_SCHEMA.md`(신규 테이블 계획).
 - 목적: 2명이 동시에 migration·API를 추가할 때 충돌(특히 migration 충돌)을 막는다.
+- **2026-09-18 개정(팀 합의)**: 보호(Protected) 대상은 모션 인식 테이블 `posture_calibration_profiles`·`posture_events`와 그 코드뿐이다. Routine AI(`daily_routines`·`routine_items`·`pregnancy_knowledge`, `app/services/routine/**`)는 **Routine AI 담당(웬즈데이 AI) 소유**로 바뀌어 담당자가 단독으로 변경할 수 있다 — 단, FK로 참조하는 테이블 소유자에게는 미리 알린다(§2.4). 이 날짜 이전에 쓴 문서·주석의 "Routine = Protected" 표현은 이 개정으로 대체된다.
 - **개정 메모**: 원래 3명(User Context / Daily Experience / Relationship 각 1명) 기준으로 작성했으나, 인원이 2명으로 줄어 User Context와 Daily Experience를 Developer A 한 명이 맡도록 합쳤다. 화면 그룹 이름과 migration 파일명의 `<domain>` 태그(`user_context`/`daily_experience`/`relationship`/`shared`)는 인원 수와 무관한 분류라 바꾸지 않았다 — 아래 §2.1도 그대로 유지한다.
 
 ## 1. 팀 구성 요약
@@ -11,7 +12,8 @@
 |---|---|---|
 | Developer A | User Context + Daily Experience | Profile, Condition, Calendar, Meal, Household, Health, Sleep, Record, Report |
 | Developer B | Relationship / Integration | Family, Invitation, Join, Notification, Chat, Frontend API Integration |
-| Shared Protected | 두 담당자 모두의 합의 필요 | Routine AI, Movement Recognition, Auth, 공통 DB Schema, 공통 migration |
+| Routine AI 담당 | Routine AI(웬즈데이 AI) | `daily_routines`, `routine_items`, `pregnancy_knowledge`, `app/services/routine/**`, `app/api/v1/routine.py` — 담당자 단독 변경 가능 |
+| Protected | 모션 담당 합의 필요 | Movement Recognition(`posture_calibration_profiles`, `posture_events`, `app/services/movement/**`, `app/api/v1/movement.py`, `backend/models/**`), Auth(`auth.users`, `core/security.py`) |
 
 전체 배분 근거와 현재 파일 구조와의 불일치(계정/케어/패밀리 파일이 새 경계와 어긋나는 부분)는 `BACKEND_ARCHITECTURE.md` §2를 먼저 읽는다.
 
@@ -35,16 +37,18 @@ YYYYMMDDHHMMSS_<domain>_<purpose>.sql
 
 ### 2.3 기존 migration은 절대 수정하지 않는다
 
-- `supabase/migrations/*.sql` 기존 7개 파일(`20260915000000`~`20260917000002`)은 내용이 잘못됐다고 판단되더라도 직접 고치지 않는다.
+- `supabase/migrations/*.sql`의 기존 파일(2026-09-18 기준 15개, `20260915000000`~`20260917010800`)은 내용이 잘못됐다고 판단되더라도 직접 고치지 않는다.
+- 기존 migration 주석 중 "`routine_items`는 Protected 테이블"(`20260917010300`·`010700`·`010800`)은 2026-09-18 개정 전 표현이다. 이 규칙에 따라 파일은 고치지 않고 이 문서가 우선한다.
 - 컬럼을 더하거나 제약을 바꿔야 하면 새 migration(`ALTER TABLE ... ADD COLUMN ...`, `ALTER TABLE ... DROP CONSTRAINT ...` 등)으로 남긴다 — 기존 `20260916000000_relax_due_date_constraint.sql`이 이미 이 패턴을 보여준다(제약을 나중에 별도 파일로 제거).
 
-### 2.4 공통(Shared Protected) 테이블 변경은 단독 임의 변경 금지
+### 2.4 보호(Protected) 테이블 변경은 단독 임의 변경 금지
 
-다음 테이블에 대한 migration은 **작성자 본인이 아닌 나머지 한 명(A↔B 상호 리뷰, 필요하면 Shared Protected 코드 작성자)의 리뷰 승인**을 PR 머지 전에 받는다 — 2명 체제에서는 "제3의 승인자"가 없으므로 반드시 서로가 서로를 확인한다:
+다음 테이블에 대한 migration은 **모션 인식 담당(Auth는 나머지 한 명)의 리뷰 승인**을 PR 머지 전에 받는다(2026-09-18 개정으로 범위 축소):
 
-- `daily_routines`, `routine_items`, `pregnancy_knowledge`(Routine AI 소관)
-- `posture_calibration_profiles`, `posture_events`, `motion_consents`(Movement Recognition 소관)
+- `posture_calibration_profiles`, `posture_events`(Movement Recognition 소관 — 모션 인식 카메라 테이블)
 - `auth.users`에 영향을 주는 모든 변경(Auth 소관)
+
+Routine AI 테이블(`daily_routines`, `routine_items`, `pregnancy_knowledge`)은 보호 대상이 아니다. Routine AI 담당이 단독으로 migration을 낼 수 있으며, 대신 `routine_items`를 FK로 참조하는 테이블(`household_request_items`, `chat_messages`, `recommendation_feedback`)에 영향이 있으면 PR 설명에 적고 그 소유자에게 미리 알린다. `motion_consents`도 보호 대상이 아니다(카메라 테이블이 아닌 동의 설정값).
 
 다른 담당자의 테이블을 **FK로 참조만** 하는 것은 이 규칙 대상이 아니다(예: Developer A가 `household_request_items.routine_item_id → routine_items(id)` FK를 추가하는 것은 `household_request_items`가 A 소유 테이블이므로 A가 단독으로 migration을 내도 된다 — `routine_items` 자체를 변경하는 것이 아니기 때문이다). 다만 참조 대상 테이블의 PK 타입·존재를 반드시 최신 migration 기준으로 확인한다.
 
@@ -79,7 +83,8 @@ YYYYMMDDHHMMSS_<domain>_<purpose>.sql
 - [ ] migration 파일이 `YYYYMMDDHHMMSS_<domain>_<purpose>.sql` 형식이다
 - [ ] 한 PR에 한 목적(테이블 하나, 또는 부모-자식 쌍)만 있다
 - [ ] 기존 migration 파일을 수정하지 않았다(새 파일만 추가)
-- [ ] Shared Protected 테이블(§2.4)을 변경한다면 관련 승인자 리뷰가 있다
+- [ ] 보호 테이블(§2.4: `posture_*` 2개, `auth.users`)을 변경한다면 관련 승인자 리뷰가 있다
+- [ ] `routine_items` 등 다른 테이블이 FK로 참조하는 테이블을 바꾼다면 참조하는 쪽 소유자에게 알렸다
 - [ ] `create table if not exists`, RLS 활성화(정책 없음) 컨벤션을 따른다
 - [ ] `TARGET_DB_SCHEMA.md`에 이미 계획된 테이블이면 그 컬럼 정의와 일치한다(불일치 시 먼저 `TARGET_DB_SCHEMA.md`를 갱신하는 PR을 낸다)
 

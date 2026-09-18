@@ -12,7 +12,7 @@
 
 - **`account`/`care`/`family` 3개 도메인은 이미 이 경계를 강제하는 구조다.** `domains/*/repository.py`의 Protocol이 반환 타입을 raw row가 아니라 `domains/*/schemas.py`의 Pydantic DTO(`ConditionResponse`, `HouseholdRequestResponse` 등)로 **직접 선언**한다. Router는 Service만, Service는 Repository Protocol만 알고, Protocol의 반환 타입 자체가 이미 API Response와 동일한 DTO다 — 즉 Stub을 Supabase adapter로 교체해도 **adapter 내부에서 DB row(dict) → 이 DTO로의 매핑만 새로 구현**하면 되고, Router·Service·API 계약은 전혀 바뀌지 않는다. 이번 STEP에서 이 구조를 재확인했고 변경할 필요가 없다고 판단했다.
 - **`profile.py`/`profile_service.py`(실 구현)는 이 경계를 모범적으로 지킨다.** `_to_response(row: Row) -> ProfileResponse`가 raw Supabase row를 받아 `pregnancy_weeks`/`completed_step`처럼 DB에 없는 계산 필드까지 채워 DTO로 변환한다. DB 컬럼이 늘어나도 `ProfileResponse` 필드가 그대로면 Frontend는 영향받지 않는다.
-- **`routine.py`(Protected, 실 구현)는 부분적으로만 지킨다.** `GET/POST /routine/today`는 `daily_routines` 행을 `.select("id, date, source, model, generated_at, response")`로 컬럼을 제한해 그대로 반환한다 — 별도 DTO 클래스를 두지 않고 select 컬럼 제한으로 최소 노출만 한다. `response` 컬럼 자체는 이미 카테고리별 구조화된 JSON(원본 테이블 컬럼이 아니라 애초에 DTO 형태로 설계된 jsonb)이라 원칙을 심각하게 위반하지는 않지만, 엄밀한 Repository Model 계층은 없다. **Protected 모듈이라 이 문서에서 구조 변경을 제안하지 않는다** — 현재 상태를 그대로 계약으로 기록한다.
+- **`routine.py`(Routine AI 소유, 실 구현)는 부분적으로만 지킨다.** `GET/POST /routine/today`는 `daily_routines` 행을 `.select("id, date, source, model, generated_at, response")`로 컬럼을 제한해 그대로 반환한다 — 별도 DTO 클래스를 두지 않고 select 컬럼 제한으로 최소 노출만 한다. `response` 컬럼 자체는 이미 카테고리별 구조화된 JSON(원본 테이블 컬럼이 아니라 애초에 DTO 형태로 설계된 jsonb)이라 원칙을 심각하게 위반하지는 않지만, 엄밀한 Repository Model 계층은 없다. **Routine AI 담당 소유라 이 문서에서 구조 변경을 제안하지 않는다** — 현재 상태를 그대로 계약으로 기록한다(2026-09-18 개정 전에는 Protected).
 - 아래 각 API의 "Source Data"는 `TARGET_DB_SCHEMA.md`의 Source Table을, "Response"는 실제/제안 DTO를 가리키며 절대 테이블명을 Path나 필드명으로 노출하지 않는다.
 
 ## 상태 정의
@@ -191,7 +191,7 @@
 
 ---
 
-## Routine (Protected)
+## Routine (Routine AI 소유)
 
 ### `GET /api/v1/routine/today`
 
@@ -286,7 +286,7 @@
 - Source Data: `routine_items.payload`(갱신) + `recommendation_feedback`(이력 기록, MISSING)
 - Authorization: 기본값
 - Error: 422(요청 형식)
-- Status: **stub** — 실제 `routine_items`(Protected) 원본을 모르므로 `title`은 항상 `null`, `category`는 고정값 `meal`, `payload`는 요청을 그대로 반영한다(지어내지 않음). `recommendation_feedback` 테이블이 없어 이력은 저장하지 않는다.
+- Status: **stub** — 실제 `routine_items`(Routine AI 소유) 원본을 모르므로 `title`은 항상 `null`, `category`는 고정값 `meal`, `payload`는 요청을 그대로 반영한다(지어내지 않음). `recommendation_feedback` 테이블이 없어 이력은 저장하지 않는다.
 
 ### `PUT /api/v1/care/routine-items/{item_id}/sleep-environment`
 
@@ -357,7 +357,7 @@
 
 ## Guide Query — Meal / Household / Health / Sleep (STEP 11)
 
-`routine_items`(Protected 테이블)를 읽기 전용으로 조회하는 Query Layer다. Routine AI를 카테고리별로 다시 호출하지 않으며, `daily_routines.response`(생성 시점 스냅샷)가 아니라 `routine_items` 원본에서 읽어 실행 상태(완료 체크)가 항상 최신으로 반영된다. 4개 API 모두 계약이 동일해 한 번에 기술한다.
+`routine_items`(Routine AI 소유 테이블)를 읽기 전용으로 조회하는 Query Layer다. Routine AI를 카테고리별로 다시 호출하지 않으며, `daily_routines.response`(생성 시점 스냅샷)가 아니라 `routine_items` 원본에서 읽어 실행 상태(완료 체크)가 항상 최신으로 반영된다. 4개 API 모두 계약이 동일해 한 번에 기술한다.
 
 ### `GET /api/v1/meals/today` · `GET /api/v1/household/today` · `GET /api/v1/health/today` · `GET /api/v1/sleep/today`
 
@@ -630,7 +630,7 @@
 ## 요약
 
 - 작성일: 2026-09-17 (STEP 5 초안, STEP 8에서 8개 planned API 구현, STEP 9·STEP 10·STEP 11(2026-09-18)에서 갱신)
-- STEP 9: `GET/PUT /care/conditions/{date}`, `PUT /care/conditions/{date}/activities`가 실제 `daily_conditions`에 연결됐다. `app/services/routine/inputs.py`(Protected)가 같은 테이블·같은 컬럼명을 읽으므로 호환성을 확인하는 통합 테스트를 추가했다(`tests/test_care_condition.py`). Care 도메인의 나머지 메서드(execution/report/routine-item 피드백/캘린더)는 여전히 Stub — 같은 Repository 안에서 fallback으로 위임한다.
+- STEP 9: `GET/PUT /care/conditions/{date}`, `PUT /care/conditions/{date}/activities`가 실제 `daily_conditions`에 연결됐다. `app/services/routine/inputs.py`(Routine AI)가 같은 테이블·같은 컬럼명을 읽으므로 호환성을 확인하는 통합 테스트를 추가했다(`tests/test_care_condition.py`). Care 도메인의 나머지 메서드(execution/report/routine-item 피드백/캘린더)는 여전히 Stub — 같은 Repository 안에서 fallback으로 위임한다.
 - STEP 10: 프로필 1~6단계 필드를 화면설계서·DB와 재대조해 신규 컬럼/migration이 필요 없음을 확정하고, 회귀·남편 비공개 테스트를 추가했다(코드 변경 없음, `tests/test_profile.py`만 확장).
 - STEP 11: `GET /api/v1/meals/today`·`/household/today`·`/health/today`·`/sleep/today` 4개를 신규 구현했다(`app/domains/guide/**`, `app/api/v1/guide.py`) — `routine_items`를 읽기 전용으로 조회하는 Query Layer이며 새 테이블도, AI 재호출도 없다. 전체 API가 43개 → **47개**가 됐다.
 - STEP 12: Record(`PUT .../routine-items/{id}/execution`), Report(`POST .../preview`·`.../finalize`, `GET .../daily-reports/{date}`), Calendar(`GET .../calendar/{month}`), 남편 오전 리포트(`GET /family/morning-reports/{date}`) 6개를 stub→implemented로 전환했다. 새 테이블은 만들지 않았다 — Record는 `routine_items` 컬럼을 직접 갱신, Report는 Record+Condition+Movement에서 매번 계산, Calendar는 조회 조합, 남편 리포트는 `partner_links` 기반 projection이다.

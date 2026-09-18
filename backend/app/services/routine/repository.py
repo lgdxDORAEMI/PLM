@@ -5,9 +5,16 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
+from postgrest.exceptions import APIError
 from supabase import Client
 
+from app.services.routine.diff import by_item_key, carry_over, diff_items
+
 CATEGORIES = ("meal", "household", "health", "sleep")
+# S3: daily_routines는 버전별 행(revision이 가장 큰 행 = 현재), routine_items는 현재 상태(같은 행을 고쳐 씀).
+ITEM_COLUMNS = ("id", "item_key", "title", "description", "payload", "status", "completed_at", "completed_by")
+UNIQUE_VIOLATION = "23505"
+FK_VIOLATION = "23503"
 
 
 def get_routine(client: Client, user_id: str, on: date) -> dict[str, Any] | None:
@@ -16,6 +23,7 @@ def get_routine(client: Client, user_id: str, on: date) -> dict[str, Any] | None
         .select("id, date, source, model, generated_at, response")
         .eq("user_id", user_id)
         .eq("date", on.isoformat())
+        .order("revision", desc=True)
         .limit(1)
         .execute()
         .data
@@ -31,6 +39,7 @@ def get_latest_before(client: Client, user_id: str, before: date) -> dict[str, A
         .eq("user_id", user_id)
         .lt("date", before.isoformat())
         .order("date", desc=True)
+        .order("revision", desc=True)
         .limit(1)
         .execute()
         .data
@@ -61,6 +70,55 @@ def to_items(routine: dict[str, Any]) -> list[dict[str, Any]]:
     return items
 
 
+def _current_revision(client: Client, user_id: str, on: date) -> int:
+    rows = (
+        client.table("daily_routines")
+        .select("revision")
+        .eq("user_id", user_id)
+        .eq("date", on.isoformat())
+        .order("revision", desc=True)
+        .limit(1)
+        .execute()
+        .data
+    )
+    return int(rows[0]["revision"]) if rows else 0
+
+
+def _sync_items(
+    client: Client, user_id: str, on: date, routine_id: str,
+    old: list[dict[str, Any]], new: list[dict[str, Any]],
+) -> None:
+    """routine_items를 새 버전에 맞춘다. 삭제 후 재삽입하지 않는다(FK·다른 도메인 조회 보호).
+
+    같은 키 항목은 내용(제목·설명)을 최신으로 갱신하고 완료 기록은 그대로 둔다(키 기준 유지), 새 항목은 추가,
+    빠진 항목은 삭제하되 다른 테이블이 참조해 삭제가 막히면 change_kind='removed'로 남긴다.
+    """
+    old_by_key = by_item_key(old)
+    scope = {"routine_id": routine_id, "user_id": user_id, "date": on.isoformat()}
+    inserts = []
+    for item in carry_over(old, new):
+        previous = old_by_key.get(item["item_key"])
+        if previous is None:
+            inserts.append({**item, **scope})
+            continue
+        values = {k: v for k, v in item.items() if k not in ("item_key", "status", "completed_at", "completed_by")}
+        client.table("routine_items").update({**values, "routine_id": routine_id}).eq("id", previous["id"]).execute()
+    if inserts:
+        client.table("routine_items").insert(inserts).execute()
+    new_keys = {i["item_key"] for i in new}
+    for key, previous in old_by_key.items():
+        if key in new_keys:
+            continue
+        try:
+            client.table("routine_items").delete().eq("id", previous["id"]).execute()
+        except APIError as error:
+            if error.code != FK_VIOLATION:
+                raise
+            client.table("routine_items").update(
+                {"change_kind": "removed", "routine_id": routine_id}
+            ).eq("id", previous["id"]).execute()
+
+
 def save_routine(
     client: Client,
     user_id: str,
@@ -73,6 +131,12 @@ def save_routine(
     request_payload: dict[str, Any] | None,
     error_message: str | None,
 ) -> dict[str, Any]:
+    """새 revision 행을 넣고 routine_items를 그 버전으로 맞춘다. 첫 생성이면 change_summary는 None."""
+    old_items = (
+        client.table("routine_items").select(*ITEM_COLUMNS)
+        .eq("user_id", user_id).eq("date", on.isoformat()).execute().data
+    )
+    new_items = to_items(response)
     row = {
         "user_id": user_id,
         "date": on.isoformat(),
@@ -82,15 +146,16 @@ def save_routine(
         "request_payload": request_payload,
         "response": response,
         "error_message": error_message,
+        "change_summary": diff_items(old_items, new_items) if old_items else None,
     }
-    saved = client.table("daily_routines").upsert(row, on_conflict="user_id,date").execute().data[0]
-    routine_id = saved["id"]
-    # 재생성 시 이전 항목은 지우고 다시 넣는다(완료 체크는 W-RECORD-001에서 당일 재생성 정책과 함께 다룬다).
-    client.table("routine_items").delete().eq("routine_id", routine_id).execute()
-    items = [
-        {**item, "routine_id": routine_id, "user_id": user_id, "date": on.isoformat()}
-        for item in to_items(response)
-    ]
-    if items:
-        client.table("routine_items").insert(items).execute()
+    # 같은 사람이 동시에 두 번 생성하면 revision이 겹친다 → 번호를 다시 받아 1번만 재시도.
+    for attempt in (1, 2):
+        row["revision"] = _current_revision(client, user_id, on) + 1
+        try:
+            saved = client.table("daily_routines").insert(row).execute().data[0]
+            break
+        except APIError as error:
+            if error.code != UNIQUE_VIOLATION or attempt == 2:
+                raise
+    _sync_items(client, user_id, on, saved["id"], old_items, new_items)
     return saved

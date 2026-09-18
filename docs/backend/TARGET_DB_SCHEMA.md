@@ -3,7 +3,7 @@
 - 작성일: 2026-09-17 (STEP 4)
 - 목적: (1) 아내/남편 화면 DB 스키마, (2) 실제 Supabase migration, (3) 실제 Backend 코드가 사용 중인 데이터를 3-way 비교하고, 이번 MVP의 Target DB Schema를 정의한다.
 - 이 문서는 **설계 문서**이며 migration 파일을 생성하지 않는다. 기존 migration은 수정하지 않는다. 필요한 신규 테이블만 "계획"으로 남긴다.
-- Routine/AI 구조(`daily_routines`/`routine_items`/`pregnancy_knowledge`)는 재설계하지 않는다 — 아래 검증대로 이미 요구사항과 합치하며 Protected 모듈이 소유한다.
+- Routine/AI 구조(`daily_routines`/`routine_items`/`pregnancy_knowledge`)는 이 문서에서 재설계하지 않는다 — Routine AI 담당(웬즈데이 AI) 소유다(2026-09-18 개정으로 Protected에서 제외). 재생성 이력 요구(FUC-W-COND-003/004)에 따른 변경은 Routine AI 담당이 `docs/ai_wednesday/AI_wednesday_pipeline.md` §3 S3로 진행한다.
 
 ## 3-way 비교 요약
 
@@ -11,9 +11,9 @@
 |---|---|---|---|---|
 | `pregnancy_profiles` | 아내 PDF W-PROFILE-001~007 필드 서술과 일치(단, PDF는 테이블 정의가 아니라 화면 필드 서술) | **존재** — `20260915000000` + `20260916000000_relax_due_date_constraint` + `20260917000001`(3~6단계 컬럼) | `profile_service.py`(1~2단계 실사용), `account` Stub(6단계 개념 참조, 미영속) | **KEEP** |
 | `daily_conditions` | 아내 PDF W-COND-001/W-TASK-001 필드 서술과 일치 | **존재** — `20260917000001` | `care` Stub이 메모리로만 사용, 테이블 미연결 | **KEEP** |
-| `daily_routines` | PDF에 직접 서술 없음(화면 표시는 `routine_items` 경유), FUC 기준 설계 | **존재** — `20260917000001` | `routine.py` 실사용(**Protected**) | **KEEP** |
-| `routine_items` | 아내 PDF W-MEAL/HOUSE/HEALTH/SLEEP 필드 서술과 일치("계산 데이터"로 표기) | **존재**(`source_ids` 컬럼 포함, `20260917000001`) | `routine.py` 실사용(**Protected**) | **KEEP** |
-| `pregnancy_knowledge` | PDF에 없음(RAG 내부 코퍼스, 화면 비노출) | **존재**(pgvector, `20260917000000`) | `routine/retriever.py` 실사용(**Protected**) | **KEEP** |
+| `daily_routines` | PDF에 직접 서술 없음(화면 표시는 `routine_items` 경유), FUC 기준 설계 | **존재** — `20260917000001` | `routine.py` 실사용(Routine AI 소유) | **KEEP** |
+| `routine_items` | 아내 PDF W-MEAL/HOUSE/HEALTH/SLEEP 필드 서술과 일치("계산 데이터"로 표기) | **존재**(`source_ids` 컬럼 포함, `20260917000001`) | `routine.py` 실사용(Routine AI 소유) | **KEEP** |
+| `pregnancy_knowledge` | PDF에 없음(RAG 내부 코퍼스, 화면 비노출) | **존재**(pgvector, `20260917000000`) | `routine/retriever.py` 실사용(Routine AI 소유) | **KEEP** |
 | `posture_calibration_profiles` | 아내/남편 PDF B-MOTION-001 서술과 대략 일치 | **존재**(`20260916000000_create_movement_tables`) — 구 ERD 초안(삭제됨)의 명칭(`posture_calibrations`)과 실제 테이블명이 달랐음 | `movement.py` 실사용(**Protected**) | **KEEP** |
 | `posture_events` | 아내/남편 PDF B-MOTION-001 서술과 일치 | **존재**(`20260916000000_create_movement_tables`) | `movement.py` 실사용(**Protected**) | **KEEP** |
 | `profiles` | 아내 PDF에 role 개념 없음(구 ERD 초안(삭제됨) 자체 제안) | 없음 | `account` Stub이 `AccountState.role` 개념만 참조, 미영속 | **NEW** |
@@ -93,7 +93,7 @@
 | planned_activities | text[] | NOT NULL default '{}' |
 | created_at / updated_at | timestamptz | NOT NULL default now() |
 
-### `daily_routines` (Protected)
+### `daily_routines` (Routine AI 소유)
 
 - **목적**: 하루 루틴 생성 원본(AI/폴백) SOURCE, `user_id`+`date`당 1행 덮어쓰기
 - **PK**: `id`
@@ -103,7 +103,7 @@
 - **Actor access**: Wife 전용
 - **관련 Screen**: W-HOME-001, W-CALLBACK-001
 - **관련 FUC**: FUC-W-ROUTINE-001/003
-- **현재 존재 여부**: 존재(`20260917000001`). **Protected — 이번 문서에서도 변경 제안 없음.**
+- **현재 존재 여부**: 존재(`20260917000001`). **Routine AI 소유.** 버전별 행 누적(revision·confirmed_at·change_summary)으로 변경 예정 — 웬즈데이 S3.
 
 | Column | Type | Nullable |
 |---|---|---|
@@ -116,7 +116,7 @@
 | error_message | text | NULL |
 | generated_at | timestamptz | NOT NULL default now() |
 
-### `routine_items` (Protected)
+### `routine_items` (Routine AI 소유)
 
 - **목적**: 카테고리별(meal/household/health/sleep) 루틴 항목 SOURCE — Meal/Household/Health/Sleep/Record 5개 화면 도메인의 공통 원본
 - **PK**: `id`
@@ -126,7 +126,7 @@
 - **Actor access**: Wife(전체), Husband(가사 항목 완료 상태만 간접 갱신 — `household_request_items` FK 경유)
 - **관련 Screen**: W-MEAL-001/002, W-HOUSE-001, W-HEALTH-001, W-SLEEP-001, W-RECORD-001/002
 - **관련 FUC**: FUC-W-RECORD-001/002, FUC-W-HEALTH-002 등
-- **현재 존재 여부**: 존재(`20260917000001`). **Protected.**
+- **현재 존재 여부**: 존재(`20260917000001`). **Routine AI 소유.** `change_kind` 컬럼 추가 예정 — 웬즈데이 S3.
 
 | Column | Type | Nullable |
 |---|---|---|
@@ -145,7 +145,7 @@
 | completed_at | timestamptz | NULL |
 | sort_order | smallint | NOT NULL default 0 |
 
-### `pregnancy_knowledge` (Protected)
+### `pregnancy_knowledge` (Routine AI 소유)
 
 - **목적**: RAG 지식 코퍼스(임베딩 검색용). 사용자 데이터 아님, 화면에 직접 노출되지 않음.
 - **PK**: `id`(bigint)
@@ -155,7 +155,7 @@
 - **Actor access**: 없음(Backend AI 파이프라인 전용 읽기)
 - **관련 Screen**: 없음(간접 — 루틴 응답의 `source_ids`로만 연결)
 - **관련 FUC**: FUC-W-ROUTINE-001(RAG 근거)
-- **현재 존재 여부**: 존재(`20260917000000`, pgvector). **Protected.**
+- **현재 존재 여부**: 존재(`20260917000000`, pgvector). **Routine AI 소유.**
 
 ### `posture_calibration_profiles` (Protected)
 

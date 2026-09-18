@@ -1,7 +1,7 @@
 """Meal/Household/Health/Sleep 가이드 조회 (W-MEAL-001/002, W-HOUSE-001,
 W-HEALTH-001, W-SLEEP-001). Developer A(Daily Experience) 소유.
 
-Routine AI(Protected)가 만든 routine_items를 읽기만 하는 Query Layer다 — 카테고리별
+Routine AI가 만든 routine_items를 읽기만 하는 Query Layer다 — 카테고리별
 로 AI를 새로 호출하지 않는다. `app/services/routine/**`, `app/api/v1/routine.py`는
 이 파일에서 수정하지 않는다."""
 

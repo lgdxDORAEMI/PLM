@@ -122,7 +122,7 @@ STEP 15에서 `Widget → Store → Repository 인터페이스 → (Mock|Api)Rep
 |---|---|---|
 | Profile | **PARTIAL** | 기존 1~6단계 계약은 PASS지만 최신 FUC-W-PROFILE-002에 복구된 생년월일을 Supabase 단계 API와 `pregnancy_profiles`에 반영해야 함 |
 | Condition | **READY** | Create/Read/Update/검증/인증/격리/KST 경계까지 전부 테스트로 커버(STEP 9) |
-| Routine / Routine Item(Protected) | **READY** | 미수정 확인, 기존 테스트 전부 통과. AI 실호출 1회만 OpenAI 크레딧 대기(기능 결함 아님, 외부 자원 문제) |
+| Routine / Routine Item(Routine AI 소유) | **READY** | 미수정 확인, 기존 테스트 전부 통과. AI 실호출 1회만 OpenAI 크레딧 대기(기능 결함 아님, 외부 자원 문제) |
 | Meal / Household(조회) / Health / Sleep(조회) — Guide Query | **READY** | 4개 API 전부 실 연결·테스트 완비(STEP 11), AI 재호출 없이 `routine_items` 읽기 전용 |
 | Record | **READY** | `routine_items` 직접 갱신, 별도 로그 테이블 없이 완결(STEP 12) |
 | Report / Calendar | **PARTIAL** | 핵심 로직은 READY 수준이나 `family`(가사 분담) 집계가 Household 미연결로 항상 0으로 고정됨 — Household가 STUB에서 벗어나야 완전해짐 |

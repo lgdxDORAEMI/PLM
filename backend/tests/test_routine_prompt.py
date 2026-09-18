@@ -1,6 +1,14 @@
 import unittest
 
-from app.services.routine.prompt import CATEGORIES, ROUTINE_SCHEMA, build_user_prompt, category_schema
+from app.services.routine.prompt import (
+    CATEGORIES,
+    HEALTH_KEYS,
+    MEAL_KEYS,
+    ROUTINE_SCHEMA,
+    SLEEP_KEY,
+    build_user_prompt,
+    category_schema,
+)
 
 
 def _walk(node, path="$"):
@@ -22,6 +30,15 @@ class RoutinePromptTest(unittest.TestCase):
                 self.assertIs(obj.get("additionalProperties"), False, path)
                 self.assertEqual(set(obj["required"]), set(obj["properties"]), path)
         self.assertEqual(set(ROUTINE_SCHEMA["properties"]), {"meal", "household", "health", "sleep"})
+
+    def test_item_key_is_fixed_set(self) -> None:
+        """diff(R2)가 item_key로 비교하므로 호출마다 같은 값이어야 한다. household는 코드표 미확정 → 자유."""
+        props = ROUTINE_SCHEMA["properties"]
+        self.assertEqual(props["meal"]["items"]["properties"]["item_key"]["enum"], list(MEAL_KEYS))
+        self.assertEqual(props["health"]["items"]["properties"]["item_key"]["enum"], list(HEALTH_KEYS))
+        self.assertEqual(props["sleep"]["properties"]["item_key"]["enum"], [SLEEP_KEY])
+        self.assertNotIn("enum", props["household"]["items"]["properties"]["item_key"])
+        self.assertIn("household:<영문 소문자 활동코드>", __import__("app.services.routine.prompt", fromlist=["x"]).SYSTEM_PROMPT)
 
     def test_prompt_sections(self) -> None:
         facts = {"week": 24, "waist_pain": 4}

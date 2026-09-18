@@ -246,7 +246,7 @@ class ConditionApiTest(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn(("wife-1", "2026-09-17"), self.supabase.rows)
 
     async def test_routine_generator_reads_condition_saved_via_api(self) -> None:
-        """Routine Generator(app/services/routine/inputs.py, Protected)가 이 API로
+        """Routine Generator(app/services/routine/inputs.py, Routine AI)가 이 API로
         저장한 컨디션을 그대로 읽을 수 있어야 한다 — 컬럼명·PK·날짜 형식 호환성."""
         due_date = self.TARGET_DATE - timedelta(days=100)
 

@@ -32,7 +32,7 @@
 | Wife/Husband | (연동 완료 상태) | 아내-남편 연결 | `partner_links` | 없음 | MISSING | 신규 migration (unique(husband_user_id)로 중복 연동 방지) |
 | Wife | W-COND-001 | 입덧/허리/골반/다리/손목/피로/기분 | `daily_conditions` | 존재(`20260917000001_routine_tables`) | EXISTING_MATCH | Care Stub → 이 테이블 연결로 교체 |
 | Wife | W-TASK-001 | 예정 활동(9종+직접입력) | `daily_conditions.planned_activities` | 존재 | EXISTING_MATCH | 위와 동일 |
-| Wife | W-HOME-001 / W-MEAL-001/002 / W-HOUSE-001 / W-HEALTH-001 / W-SLEEP-001 | 루틴 원본, 항목별 payload | `daily_routines`, `routine_items` | 존재(`20260917000001_routine_tables`) | EXISTING_MATCH | 없음 (Protected: routine 서비스 수정 금지) |
+| Wife | W-HOME-001 / W-MEAL-001/002 / W-HOUSE-001 / W-HEALTH-001 / W-SLEEP-001 | 루틴 원본, 항목별 payload | `daily_routines`, `routine_items` | 존재(`20260917000001_routine_tables`) | EXISTING_MATCH | 없음 (Routine AI 담당 소유, 2026-09-18 개정 전에는 Protected) |
 | Wife | (routine_items 실제 컬럼) | `source_ids`(RAG 근거) | 구 ERD 초안(삭제됨)의 `routine_items` 표에는 미기재 | migration에는 `source_ids bigint[]` 존재 | EXISTING_DIFFERENT | 조치 불필요(초안 삭제, migration이 기준) |
 | Wife | W-CHAT-001 (식사 재추천/공통 챗봇) | 대화 이력, suggested_actions | `chat_messages` | 없음 | MISSING | 신규 migration. NFR-027(보관·파기 기준 TBD, 원문 미저장) 먼저 확정 필요 |
 | Wife | W-MEAL-002/W-CHAT-001, W-SLEEP-001 팝업 | 메뉴 수락/거절, 수면 환경 override 이력 | `recommendation_feedback` | 없음 | MISSING | 신규 migration |

@@ -1,8 +1,8 @@
 """Meal/Household/Health/Sleep 화면용 Query Layer (STEP 11).
 
-    Routine AI(app/services/routine/**, Protected)
+    Routine AI(app/services/routine/**, Routine AI 담당 소유)
         ↓ (이미 씀)
-    routine_items / daily_routines (Protected 테이블, 이 서비스는 읽기만)
+    routine_items / daily_routines (Routine AI 소유 테이블, 이 서비스는 읽기만)
         ↓
     GuideQueryService (이 파일)
         ↓

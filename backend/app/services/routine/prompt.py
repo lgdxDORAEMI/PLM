@@ -28,12 +28,17 @@ def _arr(items: dict[str, Any]) -> dict[str, Any]:
 
 
 _STR = {"type": "string"}
+# item_key는 이전 루틴과 새 루틴을 item_key로 비교(diff)하므로 호출마다 같은 값이어야 한다.
+# household는 활동 코드표 9종이 미확정이라 열거하지 못한다 → 자유 문자열 + service._normalize_item_keys가 접두사 보정.
+MEAL_KEYS = ("meal:breakfast", "meal:lunch", "meal:dinner", "meal:snack")
+HEALTH_KEYS = ("health:waist", "health:pelvis", "health:leg", "health:wrist", "health:whole", "health:rest")  # rest는 fallback.yaml과 동일
+SLEEP_KEY = "sleep:main"
 _INT = {"type": "integer"}
 _SOURCE_IDS = _arr(_INT)
 
 _MEAL_ITEM = _obj(
     {
-        "item_key": _STR,
+        "item_key": {"type": "string", "enum": list(MEAL_KEYS)},
         "title": _STR,
         "payload": _obj(
             {
@@ -64,7 +69,7 @@ _HOUSEHOLD_ITEM = _obj(
 )
 _HEALTH_ITEM = _obj(
     {
-        "item_key": _STR,
+        "item_key": {"type": "string", "enum": list(HEALTH_KEYS)},
         "title": _STR,
         "payload": _obj(
             {
@@ -80,7 +85,7 @@ _HEALTH_ITEM = _obj(
 )
 _SLEEP = _obj(
     {
-        "item_key": _STR,
+        "item_key": {"type": "string", "enum": [SLEEP_KEY]},
         "title": _STR,
         "payload": _obj(
             {
@@ -113,6 +118,7 @@ SYSTEM_PROMPT = """당신은 임산부의 하루 생활 루틴을 설계하는 �
 - 출력은 주어진 JSON 스키마만. 한국어.
 - meal: 아침·점심·저녁 각 1개 이상. 금지(exclude) 재료는 절대 포함하지 않는다. 제한(limit)은 양을 줄이고 이유를 적는다.
 - household: 사용자가 고른 예정 활동을 각각 owner(self=직접, appliance=가전, partner=가족)로 분류한다. 금지 가사는 self로 두지 않는다.
+- household의 item_key는 `household:<영문 소문자 활동코드>` 형식으로 쓴다(예: household:laundry). 같은 활동은 항상 같은 코드.
 - health: 통증이 높은 부위 우선. 금지 활동은 넣지 않는다. 5~15분 내 활동.
 - sleep: 권장 취침 시각, 환경(조명·온도·습도·소리·공기청정기) 제안값, 팁.
 - 근거 자료(참고 문단)가 주어지면 그 내용에 기반해 작성하고, 사용한 문단의 id만 source_ids에 넣는다. 자료가 없으면 빈 배열.

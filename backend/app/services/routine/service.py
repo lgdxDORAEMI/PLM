@@ -70,6 +70,35 @@ def validate(
     return result
 
 
+def _normalize_item_keys(routine: dict[str, Any]) -> dict[str, Any]:
+    """item_key를 코드가 확정한다. 완료 기록·diff가 키로 짝을 맞추므로 항목을 절대 버리지 않게 한다.
+
+    - meal: AI가 붙인 키 대신 payload.period(아침·점심·저녁·간식, 스키마 enum)로 만든다.
+      09-18 실DB에서 AI가 세 끼에 같은 키를 붙여 중복 처리에서 두 끼가 버려졌다.
+    - household: `household:` 접두사 보정(활동 코드표 미확정이라 스키마로 강제 못 함).
+    - 같은 카테고리에서 키가 겹치면 뒤 항목에 `:2`, `:3`을 붙인다.
+    """
+    result = dict(routine)
+    for category in ("meal", "household", "health"):
+        seen: dict[str, int] = {}
+        fixed = []
+        for order, entry in enumerate(routine.get(category) or []):
+            key = (entry.get("item_key") or "").strip()
+            period = (entry.get("payload") or {}).get("period")
+            if category == "meal" and period:
+                key = f"meal:{period}"
+            elif not key:
+                key = f"{category}:{order}"
+            elif not key.startswith(f"{category}:"):
+                key = f"{category}:{key.split(':')[-1]}"
+            seen[key] = seen.get(key, 0) + 1
+            if seen[key] > 1:
+                key = f"{key}:{seen[key]}"
+            fixed.append({**entry, "item_key": key})
+        result[category] = fixed
+    return result
+
+
 class RoutineService:
     def __init__(self, supabase: Client, settings: Settings, openai: AsyncOpenAI | None = None) -> None:
         self.supabase = supabase
@@ -98,7 +127,7 @@ class RoutineService:
         source, model, error = "ai", self.settings.llm_model, None
         try:
             routine, allowed = await asyncio.wait_for(self._generate(facts, constraints), TOTAL_TIMEOUT_SEC)
-            routine = validate(routine, constraints, allowed)
+            routine = _normalize_item_keys(validate(routine, constraints, allowed))
         except Exception as exc:  # 타임아웃·API 오류·JSON 오류 모두 폴백 (W-ROUTINE-003)
             error = f"{type(exc).__name__}: {exc}"[:500]
             logger.warning("루틴 생성 실패, 폴백 사용: %s", error)
@@ -108,7 +137,7 @@ class RoutineService:
             else:
                 source, routine = "fallback_template", load_template()
             model = None
-            routine = validate(routine, constraints, set())
+            routine = _normalize_item_keys(validate(routine, constraints, set()))
 
         saved = repository.save_routine(
             self.supabase, user_id, today,
