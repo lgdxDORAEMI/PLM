@@ -41,17 +41,15 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(event);
     await tester.pumpAndSettle();
-    expect(find.text('추천 행동'), findsOneWidget);
+    expect(find.text('감지 근거'), findsOneWidget);
     await tester.tap(
       find.byKey(const ValueKey('movement-alert-close-repeated-bending')),
     );
     await tester.pumpAndSettle();
-    expect(find.text('추천 행동'), findsNothing);
+    expect(find.text('감지 근거'), findsNothing);
   });
 
-  testWidgets('남편 실시간 화면에도 홈카메라 스위치를 표시하지 않는다', (
-    tester,
-  ) async {
+  testWidgets('남편 실시간 화면에도 홈카메라 스위치를 표시하지 않는다', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(home: ProductMovementScreen(role: AppUserRole.husband)),
     );

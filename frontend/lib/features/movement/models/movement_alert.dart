@@ -15,6 +15,72 @@ class MovementAlert {
   final String suggestion;
   final String time;
   final MovementAlertLevel level;
+
+  factory MovementAlert.fromJson(Map<String, dynamic> json) {
+    final posture = json['posture_type']?.toString() ?? '';
+    final burden = json['burden_label']?.toString() ?? '';
+    final trigger = json['trigger_reason']?.toString() ?? '';
+    final startedAt = DateTime.tryParse(json['started_at']?.toString() ?? '');
+    return MovementAlert(
+      id: json['event_id']?.toString() ?? '',
+      title: _eventTitle(posture, burden),
+      description: '${_postureLabel(posture)} · ${_burdenLabel(burden)}',
+      suggestion: _triggerLabel(trigger),
+      time: startedAt == null ? '' : _timeLabel(startedAt.toLocal()),
+      level: burden == 'Prolonged Load' || burden == 'High-load Action'
+          ? MovementAlertLevel.high
+          : MovementAlertLevel.caution,
+    );
+  }
+
+  static String _eventTitle(String posture, String burden) =>
+      '${_postureLabel(posture)} ${_burdenLabel(burden)} 감지';
+
+  static String _postureLabel(String value) => switch (value.toLowerCase()) {
+    'bending' => '허리 숙임',
+    'standing' => '서 있기',
+    'sitting' => '앉기',
+    _ => value,
+  };
+
+  static String _burdenLabel(String value) => switch (value) {
+    'Repeated Load' => '반복 부담',
+    'Prolonged Load' => '지속 부담',
+    'High-load Action' => '고부담 동작',
+    'Normal' => '일반 동작',
+    _ => value,
+  };
+
+  static String _triggerLabel(String value) => switch (value) {
+    'duration_threshold' => '지속 시간 기준을 넘어 감지됐어요.',
+    'repetition_threshold' => '반복 횟수 기준을 넘어 감지됐어요.',
+    'sit_to_stand' => '앉았다 일어나는 동작으로 감지됐어요.',
+    _ => value,
+  };
+
+  static String _timeLabel(DateTime value) {
+    final period = value.hour < 12 ? '오전' : '오후';
+    final hour = value.hour % 12 == 0 ? 12 : value.hour % 12;
+    return '$period ${hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+class MovementDashboardData {
+  const MovementDashboardData({
+    required this.alerts,
+    required this.forwardBendSeconds,
+    required this.burdenEventCount,
+    required this.narratives,
+    required this.consentGranted,
+    required this.collectionEnabled,
+  });
+
+  final List<MovementAlert> alerts;
+  final double forwardBendSeconds;
+  final int burdenEventCount;
+  final List<String> narratives;
+  final bool consentGranted;
+  final bool collectionEnabled;
 }
 
 abstract final class MovementMockData {

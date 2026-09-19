@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../../core/config/app_config.dart';
 import '../../design_system/components/app_button.dart';
 import '../../design_system/components/app_card.dart';
+import '../../design_system/components/app_state_view.dart';
+import '../../design_system/components/info_banner.dart';
 import '../../design_system/components/content_frame.dart';
 import '../../design_system/components/responsive_split_view.dart';
 import '../../design_system/components/top_app_bar.dart';
@@ -13,23 +18,50 @@ import '../../routing/route_context.dart';
 import '../../routing/route_names.dart';
 import 'controllers/realtime_alert_controller.dart';
 import 'models/movement_alert.dart';
+import 'services/api_movement_dashboard_service.dart';
+import 'services/mock_movement_dashboard_service.dart';
+import 'services/movement_dashboard_service.dart';
 import 'widgets/movement_alert_card.dart';
 
-/// B-MOTION-001의 오늘 감지 상태와 로그를 서비스 교체 가능한 Mock으로 표시한다.
+/// B-MOTION-001의 오늘 감지 상태와 로그를 Backend 조회 결과로 표시한다.
 class ProductMovementScreen extends StatefulWidget {
-  const ProductMovementScreen({super.key, required this.role});
+  const ProductMovementScreen({super.key, required this.role, this.service});
 
   final AppUserRole role;
+  final MovementDashboardService? service;
 
   @override
   State<ProductMovementScreen> createState() => _ProductMovementScreenState();
 }
 
 class _ProductMovementScreenState extends State<ProductMovementScreen> {
-  final RealtimeAlertController _controller = RealtimeAlertController();
+  late final RealtimeAlertController _controller;
   bool _showAllEvents = false;
 
   bool get _isWife => widget.role == AppUserRole.wife;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = RealtimeAlertController(
+      service:
+          widget.service ??
+          (AppConfig.hasSupabaseConfig
+              ? ApiMovementDashboardService(includePrivacy: _isWife)
+              : const MockMovementDashboardService()),
+    )..addListener(_refresh);
+    unawaited(_controller.load());
+  }
+
+  @override
+  void dispose() {
+    _controller
+      ..removeListener(_refresh)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _refresh() => setState(() {});
 
   @override
   Widget build(BuildContext context) {
@@ -47,37 +79,67 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
           children: [
-            ResponsiveSplitView(
-              primaryFlex: 7,
-              secondaryFlex: 5,
-              gap: AppSpacing.xxl,
-              primary: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _CurrentStateCard(
-                    onMoveToHousehold: _isWife ? _moveToHousehold : null,
-                  ),
-                ],
+            if (_controller.state == MovementDashboardViewState.loading)
+              const AppLoadingState(message: '오늘의 움직임 기록을 불러오고 있어요')
+            else if (_controller.state != MovementDashboardViewState.data)
+              AppErrorState(
+                title: _controller.state == MovementDashboardViewState.authError
+                    ? '움직임 기록을 볼 수 없어요'
+                    : '움직임 기록을 불러오지 못했어요',
+                message:
+                    _controller.state == MovementDashboardViewState.serverError
+                    ? '서버 연결을 확인한 뒤 다시 시도해 주세요.'
+                    : null,
+                onRetry: _controller.load,
+              )
+            else ...[
+              if (_isWife) ...[
+                InfoBanner(
+                  title: _controller.data!.collectionEnabled
+                      ? '움직임 수집 중'
+                      : '움직임 수집 꺼짐',
+                  message: _controller.data!.consentGranted
+                      ? '움직임 데이터 수집에 동의한 상태예요.'
+                      : '움직임 데이터 수집 동의가 필요해요.',
+                  tone: _controller.data!.collectionEnabled
+                      ? InfoBannerTone.success
+                      : InfoBannerTone.info,
+                ),
+                const SizedBox(height: AppSpacing.xl),
+              ],
+              ResponsiveSplitView(
+                primaryFlex: 7,
+                secondaryFlex: 5,
+                gap: AppSpacing.xxl,
+                primary: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _CurrentStateCard(
+                      data: _controller.data!,
+                      onMoveToHousehold: _isWife ? _moveToHousehold : null,
+                    ),
+                  ],
+                ),
+                secondary: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _TodayEventLog(
+                      events: _controller.todayAlerts,
+                      showAll: _showAllEvents,
+                      onShowAll: () => setState(() => _showAllEvents = true),
+                      onOpen: _showAlert,
+                    ),
+                  ],
+                ),
               ),
-              secondary: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _TodayEventLog(
-                    events: _controller.todayAlerts,
-                    showAll: _showAllEvents,
-                    onShowAll: () => setState(() => _showAllEvents = true),
-                    onOpen: _showAlert,
-                  ),
-                ],
+              const SizedBox(height: AppSpacing.xl),
+              Text(
+                '홈카메라는 영상을 저장하지 않고 움직임 패턴만 인식해요. 의료 진단 기능이 아닙니다.',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
               ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            Text(
-              '홈카메라는 영상을 저장하지 않고 움직임 패턴만 인식해요. 의료 진단 기능이 아닙니다.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
-            ),
+            ],
           ],
         ),
       ),
@@ -128,14 +190,14 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('추천 행동', style: Theme.of(context).textTheme.titleSmall),
+                  Text('감지 근거', style: Theme.of(context).textTheme.titleSmall),
                   const SizedBox(height: AppSpacing.xs),
                   Text(alert.suggestion),
                 ],
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
-            const Text('Mock 생활 패턴 안내이며 의료적 판단이나 통증 진단을 제공하지 않아요.'),
+            const Text('움직임 감지 기록은 의료적 판단이나 통증 진단을 제공하지 않아요.'),
             const SizedBox(height: AppSpacing.xl),
             AppButton(
               key: ValueKey('movement-alert-close-${alert.id}'),
@@ -150,8 +212,12 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
 }
 
 class _CurrentStateCard extends StatelessWidget {
-  const _CurrentStateCard({required this.onMoveToHousehold});
+  const _CurrentStateCard({
+    required this.data,
+    required this.onMoveToHousehold,
+  });
 
+  final MovementDashboardData data;
   final VoidCallback? onMoveToHousehold;
 
   @override
@@ -189,22 +255,28 @@ class _CurrentStateCard extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.lg),
               ...[
-                const Row(
+                Row(
                   children: [
-                    Expanded(child: Text('오늘 서 있거나 움직인 시간')),
-                    Text('2시간 40분 / 권장 2시간'),
+                    const Expanded(child: Text('오늘 누적 전방 굽힘 시간')),
+                    Text(_durationLabel(data.forwardBendSeconds)),
                   ],
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 LinearProgressIndicator(
-                  value: 1,
+                  value: (data.forwardBendSeconds / 3600).clamp(0, 1),
                   color: AppColors.warning,
                   backgroundColor: AppColors.surfaceSubtle,
                 ),
                 const SizedBox(height: AppSpacing.lg),
                 Row(
                   children: [
-                    const Expanded(child: Text('Mock 기준으로 권장보다 40분 많아요.')),
+                    Expanded(
+                      child: Text(
+                        data.narratives.isNotEmpty
+                            ? data.narratives.first
+                            : '부담 행동 ${data.burdenEventCount}건이 감지됐어요.',
+                      ),
+                    ),
                     if (onMoveToHousehold != null)
                       OutlinedButton(
                         key: const ValueKey('movement-to-household'),
@@ -219,6 +291,12 @@ class _CurrentStateCard extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  static String _durationLabel(double seconds) {
+    final minutes = (seconds / 60).round();
+    if (minutes < 60) return '$minutes분';
+    return '${minutes ~/ 60}시간 ${minutes % 60}분';
   }
 }
 
