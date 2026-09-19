@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../design_system/components/app_button.dart';
 import '../../design_system/components/app_card.dart';
 import '../../design_system/components/content_frame.dart';
-import '../../design_system/components/empty_data_preview.dart';
 import '../../design_system/components/responsive_split_view.dart';
 import '../../design_system/components/top_app_bar.dart';
 import '../../design_system/components/wife_navigation_scaffold.dart';
@@ -41,47 +40,45 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
       wifeProfileAction: _isWife,
       husbandMenuAction: !_isWife,
     );
-    final body = EmptyDataPreview(
-      child: SafeArea(
-        top: false,
-        child: ContentFrame(
-          maxWidth: 1200,
-          child: ListView(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-            children: [
-              ResponsiveSplitView(
-                primaryFlex: 7,
-                secondaryFlex: 5,
-                gap: AppSpacing.xxl,
-                primary: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _CurrentStateCard(
-                      onMoveToHousehold: _isWife ? _moveToHousehold : null,
-                    ),
-                  ],
-                ),
-                secondary: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _TodayEventLog(
-                      events: _controller.todayAlerts,
-                      showAll: _showAllEvents,
-                      onShowAll: () => setState(() => _showAllEvents = true),
-                      onOpen: _showAlert,
-                    ),
-                  ],
-                ),
+    final body = SafeArea(
+      top: false,
+      child: ContentFrame(
+        maxWidth: 1200,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+          children: [
+            ResponsiveSplitView(
+              primaryFlex: 7,
+              secondaryFlex: 5,
+              gap: AppSpacing.xxl,
+              primary: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _CurrentStateCard(
+                    onMoveToHousehold: _isWife ? _moveToHousehold : null,
+                  ),
+                ],
               ),
-              const SizedBox(height: AppSpacing.xl),
-              Text(
-                '홈카메라는 영상을 저장하지 않고 움직임 패턴만 인식해요. 의료 진단 기능이 아닙니다.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
+              secondary: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _TodayEventLog(
+                    events: _controller.todayAlerts,
+                    showAll: _showAllEvents,
+                    onShowAll: () => setState(() => _showAllEvents = true),
+                    onOpen: _showAlert,
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            Text(
+              '홈카메라는 영상을 저장하지 않고 움직임 패턴만 인식해요. 의료 진단 기능이 아닙니다.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
+            ),
+          ],
         ),
       ),
     );
@@ -159,7 +156,6 @@ class _CurrentStateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final previewEmpty = EmptyDataPreview.enabledOf(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -192,14 +188,7 @@ class _CurrentStateCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppSpacing.lg),
-              if (previewEmpty)
-                Text(
-                  '아직 계산된 움직임 시간이 없어요.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-                )
-              else ...[
+              ...[
                 const Row(
                   children: [
                     Expanded(child: Text('오늘 서 있거나 움직인 시간')),
@@ -248,9 +237,7 @@ class _TodayEventLog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visibleEvents = EmptyDataPreview.enabledOf(context)
-        ? const <MovementAlert>[]
-        : events;
+    final visibleEvents = events;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

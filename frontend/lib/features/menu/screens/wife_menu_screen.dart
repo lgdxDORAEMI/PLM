@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../design_system/components/app_card.dart';
 import '../../../design_system/components/app_ink_well.dart';
-import '../../../design_system/components/empty_data_preview.dart';
 import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/components/top_app_bar.dart';
@@ -48,73 +47,71 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: TopAppBar(title: '메뉴', onBack: _close),
-    body: EmptyDataPreview(
-      child: Builder(
-        builder: (context) {
-          final profileAvailable = !EmptyDataPreview.enabledOf(context);
-          return SafeArea(
-            top: false,
-            child: ResponsivePageContent(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-                children: [
-                  _ProfileHeader(
-                    profile: profileAvailable ? _profileStore.profile : null,
-                    profileAvailable: profileAvailable,
-                    onRoleSwitch: () =>
-                        AppRouter.switchDemoUser(context, ActiveRole.husband),
-                  ),
-                  const SizedBox(height: AppSpacing.xxl),
-                  Text('내 정보', style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: AppSpacing.md),
+    body: Builder(
+      builder: (context) {
+        final profileAvailable = _profileStore.profile != null;
+        return SafeArea(
+          top: false,
+          child: ResponsivePageContent(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+              children: [
+                _ProfileHeader(
+                  profile: profileAvailable ? _profileStore.profile : null,
+                  profileAvailable: profileAvailable,
+                  onRoleSwitch: () =>
+                      AppRouter.switchDemoUser(context, ActiveRole.husband),
+                ),
+                const SizedBox(height: AppSpacing.xxl),
+                Text('내 정보', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: AppSpacing.md),
+                _MenuRow(
+                  icon: Icons.person_outline,
+                  title: '프로필 수정',
+                  description: '출산예정일 · 신체 정보 · 주의 진단',
+                  onTap: () =>
+                      Navigator.pushNamed(context, RouteNames.wifeProfile),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                if (_connection.isLinked)
+                  const InfoBanner(
+                    key: ValueKey('partner-linked-state'),
+                    title: '연준님과 연결됐어요',
+                    message: '오늘 컨디션 · 집안일 요청 · 하루 리포트를 함께 봐요.',
+                    tone: InfoBannerTone.success,
+                  )
+                else
                   _MenuRow(
-                    icon: Icons.person_outline,
-                    title: '프로필 수정',
-                    description: '출산예정일 · 신체 정보 · 주의 진단',
+                    key: const ValueKey('partner-unlinked-state'),
+                    icon: Icons.person_add_alt,
+                    title: '남편 초대하기',
+                    description: 'ThinQ 알림으로 초대장을 보내 계정 연결',
                     onTap: () =>
-                        Navigator.pushNamed(context, RouteNames.wifeProfile),
+                        Navigator.pushNamed(context, RouteNames.wifeInvite),
                   ),
-                  const SizedBox(height: AppSpacing.md),
-                  if (_connection.isLinked)
-                    const InfoBanner(
-                      key: ValueKey('partner-linked-state'),
-                      title: '연준님과 연결됐어요',
-                      message: '오늘 컨디션 · 집안일 요청 · 하루 리포트를 함께 봐요.',
-                      tone: InfoBannerTone.success,
-                    )
-                  else
-                    _MenuRow(
-                      key: const ValueKey('partner-unlinked-state'),
-                      icon: Icons.person_add_alt,
-                      title: '남편 초대하기',
-                      description: 'ThinQ 알림으로 초대장을 보내 계정 연결',
-                      onTap: () =>
-                          Navigator.pushNamed(context, RouteNames.wifeInvite),
-                    ),
-                  const SizedBox(height: AppSpacing.xxl),
-                  Text('앱 설정', style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: AppSpacing.md),
-                  _MenuRow(
-                    icon: Icons.settings_outlined,
-                    title: '설정',
-                    description: '글자 크기 조정',
-                    onTap: () =>
-                        Navigator.pushNamed(context, RouteNames.wifeSettings),
+                const SizedBox(height: AppSpacing.xxl),
+                Text('앱 설정', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: AppSpacing.md),
+                _MenuRow(
+                  icon: Icons.settings_outlined,
+                  title: '설정',
+                  description: '글자 크기 조정',
+                  onTap: () =>
+                      Navigator.pushNamed(context, RouteNames.wifeSettings),
+                ),
+                const SizedBox(height: AppSpacing.xxl),
+                Text(
+                  'LG전자  ·  이용약관  ·  개인정보처리방침',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textTertiary,
                   ),
-                  const SizedBox(height: AppSpacing.xxl),
-                  Text(
-                    'LG전자  ·  이용약관  ·  개인정보처리방침',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textTertiary,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     ),
   );
 

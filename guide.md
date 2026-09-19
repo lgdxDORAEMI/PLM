@@ -45,8 +45,6 @@ flutter run -d chrome
 
 새 사용자 상태를 다시 시연하려면 Chrome 개발자 도구의 `Application` → `Local Storage`에서 현재 origin의 `plm.demo.profile.v1` 항목을 삭제하고 `/entry`를 새로고침합니다. Profile Setup을 끝내면 같은 코드에서 완료 사용자 상태로 전환되며, 이후 `/entry` 재진입 시 Home으로 이동합니다. 브라우저 저장소 접근이 차단된 환경에서는 현재 실행 중인 메모리 상태만 유지되고 새로고침 후 Entry로 돌아올 수 있습니다.
 
-DB 응답이 없는 화면을 확인하는 빈 데이터 미리보기는 상단 제목을 1초 이내에 5번 선택해 전환합니다. 이 모드에서는 Home과 Menu의 사용자 이름·임신 주차·출산예정일 및 프로필 수정 화면의 저장된 입력값을 Mock 값으로 대체하지 않고 숨기며, 일반 안내 문구만 표시합니다. 다시 5번 선택하면 Local Mock 화면으로 돌아갑니다.
-
 `/wife/chat`을 직접 열거나 하단 챗봇 탭으로 이동하면 뒤로가기 버튼이 없습니다. 식사 가이드에서는 `/wife/chat?source=meal&period={mealPeriod}`로 이동하며 이 경우에만 뒤로가기가 활성화됩니다. `household`, `health`, `sleep` source도 동일한 복귀 규칙을 지원하므로 해당 가이드에서 챗봇 진입 UI가 추가될 때 같은 Route helper를 사용합니다.
 
 `/wife/home`의 AI Routine은 실제 AI API가 없어도 실행됩니다. 당일 컨디션 미입력 시 컨디션 CTA가 표시되고, 입력과 예정 활동 선택을 마치면 `MockRoutineService`가 식사·가사·건강·수면 가이드를 제공합니다. Service 오류 시 화면을 비우지 않고 기본 Routine과 재시도 버튼을 표시합니다.

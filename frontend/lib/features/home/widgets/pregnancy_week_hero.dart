@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_spacing.dart';
-import '../../../design_system/components/empty_data_preview.dart';
 
 /// Home의 첫 맥락을 장식보다 정보 위계 중심으로 전달한다.
 class PregnancyWeekHero extends StatelessWidget {
@@ -17,13 +16,10 @@ class PregnancyWeekHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasPregnancyWeek = !EmptyDataPreview.enabledOf(context);
-    final statusText = hasPregnancyWeek
-        ? '$userName님,\n오늘 임신 $week주차예요'
-        : '프로필 정보를\n불러오지 못했어요';
+    final statusText = '$userName님,\n오늘 임신 $week주차예요';
     return Semantics(
       container: true,
-      label: hasPregnancyWeek ? '$userName님, 현재 임신 $week주차' : '프로필 정보 없음',
+      label: '$userName님, 현재 임신 $week주차',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

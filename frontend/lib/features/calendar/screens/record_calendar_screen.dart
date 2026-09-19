@@ -6,7 +6,6 @@ import '../../../core/config/app_config.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/content_frame.dart';
-import '../../../design_system/components/empty_data_preview.dart';
 import '../../../design_system/components/responsive_split_view.dart';
 import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/components/wife_navigation_scaffold.dart';
@@ -74,9 +73,7 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen> {
       wifeProfileAction: isWife,
       husbandMenuAction: !isWife,
     );
-    final body = EmptyDataPreview(
-      child: SafeArea(top: false, child: ContentFrame(child: _buildBody())),
-    );
+    final body = SafeArea(top: false, child: ContentFrame(child: _buildBody()));
     if (isWife) {
       return WifeNavigationScaffold(
         currentIndex: 3,
@@ -134,8 +131,7 @@ class _CalendarContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final previewEmpty = EmptyDataPreview.enabledOf(context);
-    final selected = previewEmpty ? null : controller.selectedRecord;
+    final selected = controller.selectedRecord;
     final month = controller.visibleMonth;
     final expandedCalendar =
         MediaQuery.sizeOf(context).width >= AppBreakpoints.desktop;
@@ -224,9 +220,7 @@ class _CalendarPanel extends StatelessWidget {
       const SizedBox(height: AppSpacing.lg),
       ConditionCalendar(
         month: month,
-        records: EmptyDataPreview.enabledOf(context)
-            ? const []
-            : controller.records,
+        records: controller.records,
         selectedDate: controller.selectedDate,
         onSelected: controller.selectDate,
         comfortable: comfortable,

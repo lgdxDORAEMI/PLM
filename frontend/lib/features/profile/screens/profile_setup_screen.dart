@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../design_system/components/app_input.dart';
-import '../../../design_system/components/app_state_view.dart';
-import '../../../design_system/components/empty_data_preview.dart';
 import '../../../design_system/components/selection_card.dart';
 import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/tokens/app_colors.dart';
@@ -107,27 +105,19 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           onBack: _handleBack,
           wifeProfileAction: widget.mode == ProfileMode.edit,
         ),
-        body: EmptyDataPreview(
-          child: Builder(
-            builder: (context) => SafeArea(
-              top: false,
-              child: EmptyDataPreview.enabledOf(context)
-                  ? const AppEmptyState(
-                      title: '프로필 정보를 불러오지 못했어요',
-                      message: '데이터 연결을 확인한 뒤 다시 시도해 주세요.',
-                      icon: Icons.person_off_outlined,
-                    )
-                  : _controller.isSummary
-                  ? ProfileSummary(
-                      draft: _controller.draft,
-                      onEditStep: _controller.editStep,
-                      onComplete: _complete,
-                      completeLabel: widget.mode == ProfileMode.create
-                          ? '완료하고 시작하기'
-                          : '수정 완료',
-                    )
-                  : _buildStep(),
-            ),
+        body: Builder(
+          builder: (context) => SafeArea(
+            top: false,
+            child: _controller.isSummary
+                ? ProfileSummary(
+                    draft: _controller.draft,
+                    onEditStep: _controller.editStep,
+                    onComplete: _complete,
+                    completeLabel: widget.mode == ProfileMode.create
+                        ? '완료하고 시작하기'
+                        : '수정 완료',
+                  )
+                : _buildStep(),
           ),
         ),
       ),

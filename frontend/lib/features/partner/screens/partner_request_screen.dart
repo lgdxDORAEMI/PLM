@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../design_system/components/app_badge.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_card.dart';
-import '../../../design_system/components/empty_data_preview.dart';
 import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/tokens/app_colors.dart';
@@ -50,78 +49,60 @@ class _PartnerRequestScreenState extends State<PartnerRequestScreen> {
         onBack: _handleBack,
         husbandMenuAction: true,
       ),
-      body: EmptyDataPreview(
-        child: SafeArea(
-          top: false,
-          child: ResponsivePageContent(
-            child: ListView(
-              key: const ValueKey('partner-request-content'),
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-              children: [
-                PreviewData(
-                  empty: Text(
-                    '도착한 가사 요청 정보가 없어요.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
+      body: SafeArea(
+        top: false,
+        child: ResponsivePageContent(
+          child: ListView(
+            key: const ValueKey('partner-request-content'),
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${request.requester}이 도움을 요청했어요',
+                      style: Theme.of(context).textTheme.headlineSmall,
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '${request.requester}이 도움을 요청했어요',
-                          style: Theme.of(context).textTheme.headlineSmall,
-                        ),
-                      ),
-                      AppBadge(
-                        label: switch (request.status) {
-                          PartnerRequestStatus.requested => '미확인',
-                          PartnerRequestStatus.confirmed => '확인',
-                          PartnerRequestStatus.completed => '완료',
-                        },
-                        tone: request.status == PartnerRequestStatus.completed
-                            ? AppBadgeTone.success
-                            : AppBadgeTone.info,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                Text('부탁한 집안일', style: Theme.of(context).textTheme.titleLarge),
-                const SizedBox(height: AppSpacing.md),
-                PreviewData(
-                  empty: Text(
-                    '표시할 집안일 카드가 없어요.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      for (final task in request.tasks) ...[
-                        _PartnerTaskCard(
-                          task: task,
-                          onConfirm: () => _controller.confirmTask(task.id),
-                          onComplete: () => _confirmCompletion(task),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                      ],
-                    ],
-                  ),
-                ),
-                if (request.status == PartnerRequestStatus.completed) ...[
-                  const SizedBox(height: AppSpacing.xl),
-                  AppButton(
-                    label: '완료 결과 보기',
-                    variant: AppButtonVariant.secondary,
-                    onPressed: () => Navigator.pushReplacementNamed(
-                      context,
-                      RouteNames.husbandRequestResult(request.id),
-                    ),
+                  AppBadge(
+                    label: switch (request.status) {
+                      PartnerRequestStatus.requested => '미확인',
+                      PartnerRequestStatus.confirmed => '확인',
+                      PartnerRequestStatus.completed => '완료',
+                    },
+                    tone: request.status == PartnerRequestStatus.completed
+                        ? AppBadgeTone.success
+                        : AppBadgeTone.info,
                   ),
                 ],
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Text('부탁한 집안일', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: AppSpacing.md),
+              Column(
+                children: [
+                  for (final task in request.tasks) ...[
+                    _PartnerTaskCard(
+                      task: task,
+                      onConfirm: () => _controller.confirmTask(task.id),
+                      onComplete: () => _confirmCompletion(task),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                  ],
+                ],
+              ),
+              if (request.status == PartnerRequestStatus.completed) ...[
+                const SizedBox(height: AppSpacing.xl),
+                AppButton(
+                  label: '완료 결과 보기',
+                  variant: AppButtonVariant.secondary,
+                  onPressed: () => Navigator.pushReplacementNamed(
+                    context,
+                    RouteNames.husbandRequestResult(request.id),
+                  ),
+                ),
               ],
-            ),
+            ],
           ),
         ),
       ),

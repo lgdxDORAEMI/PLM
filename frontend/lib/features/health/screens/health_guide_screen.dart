@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../design_system/components/app_ink_well.dart';
 import '../../../design_system/components/content_frame.dart';
-import '../../../design_system/components/empty_data_preview.dart';
 import '../../../design_system/components/responsive_split_view.dart';
 import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/components/wife_navigation_scaffold.dart';
@@ -47,106 +46,84 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
       onBack: _handleBack,
       wifeProfileAction: true,
     ),
-    body: EmptyDataPreview(
-      child: SafeArea(
-        top: false,
-        child: ContentFrame(
-          maxWidth: 1200,
-          child: ListView(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-            children: [
-              ResponsiveSplitView(
-                primaryFlex: 7,
-                secondaryFlex: 5,
-                gap: AppSpacing.xxl,
-                mobileSecondaryFirst: true,
-                primary: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Builder(
-                      builder: (context) => Text(
-                        EmptyDataPreview.enabledOf(context)
-                            ? '오늘의 활동'
-                            : '${_controller.selectedArea}에 맞춘 오늘의 활동',
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    PreviewData(
-                      empty: Text(
-                        '추천된 활동이 없어요.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          for (final activity in BodyCareMockData.activitiesFor(
-                            _controller.selectedArea,
-                          ).indexed) ...[
-                            MovementGuideCard(
-                              activity: activity.$2,
-                              featured: activity.$1 == 0,
-                              completed: _controller.isCompleted(
-                                activity.$2.id,
-                              ),
-                              onOpen: () => _showGuide(activity.$2),
-                              onComplete: () =>
-                                  _controller.toggleCompleted(activity.$2.id),
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                          ],
-                          const SizedBox(height: AppSpacing.sm),
-                          _BodyAreaSelector(
-                            selectedArea: _controller.selectedArea,
-                            onSelected: _controller.selectArea,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                secondary: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      '오늘의 집중 부위',
+    body: SafeArea(
+      top: false,
+      child: ContentFrame(
+        maxWidth: 1200,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+          children: [
+            ResponsiveSplitView(
+              primaryFlex: 7,
+              secondaryFlex: 5,
+              gap: AppSpacing.xxl,
+              mobileSecondaryFirst: true,
+              primary: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Builder(
+                    builder: (context) => Text(
+                      '${_controller.selectedArea}에 맞춘 오늘의 활동',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
-                    const SizedBox(height: AppSpacing.lg),
-                    PreviewData(
-                      empty: Text(
-                        '계산된 집중 부위가 없어요.',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppColors.textSecondary,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (final activity in BodyCareMockData.activitiesFor(
+                        _controller.selectedArea,
+                      ).indexed) ...[
+                        MovementGuideCard(
+                          activity: activity.$2,
+                          featured: activity.$1 == 0,
+                          completed: _controller.isCompleted(activity.$2.id),
+                          onOpen: () => _showGuide(activity.$2),
+                          onComplete: () =>
+                              _controller.toggleCompleted(activity.$2.id),
                         ),
+                        const SizedBox(height: AppSpacing.md),
+                      ],
+                      const SizedBox(height: AppSpacing.sm),
+                      _BodyAreaSelector(
+                        selectedArea: _controller.selectedArea,
+                        onSelected: _controller.selectArea,
                       ),
-                      child: Column(
-                        children: [
-                          for (final load in BodyCareMockData.loads) ...[
-                            _BodyLoadCard(
-                              load: load,
-                              selected: load.area == _controller.selectedArea,
-                              onTap: () => _controller.selectArea(load.area),
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(height: AppSpacing.xl),
-              Text(
-                '오늘은 허리·골반 부담이 큰 날이에요. 임신 주차와 오늘 컨디션을 함께 반영했어요. 불편하거나 통증이 심해지면 동작을 멈추고 의료진과 상담해 주세요.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
+              secondary: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    '오늘의 집중 부위',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+                  Column(
+                    children: [
+                      for (final load in BodyCareMockData.loads) ...[
+                        _BodyLoadCard(
+                          load: load,
+                          selected: load.area == _controller.selectedArea,
+                          onTap: () => _controller.selectArea(load.area),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                      ],
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: AppSpacing.xl),
+            Text(
+              '오늘은 허리·골반 부담이 큰 날이에요. 임신 주차와 오늘 컨디션을 함께 반영했어요. 불편하거나 통증이 심해지면 동작을 멈추고 의료진과 상담해 주세요.',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
+            ),
+          ],
         ),
       ),
     ),

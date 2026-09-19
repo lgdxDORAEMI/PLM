@@ -6,7 +6,6 @@ import '../../../core/config/app_config.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/content_frame.dart';
-import '../../../design_system/components/empty_data_preview.dart';
 import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_split_view.dart';
 import '../../../design_system/components/section_header.dart';
@@ -118,54 +117,48 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
           ),
         ],
       ),
-      body: EmptyDataPreview(
-        child: SafeArea(
-          top: false,
-          child: ContentFrame(
-            maxWidth: 1200,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final previewEmpty = EmptyDataPreview.enabledOf(context);
-                final effectiveHasTodayCare = hasTodayCare && !previewEmpty;
-                return ListView(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-                  children: [
-                    PregnancyWeekHero(
-                      userName: _data.userName,
-                      week: pregnancyWeek,
-                    ),
+      body: SafeArea(
+        top: false,
+        child: ContentFrame(
+          maxWidth: 1200,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final effectiveHasTodayCare = hasTodayCare;
+              return ListView(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                children: [
+                  PregnancyWeekHero(
+                    userName: _data.userName,
+                    week: pregnancyWeek,
+                  ),
+                  const SizedBox(height: AppSpacing.xxl),
+                  if (constraints.maxWidth < AppBreakpoints.desktop) ...[
+                    _conditionSection(effectiveHasTodayCare),
                     const SizedBox(height: AppSpacing.xxl),
-                    if (constraints.maxWidth < AppBreakpoints.desktop) ...[
-                      _conditionSection(effectiveHasTodayCare),
-                      const SizedBox(height: AppSpacing.xxl),
-                      ..._primaryContent(effectiveHasTodayCare),
-                      const SizedBox(height: AppSpacing.huge),
-                      _weekContext(pregnancyWeek, showData: !previewEmpty),
-                    ] else
-                      ResponsiveSplitView(
-                        primaryFlex: 8,
-                        secondaryFlex: 4,
-                        gap: AppSpacing.xxl,
-                        primary: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: _primaryContent(effectiveHasTodayCare),
-                        ),
-                        secondary: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _conditionSection(effectiveHasTodayCare),
-                            const SizedBox(height: AppSpacing.xxl),
-                            _weekContext(
-                              pregnancyWeek,
-                              showData: !previewEmpty,
-                            ),
-                          ],
-                        ),
+                    ..._primaryContent(effectiveHasTodayCare),
+                    const SizedBox(height: AppSpacing.huge),
+                    _weekContext(pregnancyWeek, showData: true),
+                  ] else
+                    ResponsiveSplitView(
+                      primaryFlex: 8,
+                      secondaryFlex: 4,
+                      gap: AppSpacing.xxl,
+                      primary: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: _primaryContent(effectiveHasTodayCare),
                       ),
-                  ],
-                );
-              },
-            ),
+                      secondary: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _conditionSection(effectiveHasTodayCare),
+                          const SizedBox(height: AppSpacing.xxl),
+                          _weekContext(pregnancyWeek, showData: true),
+                        ],
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
         ),
       ),

@@ -7,7 +7,6 @@ import '../../../design_system/components/app_ink_well.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/content_frame.dart';
-import '../../../design_system/components/empty_data_preview.dart';
 import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_split_view.dart';
 import '../../../design_system/components/section_header.dart';
@@ -74,55 +73,32 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
         onBack: _handleBack,
         wifeProfileAction: true,
       ),
-      body: EmptyDataPreview(
-        child: SafeArea(
-          top: false,
-          child: ContentFrame(
-            maxWidth: 1200,
-            child: Builder(
-              builder: (context) {
-                final previewEmpty = EmptyDataPreview.enabledOf(context);
-                return switch (_controller.state) {
-                  MealGuideViewState.loading => const AppLoadingState(
-                    message: '오늘의 메뉴를 준비하고 있어요',
-                  ),
-                  MealGuideViewState.error => AppErrorState(
-                    title: '메뉴를 불러오지 못했어요',
-                    message: '잠시 후 다시 시도해 주세요.',
-                    onRetry: _controller.load,
-                  ),
-                  MealGuideViewState.ready =>
-                    previewEmpty
-                        ? _buildEmptyMealContent()
-                        : _controller.showDetails
-                        ? _buildRecommendation()
-                        : _buildPeriodSelection(),
-                };
-              },
-            ),
+      body: SafeArea(
+        top: false,
+        child: ContentFrame(
+          maxWidth: 1200,
+          child: Builder(
+            builder: (context) {
+              return switch (_controller.state) {
+                MealGuideViewState.loading => const AppLoadingState(
+                  message: '오늘의 메뉴를 준비하고 있어요',
+                ),
+                MealGuideViewState.error => AppErrorState(
+                  title: '메뉴를 불러오지 못했어요',
+                  message: '잠시 후 다시 시도해 주세요.',
+                  onRetry: _controller.load,
+                ),
+                MealGuideViewState.ready =>
+                  _controller.showDetails
+                      ? _buildRecommendation()
+                      : _buildPeriodSelection(),
+              };
+            },
           ),
         ),
       ),
     );
   }
-
-  Widget _buildEmptyMealContent() => ListView(
-    key: const ValueKey('meal-empty-data-content'),
-    padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-    children: [
-      const SectionHeader(
-        title: '어떤 끼니를 볼까요?',
-        description: '추천 데이터가 준비되면 끼니별 메뉴 카드가 표시돼요.',
-      ),
-      const SizedBox(height: AppSpacing.lg),
-      Text(
-        '아직 생성된 추천 메뉴가 없어요.',
-        style: Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-      ),
-    ],
-  );
 
   Widget _buildPeriodSelection() {
     final data = _controller.data!;
