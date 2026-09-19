@@ -1,9 +1,18 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../core/network/api_client.dart';
 import '../models/sleep_guide.dart';
 import '../services/sleep_service.dart';
 
-enum SleepGuideViewState { loading, ready, error }
+enum SleepGuideViewState {
+  loading,
+  ready,
+  empty,
+  authError,
+  domainError,
+  serverError,
+  error,
+}
 
 class SleepGuideController extends ChangeNotifier {
   SleepGuideController({required this.service});
@@ -21,7 +30,16 @@ class SleepGuideController extends ChangeNotifier {
     notifyListeners();
     try {
       _guide = await service.fetchGuide();
-      _state = SleepGuideViewState.ready;
+      _state = _guide!.environments.isEmpty && _guide!.tips.isEmpty
+          ? SleepGuideViewState.empty
+          : SleepGuideViewState.ready;
+    } on ApiException catch (error) {
+      _state = switch (error.statusCode) {
+        401 || 403 => SleepGuideViewState.authError,
+        409 || 422 => SleepGuideViewState.domainError,
+        503 => SleepGuideViewState.serverError,
+        _ => SleepGuideViewState.error,
+      };
     } on Object {
       _state = SleepGuideViewState.error;
     }

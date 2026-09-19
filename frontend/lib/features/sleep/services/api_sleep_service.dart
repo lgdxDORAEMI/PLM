@@ -13,7 +13,13 @@ class ApiSleepService implements SleepService {
     final response = await _client.get('/api/v1/sleep/today');
     final items = response?['items'];
     if (items is! List || items.isEmpty || items.first is! Map) {
-      throw StateError('오늘의 수면 가이드가 없습니다.');
+      return const SleepGuideData(
+        summaryTitle: '',
+        summary: '',
+        recommendedBedtime: '',
+        environments: [],
+        tips: [],
+      );
     }
     final item = items.first as Map;
     final payload = item['payload'];

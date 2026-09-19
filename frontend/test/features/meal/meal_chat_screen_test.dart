@@ -56,7 +56,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('오늘 청소 루틴을 줄여줘'), findsOneWidget);
-    expect(find.textContaining('현재는 식사 가이드 재조정만'), findsOneWidget);
+    expect(find.textContaining('식사 메뉴를 다시 고르는 대화'), findsOneWidget);
     expect(find.byKey(const ValueKey('meal-alternative-card')), findsNothing);
   });
 }

@@ -1,13 +1,22 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../core/config/app_config.dart';
-import '../../../core/network/api_client.dart';
 import '../data/planned_activity_store.dart';
+import '../services/api_planned_activity_service.dart';
+import '../services/mock_planned_activity_service.dart';
+import '../services/planned_activity_service.dart';
 
 class PlannedActivityController extends ChangeNotifier {
-  PlannedActivityController({PlannedActivityStore? store})
-    : store = store ?? PlannedActivityStore.instance,
-      _selected = {...(store ?? PlannedActivityStore.instance).activities};
+  PlannedActivityController({
+    PlannedActivityStore? store,
+    PlannedActivityService? service,
+  }) : store = store ?? PlannedActivityStore.instance,
+       service =
+           service ??
+           (AppConfig.hasSupabaseConfig
+               ? ApiPlannedActivityService()
+               : const MockPlannedActivityService()),
+       _selected = {...(store ?? PlannedActivityStore.instance).activities};
 
   static const options = [
     '장보기',
@@ -22,6 +31,7 @@ class PlannedActivityController extends ChangeNotifier {
   ];
 
   final PlannedActivityStore store;
+  final PlannedActivityService service;
   final Set<String> _selected;
   bool _generating = false;
 
@@ -30,15 +40,11 @@ class PlannedActivityController extends ChangeNotifier {
 
   /// Restores activities from the condition record when the page is reopened.
   Future<void> loadActivities() async {
-    if (!AppConfig.hasSupabaseConfig) return;
-    final response = await ApiClient().get(
-      '/api/v1/care/conditions/${_todayKey()}',
-    );
-    final values = response?['planned_activities'];
-    if (values is! List) return;
+    final values = await service.fetch(DateTime.now());
+    if (values.isEmpty && !AppConfig.hasSupabaseConfig) return;
     _selected
       ..clear()
-      ..addAll(values.whereType<String>());
+      ..addAll(values);
     store.save(_selected);
     notifyListeners();
   }
@@ -61,26 +67,11 @@ class PlannedActivityController extends ChangeNotifier {
     _generating = true;
     notifyListeners();
     try {
-      if (AppConfig.hasSupabaseConfig) {
-        final client = ApiClient();
-        await client.put('/api/v1/care/conditions/${_todayKey()}/activities', {
-          'activities': _selected.toList(),
-        });
-        await client.post('/api/v1/routine/today');
-      } else {
-        await Future<void>.delayed(const Duration(milliseconds: 300));
-      }
+      await service.saveAndGenerate(DateTime.now(), _selected.toList());
       store.save(_selected);
     } finally {
       _generating = false;
       notifyListeners();
     }
-  }
-
-  String _todayKey() {
-    final now = DateTime.now();
-    return '${now.year.toString().padLeft(4, '0')}-'
-        '${now.month.toString().padLeft(2, '0')}-'
-        '${now.day.toString().padLeft(2, '0')}';
   }
 }

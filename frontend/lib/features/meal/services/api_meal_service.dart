@@ -11,7 +11,14 @@ class ApiMealService implements MealService {
   @override
   Future<MealGuideData> fetchGuide() async {
     final response = await _client.get('/api/v1/meals/today');
-    if (response == null) throw StateError('오늘의 식사 가이드가 없습니다.');
+    if (response == null) {
+      return const MealGuideData(
+        greeting: '',
+        supportingText: '',
+        periods: [],
+        recommendations: [],
+      );
+    }
     final items = response['items'];
     if (items is! List) throw const FormatException('식사 가이드 형식이 올바르지 않습니다.');
     final recommendations = <MealRecommendation>[];

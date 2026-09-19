@@ -12,12 +12,64 @@ class BodyCareActivity {
     required this.title,
     required this.description,
     required this.guide,
+    this.completed = false,
   });
   final String id;
   final String area;
   final String title;
   final String description;
   final String guide;
+  final bool completed;
+}
+
+class BodyCareGuideData {
+  const BodyCareGuideData({required this.loads, required this.activities});
+
+  factory BodyCareGuideData.fromJson(Map<String, dynamic> json) {
+    final items = (json['items'] as List?)?.whereType<Map>() ?? const [];
+    final activities = <BodyCareActivity>[];
+    final loadsByArea = <String, BodyLoad>{};
+    for (final item in items) {
+      final payload = item['payload'] is Map
+          ? item['payload'] as Map
+          : const <String, dynamic>{};
+      final itemKey = item['item_key']?.toString() ?? '';
+      final area = payload['bodyArea']?.toString() ?? '';
+      if (itemKey.isEmpty || area.isEmpty) continue;
+      activities.add(
+        BodyCareActivity(
+          id: itemKey,
+          area: area,
+          title: item['title']?.toString() ?? '',
+          description:
+              item['description']?.toString() ??
+              payload['reason']?.toString() ??
+              '',
+          guide: payload['guide']?.toString() ?? '',
+          completed: item['status'] == 'completed',
+        ),
+      );
+      final loads = payload['loads'];
+      if (loads is List) {
+        for (final value in loads.whereType<Map>()) {
+          final loadArea = value['area']?.toString() ?? '';
+          if (loadArea.isEmpty) continue;
+          loadsByArea[loadArea] = BodyLoad(
+            loadArea,
+            value['label']?.toString() ?? '',
+            ((value['value'] as num?)?.toDouble() ?? 0).clamp(0, 1),
+          );
+        }
+      }
+    }
+    return BodyCareGuideData(
+      loads: loadsByArea.values.toList(growable: false),
+      activities: activities,
+    );
+  }
+
+  final List<BodyLoad> loads;
+  final List<BodyCareActivity> activities;
 }
 
 abstract final class BodyCareMockData {

@@ -1,10 +1,19 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../core/network/api_client.dart';
 import '../data/meal_selection_store.dart';
 import '../models/meal_guide.dart';
 import '../services/meal_service.dart';
 
-enum MealGuideViewState { loading, ready, error }
+enum MealGuideViewState {
+  loading,
+  ready,
+  empty,
+  authError,
+  domainError,
+  serverError,
+  error,
+}
 
 class MealGuideController extends ChangeNotifier {
   MealGuideController({
@@ -55,6 +64,11 @@ class MealGuideController extends ChangeNotifier {
     notifyListeners();
     try {
       _data = await service.fetchGuide();
+      if (_data!.recommendations.isEmpty) {
+        _state = MealGuideViewState.empty;
+        notifyListeners();
+        return;
+      }
       final preferred = initialPeriod ?? store.selectedPeriod;
       _selectedPeriod = _data!.periods.any((entry) => entry.period == preferred)
           ? preferred
@@ -65,6 +79,13 @@ class MealGuideController extends ChangeNotifier {
       }
       _showDetails = initialPeriod != null || applied != null;
       _state = MealGuideViewState.ready;
+    } on ApiException catch (error) {
+      _state = switch (error.statusCode) {
+        401 || 403 => MealGuideViewState.authError,
+        409 || 422 => MealGuideViewState.domainError,
+        503 => MealGuideViewState.serverError,
+        _ => MealGuideViewState.error,
+      };
     } on Object {
       _state = MealGuideViewState.error;
     }

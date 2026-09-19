@@ -1,7 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../design_system/components/app_card.dart';
 import '../../../design_system/components/app_ink_well.dart';
+import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/components/top_app_bar.dart';
@@ -11,7 +15,10 @@ import '../../../routing/route_names.dart';
 import '../../../routing/app_router.dart';
 import '../../../routing/app_session.dart';
 import '../../../shared/widgets/consecutive_tap_detector.dart';
+import '../../invitation/controllers/partner_link_controller.dart';
 import '../../invitation/data/partner_connection_store.dart';
+import '../../invitation/services/api_partner_link_service.dart';
+import '../../invitation/services/mock_partner_link_service.dart';
 import '../../profile/data/profile_store.dart';
 import '../../profile/models/profile_draft.dart';
 
@@ -27,22 +34,36 @@ class WifeMenuScreen extends StatefulWidget {
 class _WifeMenuScreenState extends State<WifeMenuScreen> {
   final _connection = PartnerConnectionStore.instance;
   final _profileStore = ProfileStore.instance;
+  late final PartnerLinkController _linkController;
 
   @override
   void initState() {
     super.initState();
+    _linkController = PartnerLinkController(
+      service: AppConfig.hasSupabaseConfig
+          ? ApiPartnerLinkService()
+          : MockPartnerLinkService(),
+    )..addListener(_refresh);
     _connection.addListener(_refresh);
     _profileStore.addListener(_refresh);
+    unawaited(_linkController.load());
   }
 
   @override
   void dispose() {
     _connection.removeListener(_refresh);
     _profileStore.removeListener(_refresh);
+    _linkController
+      ..removeListener(_refresh)
+      ..dispose();
     super.dispose();
   }
 
   void _refresh() => setState(() {});
+
+  bool get _isLinked => AppConfig.hasSupabaseConfig
+      ? (_linkController.link?.linked ?? false)
+      : _connection.isLinked;
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -73,10 +94,21 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
                       Navigator.pushNamed(context, RouteNames.wifeProfile),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                if (_connection.isLinked)
-                  const InfoBanner(
+                if (_linkController.state == PartnerLinkViewState.loading)
+                  const AppLoadingState(message: '배우자 연결 상태를 확인하고 있어요')
+                else if (_linkController.state != PartnerLinkViewState.data)
+                  AppErrorState(
+                    title:
+                        _linkController.state == PartnerLinkViewState.authError
+                        ? '로그인 상태를 확인해 주세요'
+                        : '연결 상태를 불러오지 못했어요',
+                    onRetry: _linkController.load,
+                  )
+                else if (_isLinked)
+                  InfoBanner(
                     key: ValueKey('partner-linked-state'),
-                    title: '연준님과 연결됐어요',
+                    title:
+                        '${_linkController.link?.partnerDisplayName ?? '배우자'}님과 연결됐어요',
                     message: '오늘 컨디션 · 집안일 요청 · 하루 리포트를 함께 봐요.',
                     tone: InfoBannerTone.success,
                   )

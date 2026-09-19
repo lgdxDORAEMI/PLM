@@ -79,6 +79,17 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
       SleepGuideViewState.loading => const AppLoadingState(
         message: '오늘의 수면 환경을 준비하고 있어요',
       ),
+      SleepGuideViewState.empty => const AppEmptyState(
+        title: '오늘의 수면 가이드가 없어요',
+        message: '오늘 루틴이 만들어지면 이곳에 표시돼요.',
+      ),
+      SleepGuideViewState.authError => AppErrorState(
+        title: '수면 가이드를 볼 수 없어요',
+        message: '로그인 상태를 확인해 주세요.',
+        onRetry: _controller.load,
+      ),
+      SleepGuideViewState.domainError ||
+      SleepGuideViewState.serverError ||
       SleepGuideViewState.error => AppErrorState(
         title: '수면 가이드를 불러오지 못했어요',
         message: '잠시 후 다시 시도해 주세요.',
