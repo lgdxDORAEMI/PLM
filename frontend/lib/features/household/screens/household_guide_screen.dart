@@ -18,6 +18,8 @@ import '../../report/data/appliance_execution_store.dart';
 import '../controllers/household_guide_controller.dart';
 import '../models/household_task.dart';
 import '../services/household_request_service.dart';
+import '../../../core/config/app_config.dart';
+import '../../../shared/widgets/integration_required_state.dart';
 import '../widgets/household_task_card.dart';
 
 class HouseholdGuideScreen extends StatefulWidget {
@@ -60,7 +62,12 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
         onBack: _handleBack,
         wifeProfileAction: true,
       ),
-      body: _controller.loading
+      body:
+          !AppConfig.hasSupabaseConfig &&
+              !AppConfig.mockPreviewEnabled &&
+              widget.requestService == null
+          ? const IntegrationRequiredState(message: '가사 가이드 데이터가 없습니다.')
+          : _controller.loading
           ? const AppLoadingState(message: '가사 가이드를 불러오고 있어요.')
           : _controller.empty
           ? const AppEmptyState(

@@ -22,6 +22,7 @@ import '../controllers/record_calendar_controller.dart';
 import '../data/calendar_selection_store.dart';
 import '../widgets/condition_calendar.dart';
 import '../widgets/record_day_summary.dart';
+import '../../../shared/widgets/integration_required_state.dart';
 
 class RecordCalendarScreen extends StatefulWidget {
   const RecordCalendarScreen({super.key, required this.role, this.service});
@@ -73,7 +74,17 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen> {
       wifeProfileAction: isWife,
       husbandMenuAction: !isWife,
     );
-    final body = SafeArea(top: false, child: ContentFrame(child: _buildBody()));
+    final body = SafeArea(
+      top: false,
+      child: ContentFrame(
+        child:
+            !AppConfig.hasSupabaseConfig &&
+                !AppConfig.mockPreviewEnabled &&
+                widget.service == null
+            ? const IntegrationRequiredState(message: '캘린더 기록 데이터가 없습니다.')
+            : _buildBody(),
+      ),
+    );
     if (isWife) {
       return WifeNavigationScaffold(
         currentIndex: 3,

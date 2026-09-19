@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plm_frontend/core/config/app_config.dart';
 import 'package:plm_frontend/features/meal/screens/meal_chat_screen.dart';
 
 void main() {
+  setUp(() => AppConfig.mockPreviewEnabled = true);
+  tearDown(() => AppConfig.mockPreviewEnabled = false);
   testWidgets('하단 챗봇 탭으로 직접 진입하면 뒤로가기 버튼을 숨긴다', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: MealChatScreen()));
     await tester.pumpAndSettle();

@@ -18,6 +18,7 @@ import '../models/body_care_guide.dart';
 import '../services/api_health_guide_service.dart';
 import '../services/health_guide_service.dart';
 import '../services/mock_health_guide_service.dart';
+import '../../../shared/widgets/integration_required_state.dart';
 import '../widgets/movement_guide_card.dart';
 
 class HealthGuideScreen extends StatefulWidget {
@@ -69,94 +70,102 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
           children: [
-            if (_controller.state == BodyCareViewState.loading)
-              const AppLoadingState(message: '오늘의 건강 가이드를 준비하고 있어요')
-            else if (_controller.state == BodyCareViewState.empty)
-              const AppEmptyState(
-                title: '오늘의 건강 가이드가 없어요',
-                message: '오늘 루틴이 만들어지면 이곳에 표시돼요.',
-              )
-            else if (_controller.state != BodyCareViewState.data)
-              AppErrorState(
-                title: _controller.state == BodyCareViewState.authError
-                    ? '로그인 상태를 확인해 주세요'
-                    : '건강 가이드를 불러오지 못했어요',
-                message: _controller.state == BodyCareViewState.serverError
-                    ? '서버 연결을 확인한 뒤 다시 시도해 주세요.'
-                    : null,
-                onRetry: _controller.load,
-              )
+            if (!AppConfig.hasSupabaseConfig &&
+                !AppConfig.mockPreviewEnabled &&
+                widget.service == null)
+              const IntegrationRequiredState(message: '건강 가이드 데이터가 없습니다.')
             else ...[
-              ResponsiveSplitView(
-                primaryFlex: 7,
-                secondaryFlex: 5,
-                gap: AppSpacing.xxl,
-                mobileSecondaryFirst: true,
-                primary: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Builder(
-                      builder: (context) => Text(
-                        '${_controller.selectedArea}에 맞춘 오늘의 활동',
+              if (_controller.state == BodyCareViewState.loading)
+                const AppLoadingState(message: '오늘의 건강 가이드를 준비하고 있어요')
+              else if (_controller.state == BodyCareViewState.empty)
+                const AppEmptyState(
+                  title: '오늘의 건강 가이드가 없어요',
+                  message: '오늘 루틴이 만들어지면 이곳에 표시돼요.',
+                )
+              else if (_controller.state != BodyCareViewState.data)
+                AppErrorState(
+                  title: _controller.state == BodyCareViewState.authError
+                      ? '로그인 상태를 확인해 주세요'
+                      : '건강 가이드를 불러오지 못했어요',
+                  message: _controller.state == BodyCareViewState.serverError
+                      ? '서버 연결을 확인한 뒤 다시 시도해 주세요.'
+                      : null,
+                  onRetry: _controller.load,
+                )
+              else ...[
+                ResponsiveSplitView(
+                  primaryFlex: 7,
+                  secondaryFlex: 5,
+                  gap: AppSpacing.xxl,
+                  mobileSecondaryFirst: true,
+                  primary: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Builder(
+                        builder: (context) => Text(
+                          '${_controller.selectedArea}에 맞춘 오늘의 활동',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (final activity
+                              in _controller.selectedActivities.indexed) ...[
+                            MovementGuideCard(
+                              activity: activity.$2,
+                              featured: activity.$1 == 0,
+                              completed: _controller.isCompleted(
+                                activity.$2.id,
+                              ),
+                              onOpen: () => _showGuide(activity.$2),
+                              onComplete: () =>
+                                  _controller.toggleCompleted(activity.$2.id),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                          ],
+                          const SizedBox(height: AppSpacing.sm),
+                          _BodyAreaSelector(
+                            loads: _controller.loads,
+                            selectedArea: _controller.selectedArea,
+                            onSelected: _controller.selectArea,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  secondary: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        '오늘의 집중 부위',
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        for (final activity
-                            in _controller.selectedActivities.indexed) ...[
-                          MovementGuideCard(
-                            activity: activity.$2,
-                            featured: activity.$1 == 0,
-                            completed: _controller.isCompleted(activity.$2.id),
-                            onOpen: () => _showGuide(activity.$2),
-                            onComplete: () =>
-                                _controller.toggleCompleted(activity.$2.id),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
+                      const SizedBox(height: AppSpacing.lg),
+                      Column(
+                        children: [
+                          for (final load in _controller.loads) ...[
+                            _BodyLoadCard(
+                              load: load,
+                              selected: load.area == _controller.selectedArea,
+                              onTap: () => _controller.selectArea(load.area),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                          ],
                         ],
-                        const SizedBox(height: AppSpacing.sm),
-                        _BodyAreaSelector(
-                          loads: _controller.loads,
-                          selectedArea: _controller.selectedArea,
-                          onSelected: _controller.selectArea,
-                        ),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
-                secondary: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      '오늘의 집중 부위',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Column(
-                      children: [
-                        for (final load in _controller.loads) ...[
-                          _BodyLoadCard(
-                            load: load,
-                            selected: load.area == _controller.selectedArea,
-                            onTap: () => _controller.selectArea(load.area),
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                        ],
-                      ],
-                    ),
-                  ],
+                const SizedBox(height: AppSpacing.xl),
+                Text(
+                  '오늘은 ${_controller.loads.map((load) => load.area).join('·')} 부위를 살펴보세요. 불편하거나 통증이 심해지면 동작을 멈추고 의료진과 상담해 주세요.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              Text(
-                '오늘은 ${_controller.loads.map((load) => load.area).join('·')} 부위를 살펴보세요. 불편하거나 통증이 심해지면 동작을 멈추고 의료진과 상담해 주세요.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
-              ),
+              ],
             ],
           ],
         ),

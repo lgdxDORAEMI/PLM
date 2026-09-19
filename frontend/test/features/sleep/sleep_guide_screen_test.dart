@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plm_frontend/core/config/app_config.dart';
 import 'package:plm_frontend/features/sleep/screens/sleep_guide_screen.dart';
 import 'package:plm_frontend/features/report/data/appliance_execution_store.dart';
 
 void main() {
+  setUp(() => AppConfig.mockPreviewEnabled = true);
+  tearDown(() => AppConfig.mockPreviewEnabled = false);
   setUp(ApplianceExecutionStore.instance.reset);
 
   testWidgets('환경 항목별 Sheet에서 추천값을 변경하고 전체 실행을 요청한다', (tester) async {

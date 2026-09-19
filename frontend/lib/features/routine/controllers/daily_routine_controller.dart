@@ -3,14 +3,14 @@ import 'package:flutter/foundation.dart';
 import '../models/daily_routine.dart';
 import '../services/routine_service.dart';
 
-enum RoutineViewState { idle, loading, ready, fallback }
+enum RoutineViewState { idle, loading, ready, fallback, error }
 
 /// Routine 조회·폴백 상태를 Home Widget과 분리한다.
 class DailyRoutineController extends ChangeNotifier {
-  DailyRoutineController({required this.service, required this.fallbackPlan});
+  DailyRoutineController({required this.service, this.fallbackPlan});
 
   final RoutineService service;
-  final DailyRoutinePlan fallbackPlan;
+  final DailyRoutinePlan? fallbackPlan;
 
   RoutineViewState _state = RoutineViewState.idle;
   DailyRoutinePlan? _plan;
@@ -29,7 +29,9 @@ class DailyRoutineController extends ChangeNotifier {
       _state = RoutineViewState.ready;
     } on Object {
       _plan = fallbackPlan;
-      _state = RoutineViewState.fallback;
+      _state = fallbackPlan == null
+          ? RoutineViewState.error
+          : RoutineViewState.fallback;
     }
     notifyListeners();
   }

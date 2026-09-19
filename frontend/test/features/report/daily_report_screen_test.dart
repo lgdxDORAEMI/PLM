@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plm_frontend/core/config/app_config.dart';
 import 'package:plm_frontend/features/report/screens/daily_report_screen.dart';
 import 'package:plm_frontend/features/report/services/mock_record_service.dart';
 import 'package:plm_frontend/features/report/data/appliance_execution_store.dart';
 
 void main() {
+  setUp(() => AppConfig.mockPreviewEnabled = true);
+  tearDown(() => AppConfig.mockPreviewEnabled = false);
   setUp(ApplianceExecutionStore.instance.reset);
 
   test('시연 요청 전에는 모션·가전 실행 횟수가 0이다', () {

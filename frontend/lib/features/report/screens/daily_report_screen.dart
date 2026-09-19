@@ -23,6 +23,7 @@ import '../services/api_record_service.dart';
 import '../services/record_service.dart';
 import '../widgets/report_metric_card.dart';
 import '../widgets/routine_record_card.dart';
+import '../../../shared/widgets/integration_required_state.dart';
 
 class DailyReportScreen extends StatefulWidget {
   const DailyReportScreen({super.key, required this.date, this.service});
@@ -72,7 +73,15 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
     ),
     body: SafeArea(
       top: false,
-      child: ContentFrame(maxWidth: 1200, child: _buildBody()),
+      child: ContentFrame(
+        maxWidth: 1200,
+        child:
+            !AppConfig.hasSupabaseConfig &&
+                !AppConfig.mockPreviewEnabled &&
+                widget.service == null
+            ? const IntegrationRequiredState(message: 'Daily 리포트 데이터가 없습니다.')
+            : _buildBody(),
+      ),
     ),
   );
 

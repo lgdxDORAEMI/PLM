@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plm_frontend/core/config/app_config.dart';
 import 'package:plm_frontend/features/household/screens/household_guide_screen.dart';
 import 'package:plm_frontend/features/partner/data/partner_notification_store.dart';
 import 'package:plm_frontend/features/partner/data/partner_request_store.dart';
 import 'package:plm_frontend/features/report/data/appliance_execution_store.dart';
 
 void main() {
+  setUp(() => AppConfig.mockPreviewEnabled = true);
+  tearDown(() => AppConfig.mockPreviewEnabled = false);
   setUp(() {
     PartnerRequestStore.instance.clear();
     PartnerNotificationStore.instance.reset();

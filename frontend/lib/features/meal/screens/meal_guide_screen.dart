@@ -21,6 +21,7 @@ import '../controllers/meal_guide_controller.dart';
 import '../models/meal_guide.dart';
 import '../services/meal_service.dart';
 import '../services/mock_meal_service.dart';
+import '../../../shared/widgets/integration_required_state.dart';
 import '../services/api_meal_service.dart';
 import '../widgets/meal_info_section.dart';
 import '../widgets/meal_period_card.dart';
@@ -79,6 +80,13 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
           maxWidth: 1200,
           child: Builder(
             builder: (context) {
+              if (!AppConfig.hasSupabaseConfig &&
+                  !AppConfig.mockPreviewEnabled &&
+                  widget.service == null) {
+                return const IntegrationRequiredState(
+                  message: '식사 가이드 데이터가 없습니다.',
+                );
+              }
               return switch (_controller.state) {
                 MealGuideViewState.loading => const AppLoadingState(
                   message: '오늘의 메뉴를 준비하고 있어요',

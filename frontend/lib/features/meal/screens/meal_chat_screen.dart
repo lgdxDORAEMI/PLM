@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_input.dart';
 import '../../../design_system/components/responsive_page_content.dart';
@@ -18,6 +19,7 @@ import '../services/meal_chat_service.dart';
 import '../services/mock_meal_service.dart';
 import '../widgets/meal_chat_bubble.dart';
 import '../widgets/meal_recommendation_card.dart';
+import '../../../shared/widgets/integration_required_state.dart';
 
 class MealChatScreen extends StatefulWidget {
   const MealChatScreen({
@@ -40,13 +42,17 @@ class _MealChatScreenState extends State<MealChatScreen> {
   late final TextEditingController _inputController;
   late final ScrollController _scrollController;
 
+  bool get _chatAvailable =>
+      widget.service != null || AppConfig.mockPreviewEnabled;
+
   @override
   void initState() {
     super.initState();
     final service = widget.service ?? const MockMealService();
-    _controller = MealChatController(service: service)
-      ..addListener(_refresh)
-      ..initialize(_initialRecommendation());
+    _controller = MealChatController(service: service)..addListener(_refresh);
+    if (_chatAvailable) {
+      _controller.initialize(_initialRecommendation());
+    }
     _inputController = TextEditingController();
     _scrollController = ScrollController();
   }
@@ -88,61 +94,69 @@ class _MealChatScreenState extends State<MealChatScreen> {
                   controller: _scrollController,
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
                   children: [
-                    _MealChatContext(period: widget.mealPeriod),
-                    const SizedBox(height: AppSpacing.xxl),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        for (final message in _controller.messages) ...[
-                          MealChatBubble(
-                            key: ValueKey(message.id),
-                            message: message.text,
-                            fromUser: message.author == MealChatAuthor.user,
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                        ],
-                        if (_controller.messages.length == 1 &&
-                            !_controller.responding) ...[
-                          _SuggestedPrompts(onSelected: _send),
-                          const SizedBox(height: AppSpacing.lg),
-                        ],
-                        if (_controller.responding)
-                          const _RespondingIndicator()
-                        else if (_controller.errorMessage != null)
-                          _ChatError(
-                            message: _controller.errorMessage!,
-                            onRetry: () => unawaited(_controller.retry()),
-                          )
-                        else if (_controller.proposal != null) ...[
-                          MealRecommendationCard(
-                            key: const ValueKey('meal-alternative-card'),
-                            recommendation: _controller.proposal!,
-                            compact: true,
-                          ),
-                          const SizedBox(height: AppSpacing.lg),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: AppButton(
-                                  key: const ValueKey('apply-meal-alternative'),
-                                  label: '이걸로 할게요',
-                                  onPressed: _applyProposal,
+                    if (!_chatAvailable)
+                      const IntegrationRequiredState(
+                        message: '대화와 대체 메뉴 데이터가 없습니다.',
+                      )
+                    else ...[
+                      _MealChatContext(period: widget.mealPeriod),
+                      const SizedBox(height: AppSpacing.xxl),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (final message in _controller.messages) ...[
+                            MealChatBubble(
+                              key: ValueKey(message.id),
+                              message: message.text,
+                              fromUser: message.author == MealChatAuthor.user,
+                            ),
+                            const SizedBox(height: AppSpacing.lg),
+                          ],
+                          if (_controller.messages.length == 1 &&
+                              !_controller.responding) ...[
+                            _SuggestedPrompts(onSelected: _send),
+                            const SizedBox(height: AppSpacing.lg),
+                          ],
+                          if (_controller.responding)
+                            const _RespondingIndicator()
+                          else if (_controller.errorMessage != null)
+                            _ChatError(
+                              message: _controller.errorMessage!,
+                              onRetry: () => unawaited(_controller.retry()),
+                            )
+                          else if (_controller.proposal != null) ...[
+                            MealRecommendationCard(
+                              key: const ValueKey('meal-alternative-card'),
+                              recommendation: _controller.proposal!,
+                              compact: true,
+                            ),
+                            const SizedBox(height: AppSpacing.lg),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: AppButton(
+                                    key: const ValueKey(
+                                      'apply-meal-alternative',
+                                    ),
+                                    label: '이걸로 할게요',
+                                    onPressed: _applyProposal,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: AppSpacing.md),
-                              Expanded(
-                                child: AppButton(
-                                  label: '다른 메뉴 보기',
-                                  variant: AppButtonVariant.secondary,
-                                  onPressed: () =>
-                                      unawaited(_controller.requestAnother()),
+                                const SizedBox(width: AppSpacing.md),
+                                Expanded(
+                                  child: AppButton(
+                                    label: '다른 메뉴 보기',
+                                    variant: AppButtonVariant.secondary,
+                                    onPressed: () =>
+                                        unawaited(_controller.requestAnother()),
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
+                              ],
+                            ),
+                          ],
                         ],
-                      ],
-                    ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -154,11 +168,11 @@ class _MealChatScreenState extends State<MealChatScreen> {
                   hintText: '냄새나 식감 등 불편한 점을 알려주세요',
                   controller: _inputController,
                   textInputAction: TextInputAction.send,
-                  enabled: !_controller.responding,
+                  enabled: _chatAvailable && !_controller.responding,
                   onSubmitted: _send,
                   suffixIcon: IconButton(
                     tooltip: '보내기',
-                    onPressed: _controller.responding
+                    onPressed: !_chatAvailable || _controller.responding
                         ? null
                         : () => _send(_inputController.text),
                     icon: const Icon(Icons.arrow_upward),

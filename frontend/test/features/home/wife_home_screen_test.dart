@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plm_frontend/core/config/app_config.dart';
 import 'package:plm_frontend/features/condition/data/today_care_store.dart';
 import 'package:plm_frontend/features/condition/models/condition_draft.dart';
 import 'package:plm_frontend/features/home/screens/wife_home_screen.dart';
@@ -10,6 +11,8 @@ import 'package:plm_frontend/features/routine/services/mock_routine_service.dart
 import 'package:plm_frontend/features/routine/services/routine_service.dart';
 
 void main() {
+  setUp(() => AppConfig.mockPreviewEnabled = true);
+  tearDown(() => AppConfig.mockPreviewEnabled = false);
   final conditionStore = TodayCareStore.instance;
 
   setUp(conditionStore.clear);
@@ -30,7 +33,7 @@ void main() {
   });
 
   testWidgets('컨디션 완료 후 Loading에서 Success와 Progress로 전환한다', (tester) async {
-    conditionStore.save(const ConditionDraft());
+    await conditionStore.save(const ConditionDraft());
     final service = _ControlledRoutineService();
 
     await tester.pumpWidget(
@@ -46,7 +49,11 @@ void main() {
 
     service.complete(MockRoutineService.todayPlan);
     await tester.pumpAndSettle();
-
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('home-routine-success')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.byKey(const ValueKey('home-routine-success')), findsOneWidget);
     expect(find.byKey(const ValueKey('home-edit-activities')), findsOneWidget);
     await tester.scrollUntilVisible(
@@ -58,7 +65,7 @@ void main() {
   });
 
   testWidgets('Routine 실패 시 기본 가이드와 재시도를 표시한다', (tester) async {
-    conditionStore.save(const ConditionDraft());
+    await conditionStore.save(const ConditionDraft());
 
     await tester.pumpWidget(
       const MaterialApp(
@@ -67,6 +74,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('home-routine-fallback')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.byKey(const ValueKey('home-routine-fallback')), findsOneWidget);
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('home-routine-retry')),

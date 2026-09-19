@@ -17,6 +17,7 @@ import '../../report/data/appliance_execution_store.dart';
 import '../controllers/sleep_guide_controller.dart';
 import '../models/sleep_guide.dart';
 import '../services/mock_sleep_service.dart';
+import '../../../shared/widgets/integration_required_state.dart';
 import '../services/api_sleep_service.dart';
 import '../services/sleep_service.dart';
 import '../widgets/sleep_environment_card.dart';
@@ -75,6 +76,11 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
   }
 
   Widget _buildBody() {
+    if (!AppConfig.hasSupabaseConfig &&
+        !AppConfig.mockPreviewEnabled &&
+        widget.service == null) {
+      return const IntegrationRequiredState(message: '수면 가이드 데이터가 없습니다.');
+    }
     return switch (_controller.state) {
       SleepGuideViewState.loading => const AppLoadingState(
         message: '오늘의 수면 환경을 준비하고 있어요',

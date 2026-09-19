@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plm_frontend/core/config/app_config.dart';
 import 'package:plm_frontend/features/report/screens/daily_report_screen.dart';
 import 'package:plm_frontend/features/calendar/data/calendar_selection_store.dart';
 import 'package:plm_frontend/features/condition/data/today_care_store.dart';
@@ -13,6 +14,8 @@ import 'package:plm_frontend/routing/app_session.dart';
 import 'package:plm_frontend/routing/route_names.dart';
 
 void main() {
+  setUp(() => AppConfig.mockPreviewEnabled = true);
+  tearDown(() => AppConfig.mockPreviewEnabled = false);
   setUp(() {
     CalendarSelectionStore.instance.reset();
     TodayCareStore.instance.clear();

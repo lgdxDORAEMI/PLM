@@ -11,15 +11,17 @@ class PregnancyWeekHero extends StatelessWidget {
     required this.week,
   });
 
-  final String userName;
+  final String? userName;
   final int week;
 
   @override
   Widget build(BuildContext context) {
-    final statusText = '$userName님,\n오늘 임신 $week주차예요';
+    final statusText = userName == null
+        ? '오늘 임신 $week주차예요'
+        : '$userName님,\n오늘 임신 $week주차예요';
     return Semantics(
       container: true,
-      label: '$userName님, 현재 임신 $week주차',
+      label: userName == null ? '현재 임신 $week주차' : '$userName님, 현재 임신 $week주차',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

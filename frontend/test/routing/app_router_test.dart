@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plm_frontend/core/config/app_config.dart';
 import 'package:plm_frontend/features/profile/data/profile_store.dart';
 import 'package:plm_frontend/features/profile/models/profile_draft.dart';
 import 'package:plm_frontend/routing/app_router.dart';
@@ -7,6 +8,8 @@ import 'package:plm_frontend/routing/app_session.dart';
 import 'package:plm_frontend/routing/route_names.dart';
 
 void main() {
+  setUp(() => AppConfig.mockPreviewEnabled = true);
+  tearDown(() => AppConfig.mockPreviewEnabled = false);
   setUp(() {
     ProfileStore.instance.reset();
     AuthSessionStore.instance.update(

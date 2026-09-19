@@ -2,6 +2,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 abstract final class AppConfig {
+  /// 기존 Mock 화면 동작을 검증하는 위젯 테스트에서만 활성화한다.
+  static bool mockPreviewEnabled = false;
+
   static bool get hasSupabaseConfig {
     try {
       return (dotenv.env['SUPABASE_URL']?.trim().isNotEmpty ?? false) &&
