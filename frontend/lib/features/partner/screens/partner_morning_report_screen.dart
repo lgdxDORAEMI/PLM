@@ -5,17 +5,19 @@ import 'package:flutter/material.dart';
 import '../../../design_system/components/app_badge.dart';
 import '../../../design_system/components/app_card.dart';
 import '../../../design_system/components/app_state_view.dart';
-import '../../../design_system/components/empty_data_preview.dart';
 import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_spacing.dart';
+import '../../../core/config/app_config.dart';
 import '../../../routing/route_names.dart';
-import '../../report/controllers/daily_report_controller.dart';
 import '../../report/models/daily_record.dart';
-import '../../report/services/mock_record_service.dart';
-import '../../report/services/record_service.dart';
+import '../controllers/partner_morning_report_controller.dart';
+import '../models/partner_morning_report.dart';
+import '../services/api_partner_morning_report_service.dart';
+import '../services/mock_partner_morning_report_service.dart';
+import '../services/partner_morning_report_service.dart';
 
 class PartnerMorningReportScreen extends StatefulWidget {
   const PartnerMorningReportScreen({
@@ -26,7 +28,7 @@ class PartnerMorningReportScreen extends StatefulWidget {
   });
 
   final String date;
-  final RecordService? service;
+  final PartnerMorningReportService? service;
   final bool daily;
 
   @override
@@ -36,14 +38,18 @@ class PartnerMorningReportScreen extends StatefulWidget {
 
 class _PartnerMorningReportScreenState
     extends State<PartnerMorningReportScreen> {
-  late final DailyReportController _controller;
+  late final PartnerMorningReportController _controller;
 
   @override
   void initState() {
     super.initState();
     final date = _parseRouteDate(widget.date);
-    _controller = DailyReportController(
-      service: widget.service ?? const MockRecordService(),
+    _controller = PartnerMorningReportController(
+      service:
+          widget.service ??
+          (AppConfig.hasSupabaseConfig
+              ? ApiPartnerMorningReportService()
+              : const MockPartnerMorningReportService()),
       date: date,
     )..addListener(_refresh);
     unawaited(_controller.load());
@@ -81,41 +87,38 @@ class _PartnerMorningReportScreenState
         ),
       ],
     ),
-    body: EmptyDataPreview(
-      child: SafeArea(top: false, child: ResponsivePageContent(child: _body())),
-    ),
+    body: SafeArea(top: false, child: ResponsivePageContent(child: _body())),
   );
 
   Widget _body() => switch (_controller.state) {
-    DailyReportViewState.loading => const AppLoadingState(
+    PartnerMorningReportState.loading => const AppLoadingState(
       message: '아침 리포트를 불러오고 있어요',
     ),
-    DailyReportViewState.empty => AppEmptyState(
+    PartnerMorningReportState.empty => AppEmptyState(
       title: '공유된 리포트가 없어요',
       message: '아내가 컨디션을 입력하면 요약 리포트가 표시돼요.',
       actionLabel: '캘린더로 돌아가기',
       onAction: () =>
           Navigator.pushReplacementNamed(context, RouteNames.partnerCalendar),
     ),
-    DailyReportViewState.error => AppErrorState(
+    PartnerMorningReportState.authError => AppErrorState(
+      title: '리포트를 볼 수 없어요',
+      message: '로그인 상태와 배우자 연결 권한을 확인해 주세요.',
+      onRetry: _controller.load,
+    ),
+    PartnerMorningReportState.serverError => AppErrorState(
+      title: '서버에 연결할 수 없어요',
+      message: '잠시 후 다시 시도해 주세요.',
+      onRetry: _controller.load,
+    ),
+    PartnerMorningReportState.error => AppErrorState(
       title: '리포트를 불러오지 못했어요',
       message: '잠시 후 다시 시도해 주세요.',
       onRetry: _controller.load,
     ),
-    _ => PreviewData(
-      empty: Padding(
-        padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-        child: Text(
-          '공유된 리포트 카드가 아직 없어요.',
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-        ),
-      ),
-      child: _PartnerReportContent(
-        record: _controller.record!,
-        daily: widget.daily,
-      ),
+    _ => _PartnerReportContent(
+      report: _controller.report!,
+      daily: widget.daily,
     ),
   };
 
@@ -129,9 +132,9 @@ class _PartnerMorningReportScreenState
 }
 
 class _PartnerReportContent extends StatelessWidget {
-  const _PartnerReportContent({required this.record, required this.daily});
+  const _PartnerReportContent({required this.report, required this.daily});
 
-  final DailyRecord record;
+  final PartnerMorningReport report;
   final bool daily;
 
   @override
@@ -149,11 +152,13 @@ class _PartnerReportContent extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              '희선님은 임신 ${record.pregnancyWeek}주차예요',
+              '임신 ${report.pregnancyWeek}주차예요',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
             const SizedBox(height: AppSpacing.sm),
-            Text('${record.date.month}월 ${record.date.day}일 컨디션 요약'),
+            Text(
+              '${report.targetDate.month}월 ${report.targetDate.day}일 컨디션 요약',
+            ),
           ],
         ),
       ),
@@ -161,42 +166,37 @@ class _PartnerReportContent extends StatelessWidget {
       Text('오늘 컨디션', style: Theme.of(context).textTheme.titleLarge),
       const SizedBox(height: AppSpacing.md),
       InfoBanner(
-        title: _conditionLabel(record.conditionLevel),
-        message: record.conditionSummary,
-        tone: record.conditionLevel == ConditionLevel.difficult
-            ? InfoBannerTone.warning
-            : InfoBannerTone.info,
+        title: '오늘 컨디션 요약',
+        message: report.conditionSummary.isEmpty
+            ? '공유된 컨디션 요약이 없어요.'
+            : report.conditionSummary.join(' · '),
+        tone: InfoBannerTone.info,
       ),
       const SizedBox(height: AppSpacing.xl),
       Text('오늘 예정 활동', style: Theme.of(context).textTheme.titleLarge),
       const SizedBox(height: AppSpacing.md),
-      const AppCard(child: Text('장보기 · 빨래 · 쓰레기 배출')),
+      AppCard(
+        child: Text(
+          report.plannedActivities.isEmpty
+              ? '공유된 예정 활동이 없어요.'
+              : report.plannedActivities.join(' · '),
+        ),
+      ),
       const SizedBox(height: AppSpacing.xl),
       Text('오늘 가이드 요약', style: Theme.of(context).textTheme.titleLarge),
       const SizedBox(height: AppSpacing.md),
-      const _GuideSummary(
-        icon: Icons.restaurant_outlined,
-        title: '식사',
-        value: '속이 편한 달걀죽과 부드러운 채소',
-      ),
-      const SizedBox(height: AppSpacing.sm),
-      const _GuideSummary(
-        icon: Icons.home_outlined,
-        title: '가사',
-        value: '무거운 장보기는 가족과 나누기',
-      ),
-      const SizedBox(height: AppSpacing.sm),
-      const _GuideSummary(
-        icon: Icons.favorite_outline,
-        title: '건강',
-        value: '허리 부담을 줄이는 5분 스트레칭',
-      ),
-      const SizedBox(height: AppSpacing.sm),
-      const _GuideSummary(
-        icon: Icons.bedtime_outlined,
-        title: '수면',
-        value: '조명과 온도를 낮춘 수면 루틴',
-      ),
+      if (report.guideSummaries.isEmpty)
+        const AppCard(child: Text('공유된 가이드 요약이 없어요.'))
+      else
+        for (final guide in _guideItems.indexed) ...[
+          _GuideSummary(
+            icon: guide.$2.icon,
+            title: guide.$2.label,
+            value: guide.$2.value,
+          ),
+          if (guide.$1 < _guideItems.length - 1)
+            const SizedBox(height: AppSpacing.sm),
+        ],
       const SizedBox(height: AppSpacing.md),
       const Text(
         '공유에 동의한 요약 정보만 표시됩니다.',
@@ -206,12 +206,24 @@ class _PartnerReportContent extends StatelessWidget {
     ],
   );
 
-  String _conditionLabel(ConditionLevel level) => switch (level) {
-    ConditionLevel.good => '오늘 컨디션이 좋아요',
-    ConditionLevel.normal => '오늘 컨디션은 보통이에요',
-    ConditionLevel.bad => '오늘은 조금 힘든 날이에요',
-    ConditionLevel.difficult => '오늘은 충분한 도움이 필요해요',
-  };
+  List<_GuideItem> get _guideItems => [
+    if (report.guideSummaries['meal'] case final value?)
+      _GuideItem(Icons.restaurant_outlined, '식사', value),
+    if (report.guideSummaries['household'] case final value?)
+      _GuideItem(Icons.home_outlined, '가사', value),
+    if (report.guideSummaries['health'] case final value?)
+      _GuideItem(Icons.favorite_outline, '건강', value),
+    if (report.guideSummaries['sleep'] case final value?)
+      _GuideItem(Icons.bedtime_outlined, '수면', value),
+  ];
+}
+
+class _GuideItem {
+  const _GuideItem(this.icon, this.label, this.value);
+
+  final IconData icon;
+  final String label;
+  final String value;
 }
 
 class _GuideSummary extends StatelessWidget {

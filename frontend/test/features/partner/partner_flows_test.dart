@@ -68,7 +68,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('희선님은 임신 28주차예요'), findsOneWidget);
+    expect(find.text('임신 28주차예요'), findsOneWidget);
     final context = tester.element(find.byType(PartnerMorningReportScreen));
     expect(
       ModalRoute.of(context)?.settings.name,
