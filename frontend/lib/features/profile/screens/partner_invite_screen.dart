@@ -18,6 +18,7 @@ import '../../invitation/models/invitation.dart';
 import '../../invitation/services/invitation_service.dart';
 import '../../invitation/services/mock_invitation_service.dart';
 import '../../invitation/services/api_invitation_service.dart';
+import '../../../shared/widgets/integration_required_state.dart';
 
 class PartnerInviteScreen extends StatefulWidget {
   const PartnerInviteScreen({
@@ -68,7 +69,14 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
     ),
     body: SafeArea(
       top: false,
-      child: ResponsivePageContent(child: _buildBody()),
+      child: ResponsivePageContent(
+        child:
+            !AppConfig.hasSupabaseConfig &&
+                !AppConfig.mockPreviewEnabled &&
+                widget.service == null
+            ? const IntegrationRequiredState(message: '배우자 초대 기능을 사용할 수 없습니다.')
+            : _buildBody(),
+      ),
     ),
   );
 

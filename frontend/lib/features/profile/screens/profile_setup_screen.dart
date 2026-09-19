@@ -14,6 +14,8 @@ import '../controllers/profile_setup_controller.dart';
 import '../widgets/profile_fields.dart';
 import '../widgets/profile_summary.dart';
 import '../widgets/profile_wizard_frame.dart';
+import '../data/profile_store.dart';
+import '../../../shared/widgets/integration_required_state.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({
@@ -108,7 +110,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         body: Builder(
           builder: (context) => SafeArea(
             top: false,
-            child: _controller.isSummary
+            child:
+                widget.mode == ProfileMode.edit &&
+                    ProfileStore.instance.profile == null
+                ? const IntegrationRequiredState(message: '저장된 프로필 데이터가 없습니다.')
+                : _controller.isSummary
                 ? ProfileSummary(
                     draft: _controller.draft,
                     onEditStep: _controller.editStep,

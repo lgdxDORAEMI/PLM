@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plm_frontend/core/config/app_config.dart';
 import 'package:plm_frontend/design_system/components/app_card.dart';
 import 'package:plm_frontend/design_system/tokens/app_colors.dart';
 import 'package:plm_frontend/features/calendar/data/calendar_selection_store.dart';
@@ -15,6 +16,8 @@ import 'package:plm_frontend/routing/app_session.dart';
 import 'package:plm_frontend/routing/route_names.dart';
 
 void main() {
+  setUp(() => AppConfig.mockPreviewEnabled = true);
+  tearDown(() => AppConfig.mockPreviewEnabled = false);
   setUp(() {
     PartnerRequestStore.instance.clear();
     PartnerNotificationStore.instance.reset();

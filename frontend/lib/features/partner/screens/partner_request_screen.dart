@@ -17,6 +17,7 @@ import '../../household/services/household_request_service.dart';
 import '../../household/services/mock_household_request_service.dart';
 import '../controllers/partner_request_controller.dart';
 import '../models/partner_request.dart';
+import '../../../shared/widgets/integration_required_state.dart';
 
 class PartnerRequestScreen extends StatefulWidget {
   const PartnerRequestScreen({
@@ -71,7 +72,12 @@ class _PartnerRequestScreenState extends State<PartnerRequestScreen> {
       body: SafeArea(
         top: false,
         child: ResponsivePageContent(
-          child: request == null
+          child:
+              !AppConfig.hasSupabaseConfig &&
+                  !AppConfig.mockPreviewEnabled &&
+                  widget.service == null
+              ? const IntegrationRequiredState(message: '가사 요청 데이터가 없습니다.')
+              : request == null
               ? _stateView()
               : ListView(
                   key: const ValueKey('partner-request-content'),

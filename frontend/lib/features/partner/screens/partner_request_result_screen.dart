@@ -17,6 +17,7 @@ import '../../household/services/household_request_service.dart';
 import '../../household/services/mock_household_request_service.dart';
 import '../controllers/partner_request_controller.dart';
 import '../models/partner_request.dart';
+import '../../../shared/widgets/integration_required_state.dart';
 
 /// H-REQUEST-002. 완료된 요청도 상세 API를 다시 조회해 직접 URL 진입을 지원한다.
 class PartnerRequestResultScreen extends StatefulWidget {
@@ -71,7 +72,14 @@ class _PartnerRequestResultScreenState
     ),
     body: SafeArea(
       top: false,
-      child: ResponsivePageContent(child: _buildBody()),
+      child: ResponsivePageContent(
+        child:
+            !AppConfig.hasSupabaseConfig &&
+                !AppConfig.mockPreviewEnabled &&
+                widget.service == null
+            ? const IntegrationRequiredState(message: '가사 요청 결과 데이터가 없습니다.')
+            : _buildBody(),
+      ),
     ),
   );
 

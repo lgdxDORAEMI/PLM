@@ -18,6 +18,7 @@ import '../models/partner_morning_report.dart';
 import '../services/api_partner_morning_report_service.dart';
 import '../services/mock_partner_morning_report_service.dart';
 import '../services/partner_morning_report_service.dart';
+import '../../../shared/widgets/integration_required_state.dart';
 
 class PartnerMorningReportScreen extends StatefulWidget {
   const PartnerMorningReportScreen({
@@ -87,7 +88,17 @@ class _PartnerMorningReportScreenState
         ),
       ],
     ),
-    body: SafeArea(top: false, child: ResponsivePageContent(child: _body())),
+    body: SafeArea(
+      top: false,
+      child: ResponsivePageContent(
+        child:
+            !AppConfig.hasSupabaseConfig &&
+                !AppConfig.mockPreviewEnabled &&
+                widget.service == null
+            ? const IntegrationRequiredState(message: '오전 리포트 데이터가 없습니다.')
+            : _body(),
+      ),
+    ),
   );
 
   Widget _body() => switch (_controller.state) {

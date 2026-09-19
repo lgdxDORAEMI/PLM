@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plm_frontend/core/config/app_config.dart';
 import 'package:plm_frontend/features/movement/product_movement_screen.dart';
 import 'package:plm_frontend/features/movement/widgets/movement_alert_card.dart';
 import 'package:plm_frontend/routing/route_context.dart';
 
 void main() {
+  setUp(() => AppConfig.mockPreviewEnabled = true);
+  tearDown(() => AppConfig.mockPreviewEnabled = false);
   testWidgets('아내 실시간 화면은 오늘 로그와 움직임 요약을 표시한다', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(home: ProductMovementScreen(role: AppUserRole.wife)),

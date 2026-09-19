@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plm_frontend/core/config/app_config.dart';
 import 'package:plm_frontend/features/invitation/data/partner_connection_store.dart';
 import 'package:plm_frontend/features/calendar/data/calendar_selection_store.dart';
 import 'package:plm_frontend/features/profile/data/profile_store.dart';
@@ -12,6 +13,8 @@ import 'package:plm_frontend/routing/app_session.dart';
 import 'package:plm_frontend/routing/route_names.dart';
 
 void main() {
+  setUp(() => AppConfig.mockPreviewEnabled = true);
+  tearDown(() => AppConfig.mockPreviewEnabled = false);
   setUp(_useWifeSession);
 
   final routes = <String>[
@@ -121,7 +124,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('희선님'));
+    await tester.tap(find.text('프로필 정보'));
     await tester.pumpAndSettle();
     expect(find.byType(ProfileSetupScreen), findsNothing);
     expect(find.text('프로필 수정'), findsOneWidget);

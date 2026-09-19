@@ -1,6 +1,6 @@
 # PLM Frontend
 
-PLM Frontend는 임산부와 배우자의 생활관리 경험을 제공하기 위한 Flutter Web 앱입니다. 화면은 기존 공통 UI를 사용하고, 라우팅은 `docs/development/ROUTE_MAP_V2.md`의 아내·남편 경로를 따릅니다. ThinQ 세션/API 연결 전에는 시연 계정과 로컬 상태를 사용합니다.
+PLM Frontend는 임산부와 배우자의 생활관리 경험을 제공하기 위한 Flutter Web 앱입니다. 화면은 기존 공통 UI를 사용하고, 라우팅은 `docs/development/ROUTE_MAP_V2.md`의 아내·남편 경로를 따릅니다. API 설정이 없고 실제 데이터가 없는 영역은 `연동이필요합니다` 상태로 표시합니다. Mock 데이터는 테스트에서만 명시적으로 표시합니다.
 
 ## 지원 플랫폼
 
@@ -47,20 +47,20 @@ PLM Frontend는 임산부와 배우자의 생활관리 경험을 제공하기 �
 - 임산부 프로필과 배우자 초대
 - 오늘의 컨디션 및 예정 활동 입력
 - 통합 Home과 식사·가사·건강·수면 가이드
-- 끼니별 3개 Mock 메뉴 순환과 메시지 누적·추천 프롬프트·Mock AI 응답·대체 메뉴 적용을 제공하는 식사 가이드 및 재조정 채팅
+- 식사 가이드 및 재조정 채팅의 화면 구성과 상태 표시. 실제 채팅 API가 없는 화면은 연동 필요 상태를 표시
 - 루틴 완료 기록, Daily 리포트와 캘린더
 - 배우자용 초대 수락, 리포트, 알림, 가사 요청 확인·완료 화면
 - 화면별 실제 콘텐츠·상태·접근성 세부 구현
-- Feature Controller와 Mock Service
+- Feature Controller와 테스트용 Mock Service
 
-화면 구현은 [화면 구현 계획](../docs/development/05_ui_implementation_plan.md)의 `UI-001`부터 Placeholder를 한 화면씩 교체합니다. 전체 현황과 공용 파일 경계는 [Frontend 진행 현황](../docs/FRONTEND_PROGRESS.md)을 확인합니다. 실제 API가 없는 기능은 다음 의존 방향을 유지합니다.
+화면 구현은 [화면 구현 계획](../docs/development/05_ui_implementation_plan.md)의 `UI-001`부터 Placeholder를 한 화면씩 교체합니다. 전체 현황과 공용 파일 경계는 [Frontend 진행 현황](../docs/FRONTEND_PROGRESS.md)을 확인합니다. 실제 API가 없는 기능의 Mock Service는 테스트에 남겨 둡니다.
 
 ```text
 Page
 → Feature Widget
 → State / Controller
 → Frontend Service
-→ Mock Service
+→ API Service 또는 테스트용 Mock Service
 ```
 
 ## 구조
@@ -120,12 +120,12 @@ SDK 탐색이나 VS Code 실행 문제가 있으면 [개발 환경 및 실행 �
 
 1. Backend를 `localhost:8000`에서 실행합니다.
 2. Frontend를 Chrome에서 실행합니다.
-3. 제품의 실시간 화면은 오늘 감지 로그와 수집 ON/OFF 상태를 Mock service로 표시합니다. 실제 장치 연결 전에는 개인정보 동의와 보관 정책을 먼저 확정합니다.
+3. 제품의 실시간 화면은 Backend 데이터가 있으면 오늘 감지 로그를 표시합니다. 데이터 연결이 없으면 연동 필요 상태를 표시합니다.
 4. 브라우저 카메라 권한을 허용하고 캘리브레이션과 실시간 상태를 확인합니다.
 
 현재 데모는 Backend의 `WS /api/v1/movement/live/stream`에 JPEG 프레임을 약 5fps로 전송합니다. WebSocket은 로컬 `localhost` 또는 `127.0.0.1` origin만 허용합니다.
 
-이 기능은 Phase 2 검증용 데모입니다. MVP 제품 UI의 건강·수면 가이드는 모션 데이터가 아니라 Mock Data와 컨디션 입력을 기준으로 구현할 예정입니다. 세부 제약과 수동 검증 항목은 [Movement README](lib/features/movement/README.md)를 참고하세요.
+이 기능은 Phase 2 검증용 데모입니다. 세부 제약과 수동 검증 항목은 [Movement README](lib/features/movement/README.md)를 참고하세요.
 
 ## 검증
 

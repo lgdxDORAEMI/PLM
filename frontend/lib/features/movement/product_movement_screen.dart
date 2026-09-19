@@ -21,6 +21,7 @@ import 'models/movement_alert.dart';
 import 'services/api_movement_dashboard_service.dart';
 import 'services/mock_movement_dashboard_service.dart';
 import 'services/movement_dashboard_service.dart';
+import '../../shared/widgets/integration_required_state.dart';
 import 'widgets/movement_alert_card.dart';
 
 /// B-MOTION-001의 오늘 감지 상태와 로그를 Backend 조회 결과로 표시한다.
@@ -79,66 +80,74 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
         child: ListView(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
           children: [
-            if (_controller.state == MovementDashboardViewState.loading)
-              const AppLoadingState(message: '오늘의 움직임 기록을 불러오고 있어요')
-            else if (_controller.state != MovementDashboardViewState.data)
-              AppErrorState(
-                title: _controller.state == MovementDashboardViewState.authError
-                    ? '움직임 기록을 볼 수 없어요'
-                    : '움직임 기록을 불러오지 못했어요',
-                message:
-                    _controller.state == MovementDashboardViewState.serverError
-                    ? '서버 연결을 확인한 뒤 다시 시도해 주세요.'
-                    : null,
-                onRetry: _controller.load,
-              )
+            if (!AppConfig.hasSupabaseConfig &&
+                !AppConfig.mockPreviewEnabled &&
+                widget.service == null)
+              const IntegrationRequiredState(message: '움직임 데이터가 없습니다.')
             else ...[
-              if (_isWife) ...[
-                InfoBanner(
-                  title: _controller.data!.collectionEnabled
-                      ? '움직임 수집 중'
-                      : '움직임 수집 꺼짐',
-                  message: _controller.data!.consentGranted
-                      ? '움직임 데이터 수집에 동의한 상태예요.'
-                      : '움직임 데이터 수집 동의가 필요해요.',
-                  tone: _controller.data!.collectionEnabled
-                      ? InfoBannerTone.success
-                      : InfoBannerTone.info,
+              if (_controller.state == MovementDashboardViewState.loading)
+                const AppLoadingState(message: '오늘의 움직임 기록을 불러오고 있어요')
+              else if (_controller.state != MovementDashboardViewState.data)
+                AppErrorState(
+                  title:
+                      _controller.state == MovementDashboardViewState.authError
+                      ? '움직임 기록을 볼 수 없어요'
+                      : '움직임 기록을 불러오지 못했어요',
+                  message:
+                      _controller.state ==
+                          MovementDashboardViewState.serverError
+                      ? '서버 연결을 확인한 뒤 다시 시도해 주세요.'
+                      : null,
+                  onRetry: _controller.load,
+                )
+              else ...[
+                if (_isWife) ...[
+                  InfoBanner(
+                    title: _controller.data!.collectionEnabled
+                        ? '움직임 수집 중'
+                        : '움직임 수집 꺼짐',
+                    message: _controller.data!.consentGranted
+                        ? '움직임 데이터 수집에 동의한 상태예요.'
+                        : '움직임 데이터 수집 동의가 필요해요.',
+                    tone: _controller.data!.collectionEnabled
+                        ? InfoBannerTone.success
+                        : InfoBannerTone.info,
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                ],
+                ResponsiveSplitView(
+                  primaryFlex: 7,
+                  secondaryFlex: 5,
+                  gap: AppSpacing.xxl,
+                  primary: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _CurrentStateCard(
+                        data: _controller.data!,
+                        onMoveToHousehold: _isWife ? _moveToHousehold : null,
+                      ),
+                    ],
+                  ),
+                  secondary: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _TodayEventLog(
+                        events: _controller.todayAlerts,
+                        showAll: _showAllEvents,
+                        onShowAll: () => setState(() => _showAllEvents = true),
+                        onOpen: _showAlert,
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.xl),
+                Text(
+                  '홈카메라는 영상을 저장하지 않고 움직임 패턴만 인식해요. 의료 진단 기능이 아닙니다.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textTertiary,
+                  ),
+                ),
               ],
-              ResponsiveSplitView(
-                primaryFlex: 7,
-                secondaryFlex: 5,
-                gap: AppSpacing.xxl,
-                primary: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _CurrentStateCard(
-                      data: _controller.data!,
-                      onMoveToHousehold: _isWife ? _moveToHousehold : null,
-                    ),
-                  ],
-                ),
-                secondary: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _TodayEventLog(
-                      events: _controller.todayAlerts,
-                      showAll: _showAllEvents,
-                      onShowAll: () => setState(() => _showAllEvents = true),
-                      onOpen: _showAlert,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: AppSpacing.xl),
-              Text(
-                '홈카메라는 영상을 저장하지 않고 움직임 패턴만 인식해요. 의료 진단 기능이 아닙니다.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
-              ),
             ],
           ],
         ),

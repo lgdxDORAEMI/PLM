@@ -21,6 +21,7 @@ import '../../invitation/services/api_partner_link_service.dart';
 import '../../invitation/services/mock_partner_link_service.dart';
 import '../../profile/data/profile_store.dart';
 import '../../profile/models/profile_draft.dart';
+import '../../../shared/widgets/integration_required_state.dart';
 
 class WifeMenuScreen extends StatefulWidget {
   const WifeMenuScreen({super.key, this.returnLocation});
@@ -94,7 +95,12 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
                       Navigator.pushNamed(context, RouteNames.wifeProfile),
                 ),
                 const SizedBox(height: AppSpacing.md),
-                if (_linkController.state == PartnerLinkViewState.loading)
+                if (!AppConfig.hasSupabaseConfig &&
+                    !AppConfig.mockPreviewEnabled)
+                  const IntegrationRequiredState(
+                    message: '배우자 연결 상태를 확인할 수 없습니다.',
+                  )
+                else if (_linkController.state == PartnerLinkViewState.loading)
                   const AppLoadingState(message: '배우자 연결 상태를 확인하고 있어요')
                 else if (_linkController.state != PartnerLinkViewState.data)
                   AppErrorState(
@@ -187,7 +193,7 @@ class _ProfileHeader extends StatelessWidget {
         profileAvailable && week != null && dueLabel != null;
     return Semantics(
       container: true,
-      label: hasProfileValues ? '희선님 프로필 정보' : '프로필 정보 없음',
+      label: hasProfileValues ? '프로필 임신 정보' : '프로필 정보 없음',
       child: Row(
         children: [
           ConsecutiveTapDetector(
@@ -197,9 +203,7 @@ class _ProfileHeader extends StatelessWidget {
               radius: 36,
               backgroundColor: AppColors.primary100,
               foregroundColor: AppColors.primary700,
-              child: hasProfileValues
-                  ? const Text('희')
-                  : const Icon(Icons.person_outline),
+              child: const Icon(Icons.person_outline),
             ),
           ),
           const SizedBox(width: AppSpacing.lg),
@@ -208,7 +212,7 @@ class _ProfileHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  hasProfileValues ? '희선님' : '프로필 정보가 없어요',
+                  hasProfileValues ? '프로필 정보' : '프로필 정보가 없어요',
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 const SizedBox(height: AppSpacing.xs),

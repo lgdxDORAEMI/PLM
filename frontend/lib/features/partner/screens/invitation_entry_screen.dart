@@ -15,6 +15,7 @@ import '../../invitation/models/invitation.dart';
 import '../../invitation/services/invitation_service.dart';
 import '../../invitation/services/mock_invitation_service.dart';
 import '../../invitation/services/api_invitation_service.dart';
+import '../../../shared/widgets/integration_required_state.dart';
 
 class InvitationEntryScreen extends StatefulWidget {
   const InvitationEntryScreen({super.key, required this.token, this.service});
@@ -42,7 +43,11 @@ class _InvitationEntryScreenState extends State<InvitationEntryScreen> {
               : const MockInvitationService()),
       token: widget.token,
     )..addListener(_refresh);
-    unawaited(_controller.validate());
+    if (AppConfig.hasSupabaseConfig ||
+        AppConfig.mockPreviewEnabled ||
+        widget.service != null) {
+      unawaited(_controller.validate());
+    }
   }
 
   @override
@@ -73,7 +78,7 @@ class _InvitationEntryScreenState extends State<InvitationEntryScreen> {
       PartnerConnectionStore.instance.markLinked();
       final auth = AuthSessionStore.instance;
       auth.update(
-        accountId: auth.accountId ?? 'demo-husband',
+        accountId: auth.accountId,
         // 초대 연결은 현재 ThinQ 계정의 역할 권한을 새로 부여하지 않는다.
         // husband 권한은 인증/세션 조회 결과로 이미 확인되어 있어야 한다.
         roles: auth.roles,
@@ -98,7 +103,17 @@ class _InvitationEntryScreenState extends State<InvitationEntryScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: const TopAppBar(title: '초대 수락', showBack: false),
-    body: SafeArea(top: false, child: ResponsivePageContent(child: _body())),
+    body: SafeArea(
+      top: false,
+      child: ResponsivePageContent(
+        child:
+            !AppConfig.hasSupabaseConfig &&
+                !AppConfig.mockPreviewEnabled &&
+                widget.service == null
+            ? const IntegrationRequiredState(message: '배우자 초대 기능을 사용할 수 없습니다.')
+            : _body(),
+      ),
+    ),
   );
 
   Widget _body() {

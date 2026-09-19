@@ -20,6 +20,7 @@ import '../models/partner_notification.dart';
 import '../services/api_partner_notification_service.dart';
 import '../services/mock_partner_notification_service.dart';
 import '../services/partner_notification_service.dart';
+import '../../../shared/widgets/integration_required_state.dart';
 
 class PartnerNotificationsScreen extends StatefulWidget {
   const PartnerNotificationsScreen({super.key, this.service});
@@ -73,7 +74,17 @@ class _PartnerNotificationsScreenState
         ),
       ],
     ),
-    body: SafeArea(top: false, child: ResponsivePageContent(child: _body())),
+    body: SafeArea(
+      top: false,
+      child: ResponsivePageContent(
+        child:
+            !AppConfig.hasSupabaseConfig &&
+                !AppConfig.mockPreviewEnabled &&
+                widget.service == null
+            ? const IntegrationRequiredState(message: '알림 데이터가 없습니다.')
+            : _body(),
+      ),
+    ),
   );
 
   Widget _body() => switch (_controller.state) {

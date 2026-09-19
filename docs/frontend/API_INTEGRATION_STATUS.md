@@ -1,7 +1,7 @@
 # Frontend API Integration Status
 
 - 갱신일: 2026-09-20
-- 기준: Supabase 설정이 있으면 API 구현을 사용하고, 설정이 없거나 테스트에서 주입하면 같은 인터페이스의 Mock 구현을 사용한다.
+- 기준: Supabase 설정이 있으면 API 구현을 사용한다. 설정이 없는 실행 화면은 Mock 값 대신 `연동이필요합니다` 빈 상태를 표시한다. 테스트에서 명시한 경우에만 Mock 화면 값을 표시한다.
 - 공통 경로: `Screen → Controller/Store → Repository/Service → ApiClient → Backend`
 - Frontend Feature 코드는 Supabase Table 또는 RPC를 직접 호출하지 않는다.
 
@@ -30,7 +30,7 @@
 
 ## Mock 유지
 
-Mock Service와 Store는 API 미설정 개발 환경 및 Widget 테스트용으로 유지한다. 실제 실행 환경에서 Supabase 설정이 있으면 API 구현이 기본값이다.
+Mock Service와 Store는 Widget 테스트용으로 유지한다. API 미설정 화면에는 Mock 응답을 표시하지 않고, 기존 빈 상태 컴포넌트로 연동이 필요한 영역을 드러낸다. 실제 실행 환경에서 Supabase 설정이 있으면 API 구현이 기본값이다.
 
 | Feature | 상태 | 사유 |
 |---|---|---|
