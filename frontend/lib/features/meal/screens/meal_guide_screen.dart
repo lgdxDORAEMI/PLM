@@ -62,6 +62,7 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
   Widget build(BuildContext context) {
     return WifeNavigationScaffold(
       currentIndex: 0,
+      allowReselect: true,
       appBar: TopAppBar(
         title: '식사 가이드',
         onBack: _handleBack,

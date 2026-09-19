@@ -387,7 +387,7 @@ abstract final class AppRouter {
     if (path == RouteNames.routineFallback) {
       return const RoutineFallbackScreen();
     }
-    return const _RoutePlaceholder(title: '화면을 준비 중입니다');
+    return const _RoutePlaceholder(title: '요청한 화면을 찾을 수 없어요');
   }
 
   /// 검증된 가이드 진입만 챗봇의 뒤로가기 문맥으로 인정한다.

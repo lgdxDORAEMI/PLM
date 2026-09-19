@@ -25,6 +25,7 @@ class AdaptiveNavigationScaffold extends StatelessWidget {
     required this.items,
     required this.onSelected,
     required this.body,
+    this.allowReselect = false,
     this.appBar,
     this.floatingActionButton,
   });
@@ -33,6 +34,7 @@ class AdaptiveNavigationScaffold extends StatelessWidget {
   final List<AppNavigationItem> items;
   final ValueChanged<int> onSelected;
   final Widget body;
+  final bool allowReselect;
   final PreferredSizeWidget? appBar;
   final Widget? floatingActionButton;
 
@@ -105,7 +107,10 @@ class AdaptiveNavigationScaffold extends StatelessWidget {
     );
   }
 
+  /// 하위 화면은 선택된 탭을 다시 눌러도 해당 탭의 최상위 화면으로 이동할 수 있다.
   void _select(int index) {
-    if (items[index].enabled && index != currentIndex) onSelected(index);
+    if (items[index].enabled && (index != currentIndex || allowReselect)) {
+      onSelected(index);
+    }
   }
 }

@@ -61,7 +61,11 @@ class HouseholdTaskCard extends StatelessWidget {
               ),
             ),
             if (actionLabel != null)
-              OutlinedButton(onPressed: onAction, child: Text(actionLabel!))
+              OutlinedButton(
+                key: ValueKey('household-action-${task.id}'),
+                onPressed: onAction,
+                child: Text(actionLabel!),
+              )
             else if (trailingLabel != null)
               Text(
                 trailingLabel!,

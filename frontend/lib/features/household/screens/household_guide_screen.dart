@@ -12,6 +12,7 @@ import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_radius.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_names.dart';
+import '../../report/data/appliance_execution_store.dart';
 import '../controllers/household_guide_controller.dart';
 import '../models/household_task.dart';
 import '../services/household_request_service.dart';
@@ -50,6 +51,7 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
   Widget build(BuildContext context) {
     return WifeNavigationScaffold(
       currentIndex: 0,
+      allowReselect: true,
       appBar: TopAppBar(
         title: '가사 가이드',
         onBack: _handleBack,
@@ -244,11 +246,34 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
       for (final task in _controller.tasksFor(owner)) ...[
         HouseholdTaskCard(
           task: task,
-          trailingLabel: owner == HouseholdTaskOwner.appliance ? '가전 추천' : null,
+          actionLabel: owner == HouseholdTaskOwner.appliance ? '실행' : null,
+          onAction: owner == HouseholdTaskOwner.appliance
+              ? () => _runAppliance(task)
+              : null,
         ),
         const SizedBox(height: AppSpacing.sm),
       ],
     ];
+  }
+
+  /// 가전 실행 요청을 오늘의 이력에 기록하고 결과를 팝업으로 안내한다.
+  Future<void> _runAppliance(HouseholdTask task) async {
+    ApplianceExecutionStore.instance.record(
+      source: ApplianceExecutionSource.household,
+      label: task.title,
+    );
+    await showAppDialog<void>(
+      context: context,
+      builder: (context) => AppDialog(
+        icon: Icons.check_circle_outline,
+        iconColor: AppColors.success,
+        title: '가전 실행을 기록했어요',
+        message: '${task.title}\n오늘의 가전 실행 내역에 반영했어요.',
+        actions: [
+          AppDialogAction(label: '확인', onPressed: () => Navigator.pop(context)),
+        ],
+      ),
+    );
   }
 
   Future<void> _share() async {

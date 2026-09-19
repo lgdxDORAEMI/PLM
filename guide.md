@@ -51,11 +51,11 @@ DB 응답이 없는 화면을 확인하는 빈 데이터 미리보기는 상단 
 
 `/wife/home`의 AI Routine은 실제 AI API가 없어도 실행됩니다. 당일 컨디션 미입력 시 컨디션 CTA가 표시되고, 입력과 예정 활동 선택을 마치면 `MockRoutineService`가 식사·가사·건강·수면 가이드를 제공합니다. Service 오류 시 화면을 비우지 않고 기본 Routine과 재시도 버튼을 표시합니다.
 
-가이드 상세 화면은 `/wife/meal`, `/wife/household`, `/wife/health`, `/wife/sleep`에서 확인할 수 있습니다. Meal·Health·Sleep 데이터와 Household 공유는 local Mock 상태를 사용합니다. Household에서 공유하면 `PartnerRequestStore`에 실제 request ID가 생성되고 `/partner/requests/{requestId}` 계약으로 조회할 수 있습니다. Household의 가전 추천과 Sleep 환경 설정은 기기 실행 명령을 보내지 않으며, Sleep의 전체 수면 루틴 실행 버튼은 Phase 2 안내 상태로 비활성화됩니다.
+가이드 상세 화면은 `/wife/meal`, `/wife/household`, `/wife/health`, `/wife/sleep`에서 확인할 수 있습니다. Meal·Health·Sleep 데이터와 Household 공유는 local Mock 상태를 사용합니다. Household에서 공유하면 `PartnerRequestStore`에 실제 request ID가 생성되고 `/partner/requests/{requestId}` 계약으로 조회할 수 있습니다. Household의 가전 항목 `실행`과 Sleep의 수면 환경 전체 실행은 현재 실제 기기에 명령을 보내지 않고 로컬 실행 기록을 남깁니다. 각 요청은 오늘 날짜의 메모리 이력에 1회 기록되며, 새로고침하면 이 이력은 초기화됩니다. 사용자 화면의 팝업에는 기기 연동 상태나 개발 단계 안내를 표시하지 않습니다.
 
 Calendar는 `/wife/calendar`과 `/partner/calendar`에서 날짜를 화면 선택 상태로 관리합니다. 선택한 기록의 상세 버튼은 같은 날짜를 `YYYY-MM-DD` 형식으로 `/wife/report/{date}` 또는 `/partner/report/{date}`에 전달합니다. 존재하지 않거나 `2026-02-31`처럼 유효하지 않은 날짜는 오늘 기록으로 대체하지 않고 빈 상태를 표시합니다. Desktop에서는 Calendar와 상세가 나란히 보이고 Mobile에서는 상세가 달력 아래에 이어집니다.
 
-Wife Report에서 `저장하고 마치기`를 누르면 Calendar로 이동하며 같은 날짜가 선택됩니다. 오늘 날짜의 Mock 리포트라면 Home의 컨디션 입력 상태도 초기화됩니다. 리포트 내용은 아직 당일 입력/완료 내역으로 생성되지 않는 샘플 기록이고 영구 저장되지 않습니다. 실제 모션·ThinQ 가전 실행 횟수는 연동 전이므로 0으로 표시합니다.
+Wife Report에서 `저장하고 마치기`를 누르면 Calendar로 이동하며 같은 날짜가 선택됩니다. 오늘 날짜의 Mock 리포트라면 Home의 컨디션 입력 상태도 초기화됩니다. 리포트 내용은 아직 당일 입력/완료 내역으로 생성되지 않는 샘플 기록이고 영구 저장되지 않습니다. 가전 자동 실행 수치는 가사·수면 가이드의 시연 요청 합계이며, 실제 기기 실행 횟수가 아닙니다. 모션 감지 횟수는 연동 전이므로 0으로 표시합니다.
 
 Partner는 `/partner/calendar`를 시작 화면으로 사용하며 Header의 알림 버튼만 `/partner/notifications`로 연결됩니다. 알림 항목은 `/partner/report/{date}` 또는 `/partner/requests/{requestId}`로 이동합니다. Request 완료 결과의 `캘린더로 돌아가기`를 누르면 `/partner/calendar`에서 요청·확인·완료 집계가 갱신됩니다. Partner 화면에는 Bottom Navigation이나 Profile 버튼이 없으며, Phase 2 실시간 화면은 Calendar의 명시적 CTA로만 진입합니다.
 

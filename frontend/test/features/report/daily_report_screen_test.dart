@@ -2,15 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plm_frontend/features/report/screens/daily_report_screen.dart';
 import 'package:plm_frontend/features/report/services/mock_record_service.dart';
+import 'package:plm_frontend/features/report/data/appliance_execution_store.dart';
 
 void main() {
-  test('MVP Mock 기록은 미연동 모션·가전 실행 횟수를 생성하지 않는다', () {
+  setUp(ApplianceExecutionStore.instance.reset);
+
+  test('시연 요청 전에는 모션·가전 실행 횟수가 0이다', () {
     expect(
       MockRecordService.records.every(
         (record) => record.burdenCount == 0 && record.applianceCount == 0,
       ),
       isTrue,
     );
+  });
+
+  test('가사와 수면의 오늘 시연 실행 이력을 리포트에 합산한다', () async {
+    final today = DateTime.now();
+    ApplianceExecutionStore.instance
+      ..record(
+        source: ApplianceExecutionSource.household,
+        label: '거실 바닥 청소',
+        date: today,
+      )
+      ..record(
+        source: ApplianceExecutionSource.sleep,
+        label: '수면 환경 전체 실행',
+        date: today,
+      );
+
+    final record = await const MockRecordService().fetchRecord(today);
+    expect(record?.applianceCount, 2);
+    expect(record?.applianceSummary, contains('가사 · 거실 바닥 청소'));
+    expect(record?.applianceSummary, contains('수면 · 수면 환경 전체 실행'));
   });
   testWidgets('리포트를 공유하면 완료 안내를 표시한다', (tester) async {
     await tester.pumpWidget(

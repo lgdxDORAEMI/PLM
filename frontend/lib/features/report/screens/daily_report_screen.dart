@@ -209,6 +209,15 @@ class _DailyReportContent extends StatelessWidget {
         ],
       ),
       const SizedBox(height: AppSpacing.xxl),
+      Text('가전 자동 실행 내역', style: Theme.of(context).textTheme.titleLarge),
+      const SizedBox(height: AppSpacing.sm),
+      Text(
+        record.applianceSummary,
+        style: Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+      ),
+      const SizedBox(height: AppSpacing.xxl),
       ResponsiveSplitView(
         primaryFlex: 7,
         secondaryFlex: 5,

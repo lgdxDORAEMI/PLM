@@ -260,7 +260,7 @@ class _MealChatContext extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'MVP에서는 식사 가이드 재조정 대화만 지원해요.',
+              '원하는 메뉴나 피하고 싶은 재료를 말씀해 주세요.',
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),

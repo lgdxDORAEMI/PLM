@@ -1,4 +1,5 @@
 import '../../partner/data/partner_request_store.dart';
+import '../data/appliance_execution_store.dart';
 import '../models/daily_record.dart';
 import 'record_service.dart';
 
@@ -40,8 +41,7 @@ class MockRecordService implements RecordService {
             },
       completedRoutines: isSelectedMock ? 9 : 6 + day % 5,
       totalRoutines: 11,
-      applianceSummary: '실제 가전 실행 기록 없음',
-      // ThinQ 실행 연동은 MVP 범위 밖이므로 Mock 기록에도 실행 횟수를 만들지 않는다.
+      applianceSummary: '가전 실행 기록 없음',
       applianceCount: 0,
       burdenArea: '허리',
       // 모션 분석은 Phase 2이므로 MVP 기록에서 부담 초과를 생성하지 않는다.
@@ -97,7 +97,7 @@ class MockRecordService implements RecordService {
         (record) =>
             record.date.year == month.year && record.date.month == month.month,
       )
-      .map(_withPartnerSummary)
+      .map(_withLiveSummary)
       .toList(growable: false);
 
   @override
@@ -105,7 +105,7 @@ class MockRecordService implements RecordService {
     final normalized = date.year == 0 ? DateTime(2026, 9, 13) : date;
     for (final record in records) {
       if (recordDateKey(record.date) == recordDateKey(normalized)) {
-        return _withPartnerSummary(record);
+        return _withLiveSummary(record);
       }
     }
     return null;
@@ -122,12 +122,24 @@ class MockRecordService implements RecordService {
   }
 
   /// Partner Request 처리 상태를 Calendar와 Report의 가족 분담 집계에 합성한다.
-  DailyRecord _withPartnerSummary(DailyRecord record) {
+  DailyRecord _withLiveSummary(DailyRecord record) {
+    final executions = ApplianceExecutionStore.instance.forDate(record.date);
+    final applianceRecord = executions.isEmpty
+        ? record
+        : record.copyWithApplianceSummary(
+            count: executions.length,
+            summary: executions
+                .map(
+                  (entry) =>
+                      '${entry.source == ApplianceExecutionSource.household ? '가사' : '수면'} · ${entry.label}',
+                )
+                .join(' / '),
+          );
     final summary = PartnerRequestStore.instance.summaryFor(
       recordDateKey(record.date),
     );
-    if (summary == null) return record;
-    return record.copyWithFamilySummary(
+    if (summary == null) return applianceRecord;
+    return applianceRecord.copyWithFamilySummary(
       requested: summary.requested,
       confirmed: summary.confirmed,
       completed: summary.completed,

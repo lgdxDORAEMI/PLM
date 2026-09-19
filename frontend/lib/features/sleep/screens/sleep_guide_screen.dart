@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../design_system/components/app_bottom_sheet.dart';
+import '../../../design_system/components/app_dialog.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/content_frame.dart';
 import '../../../design_system/components/empty_data_preview.dart';
@@ -12,6 +13,7 @@ import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_radius.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_names.dart';
+import '../../report/data/appliance_execution_store.dart';
 import '../controllers/sleep_guide_controller.dart';
 import '../models/sleep_guide.dart';
 import '../services/mock_sleep_service.dart';
@@ -54,18 +56,11 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
   Widget build(BuildContext context) {
     return WifeNavigationScaffold(
       currentIndex: 0,
+      allowReselect: true,
       appBar: TopAppBar(
         title: '수면 가이드',
         onBack: _handleBack,
         wifeProfileAction: true,
-        actions: [
-          IconButton(
-            key: const ValueKey('sleep-run-all-button'),
-            tooltip: '수면 환경 전체 실행',
-            onPressed: _runAll,
-            icon: const Icon(Icons.play_arrow_rounded),
-          ),
-        ],
       ),
       body: EmptyDataPreview(
         child: SafeArea(
@@ -89,6 +84,7 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
       SleepGuideViewState.ready => _SleepContent(
         guide: _controller.guide!,
         onEnvironmentTap: _showEnvironmentSheet,
+        onRunAll: _runAll,
       ),
     };
   }
@@ -103,11 +99,25 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
     );
   }
 
-  /// 현재 추천된 수면 환경 전체 실행 요청을 사용자에게 즉시 확인시킨다.
-  void _runAll() {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('추천 수면 환경 전체 실행을 시작했어요.')));
+  /// 수면 환경 전체 실행을 한 번의 이력으로 남기고 팝업으로 안내한다.
+  Future<void> _runAll() async {
+    if (_controller.state != SleepGuideViewState.ready) return;
+    ApplianceExecutionStore.instance.record(
+      source: ApplianceExecutionSource.sleep,
+      label: '수면 환경 전체 실행',
+    );
+    await showAppDialog<void>(
+      context: context,
+      builder: (context) => AppDialog(
+        icon: Icons.nightlight_round,
+        iconColor: AppColors.categorySleep,
+        title: '수면 루틴 실행을 기록했어요',
+        message: '수면 환경 전체 실행 1회를 오늘의 가전 실행 내역에 반영했어요.',
+        actions: [
+          AppDialogAction(label: '확인', onPressed: () => Navigator.pop(context)),
+        ],
+      ),
+    );
   }
 
   void _handleBack() {
@@ -120,10 +130,15 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
 }
 
 class _SleepContent extends StatelessWidget {
-  const _SleepContent({required this.guide, required this.onEnvironmentTap});
+  const _SleepContent({
+    required this.guide,
+    required this.onEnvironmentTap,
+    required this.onRunAll,
+  });
 
   final SleepGuideData guide;
   final ValueChanged<SleepEnvironmentSetting> onEnvironmentTap;
+  final VoidCallback onRunAll;
 
   @override
   Widget build(BuildContext context) {
@@ -141,7 +156,28 @@ class _SleepContent extends StatelessWidget {
           child: _SleepSummary(guide: guide),
         ),
         const SizedBox(height: AppSpacing.xxl),
-        Text('AI가 맞춘 오늘의 수면 환경', style: Theme.of(context).textTheme.titleLarge),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                'AI가 맞춘 오늘의 수면 환경',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            IconButton.filled(
+              key: const ValueKey('sleep-run-all-button'),
+              tooltip: '수면 환경 전체 실행',
+              onPressed: onRunAll,
+              style: IconButton.styleFrom(
+                backgroundColor: AppColors.categorySleep,
+                foregroundColor: AppColors.textInverse,
+                minimumSize: const Size(56, 56),
+              ),
+              icon: const Icon(Icons.play_arrow_rounded, size: 30),
+            ),
+          ],
+        ),
         const SizedBox(height: AppSpacing.lg),
         PreviewData(
           empty: Text(

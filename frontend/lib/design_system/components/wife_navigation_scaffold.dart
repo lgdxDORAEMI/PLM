@@ -9,12 +9,14 @@ class WifeNavigationScaffold extends StatelessWidget {
     super.key,
     required this.currentIndex,
     required this.body,
+    this.allowReselect = false,
     this.appBar,
     this.floatingActionButton,
   });
 
   final int currentIndex;
   final Widget body;
+  final bool allowReselect;
   final PreferredSizeWidget? appBar;
   final Widget? floatingActionButton;
 
@@ -51,6 +53,7 @@ class WifeNavigationScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) => AdaptiveNavigationScaffold(
     currentIndex: currentIndex,
+    allowReselect: allowReselect,
     items: items,
     onSelected: (index) => Navigator.of(
       context,

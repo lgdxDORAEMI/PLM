@@ -59,7 +59,7 @@ class MealChatController extends ChangeNotifier {
         MealChatMessage(
           id: 'assistant-${_messages.length}',
           author: MealChatAuthor.assistant,
-          text: '현재는 식사 가이드 재조정만 도와드릴 수 있어요. 가사·건강·수면 대화는 Phase 2에서 제공할 예정이에요.',
+          text: '식사 메뉴를 다시 고르는 대화를 도와드릴게요. 식사와 관련된 요청을 말씀해 주세요.',
         ),
       );
       notifyListeners();

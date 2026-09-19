@@ -41,6 +41,7 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
   @override
   Widget build(BuildContext context) => WifeNavigationScaffold(
     currentIndex: 0,
+    allowReselect: true,
     appBar: TopAppBar(
       title: '건강 가이드',
       onBack: _handleBack,

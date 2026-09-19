@@ -47,8 +47,7 @@ class _SleepEnvironmentSheetState extends State<SleepEnvironmentSheet> {
   Widget build(BuildContext context) {
     return AppBottomSheetFrame(
       title: widget.setting.label,
-      description:
-          '현재 설정 · ${widget.setting.value}\nMVP에서는 기기 제어 없이 추천값만 저장해요.',
+      description: '현재 선택값 · ${widget.setting.value}\n원하는 값을 선택해 주세요.',
       action: AppButton(
         key: ValueKey('sleep-apply-${widget.setting.type.name}'),
         label: '적용하기',
