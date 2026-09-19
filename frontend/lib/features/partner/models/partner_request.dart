@@ -20,6 +20,14 @@ class PartnerRequestTask {
         description: description,
         status: status ?? this.status,
       );
+
+  factory PartnerRequestTask.fromJson(Map<String, dynamic> json) =>
+      PartnerRequestTask(
+        id: json['item_id']?.toString() ?? '',
+        title: json['title']?.toString() ?? '',
+        description: json['helper_info']?.toString() ?? '',
+        status: _requestStatus(json['status']),
+      );
 }
 
 class PartnerRequestData {
@@ -63,4 +71,28 @@ class PartnerRequestData {
         supportingInfo: supportingInfo,
         recordDate: recordDate,
       );
+
+  factory PartnerRequestData.fromJson(Map<String, dynamic> json) {
+    final items = json['items'];
+    if (items is! List) {
+      throw const FormatException('가사 요청 응답 형식이 올바르지 않습니다.');
+    }
+    return PartnerRequestData(
+      id: json['request_id']?.toString() ?? '',
+      requester: json['requester_display_name']?.toString() ?? '',
+      reason: json['reason']?.toString() ?? '',
+      tasks: items
+          .whereType<Map>()
+          .map((item) => PartnerRequestTask.fromJson(item.cast()))
+          .toList(growable: false),
+      supportingInfo: '',
+      recordDate: json['target_date']?.toString() ?? '',
+    );
+  }
 }
+
+PartnerRequestStatus _requestStatus(Object? value) => switch (value) {
+  'confirmed' => PartnerRequestStatus.confirmed,
+  'completed' => PartnerRequestStatus.completed,
+  _ => PartnerRequestStatus.requested,
+};

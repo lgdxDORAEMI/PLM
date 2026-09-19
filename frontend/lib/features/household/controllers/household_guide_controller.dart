@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../core/config/app_config.dart';
-import '../../../core/network/api_client.dart';
 import '../models/household_task.dart';
 import '../services/api_household_request_service.dart';
 import '../services/household_request_service.dart';
@@ -14,45 +13,7 @@ class HouseholdGuideController extends ChangeNotifier {
           (AppConfig.hasSupabaseConfig
               ? ApiHouseholdRequestService()
               : MockHouseholdRequestService()),
-      _tasks = const [
-        HouseholdTask(
-          id: 'clear-table',
-          title: '식탁 위 정리 — 서서 5분',
-          description: '짧게 서서 할 수 있는 가벼운 정리',
-          owner: HouseholdTaskOwner.self,
-        ),
-        HouseholdTask(
-          id: 'water-plants',
-          title: '화분 물주기 — 앉아서 가능',
-          description: '무리되면 언제든 가족에게 넘길 수 있어요',
-          owner: HouseholdTaskOwner.self,
-        ),
-        HouseholdTask(
-          id: 'vacuum',
-          title: '거실 바닥 청소',
-          description: '로봇청소기 · 약 25분',
-          owner: HouseholdTaskOwner.appliance,
-        ),
-        HouseholdTask(
-          id: 'laundry',
-          title: '빨래 — 세탁부터 건조까지',
-          description: '널지 않아도 되도록 건조기 자동 연결',
-          owner: HouseholdTaskOwner.appliance,
-        ),
-        HouseholdTask(
-          id: 'dishes',
-          title: '설거지',
-          description: '식기세척기 · 숙이는 시간 줄이기',
-          owner: HouseholdTaskOwner.appliance,
-        ),
-        HouseholdTask(
-          id: 'heavy-items',
-          title: '장보기 · 무거운 것 옮기기',
-          description: '드는 동작이 많아 오늘은 남편이 맡으면 좋아요',
-          owner: HouseholdTaskOwner.partner,
-          selected: true,
-        ),
-      ] {
+      _tasks = HouseholdTaskMockData.tasks {
     this.requestService.addListener(_syncPartnerProgress);
   }
 
@@ -67,45 +28,19 @@ class HouseholdGuideController extends ChangeNotifier {
 
   bool get loading => _loading;
   bool get loadFailed => _loadFailed;
+  bool get empty => !_loading && !_loadFailed && _tasks.isEmpty;
 
   /// Replaces local task cards with the backend's current household guide.
   Future<void> loadGuide() async {
-    if (!AppConfig.hasSupabaseConfig) return;
+    if (!AppConfig.hasSupabaseConfig &&
+        requestService is MockHouseholdRequestService) {
+      return;
+    }
     _loading = true;
     _loadFailed = false;
     notifyListeners();
     try {
-      final response = await ApiClient().get('/api/v1/household/today');
-      final rawItems = response?['items'];
-      if (rawItems is! List) throw StateError('가사 가이드가 없습니다.');
-      _tasks = rawItems
-          .whereType<Map>()
-          .map((item) {
-            final payload = item['payload'];
-            final details = payload is Map ? payload : const {};
-            final owner = switch (details['owner']) {
-              'partner' => HouseholdTaskOwner.partner,
-              'appliance' => HouseholdTaskOwner.appliance,
-              _ => HouseholdTaskOwner.self,
-            };
-            return HouseholdTask(
-              id:
-                  item['item_key']?.toString() ??
-                  item['title']?.toString() ??
-                  '',
-              title: item['title']?.toString() ?? '',
-              description:
-                  item['description']?.toString() ??
-                  details['reason']?.toString() ??
-                  '',
-              owner: owner,
-              selected: owner == HouseholdTaskOwner.partner,
-              status: item['status'] == 'completed'
-                  ? HouseholdTaskStatus.done
-                  : HouseholdTaskStatus.planned,
-            );
-          })
-          .toList(growable: false);
+      _tasks = await requestService.fetchGuide();
     } catch (_) {
       _loadFailed = true;
     } finally {
@@ -153,8 +88,8 @@ class HouseholdGuideController extends ChangeNotifier {
       final selected = _selectedShareTasks;
       final result = await requestService.send(
         tasks: selected.map((task) => task.title).toList(growable: false),
-        reason: '오늘은 허리 통증이 있어 무거운 물건을 들지 않는 게 좋아요.',
-        supportingInfo: '오늘 컨디션과 예정 활동을 함께 전달했어요.',
+        reason: '선택한 집안일을 함께 부탁해요.',
+        supportingInfo: '선택한 가사 항목을 전달했어요.',
       );
       _lastRequestId = result.requestId;
       _shared = true;

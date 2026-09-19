@@ -30,18 +30,29 @@ class ApiClient {
   final http.Client _http;
   final String _baseUrl;
 
-  Future<Map<String, dynamic>?> get(String path, {Map<String, String>? query}) =>
-      _send('GET', path, query: query);
+  Future<Map<String, dynamic>?> get(
+    String path, {
+    Map<String, String>? query,
+  }) async => _asMap(await _send('GET', path, query: query));
 
-  Future<Map<String, dynamic>?> put(String path, [Map<String, dynamic>? body]) =>
-      _send('PUT', path, body: body);
+  Future<List<dynamic>?> getList(
+    String path, {
+    Map<String, String>? query,
+  }) async => _asList(await _send('GET', path, query: query));
 
-  Future<Map<String, dynamic>?> post(String path, [Map<String, dynamic>? body]) =>
-      _send('POST', path, body: body);
+  Future<Map<String, dynamic>?> put(
+    String path, [
+    Map<String, dynamic>? body,
+  ]) async => _asMap(await _send('PUT', path, body: body));
 
-  Future<void> delete(String path) => _send('DELETE', path);
+  Future<Map<String, dynamic>?> post(
+    String path, [
+    Map<String, dynamic>? body,
+  ]) async => _asMap(await _send('POST', path, body: body));
 
-  Future<Map<String, dynamic>?> _send(
+  Future<void> delete(String path) async => _send('DELETE', path);
+
+  Future<Object?> _send(
     String method,
     String path, {
     Map<String, dynamic>? body,
@@ -64,7 +75,19 @@ class ApiClient {
       throw ApiException(response.statusCode, _extractMessage(response.body));
     }
     if (response.body.isEmpty) return null;
-    return jsonDecode(response.body) as Map<String, dynamic>;
+    return jsonDecode(response.body);
+  }
+
+  Map<String, dynamic>? _asMap(Object? value) {
+    if (value == null) return null;
+    if (value is Map<String, dynamic>) return value;
+    throw const FormatException('API 응답이 객체 형식이 아닙니다.');
+  }
+
+  List<dynamic>? _asList(Object? value) {
+    if (value == null) return null;
+    if (value is List<dynamic>) return value;
+    throw const FormatException('API 응답이 배열 형식이 아닙니다.');
   }
 
   String? get _accessToken {

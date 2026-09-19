@@ -2,6 +2,7 @@ import '../../partner/data/partner_request_store.dart';
 import '../../partner/data/partner_notification_store.dart';
 import '../../partner/models/partner_notification.dart';
 import '../../partner/models/partner_request.dart';
+import '../models/household_task.dart';
 import 'household_request_service.dart';
 
 class MockHouseholdRequestService implements HouseholdRequestService {
@@ -10,6 +11,9 @@ class MockHouseholdRequestService implements HouseholdRequestService {
 
   final PartnerRequestStore _store;
   static int _sequence = 0;
+
+  @override
+  Future<List<HouseholdTask>> fetchGuide() async => HouseholdTaskMockData.tasks;
 
   @override
   void addListener(void Function() listener) => _store.addListener(listener);
@@ -65,5 +69,30 @@ class MockHouseholdRequestService implements HouseholdRequestService {
       PartnerRequestStatus.confirmed => HouseholdRequestProgress.confirmed,
       PartnerRequestStatus.completed => HouseholdRequestProgress.completed,
     };
+  }
+
+  @override
+  Future<List<PartnerRequestData>> fetchAll() async =>
+      _store.requests.toList(growable: false);
+
+  @override
+  Future<PartnerRequestData?> fetchRequest(String requestId) async =>
+      _store.request(requestId);
+
+  @override
+  Future<PartnerRequestData> confirm(String requestId) async =>
+      _setAll(requestId, PartnerRequestStatus.confirmed);
+
+  @override
+  Future<PartnerRequestData> complete(String requestId) async =>
+      _setAll(requestId, PartnerRequestStatus.completed);
+
+  PartnerRequestData _setAll(String requestId, PartnerRequestStatus status) {
+    final current = _store.request(requestId);
+    final updated = current.copyWith(
+      tasks: [for (final task in current.tasks) task.copyWith(status: status)],
+    );
+    _store.save(updated);
+    return updated;
   }
 }

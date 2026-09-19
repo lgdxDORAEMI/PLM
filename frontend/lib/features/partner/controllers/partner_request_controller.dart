@@ -1,53 +1,69 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../core/network/api_client.dart';
+import '../../household/services/household_request_service.dart';
 import '../data/partner_request_store.dart';
 import '../models/partner_request.dart';
+
+enum PartnerRequestViewState {
+  loading,
+  data,
+  empty,
+  authError,
+  domainError,
+  serverError,
+  error,
+}
 
 class PartnerRequestController extends ChangeNotifier {
   PartnerRequestController({
     required this.requestId,
+    required this.service,
     PartnerRequestStore? store,
-  }) : store = store ?? PartnerRequestStore.instance,
-       _request = (store ?? PartnerRequestStore.instance).request(requestId);
+  }) : store = store ?? PartnerRequestStore.instance;
 
   final String requestId;
+  final HouseholdRequestService service;
   final PartnerRequestStore store;
-  PartnerRequestData _request;
 
-  PartnerRequestData get request => _request;
+  PartnerRequestViewState _state = PartnerRequestViewState.loading;
+  PartnerRequestData? _request;
 
-  /// 선택한 집안일만 확인 처리해 다른 카드의 진행 상태를 보존한다.
-  void confirmTask(String taskId) => _updateTaskStatus(
-    taskId,
-    from: PartnerRequestStatus.requested,
-    to: PartnerRequestStatus.confirmed,
-  );
+  PartnerRequestViewState get state => _state;
+  PartnerRequestData? get request => _request;
 
-  /// 확인된 집안일만 완료할 수 있도록 상태 순서를 강제한다.
-  void completeTask(String taskId) => _updateTaskStatus(
-    taskId,
-    from: PartnerRequestStatus.confirmed,
-    to: PartnerRequestStatus.completed,
-  );
+  Future<void> load() async => _run(() => service.fetchRequest(requestId));
 
-  void _updateTaskStatus(
-    String taskId, {
-    required PartnerRequestStatus from,
-    required PartnerRequestStatus to,
-  }) {
-    final tasks = [
-      for (final task in _request.tasks)
-        if (task.id == taskId && task.status == from)
-          task.copyWith(status: to)
-        else
-          task,
-    ];
-    _save(_request.copyWith(tasks: tasks));
-  }
+  Future<void> confirmTask(String _) async =>
+      _run(() => service.confirm(requestId));
 
-  void _save(PartnerRequestData value) {
-    _request = value;
-    store.save(value);
+  Future<void> completeTask(String _) async =>
+      _run(() => service.complete(requestId));
+
+  /// 서버의 요청 전체 상태 전이를 그대로 반영하고 로컬 Store는 화면 간 캐시로만 쓴다.
+  Future<void> _run(Future<PartnerRequestData?> Function() action) async {
+    _state = PartnerRequestViewState.loading;
+    notifyListeners();
+    try {
+      _request = await action();
+      if (_request == null) {
+        _state = PartnerRequestViewState.empty;
+      } else {
+        store.save(_request!);
+        _state = PartnerRequestViewState.data;
+      }
+    } on ApiException catch (error) {
+      _request = null;
+      _state = switch (error.statusCode) {
+        401 || 403 => PartnerRequestViewState.authError,
+        409 || 422 => PartnerRequestViewState.domainError,
+        503 => PartnerRequestViewState.serverError,
+        _ => PartnerRequestViewState.error,
+      };
+    } on Object {
+      _request = null;
+      _state = PartnerRequestViewState.error;
+    }
     notifyListeners();
   }
 }

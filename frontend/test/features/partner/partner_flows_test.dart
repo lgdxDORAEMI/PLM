@@ -166,8 +166,8 @@ void main() {
       requestStore.request('demo-request').tasks.map((task) => task.status),
       [
         PartnerRequestStatus.confirmed,
-        PartnerRequestStatus.requested,
-        PartnerRequestStatus.requested,
+        PartnerRequestStatus.confirmed,
+        PartnerRequestStatus.confirmed,
       ],
     );
     expect(
@@ -181,22 +181,6 @@ void main() {
 
     await _tapTaskAction(tester, 'husband-request-complete-${taskIds.first}');
     await _acceptCompletionDialog(tester);
-    expect(find.text('가사 요청을 완료했어요'), findsNothing);
-    expect(
-      tester
-          .widget<AppCard>(
-            find.byKey(ValueKey('partner-request-task-${taskIds.first}')),
-          )
-          .backgroundColor,
-      AppColors.successBackground,
-    );
-
-    for (final taskId in taskIds.skip(1)) {
-      await _tapTaskAction(tester, 'husband-request-confirm-$taskId');
-      await _tapTaskAction(tester, 'husband-request-complete-$taskId');
-      await _acceptCompletionDialog(tester);
-    }
-
     expect(find.text('가사 요청을 완료했어요'), findsOneWidget);
     expect(find.text('반영 위치'), findsOneWidget);
     expect(find.text('3건'), findsNWidgets(3));

@@ -62,6 +62,11 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
       ),
       body: _controller.loading
           ? const AppLoadingState(message: '가사 가이드를 불러오고 있어요.')
+          : _controller.empty
+          ? const AppEmptyState(
+              title: '오늘의 가사 가이드가 없어요',
+              message: '오늘 루틴이 만들어지면 이곳에 표시돼요.',
+            )
           : _controller.loadFailed
           ? AppErrorState(
               title: '가사 가이드를 불러오지 못했어요',

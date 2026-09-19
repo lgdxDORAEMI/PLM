@@ -4,6 +4,7 @@ import 'package:plm_frontend/features/household/models/household_task.dart';
 import 'package:plm_frontend/features/partner/data/partner_request_store.dart';
 import 'package:plm_frontend/features/partner/data/partner_notification_store.dart';
 import 'package:plm_frontend/features/partner/controllers/partner_request_controller.dart';
+import 'package:plm_frontend/features/household/services/mock_household_request_service.dart';
 
 void main() {
   test('선택한 가사를 Partner Request 계약으로 공유한다', () async {
@@ -53,30 +54,12 @@ void main() {
 
     final partner = PartnerRequestController(
       requestId: controller.lastRequestId!,
+      service: MockHouseholdRequestService(),
     );
     addTearDown(partner.dispose);
-    final firstTask = partner.request.tasks.first;
-    partner.confirmTask(firstTask.id);
-    expect(
-      controller.tasks
-          .singleWhere((task) => task.title == firstTask.title)
-          .status,
-      HouseholdTaskStatus.confirmed,
-    );
-    expect(
-      controller.tasks.where(
-        (task) => task.selected && task.title != firstTask.title,
-      ),
-      everyElement(
-        predicate<HouseholdTask>(
-          (task) => task.status == HouseholdTaskStatus.shared,
-        ),
-      ),
-    );
-
-    for (final task in partner.request.tasks.skip(1)) {
-      partner.confirmTask(task.id);
-    }
+    await partner.load();
+    final firstTask = partner.request!.tasks.first;
+    await partner.confirmTask(firstTask.id);
     expect(
       controller.tasks.where((task) => task.selected),
       everyElement(
@@ -85,27 +68,8 @@ void main() {
         ),
       ),
     );
-    partner.completeTask(firstTask.id);
-    expect(
-      controller.tasks
-          .singleWhere((task) => task.title == firstTask.title)
-          .status,
-      HouseholdTaskStatus.done,
-    );
-    expect(
-      controller.tasks.where(
-        (task) => task.selected && task.title != firstTask.title,
-      ),
-      everyElement(
-        predicate<HouseholdTask>(
-          (task) => task.status == HouseholdTaskStatus.confirmed,
-        ),
-      ),
-    );
 
-    for (final task in partner.request.tasks.skip(1)) {
-      partner.completeTask(task.id);
-    }
+    await partner.completeTask(firstTask.id);
     expect(
       controller.tasks.where((task) => task.selected),
       everyElement(

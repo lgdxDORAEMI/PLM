@@ -10,14 +10,7 @@ class PartnerNotificationItem {
     this.reportDate,
     this.requestId,
     this.read = false,
-  }) : assert(
-         (type == PartnerNotificationType.morningReport &&
-                 reportDate != null) ||
-             (type == PartnerNotificationType.householdRequest &&
-                 requestId != null) ||
-             (type == PartnerNotificationType.routineChanged &&
-                 reportDate != null),
-       );
+  });
 
   final String id;
   final PartnerNotificationType type;
@@ -38,4 +31,34 @@ class PartnerNotificationItem {
     requestId: requestId,
     read: read ?? this.read,
   );
+
+  factory PartnerNotificationItem.fromJson(Map<String, dynamic> json) {
+    final type = switch (json['type']) {
+      'household_request' => PartnerNotificationType.householdRequest,
+      'condition_changed' => PartnerNotificationType.routineChanged,
+      _ => PartnerNotificationType.morningReport,
+    };
+    final referenceId = json['reference_id']?.toString();
+    final targetDate = json['target_date']?.toString();
+    final createdAt = DateTime.tryParse(json['created_at']?.toString() ?? '');
+    return PartnerNotificationItem(
+      id: json['notification_id']?.toString() ?? '',
+      type: type,
+      title: json['title']?.toString() ?? '',
+      message: json['body']?.toString() ?? '',
+      timeLabel: createdAt == null ? '' : _timeLabel(createdAt.toLocal()),
+      reportDate: type == PartnerNotificationType.householdRequest
+          ? null
+          : targetDate,
+      requestId: type == PartnerNotificationType.householdRequest
+          ? referenceId
+          : null,
+      read: json['read_at'] != null,
+    );
+  }
 }
+
+String _timeLabel(DateTime value) =>
+    '${value.month}월 ${value.day}일 '
+    '${value.hour.toString().padLeft(2, '0')}:'
+    '${value.minute.toString().padLeft(2, '0')}';

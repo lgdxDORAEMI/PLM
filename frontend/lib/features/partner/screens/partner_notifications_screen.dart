@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../design_system/components/app_badge.dart';
 import '../../../design_system/components/app_card.dart';
 import '../../../design_system/components/app_ink_well.dart';
+import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/components/top_app_bar.dart';
@@ -13,9 +17,14 @@ import '../../calendar/data/calendar_selection_store.dart';
 import '../../report/models/daily_record.dart';
 import '../controllers/partner_notification_controller.dart';
 import '../models/partner_notification.dart';
+import '../services/api_partner_notification_service.dart';
+import '../services/mock_partner_notification_service.dart';
+import '../services/partner_notification_service.dart';
 
 class PartnerNotificationsScreen extends StatefulWidget {
-  const PartnerNotificationsScreen({super.key});
+  const PartnerNotificationsScreen({super.key, this.service});
+
+  final PartnerNotificationService? service;
 
   @override
   State<PartnerNotificationsScreen> createState() =>
@@ -29,7 +38,14 @@ class _PartnerNotificationsScreenState
   @override
   void initState() {
     super.initState();
-    _controller = PartnerNotificationController()..addListener(_refresh);
+    _controller = PartnerNotificationController(
+      service:
+          widget.service ??
+          (AppConfig.hasSupabaseConfig
+              ? ApiPartnerNotificationService()
+              : const MockPartnerNotificationService()),
+    )..addListener(_refresh);
+    unawaited(_controller.load());
   }
 
   @override
@@ -52,51 +68,70 @@ class _PartnerNotificationsScreenState
         TextButton(
           onPressed: _controller.unreadCount == 0
               ? null
-              : _controller.markAllRead,
+              : () => unawaited(_controller.markAllRead()),
           child: const Text('모두 읽음'),
         ),
       ],
     ),
-    body: SafeArea(
-      top: false,
-      child: ResponsivePageContent(
-        child: ListView(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-          children: [
-            InfoBanner(
-              title: _controller.unreadCount == 0
-                  ? '새 알림이 없어요'
-                  : '읽지 않은 알림 ${_controller.unreadCount}개',
-              message: '오전 리포트·가사 요청·루틴 변경을 시간순으로 보여드려요.',
-              tone: InfoBannerTone.info,
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            const SizedBox.shrink(),
-            for (final item in _controller.items)
-              Padding(
-                padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                child: _NotificationCard(item: item, onTap: () => _open(item)),
-              ),
-          ],
-        ),
-      ),
-    ),
+    body: SafeArea(top: false, child: ResponsivePageContent(child: _body())),
   );
 
-  void _open(PartnerNotificationItem item) {
-    _controller.markRead(item.id);
+  Widget _body() => switch (_controller.state) {
+    PartnerNotificationViewState.loading => const AppLoadingState(
+      message: '알림을 불러오고 있어요',
+    ),
+    PartnerNotificationViewState.empty => const AppEmptyState(
+      title: '새 알림이 없어요',
+      message: '알림이 도착하면 시간순으로 표시돼요.',
+    ),
+    PartnerNotificationViewState.authError => AppErrorState(
+      title: '알림을 볼 수 없어요',
+      message: '로그인 상태와 배우자 연결 권한을 확인해 주세요.',
+      onRetry: _controller.load,
+    ),
+    PartnerNotificationViewState.serverError => AppErrorState(
+      title: '서버에 연결할 수 없어요',
+      onRetry: _controller.load,
+    ),
+    PartnerNotificationViewState.domainError ||
+    PartnerNotificationViewState.error => AppErrorState(
+      title: '알림을 불러오지 못했어요',
+      onRetry: _controller.load,
+    ),
+    PartnerNotificationViewState.data => ListView(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+      children: [
+        InfoBanner(
+          title: _controller.unreadCount == 0
+              ? '새 알림이 없어요'
+              : '읽지 않은 알림 ${_controller.unreadCount}개',
+          message: '오전 리포트·가사 요청·루틴 변경을 시간순으로 보여드려요.',
+          tone: InfoBannerTone.info,
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        const SizedBox.shrink(),
+        for (final item in _controller.items)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: _NotificationCard(item: item, onTap: () => _open(item)),
+          ),
+      ],
+    ),
+  };
+
+  Future<void> _open(PartnerNotificationItem item) async {
+    if (!item.read && !await _controller.markRead(item.id)) return;
+    if (!mounted) return;
     final route = switch (item.type) {
-      PartnerNotificationType.morningReport => RouteNames.partnerMorningReport(
-        item.reportDate!,
-      ),
-      PartnerNotificationType.householdRequest => RouteNames.partnerRequest(
-        item.requestId!,
-      ),
-      PartnerNotificationType.routineChanged => _routineChangedRoute(
-        item.reportDate!,
-      ),
+      PartnerNotificationType.morningReport when item.reportDate != null =>
+        RouteNames.partnerMorningReport(item.reportDate!),
+      PartnerNotificationType.householdRequest when item.requestId != null =>
+        RouteNames.partnerRequest(item.requestId!),
+      PartnerNotificationType.routineChanged when item.reportDate != null =>
+        _routineChangedRoute(item.reportDate!),
+      _ => null,
     };
-    Navigator.pushNamed(context, route);
+    if (route != null) Navigator.pushNamed(context, route);
   }
 
   String _routineChangedRoute(String date) {
