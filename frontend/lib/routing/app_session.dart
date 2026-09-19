@@ -14,6 +14,7 @@ class AuthSessionStore extends ChangeNotifier {
   String? _accountId = 'demo-wife';
   Set<ActiveRole> _roles = {ActiveRole.wife};
   bool _husbandLinked = false;
+  bool _profileComplete = false;
 
   // 남편 계정이 연결되어 있으면 남편 역할을 허용한다. 실제 인증 결과로 교체해야 한다.
   // String? _accountId = 'demo-husband';
@@ -23,6 +24,7 @@ class AuthSessionStore extends ChangeNotifier {
   String? get accountId => _accountId;
   bool get isAuthenticated => _accountId != null;
   bool get husbandLinked => _husbandLinked;
+  bool get profileComplete => _profileComplete;
   Set<ActiveRole> get roles => Set.unmodifiable(_roles);
 
   /// 계정 또는 연결 상태 변경 시 route guard가 최신 권한을 읽도록 갱신한다.
@@ -30,10 +32,12 @@ class AuthSessionStore extends ChangeNotifier {
     required String? accountId,
     required Set<ActiveRole> roles,
     required bool husbandLinked,
+    bool profileComplete = false,
   }) {
     _accountId = accountId;
     _roles = Set.of(roles);
     _husbandLinked = husbandLinked;
+    _profileComplete = profileComplete;
     ActiveRoleStore.instance.restoreFor(this);
     notifyListeners();
   }

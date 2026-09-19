@@ -25,6 +25,7 @@ class ConditionScreen extends StatefulWidget {
 class _ConditionScreenState extends State<ConditionScreen> {
   late final TodayCareController _controller;
   bool _allowPop = false;
+  bool _saving = false;
 
   bool get _isEditing => widget.mode == ConditionMode.edit;
 
@@ -122,7 +123,7 @@ class _ConditionScreenState extends State<ConditionScreen> {
                   AppButton(
                     key: const ValueKey('today-care-submit-button'),
                     label: _isEditing ? '수정 완료' : '다음',
-                    onPressed: _save,
+                    onPressed: _saving ? null : _save,
                   ),
                   const SizedBox(height: AppSpacing.lg),
                 ],
@@ -135,12 +136,24 @@ class _ConditionScreenState extends State<ConditionScreen> {
   }
 
   /// 화면 입력값을 메모리에 보관한 뒤 ROUTE_MAP의 다음 화면으로 이동한다.
-  void _save() {
-    _controller.save();
-    Navigator.pushReplacementNamed(
-      context,
-      _isEditing ? RouteNames.wifeHome : RouteNames.activity,
-    );
+  Future<void> _save() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      await _controller.save();
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(
+        context,
+        _isEditing ? RouteNames.wifeHome : RouteNames.activity,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('컨디션을 저장하지 못했어요. 다시 시도해 주세요.')),
+      );
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   Future<void> _handleBack() async {

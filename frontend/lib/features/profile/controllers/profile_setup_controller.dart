@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../routing/route_context.dart';
 import '../data/profile_store.dart';
 import '../models/profile_draft.dart';
@@ -158,7 +159,9 @@ class ProfileSetupController extends ChangeNotifier {
         if (height == null || height < 100 || height > 220) {
           return '키를 100cm에서 220cm 사이로 입력해 주세요.';
         }
-        if (weight == null || weight < 30 || weight > 250) {
+        if (weight == null ||
+            weight < 30 ||
+            weight > (AppConfig.hasSupabaseConfig ? 200 : 250)) {
           return '몸무게를 30kg에서 250kg 사이로 입력해 주세요.';
         }
       case 2:

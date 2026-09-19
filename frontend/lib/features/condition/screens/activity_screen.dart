@@ -31,6 +31,19 @@ class _ActivityScreenState extends State<ActivityScreen> {
     super.initState();
     _controller = PlannedActivityController()..addListener(_refresh);
     _customController = TextEditingController();
+    unawaited(_loadActivities());
+  }
+
+  Future<void> _loadActivities() async {
+    try {
+      await _controller.loadActivities();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('예정 활동을 불러오지 못했어요.')));
+      }
+    }
   }
 
   @override
@@ -147,7 +160,16 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
   Future<void> _generate() async {
     FocusManager.instance.primaryFocus?.unfocus();
-    await _controller.generateRoutine();
+    try {
+      await _controller.generateRoutine();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('오늘의 루틴을 만들지 못했어요. 다시 시도해 주세요.')),
+        );
+      }
+      return;
+    }
     if (mounted) {
       Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
     }

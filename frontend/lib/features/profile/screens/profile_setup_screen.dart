@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../design_system/components/app_input.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/empty_data_preview.dart';
@@ -9,6 +10,8 @@ import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_context.dart';
 import '../../../routing/route_names.dart';
+import '../../../routing/app_session.dart';
+import '../data/api_profile_service.dart';
 import '../controllers/profile_setup_controller.dart';
 import '../widgets/profile_fields.dart';
 import '../widgets/profile_summary.dart';
@@ -35,6 +38,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   late final TextEditingController _heightController;
   late final TextEditingController _weightController;
   late final TextEditingController _medicalNoteController;
+  bool _saving = false;
 
   static const _allergyOptions = [
     '갑각류',
@@ -367,7 +371,32 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         false;
   }
 
-  void _complete() {
+  Future<void> _complete() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      if (AppConfig.hasSupabaseConfig) {
+        await ApiProfileService().save(_controller.draft);
+        AuthSessionStore.instance.update(
+          accountId: AuthSessionStore.instance.accountId,
+          roles: AuthSessionStore.instance.roles,
+          husbandLinked: AuthSessionStore.instance.husbandLinked,
+          profileComplete: true,
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('프로필을 저장하지 못했어요. 입력 내용을 확인하고 다시 시도해 주세요.'),
+          ),
+        );
+      }
+      return;
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+    if (!mounted) return;
     _controller.markSaved();
     if (widget.mode == ProfileMode.create) {
       Navigator.pushReplacementNamed(context, RouteNames.partnerInvite);

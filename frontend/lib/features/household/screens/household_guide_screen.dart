@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_dialog.dart';
+import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/content_frame.dart';
 import '../../../design_system/components/empty_data_preview.dart';
 import '../../../design_system/components/info_banner.dart';
@@ -35,6 +38,7 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
     _controller = HouseholdGuideController(
       requestService: widget.requestService,
     )..addListener(_refresh);
+    unawaited(_controller.loadGuide());
   }
 
   @override
@@ -57,64 +61,74 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
         onBack: _handleBack,
         wifeProfileAction: true,
       ),
-      body: EmptyDataPreview(
-        child: SafeArea(
-          top: false,
-          child: ContentFrame(
-            maxWidth: 1200,
-            child: ListView(
-              key: const ValueKey('household-guide-scroll'),
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-              children: [
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final sections = [
-                      _directSection(),
-                      _partnerSection(),
-                      _applianceSection(),
-                    ];
-                    if (constraints.maxWidth < AppBreakpoints.desktop) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          sections[0],
-                          const SizedBox(height: AppSpacing.xl),
-                          sections[1],
-                          const SizedBox(height: AppSpacing.xl),
-                          sections[2],
-                        ],
-                      );
-                    }
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        for (
-                          var index = 0;
-                          index < sections.length;
-                          index++
-                        ) ...[
-                          Expanded(child: sections[index]),
-                          if (index < sections.length - 1)
-                            const SizedBox(width: AppSpacing.xl),
-                        ],
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(height: AppSpacing.xl),
-                Text(
-                  _controller.shared
-                      ? '오늘은 허리 통증이 있어요. 무리한 일은 가족과 나눠요.'
-                      : '오늘은 허리 통증이 있는 날이에요. 가전 실행 대신 부담을 줄이는 방법을 추천해요.',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textTertiary,
+      body: _controller.loading
+          ? const AppLoadingState(message: '가사 가이드를 불러오고 있어요.')
+          : _controller.loadFailed
+          ? AppErrorState(
+              title: '가사 가이드를 불러오지 못했어요',
+              message: '연결 상태를 확인하고 다시 시도해 주세요.',
+              onRetry: _controller.loadGuide,
+            )
+          : EmptyDataPreview(
+              child: SafeArea(
+                top: false,
+                child: ContentFrame(
+                  maxWidth: 1200,
+                  child: ListView(
+                    key: const ValueKey('household-guide-scroll'),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.xl,
+                    ),
+                    children: [
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final sections = [
+                            _directSection(),
+                            _partnerSection(),
+                            _applianceSection(),
+                          ];
+                          if (constraints.maxWidth < AppBreakpoints.desktop) {
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                sections[0],
+                                const SizedBox(height: AppSpacing.xl),
+                                sections[1],
+                                const SizedBox(height: AppSpacing.xl),
+                                sections[2],
+                              ],
+                            );
+                          }
+                          return Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (
+                                var index = 0;
+                                index < sections.length;
+                                index++
+                              ) ...[
+                                Expanded(child: sections[index]),
+                                if (index < sections.length - 1)
+                                  const SizedBox(width: AppSpacing.xl),
+                              ],
+                            ],
+                          );
+                        },
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                      Text(
+                        _controller.shared
+                            ? '오늘은 허리 통증이 있어요. 무리한 일은 가족과 나눠요.'
+                            : '오늘은 허리 통증이 있는 날이에요. 가전 실행 대신 부담을 줄이는 방법을 추천해요.',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppColors.textTertiary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
     );
   }
 

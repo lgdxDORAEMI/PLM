@@ -2,6 +2,15 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 abstract final class AppConfig {
+  static bool get hasSupabaseConfig {
+    try {
+      return (dotenv.env['SUPABASE_URL']?.trim().isNotEmpty ?? false) &&
+          (dotenv.env['SUPABASE_ANON_KEY']?.trim().isNotEmpty ?? false);
+    } catch (_) {
+      return false;
+    }
+  }
+
   static String get backendUrl =>
       dotenv.env['BACKEND_URL'] ?? 'http://localhost:8000';
 

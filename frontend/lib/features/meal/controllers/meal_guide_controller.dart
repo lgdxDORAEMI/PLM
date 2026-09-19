@@ -55,7 +55,10 @@ class MealGuideController extends ChangeNotifier {
     notifyListeners();
     try {
       _data = await service.fetchGuide();
-      _selectedPeriod = initialPeriod ?? store.selectedPeriod;
+      final preferred = initialPeriod ?? store.selectedPeriod;
+      _selectedPeriod = _data!.periods.any((entry) => entry.period == preferred)
+          ? preferred
+          : null;
       final applied = store.appliedRecommendation;
       if (applied != null) {
         _selectedRecommendations[applied.period] = applied;

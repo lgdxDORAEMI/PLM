@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_card.dart';
 import '../../../design_system/components/app_state_view.dart';
@@ -19,6 +20,7 @@ import '../../calendar/data/calendar_selection_store.dart';
 import '../../condition/data/today_care_store.dart';
 import '../models/daily_record.dart';
 import '../services/mock_record_service.dart';
+import '../services/api_record_service.dart';
 import '../services/record_service.dart';
 import '../widgets/report_metric_card.dart';
 import '../widgets/routine_record_card.dart';
@@ -41,7 +43,11 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
     super.initState();
     final date = _parseRouteDate(widget.date);
     _controller = DailyReportController(
-      service: widget.service ?? const MockRecordService(),
+      service:
+          widget.service ??
+          (AppConfig.hasSupabaseConfig
+              ? ApiRecordService()
+              : const MockRecordService()),
       date: date,
     )..addListener(_refresh);
     unawaited(_controller.load());
@@ -123,7 +129,8 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
     if (await _controller.save() && mounted) {
       final savedDate = _controller.record!.date;
       CalendarSelectionStore.instance.remember(savedDate);
-      if (recordDateKey(savedDate) == recordDateKey(DateTime.now())) {
+      if (!AppConfig.hasSupabaseConfig &&
+          recordDateKey(savedDate) == recordDateKey(DateTime.now())) {
         TodayCareStore.instance.finishDay();
       }
       Navigator.pushNamedAndRemoveUntil(

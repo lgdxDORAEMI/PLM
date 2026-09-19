@@ -1,12 +1,19 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../core/config/app_config.dart';
+import '../../../core/network/api_client.dart';
 import '../models/household_task.dart';
+import '../services/api_household_request_service.dart';
 import '../services/household_request_service.dart';
 import '../services/mock_household_request_service.dart';
 
 class HouseholdGuideController extends ChangeNotifier {
   HouseholdGuideController({HouseholdRequestService? requestService})
-    : requestService = requestService ?? MockHouseholdRequestService(),
+    : requestService =
+          requestService ??
+          (AppConfig.hasSupabaseConfig
+              ? ApiHouseholdRequestService()
+              : MockHouseholdRequestService()),
       _tasks = const [
         HouseholdTask(
           id: 'clear-table',
@@ -55,6 +62,57 @@ class HouseholdGuideController extends ChangeNotifier {
   bool _sharing = false;
   String? _lastRequestId;
   String? _shareError;
+  bool _loading = AppConfig.hasSupabaseConfig;
+  bool _loadFailed = false;
+
+  bool get loading => _loading;
+  bool get loadFailed => _loadFailed;
+
+  /// Replaces local task cards with the backend's current household guide.
+  Future<void> loadGuide() async {
+    if (!AppConfig.hasSupabaseConfig) return;
+    _loading = true;
+    _loadFailed = false;
+    notifyListeners();
+    try {
+      final response = await ApiClient().get('/api/v1/household/today');
+      final rawItems = response?['items'];
+      if (rawItems is! List) throw StateError('가사 가이드가 없습니다.');
+      _tasks = rawItems
+          .whereType<Map>()
+          .map((item) {
+            final payload = item['payload'];
+            final details = payload is Map ? payload : const {};
+            final owner = switch (details['owner']) {
+              'partner' => HouseholdTaskOwner.partner,
+              'appliance' => HouseholdTaskOwner.appliance,
+              _ => HouseholdTaskOwner.self,
+            };
+            return HouseholdTask(
+              id:
+                  item['item_key']?.toString() ??
+                  item['title']?.toString() ??
+                  '',
+              title: item['title']?.toString() ?? '',
+              description:
+                  item['description']?.toString() ??
+                  details['reason']?.toString() ??
+                  '',
+              owner: owner,
+              selected: owner == HouseholdTaskOwner.partner,
+              status: item['status'] == 'completed'
+                  ? HouseholdTaskStatus.done
+                  : HouseholdTaskStatus.planned,
+            );
+          })
+          .toList(growable: false);
+    } catch (_) {
+      _loadFailed = true;
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
+  }
 
   List<HouseholdTask> get tasks => List.unmodifiable(_tasks);
   bool get shared => _shared;

@@ -93,3 +93,14 @@ Copy-Item .env.example .env
 OpenAPI 문서는 `http://localhost:8000/docs`에서 확인합니다. 도메인 소유권과 Stub 교체 순서는 [Backend Domain Ownership](backend/DOMAIN_OWNERSHIP.md)을 따릅니다. Routine·Movement 보호 영역과 기존 migration은 이번 Skeleton에서 변경하지 않습니다.
 
 참고: [Flutter 편집기 실행 안내](https://docs.flutter.dev/tools/vs-code), [Dart 확장 설정](https://dartcode.org/docs/settings/).
+
+## 프론트엔드 API 연결 설정
+
+1. `frontend/.env.example`을 `frontend/.env`로 복사하고 `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `BACKEND_URL`을 입력합니다. `SUPABASE_ANON_KEY`에는 Supabase 공개 키만 사용합니다. service role 키나 서버 비밀 값은 프론트엔드에 넣지 않습니다.
+2. 백엔드가 같은 Supabase 프로젝트를 사용하도록 백엔드 실행 환경을 설정하고, `BACKEND_URL`의 주소에서 FastAPI를 실행합니다. 브라우저에서 실행하는 경우 백엔드 CORS에 허용된 로컬 출처를 사용합니다.
+3. Supabase Auth에 등록된 계정으로 앱의 로그인 화면에서 로그인합니다. 현재 앱에는 계정 생성 화면이 없으므로 계정을 먼저 준비해야 합니다.
+4. 로그인 뒤 계정 상태 조회 API가 역할과 프로필 완료 여부를 결정합니다. 컨디션을 입력한 뒤 화면을 새로고침하면 오늘 기록을 서버에서 다시 읽습니다.
+
+`SUPABASE_URL`과 `SUPABASE_ANON_KEY`가 모두 비어 있으면 기존 로컬 화면 흐름을 사용합니다. 한쪽만 입력한 상태는 연결 설정이 완료된 것으로 취급하지 않습니다. API 요청에서 401이 나오면 Supabase 로그인 세션을, 503이 나오면 백엔드와 Supabase 연결을 확인합니다. 현재 워크스페이스에는 실제 Supabase 연결 값과 백엔드 실행용 `.env`가 없어 이 환경에서 실DB 왕복은 검증할 수 없습니다.
+
+백엔드 프로필 API는 생년월일을 저장하거나 반환하지 않습니다. 이 값은 브라우저의 계정별 저장소에 남으며 다른 브라우저에서 자동 복원되지 않습니다. 가이드 조회 응답에는 실행 항목의 DB ID가 없어 완료 상태 저장 API에 사용할 수 없습니다. 이 API 계약의 범위를 넘어서는 저장은 프론트에서 임의로 호출하지 않습니다.

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/content_frame.dart';
@@ -19,6 +20,7 @@ import '../../condition/data/today_care_store.dart';
 import '../../routine/controllers/daily_routine_controller.dart';
 import '../../routine/models/daily_routine.dart';
 import '../../routine/services/mock_routine_service.dart';
+import '../../routine/services/api_routine_service.dart';
 import '../../routine/services/routine_service.dart';
 import '../../routine/widgets/routine_guide_card.dart';
 import '../../routine/widgets/routine_progress.dart';
@@ -48,13 +50,29 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
   void initState() {
     super.initState();
     _routineController = DailyRoutineController(
-      service: widget.routineService ?? const MockRoutineService(),
+      service:
+          widget.routineService ??
+          (AppConfig.hasSupabaseConfig
+              ? ApiRoutineService()
+              : const MockRoutineService()),
       fallbackPlan: MockRoutineService.fallbackPlan,
     )..addListener(_refresh);
     _todayCareStore.addListener(_onTodayCareChanged);
     _profileStore.addListener(_refresh);
+    unawaited(_restoreTodayCare());
     if (_todayCareStore.hasTodayCare) {
       unawaited(_routineController.loadToday());
+    }
+  }
+
+  Future<void> _restoreTodayCare() async {
+    try {
+      await _todayCareStore.loadToday();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('오늘의 컨디션을 불러오지 못했어요.')));
     }
   }
 

@@ -22,13 +22,16 @@ class RecordCalendarController extends ChangeNotifier {
   DateTime _visibleMonth;
   DateTime _selectedDate;
   List<DailyRecord> _records = const [];
+  DailyRecord? _details;
 
   RecordCalendarViewState get state => _state;
   DateTime get visibleMonth => _visibleMonth;
   DateTime get selectedDate => _selectedDate;
   List<DailyRecord> get records => List.unmodifiable(_records);
-  DailyRecord? get selectedRecord => recordFor(_selectedDate);
-  bool get canGoNext => _visibleMonth.isBefore(DateTime(2026, 9));
+  DailyRecord? get selectedRecord => _details ?? recordFor(_selectedDate);
+  bool get canGoNext => _visibleMonth.isBefore(
+    DateTime(DateTime.now().year, DateTime.now().month),
+  );
 
   DailyRecord? recordFor(DateTime date) {
     for (final record in _records) {
@@ -49,11 +52,25 @@ class RecordCalendarController extends ChangeNotifier {
     await _loadMonth(DateTime(_visibleMonth.year, _visibleMonth.month + 1));
   }
 
-  void selectDate(DateTime date) {
+  Future<void> selectDate(DateTime date) async {
     if (recordFor(date) == null) return;
     _selectedDate = date;
+    _details = null;
     onSelected?.call(date);
     notifyListeners();
+    await _loadDetails(date);
+  }
+
+  /// Loads the selected day's full report only when its details are needed.
+  Future<void> _loadDetails(DateTime date) async {
+    try {
+      final loaded = await service.fetchRecord(date);
+      if (recordDateKey(_selectedDate) != recordDateKey(date)) return;
+      _details = loaded;
+      notifyListeners();
+    } catch (_) {
+      // Calendar markers remain usable even if one report cannot be read.
+    }
   }
 
   /// 월을 바꾸면 기록이 있는 가장 최근 날짜를 기본 선택한다.
@@ -64,6 +81,7 @@ class RecordCalendarController extends ChangeNotifier {
       final loaded = await service.fetchMonth(month);
       _visibleMonth = DateTime(month.year, month.month);
       _records = loaded;
+      _details = null;
       final preferred = preferredDay == null
           ? null
           : recordFor(DateTime(month.year, month.month, preferredDay));
@@ -73,6 +91,9 @@ class RecordCalendarController extends ChangeNotifier {
         _selectedDate = loaded.last.date;
       }
       _state = RecordCalendarViewState.ready;
+      if (recordFor(_selectedDate) != null) {
+        await _loadDetails(_selectedDate);
+      }
     } on Object {
       _state = RecordCalendarViewState.error;
     }

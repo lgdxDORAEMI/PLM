@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_page_content.dart';
@@ -13,6 +14,7 @@ import '../../invitation/controllers/invitation_entry_controller.dart';
 import '../../invitation/models/invitation.dart';
 import '../../invitation/services/invitation_service.dart';
 import '../../invitation/services/mock_invitation_service.dart';
+import '../../invitation/services/api_invitation_service.dart';
 
 class InvitationEntryScreen extends StatefulWidget {
   const InvitationEntryScreen({super.key, required this.token, this.service});
@@ -27,12 +29,17 @@ class InvitationEntryScreen extends StatefulWidget {
 class _InvitationEntryScreenState extends State<InvitationEntryScreen> {
   late final InvitationEntryController _controller;
   bool _linkScheduled = false;
+  bool _acceptFailed = false;
 
   @override
   void initState() {
     super.initState();
     _controller = InvitationEntryController(
-      service: widget.service ?? const MockInvitationService(),
+      service:
+          widget.service ??
+          (AppConfig.hasSupabaseConfig
+              ? ApiInvitationService()
+              : const MockInvitationService()),
       token: widget.token,
     )..addListener(_refresh);
     unawaited(_controller.validate());
@@ -71,6 +78,7 @@ class _InvitationEntryScreenState extends State<InvitationEntryScreen> {
         // husband 권한은 인증/세션 조회 결과로 이미 확인되어 있어야 한다.
         roles: auth.roles,
         husbandLinked: true,
+        profileComplete: auth.profileComplete,
       );
       final switched = ActiveRoleStore.instance.switchTo(
         ActiveRole.husband,
@@ -83,8 +91,7 @@ class _InvitationEntryScreenState extends State<InvitationEntryScreen> {
       );
     } on Object {
       if (!mounted) return;
-      _linkScheduled = false;
-      setState(() {});
+      setState(() => _acceptFailed = true);
     }
   }
 
@@ -95,6 +102,16 @@ class _InvitationEntryScreenState extends State<InvitationEntryScreen> {
   );
 
   Widget _body() {
+    if (_acceptFailed) {
+      return AppErrorState(
+        title: '초대를 연결하지 못했어요',
+        message: '링크 상태를 확인하고 다시 시도해 주세요.',
+        onRetry: () {
+          setState(() => _acceptFailed = false);
+          _completeLink();
+        },
+      );
+    }
     if (_controller.state == InvitationActionState.loading) {
       return const AppLoadingState(message: 'ThinQ 초대를 확인하고 있어요');
     }

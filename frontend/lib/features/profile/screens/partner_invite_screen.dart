@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_card.dart';
 import '../../../design_system/components/app_state_view.dart';
@@ -15,6 +17,7 @@ import '../../invitation/controllers/partner_invite_controller.dart';
 import '../../invitation/models/invitation.dart';
 import '../../invitation/services/invitation_service.dart';
 import '../../invitation/services/mock_invitation_service.dart';
+import '../../invitation/services/api_invitation_service.dart';
 
 class PartnerInviteScreen extends StatefulWidget {
   const PartnerInviteScreen({
@@ -37,7 +40,11 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
   void initState() {
     super.initState();
     _controller = PartnerInviteController(
-      service: widget.service ?? const MockInvitationService(),
+      service:
+          widget.service ??
+          (AppConfig.hasSupabaseConfig
+              ? ApiInvitationService()
+              : const MockInvitationService()),
     )..addListener(_refresh);
     unawaited(_controller.load());
   }
@@ -139,6 +146,15 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
 
   Future<void> _send() async {
     if (!await _controller.send() || !mounted) return;
+    if (AppConfig.hasSupabaseConfig && _controller.link != null) {
+      await Clipboard.setData(ClipboardData(text: _controller.link!));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('초대 링크를 복사했어요. 남편에게 전달해 주세요.')),
+      );
+      _finish();
+      return;
+    }
     await showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(

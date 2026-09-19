@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/content_frame.dart';
@@ -16,6 +17,7 @@ import '../../../routing/route_context.dart';
 import '../../../routing/route_names.dart';
 import '../../report/models/daily_record.dart';
 import '../../report/services/mock_record_service.dart';
+import '../../report/services/api_record_service.dart';
 import '../../report/services/record_service.dart';
 import '../controllers/record_calendar_controller.dart';
 import '../data/calendar_selection_store.dart';
@@ -39,8 +41,14 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen> {
   void initState() {
     super.initState();
     _controller = RecordCalendarController(
-      service: widget.service ?? const MockRecordService(),
-      initialSelectedDate: CalendarSelectionStore.instance.selectedDate,
+      service:
+          widget.service ??
+          (AppConfig.hasSupabaseConfig
+              ? ApiRecordService()
+              : const MockRecordService()),
+      initialSelectedDate:
+          CalendarSelectionStore.instance.selectedDate ??
+          (AppConfig.hasSupabaseConfig ? DateTime.now() : null),
       onSelected: CalendarSelectionStore.instance.remember,
     )..addListener(_refresh);
     unawaited(_controller.load());

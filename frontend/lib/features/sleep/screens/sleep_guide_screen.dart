@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../design_system/components/app_bottom_sheet.dart';
 import '../../../design_system/components/app_dialog.dart';
 import '../../../design_system/components/app_state_view.dart';
@@ -17,6 +18,7 @@ import '../../report/data/appliance_execution_store.dart';
 import '../controllers/sleep_guide_controller.dart';
 import '../models/sleep_guide.dart';
 import '../services/mock_sleep_service.dart';
+import '../services/api_sleep_service.dart';
 import '../services/sleep_service.dart';
 import '../widgets/sleep_environment_card.dart';
 import '../widgets/sleep_environment_sheet.dart';
@@ -37,7 +39,11 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
   void initState() {
     super.initState();
     _controller = SleepGuideController(
-      service: widget.service ?? const MockSleepService(),
+      service:
+          widget.service ??
+          (AppConfig.hasSupabaseConfig
+              ? ApiSleepService()
+              : const MockSleepService()),
     )..addListener(_refresh);
     unawaited(_controller.load());
   }

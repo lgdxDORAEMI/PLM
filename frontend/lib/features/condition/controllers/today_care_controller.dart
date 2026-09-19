@@ -26,10 +26,16 @@ class TodayCareController extends ChangeNotifier {
   void updateFatigue(int value) => _update(_draft.copyWith(fatigue: value));
   void updateMood(int value) => _update(_draft.copyWith(mood: value));
 
-  void save() {
-    _store.save(_draft);
+  Future<void> save() async {
     _dirty = false;
     notifyListeners();
+    try {
+      await _store.save(_draft);
+    } catch (_) {
+      _dirty = true;
+      notifyListeners();
+      rethrow;
+    }
   }
 
   void _update(ConditionDraft value) {

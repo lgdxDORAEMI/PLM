@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../../../core/config/app_config.dart';
+import '../../../core/network/api_client.dart';
 import '../data/planned_activity_store.dart';
 
 class PlannedActivityController extends ChangeNotifier {
@@ -26,6 +28,21 @@ class PlannedActivityController extends ChangeNotifier {
   Set<String> get selected => Set.unmodifiable(_selected);
   bool get generating => _generating;
 
+  /// Restores activities from the condition record when the page is reopened.
+  Future<void> loadActivities() async {
+    if (!AppConfig.hasSupabaseConfig) return;
+    final response = await ApiClient().get(
+      '/api/v1/care/conditions/${_todayKey()}',
+    );
+    final values = response?['planned_activities'];
+    if (values is! List) return;
+    _selected
+      ..clear()
+      ..addAll(values.whereType<String>());
+    store.save(_selected);
+    notifyListeners();
+  }
+
   void toggle(String value) {
     _selected.contains(value) ? _selected.remove(value) : _selected.add(value);
     notifyListeners();
@@ -43,9 +60,27 @@ class PlannedActivityController extends ChangeNotifier {
     if (_generating) return;
     _generating = true;
     notifyListeners();
-    await Future<void>.delayed(const Duration(milliseconds: 300));
-    store.save(_selected);
-    _generating = false;
-    notifyListeners();
+    try {
+      if (AppConfig.hasSupabaseConfig) {
+        final client = ApiClient();
+        await client.put('/api/v1/care/conditions/${_todayKey()}/activities', {
+          'activities': _selected.toList(),
+        });
+        await client.post('/api/v1/routine/today');
+      } else {
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+      }
+      store.save(_selected);
+    } finally {
+      _generating = false;
+      notifyListeners();
+    }
+  }
+
+  String _todayKey() {
+    final now = DateTime.now();
+    return '${now.year.toString().padLeft(4, '0')}-'
+        '${now.month.toString().padLeft(2, '0')}-'
+        '${now.day.toString().padLeft(2, '0')}';
   }
 }

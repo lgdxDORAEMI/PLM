@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/config/app_config.dart';
 import '../../../design_system/components/app_ink_well.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/app_button.dart';
@@ -21,6 +22,7 @@ import '../controllers/meal_guide_controller.dart';
 import '../models/meal_guide.dart';
 import '../services/meal_service.dart';
 import '../services/mock_meal_service.dart';
+import '../services/api_meal_service.dart';
 import '../widgets/meal_info_section.dart';
 import '../widgets/meal_period_card.dart';
 import '../widgets/meal_recommendation_card.dart';
@@ -42,7 +44,11 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
   void initState() {
     super.initState();
     _controller = MealGuideController(
-      service: widget.service ?? const MockMealService(),
+      service:
+          widget.service ??
+          (AppConfig.hasSupabaseConfig
+              ? ApiMealService()
+              : const MockMealService()),
       initialPeriod: widget.initialPeriod,
     )..addListener(_refresh);
     unawaited(_controller.load());

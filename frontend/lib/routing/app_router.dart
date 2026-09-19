@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../features/calendar/screens/wife_calendar_screen.dart';
 import '../features/condition/screens/activity_screen.dart';
 import '../features/condition/screens/condition_screen.dart';
+import '../features/entry/screens/entry_screen.dart';
 import '../features/health/screens/health_guide_screen.dart';
 import '../features/home/screens/wife_home_screen.dart';
 import '../features/household/screens/household_guide_screen.dart';
@@ -26,6 +27,7 @@ import '../features/routine/screens/routine_fallback_screen.dart';
 import '../features/settings/screens/wife_settings_screen.dart';
 import '../features/settings/screens/husband_menu_screen.dart';
 import '../features/sleep/screens/sleep_guide_screen.dart';
+import '../core/config/app_config.dart';
 import 'app_session.dart';
 import 'route_context.dart';
 import 'route_names.dart';
@@ -80,6 +82,7 @@ abstract final class AppRouter {
 
   /// Local Mock 시연에서만 아내·남편 Demo 사용자를 교체하고 대상 Home으로 이동한다.
   static bool switchDemoUser(BuildContext context, ActiveRole targetRole) {
+    if (AppConfig.hasSupabaseConfig) return false;
     final auth = AuthSessionStore.instance;
     auth.update(
       accountId: targetRole == ActiveRole.wife ? 'demo-wife' : 'demo-husband',
@@ -112,7 +115,11 @@ abstract final class AppRouter {
     final path = uri.path == RouteNames.root ? RouteNames.entry : uri.path;
     final auth = AuthSessionStore.instance;
     final roles = ActiveRoleStore.instance;
-    if (!auth.isAuthenticated) return RouteNames.entry;
+    if (!auth.isAuthenticated) {
+      return path == RouteNames.inviteAccept && AppConfig.hasSupabaseConfig
+          ? uri.toString()
+          : RouteNames.entry;
+    }
     if (path == RouteNames.inviteAccept) return uri.toString();
     if (roles.value == null) roles.restoreFor(auth);
     final active = roles.value;
@@ -131,22 +138,22 @@ abstract final class AppRouter {
         ? ActiveRole.husband
         : null;
     if (requestedRole != active) return _homeFor(active);
-    if (active == ActiveRole.wife && !ProfileStore.instance.hasProfile) {
+    final hasProfile = AppConfig.hasSupabaseConfig
+        ? auth.profileComplete
+        : ProfileStore.instance.hasProfile;
+    if (active == ActiveRole.wife && !hasProfile) {
       return RouteNames.profileSetup;
     }
-    if (path.startsWith('/wife/profile/onboarding/') &&
-        !ProfileStore.instance.hasProfile) {
+    if (path.startsWith('/wife/profile/onboarding/') && !hasProfile) {
       return RouteNames.profileSetup;
     }
     if (path == RouteNames.wifeInvite && auth.husbandLinked) {
       return RouteNames.wifeHome;
     }
-    if (path.startsWith('/wife/profile/onboarding/') &&
-        ProfileStore.instance.hasProfile) {
+    if (path.startsWith('/wife/profile/onboarding/') && hasProfile) {
       return RouteNames.wifeHome;
     }
-    if (path.startsWith('/wife/profile/edit/') &&
-        !ProfileStore.instance.hasProfile) {
+    if (path.startsWith('/wife/profile/edit/') && !hasProfile) {
       return RouteNames.profileSetup;
     }
     return uri.toString();
@@ -220,7 +227,9 @@ abstract final class AppRouter {
 
   static String _homeFor(ActiveRole role) => role == ActiveRole.husband
       ? RouteNames.husbandCalendar
-      : ProfileStore.instance.hasProfile
+      : (AppConfig.hasSupabaseConfig
+            ? AuthSessionStore.instance.profileComplete
+            : ProfileStore.instance.hasProfile)
       ? RouteNames.wifeHome
       : RouteNames.profileSetup;
 
@@ -291,6 +300,7 @@ abstract final class AppRouter {
     final path = uri.path;
     final parts = uri.pathSegments;
     if (path == RouteNames.entry) {
+      if (AppConfig.hasSupabaseConfig) return const EntryScreen();
       final auth = AuthSessionStore.instance;
       final needsInvite =
           auth.isAuthenticated &&
@@ -301,6 +311,10 @@ abstract final class AppRouter {
       );
     }
     if (path == RouteNames.inviteAccept) {
+      if (AppConfig.hasSupabaseConfig &&
+          !AuthSessionStore.instance.isAuthenticated) {
+        return EntryScreen(invitationToken: uri.queryParameters['token']);
+      }
       return InvitationEntryScreen(token: uri.queryParameters['token']);
     }
     if (parts.length == 4 && parts[0] == 'wife' && parts[1] == 'profile') {

@@ -2,10 +2,16 @@
 
 import 'dart:convert';
 import 'dart:html' as html;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/config/app_config.dart';
 import '../models/profile_draft.dart';
 
-const _profileStorageKey = 'plm.demo.profile.v1';
+String get _profileStorageKey {
+  if (!AppConfig.hasSupabaseConfig) return 'plm.demo.profile.v1';
+  final userId = Supabase.instance.client.auth.currentUser?.id;
+  return userId == null ? 'plm.profile.anonymous' : 'plm.profile.$userId';
+}
 
 /// Demo Profile을 브라우저에 보존해 새로고침 후에도 Returning User를 판별한다.
 ProfileDraft? readStoredProfile() {
