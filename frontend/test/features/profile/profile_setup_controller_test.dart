@@ -154,6 +154,7 @@ void main() {
   });
 
   test('Summary 행 수정은 저장 후 다음 단계가 아닌 Summary로 복귀한다', () {
+    ProfileStore.instance.save(ProfileDraft.mockEdit());
     final controller = ProfileSetupController(mode: ProfileMode.edit);
     addTearDown(controller.dispose);
     for (var step = 0; step < 6; step += 1) {
@@ -167,6 +168,7 @@ void main() {
   });
 
   test('Summary 수정 중 뒤로가면 변경값을 버리고 기존 값으로 복귀한다', () {
+    ProfileStore.instance.save(ProfileDraft.mockEdit());
     final controller = ProfileSetupController(
       mode: ProfileMode.edit,
       initialStep: 6,

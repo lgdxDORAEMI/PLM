@@ -14,7 +14,7 @@ class ProfileSetupController extends ChangeNotifier {
   }) : _step = initialStep,
        _editingFromSummary = returnToSummary,
        _draft = mode == ProfileMode.edit
-           ? ProfileStore.instance.profile ?? ProfileDraft.mockEdit()
+           ? ProfileStore.instance.profile ?? const ProfileDraft()
            : const ProfileDraft() {
     if (returnToSummary) _summarySnapshot = _draft;
   }
@@ -156,13 +156,18 @@ class ProfileSetupController extends ChangeNotifier {
         }
         final height = double.tryParse(_draft.height ?? '');
         final weight = double.tryParse(_draft.prePregnancyWeight ?? '');
-        if (height == null || height < 100 || height > 220) {
-          return '키를 100cm에서 220cm 사이로 입력해 주세요.';
+        if (height == null) {
+          return '키를 입력해 주세요.';
         }
-        if (weight == null ||
-            weight < 30 ||
-            weight > (AppConfig.hasSupabaseConfig ? 200 : 250)) {
-          return '몸무게를 30kg에서 250kg 사이로 입력해 주세요.';
+        if (height < 100 || height > 220) {
+          return '키가 100~220cm 사이인지 확인해 주세요.';
+        }
+        if (weight == null) {
+          return '임신 전 몸무게를 입력해 주세요.';
+        }
+        final maxWeight = AppConfig.hasSupabaseConfig ? 200 : 250;
+        if (weight < 30 || weight > maxWeight) {
+          return '임신 전 몸무게가 30~${maxWeight}kg 사이인지 확인해 주세요.';
         }
       case 2:
         if (_draft.isFirstPregnancy == null) {
