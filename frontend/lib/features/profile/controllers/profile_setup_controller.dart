@@ -55,18 +55,14 @@ class ProfileSetupController extends ChangeNotifier {
       _update(_draft.copyWith(isMultiplePregnancy: value));
 
   void toggleAllergy(String value) {
+    if (value == '없어요') return;
     final next = {..._draft.allergies};
-    if (value == '없어요') {
-      next
-        ..clear()
-        ..add(value);
-    } else {
-      next.remove('없어요');
-      next.contains(value) ? next.remove(value) : next.add(value);
-    }
+    next.remove('없어요');
+    next.contains(value) ? next.remove(value) : next.add(value);
     _update(_draft.copyWith(allergies: next));
   }
 
+  /// '없어요'를 선택하면 다른 진단과 자유 입력 내용을 함께 초기화한다.
   void toggleMedicalCondition(String value) {
     final next = {..._draft.medicalConditions};
     if (value == '없어요') {
@@ -77,7 +73,12 @@ class ProfileSetupController extends ChangeNotifier {
       next.remove('없어요');
       next.contains(value) ? next.remove(value) : next.add(value);
     }
-    _update(_draft.copyWith(medicalConditions: next));
+    _update(
+      _draft.copyWith(
+        medicalConditions: next,
+        medicalNote: value == '없어요' ? '' : _draft.medicalNote,
+      ),
+    );
   }
 
   void updateMedicalNote(String value) =>

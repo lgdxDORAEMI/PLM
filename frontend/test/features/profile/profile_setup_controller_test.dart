@@ -45,7 +45,7 @@ void main() {
     expect(controller.isDirty, isFalse);
   });
 
-  test('없어요 선택은 기존 알레르기 선택을 해제한다', () {
+  test('알레르기에서 제거된 없어요 값은 선택되지 않는다', () {
     final controller = ProfileSetupController(mode: ProfileMode.create);
     addTearDown(controller.dispose);
 
@@ -54,7 +54,7 @@ void main() {
       ..toggleAllergy('견과류')
       ..toggleAllergy('없어요');
 
-    expect(controller.draft.allergies, {'없어요'});
+    expect(controller.draft.allergies, {'갑각류', '견과류'});
   });
 
   test('주의 진단의 없어요와 진단 항목은 함께 선택되지 않는다', () {
@@ -64,11 +64,40 @@ void main() {
     controller
       ..toggleMedicalCondition('빈혈')
       ..toggleMedicalCondition('고혈압')
+      ..updateMedicalNote('철분제 복용 안내')
       ..toggleMedicalCondition('없어요');
     expect(controller.draft.medicalConditions, {'없어요'});
+    expect(controller.draft.medicalNote, isEmpty);
 
     controller.toggleMedicalCondition('조기진통');
     expect(controller.draft.medicalConditions, {'조기진통'});
+  });
+
+  testWidgets('병원 주의사항 없어요 선택 시 자유 입력이 비활성화되고 지워진다', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ProfileSetupScreen(mode: ProfileMode.create, initialStep: 5),
+      ),
+    );
+
+    final noteField = find.byType(TextField);
+    await tester.enterText(noteField, '철분제 복용 안내');
+    await tester.ensureVisible(find.text('없어요'));
+    await tester.tap(find.text('없어요'));
+    await tester.pump();
+
+    expect(tester.widget<TextField>(noteField).enabled, isFalse);
+    expect(tester.widget<TextField>(noteField).controller!.text, isEmpty);
+  });
+
+  testWidgets('알레르기 단계에는 없어요 선택지가 없다', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: ProfileSetupScreen(mode: ProfileMode.create, initialStep: 4),
+      ),
+    );
+
+    expect(find.text('없어요'), findsNothing);
   });
 
   testWidgets('프로필 2단계는 생년월일과 임신 전 신체 정보를 입력받는다', (tester) async {

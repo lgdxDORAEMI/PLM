@@ -45,7 +45,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     '생선류',
     '땅콩',
     '대두',
-    '없어요',
   ];
   static const _medicalOptions = [
     '임신성 당뇨 경계',
@@ -81,7 +80,13 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     super.dispose();
   }
 
-  void _onControllerChanged() => setState(() {});
+  /// 저장된 주의사항과 입력창을 동기화해 '없어요' 선택 시 문구도 즉시 지운다.
+  void _onControllerChanged() {
+    if (_medicalNoteController.text != _controller.draft.medicalNote) {
+      _medicalNoteController.text = _controller.draft.medicalNote;
+    }
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -263,6 +268,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               label: '그 외 들은 말이 있다면 적어주세요',
               controller: _medicalNoteController,
               hintText: '예) 체중이 조금 빠르게 늘고 있다고 들었어요.',
+              enabled: !_controller.draft.medicalConditions.contains('없어요'),
               maxLines: 4,
               textInputAction: TextInputAction.newline,
               onChanged: _controller.updateMedicalNote,
