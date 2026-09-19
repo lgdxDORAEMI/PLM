@@ -40,15 +40,18 @@ AI 루틴은 2026-09-18 실 DB 검증에서 `source=ai`로 생성을 확인했�
 
 요청·응답 및 오류 계약은 [API 문서](../docs/api.md)와 [API_CONTRACT.md](../docs/backend/API_CONTRACT.md)를 기준으로 합니다.
 
-### AI 하루 루틴 (W-ROUTINE-001/003)
+### AI 하루 루틴 — 웬즈데이 AI (W-HOME-001 생성 / W-CALLBACK-001 폴백)
 
-- `GET /api/v1/routine/today`: 오늘(KST) 저장된 4종 가이드 조회. 없으면 404
-- `POST /api/v1/routine/today`: 프로필 + 오늘 컨디션으로 루틴 생성·저장. AI 실패·10초 초과 시 전일 루틴 → 기본 템플릿 순으로 폴백해 항상 4종을 반환
+- `GET /api/v1/routine/today`: 오늘(KST) 최신 버전(가장 큰 `revision`) 루틴 조회. 없으면 404
+- `POST /api/v1/routine/today`: 프로필 + 오늘 컨디션·예정 활동으로 루틴 생성·저장. 같은 날 다시 호출하면 새 `revision`으로 쌓인다. AI 실패·9.5초 초과 시 전일 루틴 → 기본 템플릿 순으로 폴백해 항상 4종을 반환(`source`로 구분, 앱은 `source != ai`면 W-CALLBACK-001 표시)
+- 응답(2026-09-18 추가): `revision`, `is_regeneration`, `change_summary`(`item_key`별 added/updated/removed/unchanged), `confirmed_at`, `response.tip`(웰컴 카드 팁 1개 또는 null). 계약은 `docs/api.md` "AI 하루 루틴" 절
 - 파이프라인: `app/services/routine/` — ① `inputs.py` 입력 수집 → ② `rules.py`+`rules.yaml` 룰 엔진(16규칙) → ③ `retriever.py` RAG(OpenAI 임베딩 + RPC `match_pregnancy_knowledge`) → ④ `prompt.py` 프롬프트·JSON 스키마 → ⑤ `generator.py` OpenAI `json_schema strict` 호출 → ⑥ `service.py` 검증(금지 항목·`source_ids` 제거)·폴백 → ⑦ `repository.py` `daily_routines`/`routine_items` 저장
 - 지식 적재(1회성)는 `tools/rag_ingest/`(팀원 패키지). 영문 공개자료 75청크 → 한국어 번역·재청크 → `text-embedding-3-small`(1536) → `pregnancy_knowledge`
 - 설계·진행 기록: [웬즈데이 AI 파이프라인](../docs/ai_wednesday/Ai_wednesday_pipeline_v3.md), 테이블: `supabase/migrations/`
 
-- **생성 완료 알림(2026-09-18)**: `POST /routine/today`가 성공하면 `FamilyService.notify_routine_ready`가 연동된 남편에게 알림을 보냅니다 — 하루 첫 생성은 `morning_report`(FUC-W-COND-002), 재생성은 `condition_changed` "아내의 루틴이 변경되었습니다."(FUC-W-COND-003). 남편 미연동이면 생략, 발송 실패해도 201을 유지합니다. 라우트(`app/api/v1/routine.py`)만 수정했고 `app/services/routine/**`는 그대로입니다
+- **생성 완료 알림(2026-09-18)**: `POST /routine/today`가 `source=ai`로 성공하면 `FamilyService.notify_routine_ready`가 연동된 남편에게 알림을 보냅니다 — 그날 첫 AI 루틴은 `morning_report`(FUC-W-COND-002), 이미 AI 루틴이 있었으면 `condition_changed`(FUC-W-COND-003). **폴백(`source != ai`)이면 알림을 보내지 않고**, 폴백 뒤 재시도 성공은 `morning_report`입니다. 남편 미연동이면 생략, 발송 실패해도 201을 유지합니다
+- **09-18 웬즈데이 변경 요약**(커밋 `8b7b85a`, `423fcc4`): 루틴 버전별 저장(`daily_routines.revision`, `routine_items`는 같은 행 갱신·`change_kind`), 재생성 비교(`diff.py`, 완료 기록은 `item_key` 기준 유지), `item_key` 값 목록 고정(식단 키는 `payload.period`로 코드가 생성, 겹치면 `:2`), 예정 활동 코드표 9종(`inputs.ACTIVITY_CODES`, DB는 한글 라벨 유지), 웰컴 카드 팁 전용 호출(실패해도 루틴은 `ai`), `PROMPT_VERSION=2026-09-18.3`. 상세는 [웬즈데이 AI 파이프라인](../docs/ai_wednesday/Ai_wednesday_pipeline_v3.md) §3·§6
+- **부위 이름 매핑**(건강 가이드 부위 `health:<부위>` 하나로 맞추기 위함): 전일 모션 요약(S8) `trunk`(몸통)→`waist`(허리), `knee`(무릎)→`leg`(다리), `whole_body`→`whole`(전신) (`inputs.MOTION_TO_HEALTH_AREA`). 컨디션 통증 `waist_pain`·`pelvis_pain`·`leg_pain`·`wrist_pain`→허리·골반·다리·손목(근거 문단 검색어용, `retriever._PAIN_LABELS`)
 
 #### 상태 (2026-09-18)
 
@@ -56,10 +59,11 @@ AI 루틴은 2026-09-18 실 DB 검증에서 `source=ai`로 생성을 확인했�
 | --- | --- |
 | 코드 ①~⑦, API, `main.py` 등록 | 완료 |
 | 단위 테스트 `tests/test_routine_*.py`(가짜 Supabase·OpenAI) | 통과 |
-| Supabase 마이그레이션 적용 | 완료 (15건, 아래 "Supabase 준비" 참고) |
+| Supabase 마이그레이션 적용 | 완료 (16건, `20260918000000_daily_experience_routine_versions` 포함) — **단, 아래 "⚠️ 루틴 버전 제약 충돌" 조치 필요** |
 | 실DB 폴백 경로 | 완료 (2026-09-16) |
 | **실호출 (`source=ai`)** | **완료 (2026-09-18, 실 DB에서 `source=ai` 생성 확인)** |
-| 지식 적재 실행 (`--step all`) | 팀원 확인 필요 — 적재 여부는 `select count(*) from pregnancy_knowledge`로 확인 |
+| 지식 적재 실행 (`--step all`) | 완료 (2026-09-17, `pregnancy_knowledge` 88행·1536차원) |
+| 루틴 버전 저장·응답 필드·실패 처리·활동 코드표·웰컴 팁 (S1~S7) | 완료 (2026-09-18, 실 DB 실호출 확인) |
 
 ```sh
 # 지식 적재 (tools/rag_ingest/.env에 OPENAI_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
@@ -198,6 +202,8 @@ LLM_API_BASE_URL=
 
 현재 migration은 프로필 1~6단계 컬럼, `daily_conditions`, `daily_routines`, `routine_items`, `pregnancy_knowledge`(pgvector), 권한(6건, `20260915000000`~`20260917000002`)에 더해 STEP 7의 신규 테이블 9건(`profiles`, `partner_invitations`, `partner_links`, `household_requests`(+items), `daily_reports`, `notifications`, `motion_consents`, `chat_messages`, `recommendation_feedback`; `20260917010000`~`010800`)을 포함합니다.
 
+**⚠️ 루틴 버전 제약 충돌(2026-09-18 저녁 확인, 조치 필요)**: 웬즈데이 S3 migration(`20260918000000`)은 같은 날 여러 버전을 쌓기 위해 `daily_routines_user_id_date_key`(사용자·날짜당 1행)를 **지우고** `unique (user_id, date, revision)`으로 바꿨습니다. 그런데 새 코드 push 전에 이전 코드(`upsert on_conflict user_id,date`)가 42P10으로 실패하자 아래 보정으로 제약이 **다시 추가**됐습니다. 지금(새 코드 push 후) 이 제약이 있으면 **같은 날 두 번째 `POST /routine/today`가 23505로 실패**합니다(테스트 날짜 2026-12-31로 재현 확인). 팀원 모두 `423fcc4` 이후로 pull한 뒤 SQL Editor에서 `alter table public.daily_routines drop constraint if exists daily_routines_user_id_date_key;`를 실행해야 합니다. 새 환경에서는 아래 unique 추가 SQL을 **실행하지 마세요**.
+
 **실 DB drift 확인(2026-09-18)**: 실서비스 프로젝트에 STEP 7 migration 9건이 미적용 상태였고, `daily_routines`에는 `unique (user_id, date)` 제약이 빠져 있어 `POST /routine/today`의 upsert가 `42P10`으로 실패했습니다. 둘 다 SQL Editor에서 수동 보정했습니다(`alter table public.daily_routines add constraint daily_routines_user_id_date_key unique (user_id, date);`). `create table if not exists`는 이미 있는 테이블의 제약을 고치지 않으므로, 새 환경에서 같은 증상이 나면 `information_schema`로 실제 컬럼·제약을 migration 파일과 대조하세요.
 
 ## 테스트
@@ -209,7 +215,7 @@ LLM_API_BASE_URL=
 .venv\Scripts\python.exe -m unittest discover -s tests
 ```
 
-테스트 150개(2026-09-18)는 기본 API, 프로필 6단계, 컨디션, 가이드 조회, 실행 기록·리포트·캘린더(남편 분기 포함), 파트너 연동, 가사 요청, 알림(루틴 생성 알림 포함), 오전 리포트, 모션 동의, AI 루틴(룰 엔진·스키마·폴백·저장·API), 모션 WebSocket(origin·토큰·동의 게이트·남편 조회)과 일일 리포트 집계를 다룹니다. 전부 가짜 Supabase·OpenAI·Pose extractor를 주입하므로 외부 키·카메라·네트워크가 필요하지 않습니다.
+테스트 177개(2026-09-18 저녁)는 기본 API, 프로필 6단계, 컨디션, 가이드 조회, 실행 기록·리포트·캘린더(남편 분기 포함), 파트너 연동, 가사 요청, 알림(루틴 생성 알림 포함), 오전 리포트, 모션 동의, AI 루틴(룰 엔진·스키마·폴백·저장·API), 모션 WebSocket(origin·토큰·동의 게이트·남편 조회)과 일일 리포트 집계를 다룹니다. 전부 가짜 Supabase·OpenAI·Pose extractor를 주입하므로 외부 키·카메라·네트워크가 필요하지 않습니다.
 
 실 DB 수동 검증 절차(토큰 발급, 가사 요청→알림, 루틴 생성→오전 리포트 알림, 모션 동의 게이트)는 팀 노션의 "테스트 계정 토큰 발급"·"모션 인식 기능 테스트 방법" 페이지를 참고합니다.
 
@@ -266,6 +272,9 @@ LLM_API_BASE_URL=
 - 실 DB에서 AI 루틴 `source=ai` 생성 확인. 아내/남편/제3자 테스트 계정으로 가사 요청→알림, 루틴 생성→오전 리포트 알림, 캘린더·모션 남편 조회, 동의 게이트 수동 검증
 - 문서 갱신: `API_IMPLEMENTATION_MATRIX`(implemented 41 / stub 6), `API_CONTRACT`, `BACKEND_STATUS`, `REQUIREMENT_TRACEABILITY`(READY 12 / PARTIAL 1 / BLOCKED 1), `DATA_OWNERSHIP`, `frontend/API_INTEGRATION_STATUS`, `docs/api.md`, `docs/movement/구현계획서_v3.md`
 - Backend 테스트 150개 전부 통과
+- **(저녁) 웬즈데이 AI S1~S7**(커밋 `8b7b85a`·`423fcc4`): 식단 1개만 저장되던 버그 수정, 루틴 버전별 저장(migration `20260918000000` 적용·pg_cron 정리 job), 재생성 비교·완료 기록 키 기준 유지, 응답 필드 추가, AI 실패 시 알림 조건 수정(`docs/api.md` "AI 실패 처리"), 예정 활동 코드표 9종, 웰컴 카드 팁. 실 DB 실호출 확인(당시 third 계정, 이후 실호출은 testwife + 2026-12-31 전용). 파이프라인 문서 `docs/ai_wednesday/Ai_wednesday_pipeline_v3.md`로 교체
+- 협업 규칙 개정: 보호 테이블은 `posture_*` 2개와 `auth.users`만, Routine AI 테이블은 Routine AI 담당 단독 변경(`docs/development/BACKEND_COLLABORATION.md` §2.4)
+- Backend 테스트 177개 전부 통과
 - 남은 작업: `routine.py` 훅 리뷰, Chat 저장 계층(경계 확인 후), `account/profile` 통합 API(`birth_date` migration), 메뉴 수락·수면 override 실연결, 기획 대기 3건(H-INVITE-001 흐름, H-REQUEST-002, Calendar 지수식)과 컨디션 변경 알림 문서 충돌(`03_유스케이스명세서` 구판) 정리
 
 ## 관련 문서

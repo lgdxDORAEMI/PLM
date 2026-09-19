@@ -1,0 +1,28 @@
+# 웬즈데이 AI S9(R6): 컨디션 변화 → 가이드별 영향. 설계: docs/ai_wednesday/Ai_wednesday_pipeline_v3.md §2.5·§2.8
+# 점수·경계는 §2.5 초기 제안값이며 tests/test_routine_impact.py가 §2.8 사례로 고정한다. 안전 규칙(rules.yaml)이 항상 우선.
+
+scores:
+  one_step: 1      # 1칸 변화
+  multi_step: 2    # 2칸 이상 변화
+  cross_4: 1       # 4단계 경계 진입/이탈
+  cross_5: 1       # 5단계 경계 진입/이탈
+weights: {primary: 1.0, secondary: 0.5}
+replan_pressure: 2            # 악화·호전 압력 중 큰 값이 이 이상이면 REPLAN
+strength: {medium: 1.5, high: 3}
+
+# 이 카테고리의 secondary 영향은 예정 가사가 있을 때만 센다(할 일이 없으면 조정할 것도 없다).
+secondary_needs_chores: [household]
+
+# higher_is_worse=false(기분)는 값이 내려가면 악화. 경계도 뒤집어 2·1단계 진입을 4·5단계처럼 센다.
+# sleep_quality는 04_1 컨디션 입력에 없어 제외(K3).
+conditions:
+  nausea:      {higher_is_worse: true,  primary: [meal],          secondary: [health]}
+  waist_pain:  {higher_is_worse: true,  primary: [health],        secondary: [household]}
+  pelvis_pain: {higher_is_worse: true,  primary: [health],        secondary: [household]}
+  leg_pain:    {higher_is_worse: true,  primary: [health],        secondary: [household]}
+  wrist_pain:  {higher_is_worse: true,  primary: [health],        secondary: [household]}
+  fatigue:     {higher_is_worse: true,  primary: [health, sleep], secondary: [household]}
+  mood:        {higher_is_worse: false, primary: [sleep],         secondary: [health]}
+
+# 예정 활동 목록이 바뀌면(추가·삭제) 이 카테고리는 REPLAN. 압력(strength)에는 더하지 않는다.
+activities_replan: household

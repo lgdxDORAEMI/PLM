@@ -5,12 +5,19 @@ NFR-014: 여기서 고른 키만 LLM에 전달되고 daily_routines.request_payl
 
 from __future__ import annotations
 
-from datetime import date
+import logging
+from datetime import date, timedelta
+from types import SimpleNamespace
 from typing import Any
+from uuid import UUID
 
 from supabase import Client
 
+from app.services.movement.events import SupabaseEventStore
+from app.services.movement.report import generate_daily_report
 from app.utils import dates
+
+logger = logging.getLogger(__name__)
 
 PROFILE_COLUMNS = (
     "due_date",
@@ -61,6 +68,60 @@ def to_activities(values: list[str] | None) -> list[dict[str, str]]:
         code = ACTIVITY_CODES.get(label) or (label if label in known else CUSTOM_ACTIVITY)
         result.append({"code": code, "label": label})
     return result
+
+
+# S8: 모션 부위(BodyPart) → 건강 가이드 부위 코드(prompt.HEALTH_KEYS의 health:<부위>).
+MOTION_TO_HEALTH_AREA = {"trunk": "waist", "knee": "leg", "whole_body": "whole"}
+
+
+def yesterday_routine(client: Client, user_id: str, today: date) -> dict[str, Any] | None:
+    """어제 루틴 완료 현황. 재생성으로 빠진 항목(change_kind=removed)은 세지 않는다. 루틴이 없으면 None."""
+    rows = (
+        client.table("routine_items")
+        .select("item_key, status, change_kind")
+        .eq("user_id", user_id)
+        .eq("date", (today - timedelta(days=1)).isoformat())
+        .execute()
+        .data
+    )
+    items = [r for r in rows if r.get("change_kind") != "removed"]
+    if not items:
+        return None
+    return {
+        "completed": sum(1 for r in items if r["status"] == "completed"),
+        "total": len(items),
+        "not_done": [r["item_key"] for r in items if r["status"] != "completed"],
+    }
+
+
+def yesterday_motion(client: Client, user_id: str, today: date) -> dict[str, Any] | None:
+    """어제 모션 요약(숫자·부위만, NFR-014). 모션 팀 generate_daily_report()를 읽기만 한다.
+
+    K5: 모션 요약은 UTC 하루(어제 09:00~오늘 09:00 KST) 기준. Daily 리포트(care)와 같은 수치를 쓰려고 그대로 둔다.
+    이벤트가 없거나(감지 OFF 포함) 조회가 실패하면 None — 루틴 생성은 막지 않는다(NFR-017).
+    """
+    try:
+        store = SupabaseEventStore(SimpleNamespace(client=client))
+        summary = generate_daily_report(store, UUID(user_id), today - timedelta(days=1))
+    except Exception as exc:  # 모션은 보강 정보. 어떤 실패든 루틴은 컨디션만으로 만든다
+        logger.info("전일 모션 요약 조회 실패, motion=None: %s", type(exc).__name__)
+        return None
+    if not summary.aggregates and not summary.cumulative_forward_bend_sec:
+        return None
+    top = summary.top_burdened_body_part
+    return {
+        "top_burdened_area": MOTION_TO_HEALTH_AREA.get(top.value) if top else None,
+        "bending_burden_events": summary.bending_burden_event_count,
+        "forward_bend_min": round(summary.cumulative_forward_bend_sec / 60),
+    }
+
+
+def collect_yesterday(client: Client, user_id: str, today: date) -> dict[str, Any]:
+    """S8(R5): facts["yesterday"]. collect_facts와 분리 — 컨디션 계약 테스트(care)가 두 테이블만 흉내 낸다."""
+    return {
+        "routine": yesterday_routine(client, user_id, today),
+        "motion": yesterday_motion(client, user_id, today),
+    }
 
 
 class ProfileMissingError(Exception):

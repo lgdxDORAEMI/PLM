@@ -76,6 +76,9 @@ async def generate_today(user: User, service: Service, family: Family) -> dict[s
     # S5(R3): 폴백(source != ai)은 AI 실패라 앱이 W-CALLBACK-001·재시도를 띄운다 → 남편 알림을 보내지 않는다.
     # 첫 알림 종류는 "오늘 AI 루틴이 처음 나왔는가"로 정한다. 폴백 뒤 재시도 성공도 오전 리포트(FUC-W-COND-002),
     # AI 루틴이 이미 있었으면 루틴 변경(FUC-W-COND-003). 알림 실패는 루틴 생성 성공에 영향을 주지 않는다.
+    # S10 결정1: 컨디션이 그대로면 새 버전 없이 현재 루틴을 돌려주고 알림도 보내지 않는다.
+    if saved.pop("unchanged", False):
+        return saved
     if saved["source"] == "ai":
         try:
             first = not repository.has_ai_routine_before(service.supabase, user.id, today, int(saved["revision"]))

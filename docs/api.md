@@ -162,7 +162,7 @@ OFF면 **4003**(앱 정의 코드)으로 닫아 1008(origin/토큰)과 구분한
 | Method | Path | 화면 | 성공 응답 | 설명 |
 | --- | --- | --- | --- | --- |
 | GET | /api/v1/routine/today | 홈 재진입 | 200 루틴 | 오늘(KST) 저장된 4종 가이드. 없으면 404 → 앱은 컨디션 CTA 표시 |
-| POST | /api/v1/routine/today | 예정 활동 선택 완료 직후 | 201 루틴 | 프로필·오늘 컨디션으로 AI 루틴 생성·저장. AI 실패·10초 초과 시 전일 루틴 → 기본 템플릿 순으로 폴백해 **항상 4종을 돌려준다** |
+| POST | /api/v1/routine/today | 예정 활동 선택 완료 직후 | 201 루틴 | 프로필·오늘 컨디션(+서버가 읽는 전일 루틴 완료 현황·전일 모션 요약, 없으면 생략)으로 AI 루틴 생성·저장. AI 실패·10초 초과 시 전일 루틴 → 기본 템플릿 순으로 폴백해 **항상 4종을 돌려준다**. 오늘 확정 전 루틴이 있으면 **컨디션 수정 경로**(아래) |
 
 호출 순서 (W-COND-001 → W-TASK-001 → W-HOME-001)
 
@@ -189,9 +189,9 @@ OFF면 **4003**(앱 정의 코드)으로 닫아 1008(origin/토큰)과 구분한
 | id, date, generated_at | `daily_routines` 행 |
 | revision | 같은 날짜의 루틴 버전 번호(1부터). 같은 날 다시 POST할 때마다 1씩 커진다. GET은 가장 큰 revision을 돌려준다 |
 | is_regeneration | `revision > 1`이면 `true` = 같은 날 재생성된 루틴. 프론트는 변경 배너, 남편 알림(FUC-W-COND-003)은 이 값으로 분기한다. 첫 생성이면 `false` |
-| change_summary | 직전 버전 대비 변화. `{added, updated, removed, unchanged}` 각각 `item_key` 목록. 첫 생성이면 `null`. `updated`는 제목이 바뀐 항목(완료 기록은 유지) |
+| change_summary | 직전 버전 대비 변화. `{added, updated, removed, unchanged}` 각각 `item_key` 목록. 첫 생성이면 `null`. `updated`는 제목이 바뀐 항목(완료 기록은 유지). 컨디션 수정 경로에서는 `categories`(다시 만든 가이드)·`conditions`(바뀐 컨디션 키)도 함께 온다 |
 | confirmed_at | '저장하고 마치기'로 확정한 시각. `null` = 확정 전 (확정 API는 아직 없음) |
-| source | `ai` = AI 생성 성공. `fallback_prev`(전일 루틴 복사) / `fallback_template`(기본 템플릿) = **AI 생성 실패**(시간 초과·AI 오류). 처리 기준은 아래 "AI 실패 처리". 폴백률(NFR-016) 측정용 |
+| source | `ai` = AI 생성 성공(컨디션 수정 시 대상 가이드 중 하나 이상 성공). `fallback_prev`(전일 루틴 또는 직전 버전 유지) / `fallback_template`(기본 템플릿) = **AI 생성 실패**(시간 초과·AI 오류). 처리 기준은 아래 "AI 실패 처리". 폴백률(NFR-016) 측정용 |
 | model | 생성에 쓴 LLM 모델명. 폴백이면 `null` |
 | response | `{meal: [...], household: [...], health: [...], sleep: {...}, tip: {...} 또는 null}`. `tip`은 웰컴 카드 '오늘 시도해보세요' 팁 1개(아래 표). 나머지 4종은 각 항목 `{item_key, title, payload, source_ids}`. `payload` 모양은 아래 표. `source_ids`는 근거 문단 `pregnancy_knowledge.id` |
 
@@ -225,7 +225,14 @@ AI 실패 처리 (FUC-W-CALLBACK-001, W-CALLBACK-001)
 - 재시도하지 않거나 연속 실패하면 **이미 받은 응답의 `response`(폴백 루틴)를 그대로 표시**한다. 앱 자체 목업 폴백은 쓰지 않는다.
 - `GET /api/v1/routine/today`도 같은 규칙: 마지막 버전의 `source`가 `ai`가 아니면 실패 안내를 띄울 수 있다.
 - 남편 알림(FUC-W-COND-002/003)은 `source == "ai"`일 때만 백엔드가 보낸다. 오늘 첫 AI 루틴이면 오전 리포트, 이미 AI 루틴이 있었으면 루틴 변경 알림이다(폴백 뒤 재시도 성공은 오전 리포트).
-- 컨디션 수정 시 일부 가이드만 다시 만드는 경우의 `source` 의미는 S10에서 추가한다.
+
+컨디션 수정 경로 (FUC-W-COND-003, S10)
+
+- 조건: 오늘 루틴이 있고 확정 전(`confirmed_at == null`)이며 직전 버전이 `source == "ai"`일 때 `POST`를 다시 호출하면 적용된다. 직전 버전이 폴백이면 4종 전체를 다시 만든다(재시도).
+- 서버가 직전 버전 생성 당시 컨디션·예정 활동과 지금 값을 비교해 **바뀐 가이드만** 다시 만든다. 나머지 가이드는 그대로이고 완료 체크도 유지된다.
+- 컨디션이 하나도 안 바뀌었으면 **새 버전 없이 현재 루틴을 그대로** 돌려준다(`revision` 그대로, 남편 알림 없음).
+- 다시 만들던 가이드 일부가 실패하면 그 가이드는 직전 내용을 유지하고 `source == "ai"`다. 대상 가이드가 모두 실패하면 `source == "fallback_prev"`(직전 버전 유지)이고, 앱은 위 규칙대로 실패 안내·다시 시도하기를 띄운다. 다시 시도하면 실패했던 가이드만 다시 만든다.
+- 확정 후 다시 입력(FUC-W-COND-004)은 4종 전체를 새로 만든다. 확정 API는 아직 없다.
 
 로컬 Flutter Web의 임의 개발 포트를 허용합니다.
 허용 origin은 `http://localhost[:port]`, `http://127.0.0.1[:port]`입니다.

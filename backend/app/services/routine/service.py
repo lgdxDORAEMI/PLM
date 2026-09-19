@@ -15,8 +15,9 @@ from supabase import Client
 from app.core.config import Settings
 from app.services.routine import repository
 from app.services.routine.generator import OpenAIRoutineGenerator
-from app.services.routine.inputs import collect_facts
-from app.services.routine.prompt import PROMPT_VERSION
+from app.services.routine.impact import load_impact_map, resolve_impact
+from app.services.routine.inputs import collect_facts, collect_yesterday
+from app.services.routine.prompt import CATEGORIES, PROMPT_VERSION
 from app.services.routine.retriever import KnowledgeRetriever
 from app.services.routine.rules import apply_rules
 
@@ -33,7 +34,7 @@ TIP_CHUNKS_PER_CATEGORY = 2
 LLM_FACT_KEYS = (
     "week", "is_first_pregnancy", "is_multiple_pregnancy", "allergies", "medical_conditions", "medical_note",
     "nausea", "waist_pain", "pelvis_pain", "leg_pain", "wrist_pain", "fatigue", "mood", "sleep_quality",
-    "planned_activities",
+    "planned_activities", "yesterday",
 )
 
 
@@ -162,10 +163,21 @@ class RoutineService:
         return {**routine, "tip": tip}, {int(c["id"]) for chunks in chunks_by_category.values() for c in chunks}
 
     async def generate_today(self, user_id: str, today: date) -> dict[str, Any]:
-        """POST /routine/today. 항상 4종 루틴을 저장·반환한다(빈 화면 0건, NFR-016)."""
+        """POST /routine/today. 항상 4종 루틴을 저장·반환한다(빈 화면 0건, NFR-016).
+
+        그날 확정 전 루틴이 있으면 컨디션 수정 경로(S10): 바뀐 가이드만 다시 만든다.
+        """
         facts = collect_facts(self.supabase, user_id, today)
+        facts["yesterday"] = collect_yesterday(self.supabase, user_id, today)
         constraints = apply_rules(facts)
         request_payload = {k: facts.get(k) for k in LLM_FACT_KEYS}
+
+        base = repository.get_edit_base(self.supabase, user_id, today)
+        if base and base.get("confirmed_at") is None and base.get("response") and (
+            base.get("source") == "ai" or (base.get("request_payload") or {}).get("failed_categories")
+        ):
+            return await self._edit_today(user_id, today, facts, constraints, request_payload, base)
+        # 오늘 첫 생성, 확정 후 새 루틴(FUC-W-COND-004), 직전이 폴백(재시도)이면 4종 전체 생성.
 
         source, model, error = "ai", self.settings.llm_model, None
         deadline = asyncio.get_running_loop().time() + TOTAL_TIMEOUT_SEC
@@ -192,3 +204,129 @@ class RoutineService:
             request_payload=request_payload, error_message=error,
         )
         return {**saved, "response": routine}
+
+    # ---- S10(R7): 컨디션 수정 경로 -------------------------------------------------------------
+
+    async def _edit_today(
+        self, user_id: str, today: date, facts: dict[str, Any], constraints: dict[str, Any],
+        request_payload: dict[str, Any], base: dict[str, Any],
+    ) -> dict[str, Any]:
+        previous_payload = base.get("request_payload") or {}
+        impact = resolve_impact(previous_payload, request_payload)
+        targets = {c: d for c, d in impact["category_impacts"].items() if d["mode"] != "KEEP"}
+        # 직전 수정에서 실패한 가이드는 컨디션이 그대로여도 다시 시도한다(재시도 버튼).
+        for category, decision in (previous_payload.get("failed_categories") or {}).items():
+            targets.setdefault(category, decision)
+        if not targets:  # 결정1: 바뀐 것이 없으면 호출·저장·알림 없이 현재 루틴 그대로
+            row = {k: v for k, v in base.items() if k != "request_payload"}
+            return {**row, "unchanged": True}
+
+        previous = base["response"]
+        deadline = asyncio.get_running_loop().time() + TOTAL_TIMEOUT_SEC
+        try:
+            results, tip, allowed = await asyncio.wait_for(
+                self._generate_edit(facts, constraints, impact, targets, previous, deadline), TOTAL_TIMEOUT_SEC
+            )
+        except Exception as exc:  # 검색 실패·전체 시간 초과 → 대상 전부 실패로 처리
+            logger.warning("루틴 수정 실패: %s", f"{type(exc).__name__}: {exc}"[:200])
+            results, tip, allowed = {}, None, set()
+
+        merged = {c: previous.get(c) for c in CATEGORIES}
+        merged.update(results)
+        failed = {c: d for c, d in targets.items() if c not in results}
+        allowed |= _source_ids(previous)
+        routine = validate(merged, constraints, allowed)
+        # 결정2: 실패한 가이드는 직전 내용을 현재 규칙으로 검사해 유지하고, 다 걸러져 비면 템플릿의 그 가이드.
+        if failed:
+            template = validate(load_template(), constraints, set())
+            for category in failed:
+                if not routine.get(category):
+                    routine[category] = template[category]
+        routine = _normalize_item_keys(routine)
+        routine["tip"] = validate_tip(tip, constraints, allowed)
+
+        generated = [c for c in targets if c in results]
+        source = "ai" if generated else "fallback_prev"  # fallback_prev = 전일 또는 직전 버전 유지
+        error = f"수정 실패 가이드: {', '.join(failed)}" if failed else None
+        saved = repository.save_routine(
+            self.supabase, user_id, today,
+            source=source, response=routine,
+            model=self.settings.llm_model if generated else None,
+            prompt_version=PROMPT_VERSION if generated else None,
+            request_payload={
+                **request_payload,
+                "impact": impact,
+                "generated_categories": generated,
+                **({"failed_categories": failed} if failed else {}),
+            },
+            error_message=error,
+            change_reason={
+                "categories": list(targets),
+                "conditions": [c["key"] for c in impact["changed_conditions"]],
+            },
+        )
+        return {**saved, "response": routine}
+
+    async def _generate_edit(
+        self, facts: dict[str, Any], constraints: dict[str, Any], impact: dict[str, Any],
+        targets: dict[str, dict[str, Any]], previous: dict[str, Any], deadline: float,
+    ) -> tuple[dict[str, Any], dict[str, Any] | None, set[int]]:
+        """대상 가이드만 검색·수정 호출을 동시에. 가이드별로 성공한 것만 돌려준다(부분 실패 허용)."""
+        loop = asyncio.get_running_loop()
+        chunks_by_category = await self.retriever.retrieve(facts, list(targets))
+        llm_facts = {k: facts.get(k) for k in LLM_FACT_KEYS}
+        tip_chunks = list({c["id"]: c for chunks in chunks_by_category.values()
+                           for c in chunks[:TIP_CHUNKS_PER_CATEGORY]}.values())
+        tip_task = asyncio.create_task(self._safe_tip(llm_facts, constraints, tip_chunks))
+        tasks = {
+            category: asyncio.create_task(self.generator.generate_edit(
+                category, llm_facts, _decision(decision), impact["changed_conditions"],
+                _contributors(category, decision, impact["changed_conditions"]),
+                previous.get(category), constraints, chunks_by_category.get(category),
+            ))
+            for category, decision in targets.items()
+        }
+        done, pending = await asyncio.wait(tasks.values(), timeout=max(0.0, deadline - loop.time() - 0.1))
+        for task in pending:
+            task.cancel()
+        results = {}
+        for category, task in tasks.items():
+            if task in done and task.exception() is None:
+                results[category] = task.result()
+            else:
+                reason = task.exception() if task in done else "시간 초과"
+                logger.warning("가이드 수정 실패(%s), 직전 내용 유지: %s", category, str(reason)[:200])
+        grace = max(0.0, min(TIP_GRACE_SEC, deadline - loop.time() - 0.1))
+        try:
+            tip = await asyncio.wait_for(tip_task, grace)
+        except asyncio.TimeoutError:
+            tip = None
+        allowed = {int(c["id"]) for chunks in chunks_by_category.values() for c in chunks}
+        return results, tip, allowed
+
+
+def _decision(decision: dict[str, Any]) -> dict[str, Any]:
+    return {k: decision[k] for k in ("mode", "strength", "direction", "worsening_pressure", "improvement_pressure")}
+
+
+def _contributors(category: str, decision: dict[str, Any], changes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """이 가이드에 기여한 변경 + primary/secondary 관계(§2.7 category_contributors_json)."""
+    conditions = load_impact_map()["conditions"]
+    by_key = {c["key"]: c for c in changes}
+    result = []
+    for key in decision.get("contributors", []):
+        if key == "planned_activities":
+            result.append({"key": key, "relation": "primary", "change": "예정 활동 목록 변경"})
+            continue
+        relation = "primary" if category in conditions[key]["primary"] else "secondary"
+        result.append({**by_key.get(key, {"key": key, "change": "직전 수정에서 실패해 재시도"}), "relation": relation})
+    return result
+
+
+def _source_ids(routine: dict[str, Any]) -> set[int]:
+    ids = set()
+    for category in CATEGORIES:
+        entries = routine.get(category) or []
+        for entry in entries if isinstance(entries, list) else [entries]:
+            ids.update(int(i) for i in entry.get("source_ids") or [])
+    return ids

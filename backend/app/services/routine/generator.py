@@ -12,10 +12,12 @@ from app.core.config import Settings
 from app.services.llm_service import LLMService
 from app.services.routine.prompt import (
     CATEGORIES,
+    EDIT_SYSTEM_PROMPT,
     ROUTINE_SCHEMA,
     SYSTEM_PROMPT,
     TIP_REQUEST,
     TIP_SCHEMA,
+    build_edit_prompt,
     build_user_prompt,
     category_schema,
 )
@@ -35,12 +37,15 @@ class OpenAIRoutineGenerator(LLMService):
         )
         self.model = settings.llm_model
 
-    async def generate(self, prompt: str, schema: dict[str, Any] = ROUTINE_SCHEMA, name: str = "daily_routine") -> str:
+    async def generate(
+        self, prompt: str, schema: dict[str, Any] = ROUTINE_SCHEMA, name: str = "daily_routine",
+        system: str = SYSTEM_PROMPT,
+    ) -> str:
         """LLMService 계약: 프롬프트 → 스키마를 만족하는 JSON 문자열."""
         response = await self.client.chat.completions.create(
             model=self.model,
             messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": system},
                 {"role": "user", "content": prompt},
             ],
             response_format={
@@ -61,6 +66,23 @@ class OpenAIRoutineGenerator(LLMService):
         own = {k: [c for c in v if c.get("category") == category] for k, v in (constraints or {}).items()}
         prompt = build_user_prompt(facts, own, chunks, category)
         return json.loads(await self.generate(prompt, category_schema(category), f"routine_{category}"))[category]
+
+    async def generate_edit(
+        self,
+        category: str,
+        facts: dict[str, Any],
+        decision: dict[str, Any],
+        changes: list[dict[str, Any]],
+        contributors: list[dict[str, Any]],
+        previous: Any,
+        constraints: dict[str, list[dict[str, Any]]] | None = None,
+        chunks: list[dict[str, Any]] | None = None,
+    ) -> Any:
+        """S10: 컨디션 수정 시 가이드 1개 조정. 출력 스키마는 최초 생성과 같다."""
+        own = {k: [c for c in v if c.get("category") == category] for k, v in (constraints or {}).items()}
+        prompt = build_edit_prompt(category, facts, decision, changes, contributors, previous, own, chunks)
+        content = await self.generate(prompt, category_schema(category), f"routine_edit_{category}", EDIT_SYSTEM_PROMPT)
+        return json.loads(content)[category]
 
     async def generate_tip(
         self,

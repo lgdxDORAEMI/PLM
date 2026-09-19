@@ -17,7 +17,8 @@ from app.domains.family.service import FamilyService
 from app.domains.family.stub_repository import StubFamilyRepository
 from app.main import app
 from app.services.routine import repository
-from app.services.routine.inputs import to_activities
+from app.schemas.movement import BodyPart
+from app.services.routine.inputs import to_activities, yesterday_motion
 from app.services.routine.rules import apply_rules
 from app.services.routine.service import RoutineService, _normalize_item_keys, load_template, validate
 
@@ -106,6 +107,7 @@ class FakeOpenAI:
         self.routine_json, self.fail = routine_json, fail
         self.chat_calls: list[dict] = []
         self.tip_fail = False
+        self.fail_names: set[str] = set()  # S10: 이 json_schema 이름의 호출만 실패
         self.tip_json = '{"tip": {"text": "허리가 뻐근하면 30분마다 일어나 가볍게 몸을 풀어요", "source_ids": [11, 999]}}'
 
     async def _embed(self, model, input):
@@ -113,6 +115,8 @@ class FakeOpenAI:
 
     async def _chat(self, **kwargs):
         self.chat_calls.append(kwargs)
+        if kwargs["response_format"]["json_schema"]["name"] in self.fail_names:
+            raise RuntimeError("category down")
         if kwargs["response_format"]["json_schema"]["name"] == "routine_tip" and not self.fail:
             if self.tip_fail:
                 raise RuntimeError("tip down")
@@ -209,6 +213,162 @@ class ValidateTest(unittest.TestCase):
         tpl = load_template()
         self.assertEqual(set(tpl), {"meal", "household", "health", "sleep"})
         self.assertEqual(len(repository.to_items(tpl)), 3 + 2 + 1 + 1)
+
+
+class YesterdayTest(unittest.TestCase):
+    """S8(R5): 전일 루틴 완료 현황·모션 요약을 ① 입력(facts.yesterday)과 request_payload에 넣는다."""
+
+    def setUp(self) -> None:
+        self.db = FakeSupabase()
+        seed(self.db)
+
+    def run_ai(self) -> tuple[dict, FakeOpenAI]:
+        import json
+        openai = FakeOpenAI(json.dumps(AI_ROUTINE, ensure_ascii=False))
+        return asyncio.run(make_service(self.db, openai).generate_today(USER, TODAY)), openai
+
+    def test_yesterday_routine_summary_in_payload_and_prompt(self) -> None:
+        y = "2026-09-15"
+        self.db.tables["routine_items"] = [
+            {"id": "a", "user_id": USER, "date": y, "item_key": "meal:lunch", "status": "completed", "change_kind": None},
+            {"id": "b", "user_id": USER, "date": y, "item_key": "health:waist", "status": "scheduled", "change_kind": None},
+            {"id": "c", "user_id": USER, "date": y, "item_key": "household:laundry", "status": "skipped", "change_kind": "updated"},
+            {"id": "d", "user_id": USER, "date": y, "item_key": "meal:snack", "status": "scheduled", "change_kind": "removed"},
+        ]
+        saved, openai = self.run_ai()
+        self.assertEqual(saved["request_payload"]["yesterday"]["routine"],
+                         {"completed": 1, "total": 3, "not_done": ["health:waist", "household:laundry"]})
+        self.assertIn("health:waist", openai.chat_calls[0]["messages"][1]["content"])
+
+    def test_no_yesterday_data_is_null_and_routine_still_ai(self) -> None:
+        saved, _ = self.run_ai()
+        self.assertEqual(saved["source"], "ai")
+        self.assertEqual(saved["request_payload"]["yesterday"], {"routine": None, "motion": None})
+
+    def test_motion_summary_numbers_only(self) -> None:
+        summary = SimpleNamespace(aggregates=[object()], cumulative_forward_bend_sec=720.0,
+                                  top_burdened_body_part=BodyPart.TRUNK, bending_burden_event_count=4,
+                                  narratives=["설명 문장은 보내지 않는다"])
+        uid = "00000000-0000-0000-0000-000000000001"
+        with patch("app.services.routine.inputs.generate_daily_report", return_value=summary) as report:
+            motion = yesterday_motion(self.db, uid, TODAY)
+        self.assertEqual(report.call_args.args[2], date(2026, 9, 15))  # K5: 어제 날짜(UTC 하루)
+        self.assertEqual(motion, {"top_burdened_area": "waist", "bending_burden_events": 4, "forward_bend_min": 12})
+
+    def test_motion_empty_or_failure_is_none(self) -> None:
+        uid = "00000000-0000-0000-0000-000000000001"
+        empty = SimpleNamespace(aggregates=[], cumulative_forward_bend_sec=0.0,
+                                top_burdened_body_part=None, bending_burden_event_count=0, narratives=[])
+        with patch("app.services.routine.inputs.generate_daily_report", return_value=empty):
+            self.assertIsNone(yesterday_motion(self.db, uid, TODAY))
+        with patch("app.services.routine.inputs.generate_daily_report", side_effect=RuntimeError("db down")):
+            self.assertIsNone(yesterday_motion(self.db, uid, TODAY))
+
+
+class EditPathTest(unittest.TestCase):
+    """S10(R7): 확정 전 루틴이 있을 때 컨디션을 고치면 바뀐 가이드만 다시 만든다(§2.8)."""
+
+    def setUp(self) -> None:
+        import json
+        self.db = FakeSupabase()
+        seed(self.db)
+        self.condition = self.db.tables["daily_conditions"][0]
+        self.openai = FakeOpenAI(json.dumps(AI_ROUTINE, ensure_ascii=False))
+        self.service = make_service(self.db, self.openai)
+
+    def generate(self) -> dict:
+        self.openai.chat_calls.clear()
+        return asyncio.run(self.service.generate_today(USER, TODAY))
+
+    def call_names(self) -> list[str]:
+        return sorted(c["response_format"]["json_schema"]["name"] for c in self.openai.chat_calls)
+
+    def items(self) -> dict:
+        return {i["item_key"]: i for i in self.db.tables["routine_items"]}
+
+    def test_unchanged_condition_returns_current_without_calls(self) -> None:
+        first = self.generate()
+        again = self.generate()
+        self.assertTrue(again["unchanged"])
+        self.assertEqual((again["id"], again["revision"]), (first["id"], 1))
+        self.assertEqual(self.openai.chat_calls, [])
+        self.assertEqual(len(self.db.tables["daily_routines"]), 1)
+
+    def test_small_change_edits_health_only_and_keeps_other_items(self) -> None:
+        """허리 2→3(예정 가사 없음): health만 수정 호출, 식사·수면 항목은 id·완료 기록 그대로."""
+        self.condition.update({"waist_pain": 2, "planned_activities": []})
+        self.generate()
+        before = self.items()
+        self.db.tables["routine_items"][0]["status"] = "completed"  # 식단 1개 완료 체크
+        self.condition["waist_pain"] = 3
+        edited = self.generate()
+        self.assertEqual(self.call_names(), ["routine_edit_health", "routine_tip"])
+        self.assertEqual(edited["revision"], 2)
+        after = self.items()
+        for key in ("meal:dinner", "sleep:main"):
+            self.assertEqual(after[key]["id"], before[key]["id"])
+        self.assertEqual(after["meal:dinner"]["status"], "completed")
+        row = self.db.tables["daily_routines"][-1]
+        self.assertEqual(row["request_payload"]["generated_categories"], ["health"])
+        self.assertEqual(row["change_summary"]["categories"], ["health"])
+        self.assertEqual(row["change_summary"]["conditions"], ["waist_pain"])
+        prompt = next(c for c in self.openai.chat_calls if c["response_format"]["json_schema"]["name"] == "routine_edit_health")
+        self.assertIn('"mode": "TUNE"', prompt["messages"][1]["content"])
+        self.assertIn("허리 이완", prompt["messages"][1]["content"])  # 기존 health 루틴 전달
+
+    def test_one_failed_category_keeps_previous_others_update(self) -> None:
+        """허리 4→5 + 빨래 예정: health·household 대상. health만 실패 → 나머지 반영, source=ai."""
+        first = self.generate()
+        self.condition["waist_pain"] = 5
+        self.openai.fail_names = {"routine_edit_health"}
+        edited = self.generate()
+        self.assertEqual(edited["source"], "ai")
+        self.assertEqual(edited["response"]["health"], first["response"]["health"])
+        row = self.db.tables["daily_routines"][-1]
+        self.assertEqual(row["request_payload"]["generated_categories"], ["household"])
+        self.assertIn("health", row["request_payload"]["failed_categories"])
+        self.assertIn("health", row["error_message"])
+
+    def test_all_targets_failed_is_fallback_prev_then_retry_same_condition(self) -> None:
+        self.condition.update({"waist_pain": 2, "planned_activities": []})
+        first = self.generate()
+        self.condition["waist_pain"] = 3
+        self.openai.fail_names = {"routine_edit_health"}
+        failed = self.generate()
+        self.assertEqual((failed["source"], failed["revision"]), ("fallback_prev", 2))
+        self.assertEqual(failed["response"]["meal"], first["response"]["meal"])
+        # 재시도: 컨디션은 그대로지만 실패했던 health를 다시 호출한다
+        self.openai.fail_names = set()
+        retried = self.generate()
+        self.assertEqual((retried["source"], retried["revision"]), ("ai", 3))
+        self.assertEqual(self.call_names(), ["routine_edit_health", "routine_tip"])
+
+    def test_nausea_3_to_5_edits_meal_and_health_only(self) -> None:
+        self.condition["nausea"] = 3
+        self.generate()
+        self.condition["nausea"] = 5
+        self.generate()
+        self.assertEqual(self.call_names(), ["routine_edit_health", "routine_edit_meal", "routine_tip"])
+
+    def test_mixed_direction_is_passed_to_prompt(self) -> None:
+        """허리 4→2(호전) + 손목 2→4(악화): health 결정 mixed를 상쇄 없이 전달."""
+        self.condition.update({"wrist_pain": 2, "planned_activities": []})
+        self.generate()
+        self.condition.update({"waist_pain": 2, "wrist_pain": 4})
+        self.generate()
+        prompt = next(c for c in self.openai.chat_calls if c["response_format"]["json_schema"]["name"] == "routine_edit_health")
+        self.assertIn('"direction": "mixed"', prompt["messages"][1]["content"])
+
+    def test_previous_fallback_or_confirmed_uses_full_generation(self) -> None:
+        self.openai.fail = True
+        self.generate()  # 폴백 루틴
+        self.openai.fail = False
+        self.generate()  # 같은 컨디션이어도 4종 전체 재생성(재시도)
+        self.assertEqual(self.call_names(), ["routine_health", "routine_household", "routine_meal", "routine_sleep", "routine_tip"])
+        self.db.tables["daily_routines"][-1]["confirmed_at"] = "2026-09-16T10:00:00+09:00"
+        confirmed = self.generate()  # 확정 후 재입력 = 새 루틴(FUC-W-COND-004)
+        self.assertEqual(len(self.openai.chat_calls), 5)
+        self.assertEqual(confirmed["revision"], 3)
 
 
 class RoutineServiceTest(unittest.TestCase):
@@ -431,7 +591,14 @@ class RoutineApiTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(first[0].reference_id, created.json()["id"])
             self.assertEqual(first[0].target_date, TODAY)
 
-            self.assertEqual((await client.post("/api/v1/routine/today")).status_code, 201)
+            # S10: 같은 컨디션으로 다시 부르면 새 버전·알림 없음(결정1)
+            same = await client.post("/api/v1/routine/today")
+            self.assertEqual(same.json()["revision"], 1)
+            self.assertEqual(len(self.family_repository.list_notifications(HUSBAND)), 1)
+
+            self.db.tables["daily_conditions"][0]["waist_pain"] = 5  # 컨디션 수정 → 재생성
+            changed = await client.post("/api/v1/routine/today")
+            self.assertEqual((changed.status_code, changed.json()["revision"]), (201, 2))
         types = sorted(n.type for n in self.family_repository.list_notifications(HUSBAND))
         self.assertEqual(types, ["condition_changed", "morning_report"])
 

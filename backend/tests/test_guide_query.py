@@ -16,8 +16,10 @@ from app.api.v1.guide import get_guide_service
 from app.core.security import CurrentUser, get_current_user
 from app.domains.guide.query_service import GuideQueryService
 from app.main import app
+from app.utils import dates
 
-TARGET_DATE = date(2026, 9, 18)
+# /today API는 실행 시점의 KST 오늘로 조회하므로 테스트 데이터도 같은 날짜로 만든다(고정 날짜면 다음 날부터 404).
+TARGET_DATE = dates.today_kst()
 
 
 class FakeTable:

@@ -59,12 +59,16 @@ class KnowledgeRetriever:
             },
         ).execute().data
 
-    async def retrieve(self, facts: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    async def retrieve(
+        self, facts: dict[str, Any], categories: list[str] | None = None
+    ) -> dict[str, list[dict[str, Any]]]:
         """{category: [chunk...]}. chunk = {id, category, week_start, week_end, content, source, similarity}.
 
-        임베딩은 4개 질의를 1회 호출로 묶는다(NFR-001).
+        임베딩은 질의를 1회 호출로 묶는다(NFR-001). categories를 주면 그 카테고리만 검색한다(S10 수정 경로).
         """
         queries = build_queries(facts)
+        if categories is not None:
+            queries = {c: q for c, q in queries.items() if c in categories}
         categories = list(queries)
         embeddings = await self.embed([queries[c] for c in categories])
         week = facts.get("week")

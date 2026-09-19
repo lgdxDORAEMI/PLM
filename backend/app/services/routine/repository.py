@@ -31,6 +31,21 @@ def get_routine(client: Client, user_id: str, on: date) -> dict[str, Any] | None
     return rows[0] if rows else None
 
 
+def get_edit_base(client: Client, user_id: str, on: date) -> dict[str, Any] | None:
+    """S10: 그날 최신 revision + 생성 당시 입력(request_payload). 컨디션 수정 경로의 비교 기준."""
+    rows = (
+        client.table("daily_routines")
+        .select("id, date, revision, source, model, generated_at, confirmed_at, change_summary, response, request_payload")
+        .eq("user_id", user_id)
+        .eq("date", on.isoformat())
+        .order("revision", desc=True)
+        .limit(1)
+        .execute()
+        .data
+    )
+    return rows[0] if rows else None
+
+
 def has_ai_routine_before(client: Client, user_id: str, on: date, revision: int) -> bool:
     """그날 이 revision 전에 AI가 만든 루틴이 있었는가. 남편 알림 종류(오전 리포트 vs 루틴 변경) 판단용(S5)."""
     rows = (
@@ -146,8 +161,12 @@ def save_routine(
     prompt_version: str | None,
     request_payload: dict[str, Any] | None,
     error_message: str | None,
+    change_reason: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """새 revision 행을 넣고 routine_items를 그 버전으로 맞춘다. 첫 생성이면 change_summary는 None."""
+    """새 revision 행을 넣고 routine_items를 그 버전으로 맞춘다. 첫 생성이면 change_summary는 None.
+
+    change_reason(S10) = {"categories": 다시 만든 가이드, "conditions": 바뀐 컨디션 키} → change_summary에 합친다.
+    """
     old_items = (
         client.table("routine_items").select(*ITEM_COLUMNS)
         .eq("user_id", user_id).eq("date", on.isoformat()).execute().data
@@ -162,7 +181,7 @@ def save_routine(
         "request_payload": request_payload,
         "response": response,
         "error_message": error_message,
-        "change_summary": diff_items(old_items, new_items) if old_items else None,
+        "change_summary": {**diff_items(old_items, new_items), **(change_reason or {})} if old_items else None,
     }
     # 같은 사람이 동시에 두 번 생성하면 revision이 겹친다 → 번호를 다시 받아 1번만 재시도.
     for attempt in (1, 2):
