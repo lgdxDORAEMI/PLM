@@ -65,36 +65,23 @@ class _PartnerRequestScreenState extends State<PartnerRequestScreen> {
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                  child: Row(
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '${request.requester}이 도움을 요청했어요',
-                              style: Theme.of(context).textTheme.headlineSmall,
-                            ),
-                          ),
-                          AppBadge(
-                            label: switch (request.status) {
-                              PartnerRequestStatus.requested => '미확인',
-                              PartnerRequestStatus.confirmed => '확인',
-                              PartnerRequestStatus.completed => '완료',
-                            },
-                            tone:
-                                request.status == PartnerRequestStatus.completed
-                                ? AppBadgeTone.success
-                                : AppBadgeTone.info,
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        '요청 번호 · ${request.id}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textSecondary,
+                      Expanded(
+                        child: Text(
+                          '${request.requester}이 도움을 요청했어요',
+                          style: Theme.of(context).textTheme.headlineSmall,
                         ),
+                      ),
+                      AppBadge(
+                        label: switch (request.status) {
+                          PartnerRequestStatus.requested => '미확인',
+                          PartnerRequestStatus.confirmed => '확인',
+                          PartnerRequestStatus.completed => '완료',
+                        },
+                        tone: request.status == PartnerRequestStatus.completed
+                            ? AppBadgeTone.success
+                            : AppBadgeTone.info,
                       ),
                     ],
                   ),

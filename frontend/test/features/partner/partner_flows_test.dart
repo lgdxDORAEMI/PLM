@@ -154,6 +154,8 @@ void main() {
 
     expect(find.text('오늘 요청한 이유'), findsNothing);
     expect(find.text('참고 정보'), findsNothing);
+    expect(find.textContaining('요청 번호'), findsNothing);
+    expect(find.text('demo-request'), findsNothing);
     expect(find.textContaining('확인 상태가 희선님 화면에 반영'), findsNothing);
 
     const taskIds = ['heavy-grocery', 'table-cleanup', 'water-plants'];
