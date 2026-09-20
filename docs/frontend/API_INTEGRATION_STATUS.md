@@ -10,6 +10,7 @@
 | Feature | Frontend 상태 | Backend API |
 |---|---|---|
 | 앱 진입 분기 | CONNECTED | `GET /api/v1/account/bootstrap` |
+| 프로필 설정(생년월일 포함) | CONNECTED | `GET /api/v1/profile/me`, `PUT /api/v1/profile/me/*` (2026-09-20: `birth_date` 실연결, 안 쓰이던 `/account/profile` 제거) |
 | 배우자 초대 발급 | CONNECTED | `POST /api/v1/account/partner-invitations` |
 | 배우자 연결 상태 | CONNECTED | `GET /api/v1/account/partner-link` |
 | 오늘 컨디션·예정 활동 | CONNECTED | `GET/PUT /api/v1/care/conditions/{date}`, `PUT .../activities` |
@@ -35,18 +36,17 @@ Mock Service와 Store는 Widget 테스트용으로 유지한다. API 미설정 �
 | Feature | 상태 | 사유 |
 |---|---|---|
 | Chat | MOCK | Backend Chat API가 고정 안내를 반환하는 stub이다. |
-| Account Profile | MOCK | Backend Profile 계약의 `birth_date` 저장 계약이 해결되지 않은 stub이다. |
 | 식사 대체 메뉴 생성 | MOCK | 실제 대체 메뉴를 생성하는 Backend API가 없고 Chat도 stub이다. |
 
-## BLOCKED
+## BLOCKED (해제됨, 2026-09-20)
 
-| Feature | 막힌 계약 |
+Guide 응답(`GET /meals|household|health|sleep/today`)의 각 항목에 `item_id`(routine_items.id)가 추가되어(`app/domains/guide/schemas.py`, `query_service.py`), 아래 3개 기능이 요구하던 `item_id`를 Frontend가 이제 직접 받을 수 있다. Frontend 쪽 연결 작업만 남았다.
+
+| Feature | 계약 |
 |---|---|
-| 건강·가사·수면 루틴 실행 완료 기록 | `PUT /care/routine-items/{item_id}/execution`은 `item_id`를 요구하지만 Guide 응답은 `item_key`만 제공한다. |
-| 식사 메뉴 수락·거절·교체 피드백 | `PUT /care/routine-items/{item_id}`는 `item_id`를 요구하지만 Meal Guide 응답은 `item_key`만 제공한다. |
-| 수면 환경 override | `PUT /care/routine-items/{item_id}/sleep-environment`는 `item_id`를 요구하지만 Sleep Guide 응답은 `item_key`만 제공한다. |
-
-Frontend에서 `item_key`를 `item_id`로 추정하지 않는다. 위 항목은 Backend/API 계약이 보완될 때까지 기존 로컬 동작과 Mock을 유지한다.
+| 건강·가사·수면 루틴 실행 완료 기록 | `PUT /care/routine-items/{item_id}/execution` — Guide 응답의 `item_id` 사용 |
+| 식사 메뉴 수락·거절·교체 피드백 | `PUT /care/routine-items/{item_id}` — Guide 응답의 `item_id` 사용 |
+| 수면 환경 override | `PUT /care/routine-items/{item_id}/sleep-environment` — Guide 응답의 `item_id` 사용 |
 
 ## 상태 및 오류 처리
 
