@@ -18,7 +18,6 @@ import '../../invitation/models/invitation.dart';
 import '../../invitation/services/invitation_service.dart';
 import '../../invitation/services/mock_invitation_service.dart';
 import '../../invitation/services/api_invitation_service.dart';
-import '../../../shared/widgets/integration_required_state.dart';
 
 class PartnerInviteScreen extends StatefulWidget {
   const PartnerInviteScreen({
@@ -47,7 +46,7 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
               ? ApiInvitationService()
               : const MockInvitationService()),
     )..addListener(_refresh);
-    unawaited(_controller.load());
+    if (widget.service != null) unawaited(_controller.load());
   }
 
   @override
@@ -69,22 +68,14 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
     ),
     body: SafeArea(
       top: false,
-      child: ResponsivePageContent(
-        child:
-            !AppConfig.hasSupabaseConfig &&
-                !AppConfig.mockPreviewEnabled &&
-                widget.service == null
-            ? const IntegrationRequiredState(message: '배우자 초대 기능을 사용할 수 없습니다.')
-            : _buildBody(),
-      ),
+      child: ResponsivePageContent(child: _buildBody()),
     ),
   );
 
   Widget _buildBody() => switch (_controller.state) {
-    InvitationActionState.loading => const AppLoadingState(
-      message: 'ThinQ 초대를 준비하고 있어요',
-    ),
-    InvitationActionState.error => AppErrorState(
+    InvitationActionState.loading when widget.service != null =>
+      const AppLoadingState(message: 'ThinQ 초대를 준비하고 있어요'),
+    InvitationActionState.error when widget.service != null => AppErrorState(
       title: '초대를 준비하지 못했어요',
       message: '잠시 후 다시 시도해 주세요.',
       onRetry: _controller.load,
@@ -153,6 +144,12 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
   };
 
   Future<void> _send() async {
+    if (widget.service == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('남편 초대장 전송은 연동이 필요합니다.')));
+      return;
+    }
     if (!await _controller.send() || !mounted) return;
     if (AppConfig.hasSupabaseConfig && _controller.link != null) {
       await Clipboard.setData(ClipboardData(text: _controller.link!));
