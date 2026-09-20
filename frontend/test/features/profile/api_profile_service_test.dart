@@ -8,6 +8,22 @@ import 'package:plm_frontend/features/profile/data/api_profile_service.dart';
 import 'package:plm_frontend/features/profile/models/profile_draft.dart';
 
 void main() {
+  test('Profile fetch reads the backend birth date', () async {
+    final client = ApiClient(
+      baseUrl: 'http://test',
+      httpClient: MockClient(
+        (request) async => http.Response(
+          jsonEncode({'due_date': '2027-01-20', 'birth_date': '1993-05-14'}),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        ),
+      ),
+    );
+
+    final profile = await ApiProfileService(client: client).fetch();
+    expect(profile?.birthDate, DateTime(1993, 5, 14));
+  });
+
   test('Profile save follows the six backend endpoints in order', () async {
     final paths = <String>[];
     final bodies = <Map<String, dynamic>>[];
