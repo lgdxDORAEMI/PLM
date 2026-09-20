@@ -77,12 +77,10 @@ class _PartnerNotificationsScreenState
     body: SafeArea(
       top: false,
       child: ResponsivePageContent(
-        child:
-            !AppConfig.hasSupabaseConfig &&
-                !AppConfig.mockPreviewEnabled &&
-                widget.service == null
-            ? const IntegrationRequiredState(message: '알림 데이터가 없습니다.')
-            : _body(),
+        child: IntegrationPreview(
+          hasService: widget.service != null,
+          child: _body(),
+        ),
       ),
     ),
   );

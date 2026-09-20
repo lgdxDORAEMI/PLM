@@ -77,12 +77,10 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen> {
     final body = SafeArea(
       top: false,
       child: ContentFrame(
-        child:
-            !AppConfig.hasSupabaseConfig &&
-                !AppConfig.mockPreviewEnabled &&
-                widget.service == null
-            ? const IntegrationRequiredState(message: '캘린더 기록 데이터가 없습니다.')
-            : _buildBody(),
+        child: IntegrationPreview(
+          hasService: widget.service != null,
+          child: _buildBody(),
+        ),
       ),
     );
     if (isWife) {

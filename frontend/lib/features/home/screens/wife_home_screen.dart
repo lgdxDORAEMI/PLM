@@ -180,7 +180,7 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
       : !AppConfig.hasSupabaseConfig &&
             !AppConfig.mockPreviewEnabled &&
             widget.routineService == null
-      ? const [IntegrationRequiredState(message: '오늘의 루틴 데이터가 없습니다.')]
+      ? [const IntegrationRequiredState(), ..._routineContent()]
       : _routineContent();
 
   Widget _weekContext() => Column(

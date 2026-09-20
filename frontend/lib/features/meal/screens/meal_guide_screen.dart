@@ -80,38 +80,34 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
           maxWidth: 1200,
           child: Builder(
             builder: (context) {
-              if (!AppConfig.hasSupabaseConfig &&
-                  !AppConfig.mockPreviewEnabled &&
-                  widget.service == null) {
-                return const IntegrationRequiredState(
-                  message: '식사 가이드 데이터가 없습니다.',
-                );
-              }
-              return switch (_controller.state) {
-                MealGuideViewState.loading => const AppLoadingState(
-                  message: '오늘의 메뉴를 준비하고 있어요',
-                ),
-                MealGuideViewState.empty => const AppEmptyState(
-                  title: '오늘의 메뉴가 없어요',
-                  message: '오늘 루틴이 만들어지면 이곳에 표시돼요.',
-                ),
-                MealGuideViewState.authError => AppErrorState(
-                  title: '메뉴를 볼 수 없어요',
-                  message: '로그인 상태를 확인해 주세요.',
-                  onRetry: _controller.load,
-                ),
-                MealGuideViewState.domainError ||
-                MealGuideViewState.serverError ||
-                MealGuideViewState.error => AppErrorState(
-                  title: '메뉴를 불러오지 못했어요',
-                  message: '잠시 후 다시 시도해 주세요.',
-                  onRetry: _controller.load,
-                ),
-                MealGuideViewState.ready =>
-                  _controller.showDetails
-                      ? _buildRecommendation()
-                      : _buildPeriodSelection(),
-              };
+              return IntegrationPreview(
+                hasService: widget.service != null,
+                child: switch (_controller.state) {
+                  MealGuideViewState.loading => const AppLoadingState(
+                    message: '오늘의 메뉴를 준비하고 있어요',
+                  ),
+                  MealGuideViewState.empty => const AppEmptyState(
+                    title: '오늘의 메뉴가 없어요',
+                    message: '오늘 루틴이 만들어지면 이곳에 표시돼요.',
+                  ),
+                  MealGuideViewState.authError => AppErrorState(
+                    title: '메뉴를 볼 수 없어요',
+                    message: '로그인 상태를 확인해 주세요.',
+                    onRetry: _controller.load,
+                  ),
+                  MealGuideViewState.domainError ||
+                  MealGuideViewState.serverError ||
+                  MealGuideViewState.error => AppErrorState(
+                    title: '메뉴를 불러오지 못했어요',
+                    message: '잠시 후 다시 시도해 주세요.',
+                    onRetry: _controller.load,
+                  ),
+                  MealGuideViewState.ready =>
+                    _controller.showDetails
+                        ? _buildRecommendation()
+                        : _buildPeriodSelection(),
+                },
+              );
             },
           ),
         ),

@@ -70,17 +70,18 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
       ),
       body: SafeArea(
         top: false,
-        child: ContentFrame(maxWidth: 1200, child: _buildBody()),
+        child: ContentFrame(
+          maxWidth: 1200,
+          child: IntegrationPreview(
+            hasService: widget.service != null,
+            child: _buildBody(),
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildBody() {
-    if (!AppConfig.hasSupabaseConfig &&
-        !AppConfig.mockPreviewEnabled &&
-        widget.service == null) {
-      return const IntegrationRequiredState(message: '수면 가이드 데이터가 없습니다.');
-    }
     return switch (_controller.state) {
       SleepGuideViewState.loading => const AppLoadingState(
         message: '오늘의 수면 환경을 준비하고 있어요',
