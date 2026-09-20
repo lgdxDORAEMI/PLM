@@ -94,13 +94,10 @@ class _MealChatScreenState extends State<MealChatScreen> {
                   controller: _scrollController,
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
                   children: [
-                    if (!_chatAvailable)
-                      const IntegrationRequiredState(
-                        message: '대화와 대체 메뉴 데이터가 없습니다.',
-                      )
-                    else ...[
-                      _MealChatContext(period: widget.mealPeriod),
-                      const SizedBox(height: AppSpacing.xxl),
+                    if (!_chatAvailable) const IntegrationRequiredState(),
+                    _MealChatContext(period: widget.mealPeriod),
+                    const SizedBox(height: AppSpacing.xxl),
+                    if (_chatAvailable)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
@@ -156,7 +153,6 @@ class _MealChatScreenState extends State<MealChatScreen> {
                           ],
                         ],
                       ),
-                    ],
                   ],
                 ),
               ),

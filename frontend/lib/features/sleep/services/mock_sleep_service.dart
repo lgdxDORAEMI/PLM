@@ -4,6 +4,12 @@ import 'sleep_service.dart';
 class MockSleepService implements SleepService {
   const MockSleepService();
 
+  @override
+  Future<void> updateEnvironment(
+    String itemId,
+    Map<String, dynamic> values,
+  ) async {}
+
   static const guide = SleepGuideData(
     summaryTitle: '오늘은 충분한 휴식이 필요해요',
     summary: '28주차에 권장되는 왼쪽 옆으로 눕는 자세를 반영했어요',

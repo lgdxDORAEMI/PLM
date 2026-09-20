@@ -27,9 +27,11 @@ class DailyRoutinePlan {
     required this.date,
     required this.updatedLabel,
     required this.items,
+    this.isBackendFallback = false,
   });
 
   final DateTime date;
   final String updatedLabel;
   final List<RoutineItem> items;
+  final bool isBackendFallback;
 }

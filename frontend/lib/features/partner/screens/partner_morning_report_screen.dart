@@ -91,12 +91,10 @@ class _PartnerMorningReportScreenState
     body: SafeArea(
       top: false,
       child: ResponsivePageContent(
-        child:
-            !AppConfig.hasSupabaseConfig &&
-                !AppConfig.mockPreviewEnabled &&
-                widget.service == null
-            ? const IntegrationRequiredState(message: '오전 리포트 데이터가 없습니다.')
-            : _body(),
+        child: IntegrationPreview(
+          hasService: widget.service != null,
+          child: _body(),
+        ),
       ),
     ),
   );

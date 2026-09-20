@@ -153,6 +153,26 @@ void main() {
     );
   });
 
+  testWidgets('마지막 생리 시작일만 있으면 출산예정일 입력칸에 계산값을 표시한다', (tester) async {
+    final lmp = DateTime.now().subtract(const Duration(days: 100));
+    ProfileStore.instance.save(ProfileDraft(lastPeriodDate: lmp));
+
+    await tester.pumpWidget(
+      const MaterialApp(home: ProfileSetupScreen(mode: ProfileMode.edit)),
+    );
+
+    final dueField = find.descendant(
+      of: find.byKey(const Key('due-date-field')),
+      matching: find.byType(TextField),
+    );
+    final calculated = lmp.add(const Duration(days: 280));
+    expect(
+      tester.widget<TextField>(dueField).controller!.text,
+      '${calculated.year}. ${calculated.month.toString().padLeft(2, '0')}. '
+      '${calculated.day.toString().padLeft(2, '0')}.',
+    );
+  });
+
   test('Summary 행 수정은 저장 후 다음 단계가 아닌 Summary로 복귀한다', () {
     ProfileStore.instance.save(ProfileDraft.mockEdit());
     final controller = ProfileSetupController(mode: ProfileMode.edit);

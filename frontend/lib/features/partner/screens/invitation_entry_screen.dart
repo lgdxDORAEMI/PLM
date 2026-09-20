@@ -106,12 +106,15 @@ class _InvitationEntryScreenState extends State<InvitationEntryScreen> {
     body: SafeArea(
       top: false,
       child: ResponsivePageContent(
-        child:
-            !AppConfig.hasSupabaseConfig &&
-                !AppConfig.mockPreviewEnabled &&
-                widget.service == null
-            ? const IntegrationRequiredState(message: '배우자 초대 기능을 사용할 수 없습니다.')
-            : _body(),
+        child: IntegrationPreview(
+          hasService: widget.service != null,
+          child:
+              !AppConfig.hasSupabaseConfig &&
+                  !AppConfig.mockPreviewEnabled &&
+                  widget.service == null
+              ? const _InvalidInvitation(status: InvitationTokenStatus.missing)
+              : _body(),
+        ),
       ),
     ),
   );

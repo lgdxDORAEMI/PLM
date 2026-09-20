@@ -16,7 +16,10 @@ class ApiHouseholdRequestService extends ChangeNotifier
 
   @override
   Future<List<HouseholdTask>> fetchGuide() async {
-    final response = await _client.get('/api/v1/household/today');
+    final response = await _client.get(
+      '/api/v1/household/today',
+      throwOnNotFound: true,
+    );
     final items = response?['items'];
     if (items is! List) return const [];
     return items
@@ -31,7 +34,7 @@ class ApiHouseholdRequestService extends ChangeNotifier
             _ => HouseholdTaskOwner.self,
           };
           return HouseholdTask(
-            id: item['item_key']?.toString() ?? '',
+            id: item['item_id']?.toString() ?? '',
             title: item['title']?.toString() ?? '',
             description:
                 item['description']?.toString() ??

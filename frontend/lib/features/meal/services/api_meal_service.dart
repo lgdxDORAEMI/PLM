@@ -9,8 +9,28 @@ class ApiMealService implements MealService {
   final ApiClient _client;
 
   @override
+  Future<void> recordDecision(
+    MealRecommendation recommendation,
+    MealDecision decision,
+  ) async {
+    if (decision == MealDecision.undecided) return;
+    await _client.put(
+      '/api/v1/care/routine-items/${Uri.encodeComponent(recommendation.id)}',
+      {
+        'payload': {'title': recommendation.title},
+        'feedback_kind': decision == MealDecision.accepted
+            ? 'meal_accept'
+            : 'meal_reject',
+      },
+    );
+  }
+
+  @override
   Future<MealGuideData> fetchGuide() async {
-    final response = await _client.get('/api/v1/meals/today');
+    final response = await _client.get(
+      '/api/v1/meals/today',
+      throwOnNotFound: true,
+    );
     if (response == null) {
       return const MealGuideData(
         greeting: '',
@@ -33,7 +53,7 @@ class ApiMealService implements MealService {
       recommendations.add(
         MealRecommendation(
           id:
-              raw['item_key']?.toString() ??
+              raw['item_id']?.toString() ??
               '${period.name}:${recommendations.length}',
           period: period,
           title: raw['title']?.toString() ?? '',

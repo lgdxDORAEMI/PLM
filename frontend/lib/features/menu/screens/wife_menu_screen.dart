@@ -97,10 +97,8 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
                 const SizedBox(height: AppSpacing.md),
                 if (!AppConfig.hasSupabaseConfig &&
                     !AppConfig.mockPreviewEnabled)
-                  const IntegrationRequiredState(
-                    message: '배우자 연결 상태를 확인할 수 없습니다.',
-                  )
-                else if (_linkController.state == PartnerLinkViewState.loading)
+                  const IntegrationRequiredState(),
+                if (_linkController.state == PartnerLinkViewState.loading)
                   const AppLoadingState(message: '배우자 연결 상태를 확인하고 있어요')
                 else if (_linkController.state != PartnerLinkViewState.data)
                   AppErrorState(

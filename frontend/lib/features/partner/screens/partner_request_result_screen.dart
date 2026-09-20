@@ -73,12 +73,10 @@ class _PartnerRequestResultScreenState
     body: SafeArea(
       top: false,
       child: ResponsivePageContent(
-        child:
-            !AppConfig.hasSupabaseConfig &&
-                !AppConfig.mockPreviewEnabled &&
-                widget.service == null
-            ? const IntegrationRequiredState(message: '가사 요청 결과 데이터가 없습니다.')
-            : _buildBody(),
+        child: IntegrationPreview(
+          hasService: widget.service != null,
+          child: _buildBody(),
+        ),
       ),
     ),
   );

@@ -12,11 +12,13 @@ import '../../../design_system/tokens/app_radius.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_names.dart';
 import '../controllers/planned_activity_controller.dart';
+import '../services/planned_activity_service.dart';
 
 class ActivityScreen extends StatefulWidget {
-  const ActivityScreen({super.key, this.editing = false});
+  const ActivityScreen({super.key, this.editing = false, this.service});
 
   final bool editing;
+  final PlannedActivityService? service;
 
   @override
   State<ActivityScreen> createState() => _ActivityScreenState();
@@ -29,7 +31,8 @@ class _ActivityScreenState extends State<ActivityScreen> {
   @override
   void initState() {
     super.initState();
-    _controller = PlannedActivityController()..addListener(_refresh);
+    _controller = PlannedActivityController(service: widget.service)
+      ..addListener(_refresh);
     _customController = TextEditingController();
     unawaited(_loadActivities());
   }
@@ -160,19 +163,46 @@ class _ActivityScreenState extends State<ActivityScreen> {
 
   Future<void> _generate() async {
     FocusManager.instance.primaryFocus?.unfocus();
+    if (_controller.generating) return;
+    final navigator = Navigator.of(context, rootNavigator: true);
+    final loadingRoute = DialogRoute<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const PopScope<void>(
+        canPop: false,
+        child: AlertDialog(
+          title: Text('AI 루틴 생성중...'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: AppSpacing.lg),
+              Text('오늘 컨디션과 예정 활동을 반영하고 있어요.\n약 10~15초 걸릴 수 있어요.'),
+            ],
+          ),
+        ),
+      ),
+    );
+    navigator.push(loadingRoute);
+    var generationFailed = false;
     try {
       await _controller.generateRoutine();
     } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('오늘의 루틴을 만들지 못했어요. 다시 시도해 주세요.')),
-        );
+      generationFailed = true;
+    } finally {
+      // The request result, not a timer, controls the loading window lifetime.
+      if (navigator.mounted && loadingRoute.isActive) {
+        navigator.removeRoute(loadingRoute);
       }
+    }
+    if (!mounted) return;
+    if (generationFailed) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('오늘의 루틴을 만들지 못했어요. 다시 시도해 주세요.')),
+      );
       return;
     }
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
-    }
+    Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
   }
 
   void _handleBack() {

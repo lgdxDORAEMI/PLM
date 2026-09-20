@@ -5,6 +5,9 @@ class MockHealthGuideService implements HealthGuideService {
   const MockHealthGuideService();
 
   @override
+  Future<void> setCompleted(String itemId, bool completed) async {}
+
+  @override
   Future<BodyCareGuideData> fetchGuide() async => const BodyCareGuideData(
     loads: BodyCareMockData.loads,
     activities: BodyCareMockData.activities,

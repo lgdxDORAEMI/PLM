@@ -75,12 +75,10 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
       top: false,
       child: ContentFrame(
         maxWidth: 1200,
-        child:
-            !AppConfig.hasSupabaseConfig &&
-                !AppConfig.mockPreviewEnabled &&
-                widget.service == null
-            ? const IntegrationRequiredState(message: 'Daily 리포트 데이터가 없습니다.')
-            : _buildBody(),
+        child: IntegrationPreview(
+          hasService: widget.service != null,
+          child: _buildBody(),
+        ),
       ),
     ),
   );

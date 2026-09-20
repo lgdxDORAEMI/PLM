@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../core/config/app_config.dart';
+import '../../../core/network/api_client.dart';
 import '../models/household_task.dart';
 import '../services/api_household_request_service.dart';
 import '../services/household_request_service.dart';
@@ -13,7 +14,9 @@ class HouseholdGuideController extends ChangeNotifier {
           (AppConfig.hasSupabaseConfig
               ? ApiHouseholdRequestService()
               : MockHouseholdRequestService()),
-      _tasks = HouseholdTaskMockData.tasks {
+      _tasks = AppConfig.hasSupabaseConfig
+          ? const <HouseholdTask>[]
+          : HouseholdTaskMockData.tasks {
     this.requestService.addListener(_syncPartnerProgress);
   }
 
@@ -41,6 +44,12 @@ class HouseholdGuideController extends ChangeNotifier {
     notifyListeners();
     try {
       _tasks = await requestService.fetchGuide();
+    } on ApiException catch (error) {
+      if (error.statusCode == 404) {
+        _tasks = const [];
+      } else {
+        _loadFailed = true;
+      }
     } catch (_) {
       _loadFailed = true;
     } finally {

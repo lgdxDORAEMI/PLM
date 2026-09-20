@@ -110,20 +110,28 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         body: Builder(
           builder: (context) => SafeArea(
             top: false,
-            child:
-                widget.mode == ProfileMode.edit &&
-                    ProfileStore.instance.profile == null
-                ? const IntegrationRequiredState(message: '저장된 프로필 데이터가 없습니다.')
-                : _controller.isSummary
-                ? ProfileSummary(
-                    draft: _controller.draft,
-                    onEditStep: _controller.editStep,
-                    onComplete: _complete,
-                    completeLabel: widget.mode == ProfileMode.create
-                        ? '완료하고 시작하기'
-                        : '수정 완료',
-                  )
-                : _buildStep(),
+            child: Column(
+              children: [
+                if (widget.mode == ProfileMode.edit &&
+                    ProfileStore.instance.profile == null)
+                  const Padding(
+                    padding: EdgeInsets.all(AppSpacing.md),
+                    child: IntegrationRequiredState(),
+                  ),
+                Expanded(
+                  child: _controller.isSummary
+                      ? ProfileSummary(
+                          draft: _controller.draft,
+                          onEditStep: _controller.editStep,
+                          onComplete: _complete,
+                          completeLabel: widget.mode == ProfileMode.create
+                              ? '완료하고 시작하기'
+                              : '수정 완료',
+                        )
+                      : _buildStep(),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -144,7 +152,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             ProfileDateField(
               key: const Key('due-date-field'),
               label: '출산예정일',
-              value: _controller.draft.dueDate,
+              value: _controller.draft.effectiveDueDate,
               onTap: () => _selectDate(isDueDate: true),
               helperText: '아직 모르겠다면 마지막 생리 시작일로 계산해 드려요.',
             ),
@@ -298,15 +306,21 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   Future<void> _selectDate({required bool isDueDate}) async {
     final today = DateUtils.dateOnly(DateTime.now());
     final currentValue = isDueDate
-        ? _controller.draft.dueDate
+        ? _controller.draft.effectiveDueDate
         : _controller.draft.lastPeriodDate;
     final firstDate = isDueDate
+        ? today.subtract(const Duration(days: 14))
+        : today.subtract(const Duration(days: 294));
+    final lastDate = isDueDate ? today.add(const Duration(days: 365)) : today;
+    final initialDate =
+        currentValue == null ||
+            currentValue.isBefore(firstDate) ||
+            currentValue.isAfter(lastDate)
         ? today
-        : today.subtract(const Duration(days: 300));
-    final lastDate = isDueDate ? today.add(const Duration(days: 300)) : today;
+        : currentValue;
     final selected = await showDatePicker(
       context: context,
-      initialDate: currentValue ?? today,
+      initialDate: initialDate,
       firstDate: firstDate,
       lastDate: lastDate,
       helpText: isDueDate ? '출산예정일 선택' : '마지막 생리 시작일 선택',
