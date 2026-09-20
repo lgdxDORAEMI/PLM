@@ -1,7 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plm_frontend/design_system/components/app_button.dart';
 import 'package:plm_frontend/features/condition/data/planned_activity_store.dart';
 import 'package:plm_frontend/features/condition/screens/activity_screen.dart';
+import 'package:plm_frontend/features/condition/services/planned_activity_service.dart';
+import 'package:plm_frontend/routing/route_names.dart';
 
 void main() {
   final store = PlannedActivityStore.instance;
@@ -45,4 +50,73 @@ void main() {
     );
     expect(find.text('수정 완료'), findsOneWidget);
   });
+
+  testWidgets('루틴 생성 중 애니메이션 창을 표시하고 완료되면 자동으로 닫는다', (tester) async {
+    final service = _PendingActivityService();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ActivityScreen(service: service),
+        routes: {
+          RouteNames.wifeHome: (_) => const Scaffold(body: Text('홈 도착')),
+        },
+      ),
+    );
+    await tester.pump();
+    final submit = find.byKey(const ValueKey('activity-submit-button'));
+    await tester.scrollUntilVisible(
+      submit,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(submit);
+    await tester.pump();
+
+    expect(find.text('AI 루틴 생성중...'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.text('홈 도착'), findsNothing);
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.text('AI 루틴 생성중...'), findsOneWidget);
+
+    service.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('AI 루틴 생성중...'), findsNothing);
+    expect(find.text('홈 도착'), findsOneWidget);
+  });
+
+  testWidgets('루틴 생성 실패 시 로딩 창을 닫고 다시 시도할 수 있다', (tester) async {
+    final service = _PendingActivityService();
+    await tester.pumpWidget(
+      MaterialApp(home: ActivityScreen(service: service)),
+    );
+    await tester.pump();
+    final submit = find.byKey(const ValueKey('activity-submit-button'));
+    await tester.scrollUntilVisible(
+      submit,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(submit);
+    await tester.pump();
+
+    service.fail();
+    await tester.pumpAndSettle();
+    expect(find.text('AI 루틴 생성중...'), findsNothing);
+    expect(find.text('오늘의 루틴을 만들지 못했어요. 다시 시도해 주세요.'), findsOneWidget);
+    expect(tester.widget<AppButton>(submit).onPressed, isNotNull);
+  });
+}
+
+class _PendingActivityService implements PlannedActivityService {
+  final Completer<void> _generation = Completer<void>();
+
+  @override
+  Future<List<String>> fetch(DateTime date) async => const [];
+
+  @override
+  Future<void> saveAndGenerate(DateTime date, List<String> activities) =>
+      _generation.future;
+
+  void complete() => _generation.complete();
+
+  void fail() => _generation.completeError(StateError('generation failed'));
 }
