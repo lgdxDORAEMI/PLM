@@ -44,6 +44,7 @@ class BodyCareController extends ChangeNotifier {
       }
     } on ApiException catch (error) {
       _state = switch (error.statusCode) {
+        404 => BodyCareViewState.empty,
         401 || 403 => BodyCareViewState.authError,
         503 => BodyCareViewState.serverError,
         _ => BodyCareViewState.error,
@@ -60,8 +61,16 @@ class BodyCareController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleCompleted(String id) {
-    _completed.contains(id) ? _completed.remove(id) : _completed.add(id);
+  Future<void> toggleCompleted(String id) async {
+    final completed = !_completed.contains(id);
+    completed ? _completed.add(id) : _completed.remove(id);
     notifyListeners();
+    try {
+      await service.setCompleted(id, completed);
+    } on Object {
+      completed ? _completed.remove(id) : _completed.add(id);
+      _state = BodyCareViewState.error;
+      notifyListeners();
+    }
   }
 }

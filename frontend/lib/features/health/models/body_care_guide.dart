@@ -33,7 +33,7 @@ class BodyCareGuideData {
       final payload = item['payload'] is Map
           ? item['payload'] as Map
           : const <String, dynamic>{};
-      final itemKey = item['item_key']?.toString() ?? '';
+      final itemKey = item['item_id']?.toString() ?? '';
       final area = payload['bodyArea']?.toString() ?? '';
       if (itemKey.isEmpty || area.isEmpty) continue;
       activities.add(

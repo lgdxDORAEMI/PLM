@@ -9,8 +9,22 @@ class ApiSleepService implements SleepService {
   final ApiClient _client;
 
   @override
+  Future<void> updateEnvironment(
+    String itemId,
+    Map<String, dynamic> values,
+  ) async {
+    await _client.put(
+      '/api/v1/care/routine-items/${Uri.encodeComponent(itemId)}/sleep-environment',
+      values,
+    );
+  }
+
+  @override
   Future<SleepGuideData> fetchGuide() async {
-    final response = await _client.get('/api/v1/sleep/today');
+    final response = await _client.get(
+      '/api/v1/sleep/today',
+      throwOnNotFound: true,
+    );
     final items = response?['items'];
     if (items is! List || items.isEmpty || items.first is! Map) {
       return const SleepGuideData(
@@ -26,6 +40,7 @@ class ApiSleepService implements SleepService {
     final details = payload is Map ? payload : const {};
     final environments = details['environments'];
     return SleepGuideData(
+      itemId: item['item_id']?.toString(),
       summaryTitle: item['title']?.toString() ?? '오늘의 수면 가이드',
       summary: details['reason']?.toString() ?? '',
       recommendedBedtime: details['recommendedBedtime']?.toString() ?? '',

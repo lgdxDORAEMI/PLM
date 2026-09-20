@@ -35,6 +35,7 @@ class SleepGuideController extends ChangeNotifier {
           : SleepGuideViewState.ready;
     } on ApiException catch (error) {
       _state = switch (error.statusCode) {
+        404 => SleepGuideViewState.empty,
         401 || 403 => SleepGuideViewState.authError,
         409 || 422 => SleepGuideViewState.domainError,
         503 => SleepGuideViewState.serverError,
@@ -46,7 +47,33 @@ class SleepGuideController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateValue(SleepEnvironmentType type, String value) {
+  Future<void> updateValue(SleepEnvironmentType type, String value) async {
+    final itemId = _guide?.itemId;
+    if (itemId != null) {
+      try {
+        final key = switch (type) {
+          SleepEnvironmentType.light => 'lighting',
+          SleepEnvironmentType.temperature => 'temperature',
+          SleepEnvironmentType.humidity => 'humidity',
+          SleepEnvironmentType.sound => 'sound',
+          SleepEnvironmentType.purifier => 'air_purifier',
+        };
+        final number = num.tryParse(
+          RegExp(r'\d+(?:\.\d+)?').firstMatch(value)?.group(0) ?? '',
+        );
+        await service.updateEnvironment(itemId, {
+          key:
+              type == SleepEnvironmentType.temperature ||
+                  type == SleepEnvironmentType.humidity
+              ? number ?? value
+              : value,
+        });
+      } on Object {
+        _state = SleepGuideViewState.error;
+        notifyListeners();
+        return;
+      }
+    }
     _replace(type, (item) => item.copyWith(value: value));
   }
 
@@ -57,6 +84,7 @@ class SleepGuideController extends ChangeNotifier {
     final current = _guide;
     if (current == null) return;
     _guide = SleepGuideData(
+      itemId: current.itemId,
       summaryTitle: current.summaryTitle,
       summary: current.summary,
       recommendedBedtime: current.recommendedBedtime,

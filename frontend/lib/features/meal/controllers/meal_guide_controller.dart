@@ -81,6 +81,7 @@ class MealGuideController extends ChangeNotifier {
       _state = MealGuideViewState.ready;
     } on ApiException catch (error) {
       _state = switch (error.statusCode) {
+        404 => MealGuideViewState.empty,
         401 || 403 => MealGuideViewState.authError,
         409 || 422 => MealGuideViewState.domainError,
         503 => MealGuideViewState.serverError,
@@ -117,11 +118,19 @@ class MealGuideController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void acceptSelected() {
+  Future<void> acceptSelected() async {
     final recommendation = selectedRecommendation;
     if (recommendation == null) return;
+    final previous = store.decisionFor(recommendation.id);
     store.recordDecision(recommendation.id, MealDecision.accepted);
     notifyListeners();
+    try {
+      await service.recordDecision(recommendation, MealDecision.accepted);
+    } on Object {
+      store.recordDecision(recommendation.id, previous);
+      _state = MealGuideViewState.error;
+      notifyListeners();
+    }
   }
 
   void rejectSelected() {

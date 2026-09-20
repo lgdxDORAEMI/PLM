@@ -25,6 +25,7 @@ class SleepEnvironmentSetting {
 
 class SleepGuideData {
   const SleepGuideData({
+    this.itemId,
     required this.summaryTitle,
     required this.summary,
     required this.recommendedBedtime,
@@ -32,6 +33,7 @@ class SleepGuideData {
     required this.tips,
   });
 
+  final String? itemId;
   final String summaryTitle;
   final String summary;
   final String recommendedBedtime;
