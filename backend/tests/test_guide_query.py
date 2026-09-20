@@ -101,6 +101,21 @@ class GuideQueryServiceTest(unittest.TestCase):
         guide = service.get_guide("wife-1", TARGET_DATE, RoutineCategory.MEAL)
         self.assertEqual([item.title for item in guide.items], ["점심", "저녁"])
 
+    def test_excludes_items_removed_by_regeneration(self) -> None:
+        """재생성 시 FK(chat_messages 등)가 삭제를 막아 change_kind='removed'로만
+        남은 항목은 더 이상 오늘 루틴이 아니므로 응답에서 빠져야 한다."""
+        from app.domains.guide.schemas import RoutineCategory
+
+        removed = {**meal_item(0, "삭제된 항목"), "change_kind": "removed"}
+        client = FakeSupabaseClient(
+            routines=[{"user_id": "wife-1", "date": TARGET_DATE.isoformat(), "id": "r1"}],
+            items=[removed, meal_item(1, "저녁")],
+        )
+        service = GuideQueryService(client)
+
+        guide = service.get_guide("wife-1", TARGET_DATE, RoutineCategory.MEAL)
+        self.assertEqual([item.title for item in guide.items], ["저녁"])
+
     def test_no_routine_raises_not_found(self) -> None:
         from app.domains.errors import DomainNotFoundError
         from app.domains.guide.schemas import RoutineCategory

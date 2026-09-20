@@ -40,6 +40,7 @@ ITEM_COLUMNS = (
     "status",
     "completed_by",
     "completed_at",
+    "change_kind",
 )
 
 
@@ -86,6 +87,12 @@ class GuideQueryService:
                 completed_at=row.get("completed_at"),
             )
             for row in item_rows
+            # 재생성 시 FK(예: chat_messages.routine_item_id)가 삭제를 막으면 Routine AI
+            # 쪽이 지우는 대신 change_kind='removed'로만 표시한다(routine/repository.py
+            # _sync_items) — 그 행은 더 이상 오늘 루틴이 아니므로 화면에 보여주지 않는다.
+            # SQL .neq()는 NULL(대부분의 정상 행)까지 걸러내므로 Python에서 비교한다
+            # (Routine AI 쪽 inputs.py가 같은 이유로 쓰는 것과 동일한 패턴).
+            if row.get("change_kind") != "removed"
         ]
         return GuideResponse(date=target_date, category=category, items=items)
 
