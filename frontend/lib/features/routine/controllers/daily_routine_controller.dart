@@ -26,7 +26,9 @@ class DailyRoutineController extends ChangeNotifier {
     notifyListeners();
     try {
       _plan = await service.fetchToday();
-      _state = RoutineViewState.ready;
+      _state = _plan!.isBackendFallback
+          ? RoutineViewState.fallback
+          : RoutineViewState.ready;
     } on Object {
       _plan = fallbackPlan;
       _state = fallbackPlan == null
