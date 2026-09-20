@@ -66,7 +66,7 @@
 
 | Actor | Screen | FUC | 필요한 데이터 | DB | API | Backend 상태 |
 |---|---|---|---|---|---|---|
-| Husband | B-ENTRY-001 (초대 수락 경로) | FUC-H-INVITE-001 | 초대 토큰 검증, 계정 연동 | `partner_invitations`/`partner_links`(EXISTING) | `POST /account/partner-invitations/{token}/accept`(STEP 13, Supabase 실연결) — API 계약은 구현됨. 화면·인증 복귀 흐름 자체는 여전히 `DOMAIN_OWNERSHIP.md` 기존 TBD | PARTIAL(API는 IMPLEMENTED, 화면 흐름 TBD) |
+| Husband | B-ENTRY-001 (초대 수락 경로) | FUC-H-INVITE-001 | 초대 토큰 검증, 계정 연동 | `partner_invitations`/`partner_links`(EXISTING) | `POST /account/partner-invitations/{token}/accept`(STEP 13, Supabase 실연결) — API 계약은 구현됨. 화면·로그인 방식(인증 복귀 흐름) 확정은 보류. 2026-09-20 팀 결정: 실사용 연동은 이 화면 경로에 의존하지 않고 `partner_links`를 운영자가 수동으로 미리 삽입하는 방식으로 대체한다(현재 테스트 wife↔husband 1쌍 연동 완료, `linked_at=2026-09-18`) | PARTIAL(API는 IMPLEMENTED, 화면·로그인 계약은 보류 — 실사용은 수동 DB 연동으로 대체) |
 | Husband | B-CAL-001 (읽기 전용) | FUC-B-CAL-001 | 날짜별 컨디션/실행/가전/분담 조회 | 위 Wife B-CAL-001과 동일 | `GET /care/calendar/{month}`(STEP 17) — `partner_links`로 연동된 남편은 아내 캘린더를 읽기 전용 조회, 미연동이면 본인(빈) 캘린더 | IMPLEMENTED |
 | Husband | H-NOTI-001 | FUC-H-NOTI-001, FUC-H-NOTI-002 | 알림 유형/요약/시각/읽음여부 | `notifications`(EXISTING) | `GET /family/notifications`, `POST .../read`(STEP 17, Supabase 실연결). 발송 3종: 가사 요청 생성, 하루 첫 루틴 생성(`morning_report`), 루틴 재생성(`condition_changed`) — 뒤 둘은 `POST /routine/today` 성공 직후 | IMPLEMENTED |
 | Husband | H-REPORT-001 | FUC-H-REPORT-001 | 주차, 컨디션 요약, 예정 집안일, 4대 가이드 요약 — **원문 내부 모순**: 문서 내 두 버전이 "가이드 요약 포함 여부"를 서로 다르게 서술 | `partner_links`+`pregnancy_profiles`+`daily_conditions`+`routine_items`(모두 EXISTING) | `GET /family/morning-reports/{date}`(STEP 12, family authorization+projection — 복사 저장 없음, 원본 점수 미노출) | IMPLEMENTED |
@@ -132,7 +132,7 @@
 - ~~당일 컨디션·예정활동을 `daily_conditions`에 실제로 쓰는 API~~ — STEP 9에서 해결(`app/domains/care/supabase_repository.py`)
 - ~~실행 기록(Record), Daily 리포트, 캘린더~~ — STEP 12에서 해결. `routine_items.status`를 직접 갱신하고(별도 로그 테이블 없음), `daily_reports`는 확정 시에만 1행 저장(NFR-028), 캘린더는 저장 없이 `daily_conditions`+`daily_reports` 조합 조회
 - ~~남편 오전 리포트~~ — STEP 12에서 해결. `partner_links`로 연동 확인 후 아내 테이블을 그 자리에서 읽는 projection(복사 저장 없음, `app/domains/family/supabase_repository.py`)
-- ~~파트너 초대/연동 확정~~ — STEP 13에서 해결. `bootstrap`/`partner-link`/`partner-invitations`(발급·수락) 전부 Supabase 실연결. 화면 흐름 자체(H-INVITE-001 인증 복귀)는 여전히 TBD이지만 API 계약은 구현 완료
+- ~~파트너 초대/연동 확정~~ — STEP 13에서 해결. `bootstrap`/`partner-link`/`partner-invitations`(발급·수락) 전부 Supabase 실연결. 화면 흐름 자체(H-INVITE-001 인증 복귀)는 여전히 미확정이지만, 2026-09-20 팀 결정으로 실사용 연동은 `partner_links` 수동 삽입으로 대체해 더 이상 블로커가 아님
 - ~~가사 요청·알림 영속화~~ — STEP 17에서 해결(`app/domains/family/supabase_repository.py`). Daily 리포트의 가족 분담 집계도 같은 STEP에서 `household_requests` 실조회(누적 funnel)로 교체
 - ~~오전 리포트·루틴 변경 알림 발송(FUC-W-COND-002/003)~~ — STEP 17에서 해결. `POST /routine/today` 성공 직후 `FamilyService.notify_routine_ready`가 첫 생성이면 `morning_report`, 재생성이면 `condition_changed`를 남편에게 발송(미연동 시 생략, 발송 실패해도 201). `app/api/v1/routine.py` 라우트만 최소 수정(`app/services/routine/**` 불변)
 - 챗봇(W-CHAT-001) — STEP 8에서 Stub 골격 생성, 실제 AI 응답·이력 영속화는 미구현(NFR-027 보관 정책 TBD)
@@ -150,7 +150,7 @@
 
 ## TBD
 
-- `FUC-H-INVITE-001`: 초대 수락 화면·인증 복귀 계약 미확정 (`DOMAIN_OWNERSHIP.md` 기존 TBD)
+- ~~`FUC-H-INVITE-001`: 초대 수락 화면·인증 복귀 계약 미확정~~ — 2026-09-20 팀 결정: 화면·로그인 방식 확정 자체는 보류하고, 실사용(시연) 연동은 `partner_links`를 운영자가 수동으로 미리 삽입하는 방식으로 대체한다. 수락 화면(`InvitationEntryScreen`)·API는 코드에 남겨두되 신규 연동을 이 경로에 의존하지 않는다
 - `FUC-W-COND-003` vs 유스케이스 UC2 A1 설명 불일치 — 최신 FUC는 "남편 변경 알림 발송"으로 명시했으나 UC 문서는 미정 (`DOMAIN_OWNERSHIP.md` 기존 TBD)
 - `H-REPORT-001`(남편 화면 DB스키마 PDF): 오전 리포트에 4대 AI 가이드 요약 포함 여부가 같은 화면 ID 내 두 버전에서 서로 다르게 서술됨 — 확정 필요
 - `H-REQUEST-002`(가사 요청 완료 결과): 남편 화면설계서 인덱스에는 있으나 본문 상세 섹션이 문서에 없음 — 별도 API 필요 여부 확인 필요

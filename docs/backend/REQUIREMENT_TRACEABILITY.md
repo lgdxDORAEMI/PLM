@@ -56,7 +56,7 @@
 
 | Actor | Screen | FUC | Use Case | Data | DB | API | Test | Status |
 |---|---|---|---|---|---|---|---|---|
-| Husband | B-ENTRY-001(초대 수락) | FUC-H-INVITE-001 | UC16 | 토큰 검증, 계정 연동 | `partner_invitations`+`partner_links` | `POST /account/partner-invitations/{token}/accept` | `test_account_partner_link.py::InvitationLifecycleTest`(6개) | TBD — API는 PASS 수준이지만 화면·인증 복귀 흐름 자체가 문서상 미확정 |
+| Husband | B-ENTRY-001(초대 수락) | FUC-H-INVITE-001 | UC16 | 토큰 검증, 계정 연동 | `partner_invitations`+`partner_links` | `POST /account/partner-invitations/{token}/accept` | `test_account_partner_link.py::InvitationLifecycleTest`(6개) | PARTIAL — API는 PASS 수준, 화면·인증 복귀 흐름은 여전히 미확정. 2026-09-20 팀 결정으로 실사용 연동은 `partner_links` 수동 삽입으로 대체(신규 연동을 이 API 경로에 의존하지 않음) |
 | Husband | B-CAL-001(Husband) | FUC-B-CAL-001 | UC7, UC10 | 날짜별 기록 조회(읽기전용) | Wife B-CAL-001과 동일 | `GET /care/calendar/{month}` | `test_care_report.py::CalendarApiTest`(연동 남편→아내 캘린더, 미연동→빈 캘린더) | PASS — `partner_links`로 연동된 남편은 아내 캘린더 읽기 전용 조회(STEP 17). 쓰기 API가 없어 수정 금지는 자동 충족 |
 | Husband | H-NOTI-001 | FUC-H-NOTI-001/002 | UC8, UC9, UC14 | 알림 목록 | `notifications` | `GET /family/notifications`,`POST .../read` | `test_family_notification.py`(9개: 생성·격리·읽음·404·최신순·503, 루틴 생성 알림 3종), `test_routine_service.py`(첫 생성/재생성 알림 4개) | PASS — 알림 3종 전부 발송: 가사 요청, 오전 리포트(첫 루틴 생성), 루틴 변경(재생성) |
 | Husband | H-REPORT-001 | FUC-H-REPORT-001 | UC8 | 주차, 컨디션 요약, 가이드 요약 | `partner_links`+`pregnancy_profiles`+`daily_conditions`+`routine_items`(projection) | `GET /family/morning-reports/{date}` | `test_family_morning_report.py`(5개) | PASS |
