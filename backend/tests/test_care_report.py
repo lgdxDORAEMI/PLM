@@ -334,6 +334,28 @@ class ReportApiTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(body["completed_routines"], 1)
         self.assertEqual(self.client.tables["daily_reports"], [])  # 아무것도 안 남았다
 
+    async def test_removed_items_are_excluded_from_execution_stats(self) -> None:
+        """재생성으로 빠졌지만 FK 때문에 삭제되지 못하고 change_kind='removed'로만
+        남은 항목은 더 이상 오늘 루틴이 아니므로 실행 통계·목록에 남으면 안 된다."""
+        self.client.seed_condition()
+        self.client.seed_item(
+            "item-1",
+            "meal",
+            status="completed",
+            completed_by="appliance",
+            change_kind="removed",
+        )
+        self.client.seed_item("item-2", "household", status="completed", completed_by="wife")
+        async with self.http() as client:
+            response = await client.post(
+                f"/api/v1/care/daily-reports/{TARGET_DATE.isoformat()}/preview"
+            )
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["completed_routines"], 1)
+        self.assertEqual(body["appliance_executions"], 0)
+        self.assertEqual([r["routine_item_id"] for r in body["routines"]], ["item-2"])
+
     async def test_finalize_persists_exactly_one_row_per_date(self) -> None:
         self.client.seed_condition()
         self.client.seed_item("item-1", "meal", status="completed", completed_by="wife")

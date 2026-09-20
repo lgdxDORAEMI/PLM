@@ -67,7 +67,7 @@ HOUSEHOLD_REQUESTS_TABLE = "household_requests"
 FEEDBACK_TABLE = "recommendation_feedback"
 _CONFIRMED_OR_FURTHER = {"confirmed", "completed"}
 
-EXECUTION_COLUMNS = ("id", "category", "title", "status", "completed_by", "completed_at")
+EXECUTION_COLUMNS = ("id", "category", "title", "status", "completed_by", "completed_at", "change_kind")
 
 # routine/inputs.py의 CONDITION_COLUMNS 중 아내가 직접 입력하는 7개 점수만.
 # sleep_quality는 화면(W-COND-001)에 아직 없고 척도도 미확정(04_3 #2)이라 이 API는
@@ -380,6 +380,11 @@ class SupabaseCareRepository(CareRepository):
                 completed_at=row.get("completed_at"),
             )
             for row in item_rows
+            # 재생성 시 FK가 삭제를 막으면 change_kind='removed'로만 남는다
+            # (routine/repository.py _sync_items) — 더 이상 오늘 루틴이 아니므로
+            # 실행 통계·목록에서 뺀다. SQL .neq()는 NULL(정상 행)까지 걸러내므로
+            # Python에서 비교한다.
+            if row.get("change_kind") != "removed"
         ]
         completed_routines = sum(1 for r in routines if r.status == ExecutionStatus.COMPLETED)
         appliance_executions = sum(

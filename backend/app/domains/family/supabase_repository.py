@@ -101,12 +101,17 @@ class SupabaseFamilyRepository(FamilyRepository):
 
         item_rows = self._run(
             lambda: self.client.table("routine_items")
-            .select("category,title,sort_order")
+            .select("category,title,sort_order,change_kind")
             .eq("user_id", wife_user_id)
             .eq("date", target_date.isoformat())
             .order("sort_order")
             .execute()
         )
+        # 재생성 시 FK(household_request_items/chat_messages/recommendation_feedback)가
+        # 삭제를 막으면 삭제 대신 change_kind='removed'로만 남는다(routine/repository.py
+        # _sync_items) — 더 이상 오늘 루틴이 아니므로 요약에서 뺀다. SQL .neq()는
+        # NULL(대부분의 정상 행)까지 걸러내므로 Python에서 비교한다.
+        item_rows = [row for row in item_rows if row.get("change_kind") != "removed"]
 
         return MorningReportResponse(
             target_date=target_date,

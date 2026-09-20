@@ -90,7 +90,9 @@ class FakeSupabaseClient:
         row.update(overrides)
         self.tables["daily_conditions"].append(row)
 
-    def seed_item(self, category: str, title: str, sort_order: int = 0) -> None:
+    def seed_item(
+        self, category: str, title: str, sort_order: int = 0, *, change_kind: str | None = None
+    ) -> None:
         self.tables["routine_items"].append(
             {
                 "user_id": WIFE,
@@ -98,6 +100,7 @@ class FakeSupabaseClient:
                 "category": category,
                 "title": title,
                 "sort_order": sort_order,
+                "change_kind": change_kind,
             }
         )
 
@@ -139,6 +142,20 @@ class MorningReportTest(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn(5, body["condition_summary"])
         self.assertEqual(body["guide_summaries"]["meal"], "현미밥과 나물")
         self.assertEqual(body["guide_summaries"]["household"], "빨래")
+
+    async def test_removed_items_are_excluded_from_guide_summaries(self) -> None:
+        """재생성으로 빠졌지만 FK 때문에 삭제되지 못하고 change_kind='removed'로만
+        남은 항목은 더 이상 오늘 루틴이 아니므로 요약에 나오면 안 된다."""
+        self.client.link()
+        self.client.seed_profile()
+        self.client.seed_condition()
+        self.client.seed_item("meal", "삭제된 메뉴", sort_order=0, change_kind="removed")
+        self.client.seed_item("meal", "현재 메뉴", sort_order=1)
+
+        async with self.http() as client:
+            response = await client.get(f"/api/v1/family/morning-reports/{TARGET_DATE}")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["guide_summaries"]["meal"], "현재 메뉴")
 
     async def test_other_husband_cannot_see_this_wifes_report(self) -> None:
         """다른 남편은 연동돼 있지 않으므로 이 아내의 데이터를 볼 수 없다(부부 단위 격리)."""
