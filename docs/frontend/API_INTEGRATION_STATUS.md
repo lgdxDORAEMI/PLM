@@ -35,7 +35,7 @@ Mock Service와 Store는 Widget 테스트용으로 유지한다. API 미설정 �
 
 | Feature | 상태 | 사유 |
 |---|---|---|
-| Chat | MOCK | Backend Chat API가 고정 안내를 반환하는 stub이다. |
+| Chat | MOCK | Backend Chat API는 대화 이력 저장(`chat_messages`)만 실연결됐고, 실제 AI 응답은 여전히 고정 안내 문구다(NFR-027 확정 전). |
 | 식사 대체 메뉴 생성 | MOCK | 실제 대체 메뉴를 생성하는 Backend API가 없고 Chat도 stub이다. |
 
 ## BLOCKED (해제됨, 2026-09-20)
