@@ -12,6 +12,7 @@ class GuideItem(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    item_id: str
     item_key: str
     title: str
     description: str | None = None

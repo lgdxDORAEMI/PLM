@@ -42,6 +42,6 @@ void main() {
       '/api/v1/profile/me/medical-notes',
     ]);
     expect(bodies.last['medical_conditions'], isEmpty);
-    expect(bodies.expand((body) => body.keys), isNot(contains('birth_date')));
+    expect(bodies[1]['birth_date'], '1993-05-14');
   });
 }

@@ -2,7 +2,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from typing import Annotated, Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.utils import dates
 
@@ -65,12 +65,20 @@ class DueDateInput(BaseModel):
 
 
 class BodyInput(BaseModel):
-    """프로필 설정 2/6. 임신 전 신장·체중은 함께 저장한다."""
+    """프로필 설정 2/6. 생년월일(→나이)·임신 전 신장·체중을 함께 저장한다."""
 
     model_config = ConfigDict(extra="forbid")
 
+    birth_date: date
     height_cm: HeightCm
     pre_pregnancy_weight_kg: WeightKg
+
+    @field_validator("birth_date")
+    @classmethod
+    def validate_birth_date(cls, value: date) -> date:
+        if value >= dates.today_kst():
+            raise ValueError("생년월일은 오늘보다 이전이어야 합니다.")
+        return value
 
 
 class PregnancyHistoryInput(BaseModel):
@@ -116,6 +124,8 @@ class MedicalNotesInput(BaseModel):
 class ProfileResponse(BaseModel):
     due_date: date | None
     last_period_start: date | None
+    birth_date: date | None
+    age: int | None
     height_cm: float | None
     pre_pregnancy_weight_kg: float | None
     is_first_pregnancy: bool | None

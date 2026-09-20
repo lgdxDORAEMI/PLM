@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Protocol
 
-from .schemas import PartnerLinkStatus, ProfileCompletion, ProfileResponse, UserRole
+from .schemas import PartnerLinkStatus, ProfileCompletion, UserRole
 
 
 @dataclass(frozen=True)
@@ -36,7 +36,3 @@ class AccountRepository(Protocol):
     def mark_invitation_used(self, invitation_id: str, *, used_at: datetime) -> None: ...
 
     def link_partner(self, wife_user_id: str, husband_user_id: str) -> None: ...
-
-    def get_profile(self, user_id: str) -> ProfileResponse | None: ...
-
-    def save_profile(self, user_id: str, profile: ProfileResponse) -> ProfileResponse: ...

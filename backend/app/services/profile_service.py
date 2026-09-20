@@ -24,6 +24,7 @@ TABLE = "pregnancy_profiles"
 PROFILE_COLUMNS = (
     "due_date",
     "last_period_start",
+    "birth_date",
     "height_cm",
     "pre_pregnancy_weight_kg",
     "is_first_pregnancy",
@@ -38,7 +39,7 @@ PROFILE_COLUMNS = (
 # '{}'라 "미입력"과 "빈 배열 선택"을 구분할 수 없다).
 STEP_COLUMNS: tuple[tuple[str, ...], ...] = (
     ("due_date",),
-    ("height_cm", "pre_pregnancy_weight_kg"),
+    ("birth_date", "height_cm", "pre_pregnancy_weight_kg"),
     ("is_first_pregnancy",),
     ("is_multiple_pregnancy",),
 )
@@ -98,6 +99,7 @@ class ProfileService:
 
     def save_body(self, user_id: str, data: BodyInput) -> ProfileResponse:
         values = {
+            "birth_date": data.birth_date.isoformat(),
             "height_cm": float(data.height_cm),
             "pre_pregnancy_weight_kg": float(data.pre_pregnancy_weight_kg),
             "updated_at": _now(),
@@ -169,10 +171,16 @@ def _now() -> str:
 
 
 def _to_response(row: Row) -> ProfileResponse:
-    weeks = days = None
+    weeks = days = age = None
     if row.get("due_date") is not None:
         due_date = date.fromisoformat(str(row["due_date"]))
         weeks, days = dates.pregnancy_age(due_date, dates.today_kst())
+    if row.get("birth_date") is not None:
+        birth_date = date.fromisoformat(str(row["birth_date"]))
+        today = dates.today_kst()
+        age = today.year - birth_date.year - (
+            (today.month, today.day) < (birth_date.month, birth_date.day)
+        )
     values = {column: row.get(column) for column in PROFILE_COLUMNS}
     # allergies/medical_conditions는 DB에서 not null default '{}'라 이론상 None이
     # 될 수 없지만, 방어적으로 폴백을 둔다.
@@ -183,5 +191,6 @@ def _to_response(row: Row) -> ProfileResponse:
         **values,
         pregnancy_weeks=weeks,
         pregnancy_days=days,
+        age=age,
         completed_step=completed_step(row),
     )

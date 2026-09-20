@@ -18,6 +18,7 @@ from app.services.profile_service import ProfileService
 from app.utils.dates import pregnancy_age
 
 TODAY = date(2026, 9, 15)
+BIRTH_DATE = "1993-05-14"  # TODAY 기준 만 33세
 
 
 def iso(days_from_today: int) -> str:
@@ -124,13 +125,18 @@ class DueDateInputTest(unittest.TestCase):
 
 
 class BodyInputTest(unittest.TestCase):
+    def setUp(self) -> None:
+        freeze_today(self)
+
     def test_accepts_boundaries_and_one_decimal(self) -> None:
         for height, weight in ((100, 30), (250, 200), (165.5, 55.5), ("165", "55")):
             with self.subTest(height=height, weight=weight):
-                BodyInput.model_validate({"height_cm": height, "pre_pregnancy_weight_kg": weight})
+                BodyInput.model_validate(
+                    {"birth_date": BIRTH_DATE, "height_cm": height, "pre_pregnancy_weight_kg": weight}
+                )
 
     def test_rejects_invalid(self) -> None:
-        valid = {"height_cm": 165, "pre_pregnancy_weight_kg": 55}
+        valid = {"birth_date": BIRTH_DATE, "height_cm": 165, "pre_pregnancy_weight_kg": 55}
         for field, value in (
             ("height_cm", 99.9),
             ("height_cm", 250.1),
@@ -139,13 +145,15 @@ class BodyInputTest(unittest.TestCase):
             ("pre_pregnancy_weight_kg", 29.9),
             ("pre_pregnancy_weight_kg", 200.1),
             ("pre_pregnancy_weight_kg", None),
+            ("birth_date", iso(0)),  # 오늘은 생년월일로 허용하지 않는다
+            ("birth_date", iso(1)),
         ):
             with self.subTest(field=field, value=value):
                 with self.assertRaises(ValidationError) as caught:
                     BodyInput.model_validate({**valid, field: value})
                 self.assertEqual(caught.exception.errors()[0]["loc"][0], field)
         with self.assertRaises(ValidationError):
-            BodyInput.model_validate({"height_cm": 165})
+            BodyInput.model_validate({"birth_date": BIRTH_DATE, "height_cm": 165})
 
 
 class ProfileApiTest(unittest.IsolatedAsyncioTestCase):
@@ -165,7 +173,8 @@ class ProfileApiTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(response.status_code, 404)
 
             response = await client.put(
-                "/api/v1/profile/me/body", json={"height_cm": 165, "pre_pregnancy_weight_kg": 55}
+                "/api/v1/profile/me/body",
+                json={"birth_date": BIRTH_DATE, "height_cm": 165, "pre_pregnancy_weight_kg": 55},
             )
             self.assertEqual(response.status_code, 409)
 
@@ -178,6 +187,8 @@ class ProfileApiTest(unittest.IsolatedAsyncioTestCase):
                 {
                     "due_date": iso(180),
                     "last_period_start": iso(-100),
+                    "birth_date": None,
+                    "age": None,
                     "height_cm": None,
                     "pre_pregnancy_weight_kg": None,
                     "is_first_pregnancy": None,
@@ -192,11 +203,14 @@ class ProfileApiTest(unittest.IsolatedAsyncioTestCase):
             )
 
             response = await client.put(
-                "/api/v1/profile/me/body", json={"height_cm": 165, "pre_pregnancy_weight_kg": 55.5}
+                "/api/v1/profile/me/body",
+                json={"birth_date": BIRTH_DATE, "height_cm": 165, "pre_pregnancy_weight_kg": 55.5},
             )
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.json()["height_cm"], 165.0)
             self.assertEqual(response.json()["pre_pregnancy_weight_kg"], 55.5)
+            self.assertEqual(response.json()["birth_date"], BIRTH_DATE)
+            self.assertEqual(response.json()["age"], 33)
             self.assertEqual(response.json()["completed_step"], 2)
 
             # 1단계를 다시 저장해도 2단계 값은 유지되고, 직접 고른 출산예정일이면 생리 시작일은 비워진다.
@@ -250,9 +264,10 @@ class ProfileApiTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(body["medical_conditions"], ["빈혈"])
             self.assertEqual(body["medical_note"], "의사가 참고하라고 함")
 
-            # 신장·체중(2단계)까지 채우면 completed_step이 4까지 정확히 올라간다.
+            # 생년월일·신장·체중(2단계)까지 채우면 completed_step이 4까지 정확히 올라간다.
             response = await client.put(
-                "/api/v1/profile/me/body", json={"height_cm": 165, "pre_pregnancy_weight_kg": 55}
+                "/api/v1/profile/me/body",
+                json={"birth_date": BIRTH_DATE, "height_cm": 165, "pre_pregnancy_weight_kg": 55},
             )
             self.assertEqual(response.json()["completed_step"], 4)
 
@@ -266,7 +281,7 @@ class ProfileApiTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(response.status_code, 200)
             response = await client.put(
                 "/api/v1/profile/me/body",
-                json={"height_cm": 160, "pre_pregnancy_weight_kg": 52},
+                json={"birth_date": BIRTH_DATE, "height_cm": 160, "pre_pregnancy_weight_kg": 52},
             )
             self.assertEqual(response.status_code, 200)
             response = await client.put(
@@ -292,6 +307,8 @@ class ProfileApiTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(response.status_code, 200)
             body = response.json()
             self.assertEqual(body["due_date"], iso(100))
+            self.assertEqual(body["birth_date"], BIRTH_DATE)
+            self.assertEqual(body["age"], 33)
             self.assertEqual(body["height_cm"], 160.0)
             self.assertFalse(body["is_first_pregnancy"])
             self.assertTrue(body["is_multiple_pregnancy"])
@@ -332,7 +349,8 @@ class ProfileApiTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(response.json()["detail"][0]["loc"], ["body"])
 
             response = await client.put(
-                "/api/v1/profile/me/body", json={"height_cm": 165.55, "pre_pregnancy_weight_kg": 55}
+                "/api/v1/profile/me/body",
+                json={"birth_date": BIRTH_DATE, "height_cm": 165.55, "pre_pregnancy_weight_kg": 55},
             )
             self.assertEqual(response.status_code, 422)
             self.assertEqual(response.json()["detail"][0]["loc"], ["body", "height_cm"])
@@ -355,7 +373,11 @@ class ProfileApiTest(unittest.IsolatedAsyncioTestCase):
             for method, path, payload in (
                 ("GET", "/api/v1/profile/me", None),
                 ("PUT", "/api/v1/profile/me/due-date", {"due_date": iso(100)}),
-                ("PUT", "/api/v1/profile/me/body", {"height_cm": 165, "pre_pregnancy_weight_kg": 55}),
+                (
+                    "PUT",
+                    "/api/v1/profile/me/body",
+                    {"birth_date": BIRTH_DATE, "height_cm": 165, "pre_pregnancy_weight_kg": 55},
+                ),
             ):
                 with self.subTest(path=path):
                     response = await client.request(method, path, json=payload)

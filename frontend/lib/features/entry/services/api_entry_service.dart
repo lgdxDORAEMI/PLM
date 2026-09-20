@@ -31,9 +31,7 @@ class ApiEntryService implements EntryService {
       profileComplete: response['profile'] == 'complete',
     );
     if (role == ActiveRole.wife && response['profile'] != 'missing') {
-      final profile = await ApiProfileService(
-        client: _client,
-      ).fetch(birthDate: ProfileStore.instance.profile?.birthDate);
+      final profile = await ApiProfileService(client: _client).fetch();
       if (profile != null) ProfileStore.instance.save(profile);
     }
 

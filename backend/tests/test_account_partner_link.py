@@ -18,7 +18,6 @@ from postgrest.exceptions import APIError
 from app.api.v1.account import get_account_service
 from app.core.security import CurrentUser, get_current_user
 from app.domains.account.service import AccountService
-from app.domains.account.stub_repository import StubAccountRepository
 from app.domains.account.supabase_repository import SupabaseAccountRepository
 from app.main import app
 
@@ -130,7 +129,7 @@ class FakeSupabaseClient:
 
 def client_for(fake: FakeSupabaseClient) -> AsyncClient:
     app.dependency_overrides[get_account_service] = lambda: AccountService(
-        SupabaseAccountRepository(fake, fallback=StubAccountRepository())
+        SupabaseAccountRepository(fake)
     )
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost")
 
@@ -146,6 +145,7 @@ class InvitationLifecycleTest(unittest.IsolatedAsyncioTestCase):
             {
                 "user_id": WIFE,
                 "due_date": "2026-12-20",
+                "birth_date": "1993-05-14",
                 "height_cm": 160,
                 "pre_pregnancy_weight_kg": 55,
                 "is_first_pregnancy": True,

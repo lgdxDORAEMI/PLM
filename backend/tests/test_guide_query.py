@@ -74,6 +74,7 @@ class FakeSupabaseClient:
 
 def meal_item(sort_order: int, title: str, status: str = "scheduled") -> dict:
     return {
+        "id": f"item-{sort_order}",
         "user_id": "wife-1",
         "date": TARGET_DATE.isoformat(),
         "category": "meal",

@@ -7,13 +7,13 @@ class ApiProfileService {
 
   final ApiClient _client;
 
-  Future<ProfileDraft?> fetch({DateTime? birthDate}) async {
+  Future<ProfileDraft?> fetch() async {
     final response = await _client.get('/api/v1/profile/me');
     if (response == null) return null;
     return ProfileDraft(
       dueDate: _date(response['due_date']),
       lastPeriodDate: _date(response['last_period_start']),
-      birthDate: birthDate,
+      birthDate: _date(response['birth_date']),
       height: response['height_cm']?.toString(),
       prePregnancyWeight: response['pre_pregnancy_weight_kg']?.toString(),
       isFirstPregnancy: response['is_first_pregnancy'] as bool?,
@@ -24,7 +24,6 @@ class ApiProfileService {
     );
   }
 
-  /// Sends only fields supported by the backend; birth date stays browser local.
   Future<void> save(ProfileDraft draft) async {
     final dueDate = draft.dueDate;
     final lastPeriod = draft.lastPeriodDate;
@@ -33,6 +32,7 @@ class ApiProfileService {
       if (lastPeriod != null) 'last_period_start': _isoDate(lastPeriod),
     });
     await _client.put('/api/v1/profile/me/body', {
+      'birth_date': _isoDate(draft.birthDate!),
       'height_cm': double.parse(draft.height!),
       'pre_pregnancy_weight_kg': double.parse(draft.prePregnancyWeight!),
     });

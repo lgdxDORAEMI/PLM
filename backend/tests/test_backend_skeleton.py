@@ -8,8 +8,12 @@ from app.api.v1.care import get_care_service
 from app.api.v1.chat import get_chat_service
 from app.api.v1.family import get_family_service
 from app.core.security import CurrentUser, get_current_user
+from app.domains.account.repository import AccountState
 from app.domains.account.schemas import (
     EntryDestination,
+    PartnerLinkStatus,
+    ProfileCompletion,
+    UserRole,
 )
 from app.domains.account.service import AccountService
 from app.domains.account.stub_repository import StubAccountRepository
@@ -59,7 +63,6 @@ class BackendSkeletonContractTest(unittest.TestCase):
         paths = self.client.get("/openapi.json").json()["paths"]
         expected = {
             "/api/v1/account/bootstrap",
-            "/api/v1/account/profile",
             "/api/v1/account/partner-invitations",
             "/api/v1/account/partner-invitations/{token}/accept",
             "/api/v1/profile/me/pregnancy-history",
@@ -87,22 +90,16 @@ class BackendSkeletonContractTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["destination"], EntryDestination.WIFE_PROFILE)
 
-        response = self.client.put(
-            "/api/v1/account/profile",
-            json={
-                "due_date": "2026-12-20",
-                "birth_date": "1996-04-12",
-                "height_cm": 165,
-                "pre_pregnancy_weight_kg": 55,
-                "is_first_pregnancy": True,
-                "is_multiple_pregnancy": False,
-                "allergies": ["갑각류"],
-                "medical_conditions": [],
-                "medical_note": "",
-            },
+        # 실제 프로필 저장은 /api/v1/profile/me/* (Supabase 연동)이 담당한다 — 여기서는
+        # bootstrap이 그 결과(ProfileCompletion)를 반영하는지만 확인한다.
+        self.account_repository.set_state(
+            WIFE_ID,
+            AccountState(
+                role=UserRole.WIFE,
+                profile=ProfileCompletion.COMPLETE,
+                partner_link=PartnerLinkStatus.UNLINKED,
+            ),
         )
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(response.json()["completed"])
         response = self.client.get("/api/v1/account/bootstrap")
         self.assertEqual(response.json()["destination"], EntryDestination.WIFE_HOME)
 

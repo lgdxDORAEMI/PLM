@@ -7,8 +7,10 @@
 `SupabaseFamilyRepository`)가 이미 이렇게 되어 있다. 이 파일은 그 관계를
 "만드는" 쪽(초대 발급·수락)을 실제로 연결해 체인을 완성한다.
 
-프로필(get_profile/save_profile, 6단계 통합 Stub)은 `birth_date` 컬럼 불일치가
-남아 있어(STEP 8/10에서 이미 기록됨) 이번에도 Stub에 위임한다 — STEP 13 범위 밖.
+프로필 저장은 `/api/v1/profile/me/*`(app/services/profile_service.py, 실제
+Supabase 연동)가 전담한다 — 한때 여기 있던 get_profile/save_profile(6단계
+일괄 Stub)은 birth_date를 포함해 그쪽과 계약이 중복돼 있었고, Frontend가
+호출하지 않는 죽은 코드라 제거했다(2026-09-20).
 """
 
 from __future__ import annotations
@@ -25,13 +27,12 @@ from app.domains.errors import DomainConflictError, DomainStorageError
 from app.services.profile_service import PROFILE_COLUMNS, completed_step
 
 from .repository import AccountRepository, AccountState, InvitationRecord
-from .schemas import PartnerLinkStatus, ProfileCompletion, ProfileResponse, UserRole
+from .schemas import PartnerLinkStatus, ProfileCompletion, UserRole
 
 
 class SupabaseAccountRepository(AccountRepository):
-    def __init__(self, client: Client, fallback: AccountRepository) -> None:
+    def __init__(self, client: Client) -> None:
         self.client = client
-        self.fallback = fallback
 
     def get_state(self, user_id: str) -> AccountState:
         role = self._role(user_id)
@@ -116,12 +117,6 @@ class SupabaseAccountRepository(AccountRepository):
             )
             .execute()
         )
-
-    def get_profile(self, user_id: str) -> ProfileResponse | None:
-        return self.fallback.get_profile(user_id)
-
-    def save_profile(self, user_id: str, profile: ProfileResponse) -> ProfileResponse:
-        return self.fallback.save_profile(user_id, profile)
 
     def _role(self, user_id: str) -> UserRole:
         rows = self._run(

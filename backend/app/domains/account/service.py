@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Protocol
 
 from app.domains.errors import (
@@ -15,8 +15,6 @@ from .schemas import (
     PartnerLinkResponse,
     PartnerLinkStatus,
     ProfileCompletion,
-    ProfileInput,
-    ProfileResponse,
     UserRole,
 )
 
@@ -29,10 +27,6 @@ class AccountServicePort(Protocol):
     def issue_invitation(self, user_id: str) -> InvitationResponse: ...
 
     def accept_invitation(self, husband_user_id: str, token: str) -> PartnerLinkResponse: ...
-
-    def get_profile(self, user_id: str) -> ProfileResponse: ...
-
-    def save_profile(self, user_id: str, payload: ProfileInput) -> ProfileResponse: ...
 
 
 class AccountService(AccountServicePort):
@@ -89,28 +83,6 @@ class AccountService(AccountServicePort):
         self.repository.mark_invitation_used(invitation.invitation_id, used_at=now)
         # 남편 표시 이름은 Stub이 모르는 값이라 지어내지 않는다.
         return PartnerLinkResponse(status=PartnerLinkStatus.LINKED, partner_display_name=None)
-
-    def get_profile(self, user_id: str) -> ProfileResponse:
-        profile = self.repository.get_profile(user_id)
-        if profile is None:
-            raise DomainNotFoundError("완료된 프로필이 없습니다.")
-        return profile
-
-    def save_profile(self, user_id: str, payload: ProfileInput) -> ProfileResponse:
-        assert payload.due_date is not None
-        today = date.today()
-        pregnancy_days = 280 - (payload.due_date - today).days
-        pregnancy_weeks = max(0, min(42, pregnancy_days // 7))
-        age = today.year - payload.birth_date.year - (
-            (today.month, today.day) < (payload.birth_date.month, payload.birth_date.day)
-        )
-        profile = ProfileResponse(
-            **payload.model_dump(),
-            pregnancy_weeks=pregnancy_weeks,
-            age=age,
-            updated_at=datetime.now(timezone.utc),
-        )
-        return self.repository.save_profile(user_id, profile)
 
     @staticmethod
     def _destination(

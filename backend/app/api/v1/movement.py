@@ -31,6 +31,7 @@ WebSocket 프로토콜 (프론트 B-4가 구현할 대상):
 
 from __future__ import annotations
 
+import asyncio
 import re
 import time
 import uuid
@@ -179,7 +180,9 @@ async def stream_live(
             timestamp_ms = next_timestamp_ms()
 
             if collector is not None:
-                collector.add_frame(rgb_frame, timestamp_ms)
+                # MediaPipe 추론(CPU 동기 작업)이 이벤트 루프를 점유해 같은 프로세스의
+                # 다른 요청(예: AI 루틴 생성)을 지연시키므로 스레드로 넘긴다.
+                await asyncio.to_thread(collector.add_frame, rgb_frame, timestamp_ms)
                 await websocket.send_json(
                     {
                         "type": "calibration_progress",
@@ -193,7 +196,9 @@ async def stream_live(
                     await websocket.send_json({"type": "calibration_done"})
                 continue
 
-            frame_state = manager.process_frame(session_id, extractor, rgb_frame, timestamp_ms)
+            frame_state = await asyncio.to_thread(
+                manager.process_frame, session_id, extractor, rgb_frame, timestamp_ms
+            )
             await websocket.send_json({"type": "frame", "data": frame_state.model_dump(mode="json")})
     except WebSocketDisconnect:
         pass

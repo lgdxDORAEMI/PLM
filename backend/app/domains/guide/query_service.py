@@ -32,6 +32,7 @@ from app.domains.errors import DomainNotFoundError, DomainStorageError
 from .schemas import GuideItem, GuideResponse, RoutineCategory
 
 ITEM_COLUMNS = (
+    "id",
     "item_key",
     "title",
     "description",
@@ -75,6 +76,7 @@ class GuideQueryService:
         )
         items = [
             GuideItem(
+                item_id=row["id"],
                 item_key=row["item_key"],
                 title=row["title"],
                 description=row.get("description"),
