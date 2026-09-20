@@ -33,7 +33,10 @@ class ApiClient {
   Future<Map<String, dynamic>?> get(
     String path, {
     Map<String, String>? query,
-  }) async => _asMap(await _send('GET', path, query: query));
+    bool throwOnNotFound = false,
+  }) async => _asMap(
+    await _send('GET', path, query: query, throwOnNotFound: throwOnNotFound),
+  );
 
   Future<List<dynamic>?> getList(
     String path, {
@@ -57,6 +60,7 @@ class ApiClient {
     String path, {
     Map<String, dynamic>? body,
     Map<String, String>? query,
+    bool throwOnNotFound = false,
   }) async {
     final uri = Uri.parse(
       '$_baseUrl$path',
@@ -70,7 +74,7 @@ class ApiClient {
     final streamed = await _http.send(request);
     final response = await http.Response.fromStream(streamed);
 
-    if (response.statusCode == 404) return null;
+    if (response.statusCode == 404 && !throwOnNotFound) return null;
     if (response.statusCode >= 400) {
       throw ApiException(response.statusCode, _extractMessage(response.body));
     }

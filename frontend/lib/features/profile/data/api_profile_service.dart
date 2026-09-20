@@ -1,5 +1,6 @@
 import '../../../core/network/api_client.dart';
 import '../models/profile_draft.dart';
+import 'profile_store.dart';
 
 /// Maps the six profile steps to the existing backend API contract.
 class ApiProfileService {
@@ -13,7 +14,7 @@ class ApiProfileService {
     return ProfileDraft(
       dueDate: _date(response['due_date']),
       lastPeriodDate: _date(response['last_period_start']),
-      birthDate: _date(response['birth_date']),
+      birthDate: ProfileStore.instance.profile?.birthDate,
       height: response['height_cm']?.toString(),
       prePregnancyWeight: response['pre_pregnancy_weight_kg']?.toString(),
       isFirstPregnancy: response['is_first_pregnancy'] as bool?,
@@ -32,7 +33,6 @@ class ApiProfileService {
       if (lastPeriod != null) 'last_period_start': _isoDate(lastPeriod),
     });
     await _client.put('/api/v1/profile/me/body', {
-      'birth_date': _isoDate(draft.birthDate!),
       'height_cm': double.parse(draft.height!),
       'pre_pregnancy_weight_kg': double.parse(draft.prePregnancyWeight!),
     });
