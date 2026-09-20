@@ -46,7 +46,10 @@ class ApiClient {
   Future<Map<String, dynamic>?> put(
     String path, [
     Map<String, dynamic>? body,
-  ]) async => _asMap(await _send('PUT', path, body: body));
+    bool throwOnNotFound = false,
+  ]) async => _asMap(
+    await _send('PUT', path, body: body, throwOnNotFound: throwOnNotFound),
+  );
 
   Future<Map<String, dynamic>?> post(
     String path, [

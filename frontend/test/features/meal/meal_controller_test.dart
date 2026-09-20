@@ -4,6 +4,7 @@ import 'package:plm_frontend/features/meal/controllers/meal_guide_controller.dar
 import 'package:plm_frontend/features/meal/data/meal_selection_store.dart';
 import 'package:plm_frontend/features/meal/models/meal_guide.dart';
 import 'package:plm_frontend/features/meal/services/mock_meal_service.dart';
+import 'package:plm_frontend/features/meal/services/meal_service.dart';
 
 void main() {
   final store = MealSelectionStore.instance;
@@ -40,10 +41,28 @@ void main() {
     await controller.load();
     final originalContext = controller.recommendationContext;
 
-    controller.showNextRecommendation();
+    await controller.showNextRecommendation();
 
     expect(controller.selectedRecommendation?.id, isNot(originalContext?.id));
     expect(controller.recommendationContext, same(originalContext));
+  });
+
+  test('다른 메뉴 보기에서 현재 추천의 거절을 API 서비스에 전달한다', () async {
+    final service = _RecordingMealService();
+    final controller = MealGuideController(
+      service: service,
+      store: store,
+      initialPeriod: MealPeriod.breakfast,
+    );
+    addTearDown(controller.dispose);
+
+    await controller.load();
+    final currentId = controller.selectedRecommendation!.id;
+    await controller.showNextRecommendation();
+
+    expect(service.recordedId, currentId);
+    expect(service.recordedDecision, MealDecision.rejected);
+    expect(store.decisionFor(currentId), MealDecision.rejected);
   });
 
   test('대체 메뉴를 적용하면 Meal Store에 선택 결과를 보관한다', () async {
@@ -64,4 +83,27 @@ void main() {
     expect(store.selectedPeriod, MealPeriod.breakfast);
     expect(store.appliedRecommendation?.title, '찐 감자 + 플레인 요거트');
   });
+}
+
+class _RecordingMealService implements MealService {
+  String? recordedId;
+  MealDecision? recordedDecision;
+
+  @override
+  Future<MealGuideData> fetchGuide() async => MockMealService.guide;
+
+  @override
+  Future<void> recordDecision(
+    MealRecommendation recommendation,
+    MealDecision decision,
+  ) async {
+    recordedId = recommendation.id;
+    recordedDecision = decision;
+  }
+
+  @override
+  Future<MealRecommendation> fetchAlternative({
+    required MealRecommendation current,
+    required String request,
+  }) async => current;
 }

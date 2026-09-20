@@ -46,7 +46,9 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
               ? ApiInvitationService()
               : const MockInvitationService()),
     )..addListener(_refresh);
-    if (widget.service != null) unawaited(_controller.load());
+    if (widget.service != null || AppConfig.hasSupabaseConfig) {
+      unawaited(_controller.load());
+    }
   }
 
   @override
@@ -73,13 +75,16 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
   );
 
   Widget _buildBody() => switch (_controller.state) {
-    InvitationActionState.loading when widget.service != null =>
+    InvitationActionState.loading
+        when widget.service != null || AppConfig.hasSupabaseConfig =>
       const AppLoadingState(message: 'ThinQ 초대를 준비하고 있어요'),
-    InvitationActionState.error when widget.service != null => AppErrorState(
-      title: '초대를 준비하지 못했어요',
-      message: '잠시 후 다시 시도해 주세요.',
-      onRetry: _controller.load,
-    ),
+    InvitationActionState.error
+        when widget.service != null || AppConfig.hasSupabaseConfig =>
+      AppErrorState(
+        title: '초대를 준비하지 못했어요',
+        message: '잠시 후 다시 시도해 주세요.',
+        onRetry: _controller.load,
+      ),
     _ => ListView(
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
       children: [
@@ -144,11 +149,15 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
   };
 
   Future<void> _send() async {
-    if (widget.service == null) {
+    if (widget.service == null && !AppConfig.hasSupabaseConfig) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('남편 초대장 전송은 연동이 필요합니다.')));
       return;
+    }
+    if (_controller.link == null) {
+      await _controller.load();
+      if (!mounted || _controller.state != InvitationActionState.ready) return;
     }
     if (!await _controller.send() || !mounted) return;
     if (AppConfig.hasSupabaseConfig && _controller.link != null) {

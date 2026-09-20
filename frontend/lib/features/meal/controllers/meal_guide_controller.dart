@@ -140,17 +140,37 @@ class MealGuideController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// 현재 끼니의 Mock 추천을 순환해 화면 안에서 다음 메뉴를 보여준다.
-  void showNextRecommendation() {
+  /// 현재 추천에 대한 거절을 기록한 뒤 사용 가능한 다음 메뉴를 보여준다.
+  Future<void> showNextRecommendation() async {
     final period = _selectedPeriod;
     final guide = _data;
     final current = selectedRecommendation;
     if (period == null || guide == null || current == null) return;
 
     final recommendations = guide.recommendationsFor(period);
-    if (recommendations.length < 2) return;
+    try {
+      await service.recordDecision(current, MealDecision.rejected);
+    } on ApiException catch (error) {
+      _state = switch (error.statusCode) {
+        404 => MealGuideViewState.empty,
+        401 || 403 => MealGuideViewState.authError,
+        409 || 422 => MealGuideViewState.domainError,
+        503 => MealGuideViewState.serverError,
+        _ => MealGuideViewState.error,
+      };
+      notifyListeners();
+      return;
+    } on Object {
+      _state = MealGuideViewState.error;
+      notifyListeners();
+      return;
+    }
 
     store.recordDecision(current.id, MealDecision.rejected);
+    if (recommendations.length < 2) {
+      notifyListeners();
+      return;
+    }
     final currentIndex = recommendations.indexWhere(
       (recommendation) => recommendation.id == current.id,
     );

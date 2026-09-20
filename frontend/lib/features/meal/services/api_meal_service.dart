@@ -22,6 +22,7 @@ class ApiMealService implements MealService {
             ? 'meal_accept'
             : 'meal_reject',
       },
+      true,
     );
   }
 
@@ -43,6 +44,10 @@ class ApiMealService implements MealService {
     if (items is! List) throw const FormatException('식사 가이드 형식이 올바르지 않습니다.');
     final recommendations = <MealRecommendation>[];
     for (final raw in items.whereType<Map>()) {
+      final itemId = raw['item_id']?.toString() ?? '';
+      if (itemId.isEmpty) {
+        throw const FormatException('식사 가이드에 item_id가 없습니다.');
+      }
       final payload = raw['payload'];
       final details = payload is Map ? payload : const {};
       final period = MealPeriod.values.firstWhere(
@@ -52,9 +57,7 @@ class ApiMealService implements MealService {
       final cautions = details['cautions'];
       recommendations.add(
         MealRecommendation(
-          id:
-              raw['item_id']?.toString() ??
-              '${period.name}:${recommendations.length}',
+          id: itemId,
           period: period,
           title: raw['title']?.toString() ?? '',
           description:
