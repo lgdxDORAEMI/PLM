@@ -58,7 +58,7 @@
 | Wife | B-MOTION-001 | FUC-B-MOTION-001 | ON/OFF, 오늘 누적시간, 임계값 알림 리스트 | `posture_calibration_profiles`/`posture_events`/`motion_consents`(모두 EXISTING) | `WS /movement/live/stream`, `GET /live,/events,/report/daily`(Supabase 연동, 실동작) + `GET/PUT/DELETE /family/motion/*`(STEP 14, `motion_consents` 실연결) | IMPLEMENTED — STEP 18(2026-09-18): WS 연결 시 `motion_consents` 검사(동의 없음/수집 OFF → 4003, 조회 실패 → 1011) |
 | Wife | W-CALLBACK-001 | FUC-W-CALLBACK-001 | 재시도, 전일 루틴/기본 템플릿 폴백 | `daily_routines.source`(EXISTING) | `routine.py` 내부 폴백 로직(Supabase 연동, 실동작 확인됨) | IMPLEMENTED |
 | Wife | W-MENU-001 | FUC-W-MENU-001 | 프로필 요약, 남편 연동 상태 | `pregnancy_profiles`(EXISTING), `partner_links`(EXISTING) | `GET /profile/me`(real) + `GET /account/partner-link`(STEP 13, Supabase 실연결) | IMPLEMENTED |
-| Wife | W-SETTING-001 | FUC-W-SETTING-001 | 플레이스홀더 | - | 없음(문서상 "미반영, Phase 2") | PHASE_2 |
+| Wife | W-SETTING-001 | FUC-W-SETTING-001 | 글자 크기 선택값(기기 로컬 저장, 계정 간 동기화 없음) | - | 없음(요구사항은 확정됨 — `04_1_기능요구사항명세서.md:133`, 계정 동기화하지 않고 기기에만 저장하도록 명시돼 있어 백엔드 API·DB 자체가 불필요) | NOT_APPLICABLE |
 
 ## Husband Screen Matrix
 
@@ -151,7 +151,7 @@
 ## TBD
 
 - ~~`FUC-H-INVITE-001`: 초대 수락 화면·인증 복귀 계약 미확정~~ — 2026-09-20 팀 결정: 화면·로그인 방식 확정 자체는 보류하고, 실사용(시연) 연동은 `partner_links`를 운영자가 수동으로 미리 삽입하는 방식으로 대체한다. 수락 화면(`InvitationEntryScreen`)·API는 코드에 남겨두되 신규 연동을 이 경로에 의존하지 않는다
-- `FUC-W-COND-003` vs 유스케이스 UC2 A1 설명 불일치 — 최신 FUC는 "남편 변경 알림 발송"으로 명시했으나 UC 문서는 미정 (`DOMAIN_OWNERSHIP.md` 기존 TBD). 코드는 이미 발송하는 쪽으로 구현됨(STEP 17, `condition_changed` 알림) — 문서 정합만 남음
+- ~~`FUC-W-COND-003` vs 유스케이스 UC2 A1 설명 불일치~~ — 2026-09-21 재확인 결과 해소됨. `03_유스케이스명세서.md:79`(UC2 A1)에 이미 "남편에게 ... 루틴 변경 알림을 전송한다"가 명시돼 있어 FUC와 더 이상 충돌하지 않는다(과거 구판 기준 TBD였던 것으로 보임). 코드도 이미 발송하는 쪽으로 구현됨(STEP 17, `condition_changed` 알림). `DOMAIN_OWNERSHIP.md`의 관련 TBD 항목은 삭제함
 - `H-REPORT-001`(남편 화면 DB스키마 PDF): 오전 리포트에 4대 AI 가이드 요약 포함 여부가 같은 화면 ID 내 두 버전에서 서로 다르게 서술됨. 코드는 이미 포함하는 쪽으로 구현됨(`MorningReportResponse.guide_summaries`) — 문서 정합만 남음
 - ~~`H-REQUEST-002`(가사 요청 완료 결과): 별도 API 필요 여부~~ — 2026-09-21 해결. 별도 API 없이 기존 `GET`/`confirm`/`complete` 응답에 `daily_summary` 필드(요청일 기준 항목 개수 합산)를 추가해 반영
 - Calendar 4단계 컨디션 지수 계산식 — 문서상 수치 미확정 (`DOMAIN_OWNERSHIP.md` 기존 TBD). ~~Motion 감지 임계값~~ — STEP 18: MVP 임계값은 `rules.yaml` 데모값으로 확정(소유자 결정). 실서비스 값 재산정은 Phase 2

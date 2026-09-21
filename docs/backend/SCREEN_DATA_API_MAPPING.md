@@ -71,7 +71,7 @@
 | Wife | W-CALLBACK-001 | "다시 시도하기" | 루틴 재생성 | `daily_routines`/`routine_items` | `POST /api/v1/routine/today`(재호출) [기존] | FUC-W-CALLBACK-001 |
 | Wife | W-MENU-001 | 조회(프로필 요약+연동 상태) | 이름·주차·출산예정일, 남편 연동 상태 | `pregnancy_profiles` + `partner_links`(MISSING) | `GET /api/v1/profile/me` [기존] + `GET /api/v1/account/partner-link` [기존, Stub] | FUC-W-MENU-001 |
 | Wife | W-MENU-001 | 메뉴 행 탭(프로필수정/초대/설정/약관) | — | — | Navigation-only | — |
-| Wife | W-SETTING-001 | 플레이스홀더 표시 | — | — | Phase 2 — 미제안 | FUC-W-SETTING-001 |
+| Wife | W-SETTING-001 | 글자 크기 선택(작게/기본/크게) | — | — | 요구사항은 확정됐으나 기기 로컬 저장·계정 미동기화라 백엔드 API 불필요(`04_1_기능요구사항명세서.md:133`) | FUC-W-SETTING-001 |
 
 ## Husband Screen / Data / API Mapping
 

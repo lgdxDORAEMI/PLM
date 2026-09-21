@@ -50,7 +50,7 @@
 | Wife | B-MOTION-001(Wife) | FUC-B-MOTION-001 | UC13 | ON/OFF, 누적시간, 알림 | `posture_calibration_profiles`/`posture_events`(Protected)+`motion_consents` | `WS /movement/live/stream`,`GET /live,/events,/report/daily` + `GET/PUT/DELETE /family/motion/*` | `test_movement_api.py`(WS 5 + 동의 게이트 4 + 남편 분기 3), `test_movement_supabase_store.py`, `test_family_motion_consent.py`(8개) | PASS — WS 연결 시 동의/수집 검사(STEP 18). Frontend는 여전히 Mock |
 | Wife | W-CALLBACK-001 | FUC-W-CALLBACK-001 | UC11 | 재시도, 폴백 | `daily_routines.source` | `POST /routine/today`(재호출) | `test_routine_service.py::RoutineServiceTest`(폴백 3종) | PASS |
 | Wife | W-MENU-001 | FUC-W-MENU-001 | UC1(연계) | 프로필 요약, 연동 상태 | `pregnancy_profiles`+`partner_links` | `GET /profile/me` + `GET /account/partner-link` | `test_profile.py`, `test_account_partner_link.py` | PASS |
-| Wife | W-SETTING-001 | FUC-W-SETTING-001 | — | 없음 | — | 없음 | — | PHASE_2 |
+| Wife | W-SETTING-001 | FUC-W-SETTING-001 | — | 없음(기기 로컬 저장, 계정 동기화 없음 — `04_1_기능요구사항명세서.md:133`) | — | 없음 | — | NOT_APPLICABLE |
 
 ## Trace Table — Husband
 
