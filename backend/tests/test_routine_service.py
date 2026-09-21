@@ -10,7 +10,7 @@ from httpx import ASGITransport, AsyncClient
 from postgrest.exceptions import APIError
 
 from app.api.v1.family import get_family_service
-from app.api.v1.routine import get_routine_service
+from app.api.v1.routine import get_routine_service, warmup_routine
 from app.core.config import Settings
 from app.core.security import CurrentUser, get_current_user
 from app.domains.family.service import FamilyService
@@ -20,7 +20,15 @@ from app.services.routine import repository
 from app.schemas.movement import BodyPart
 from app.services.routine.inputs import to_activities, yesterday_motion
 from app.services.routine.rules import apply_rules
-from app.services.routine.service import RoutineService, _normalize_item_keys, load_template, validate
+from app.services.routine.service import (
+    RoutineService,
+    _normalize_item_keys,
+    attach_videos,
+    load_template,
+    template_household,
+    load_videos,
+    validate,
+)
 
 TODAY = date(2026, 9, 16)
 USER = "user-1"
@@ -41,14 +49,19 @@ class FakeQuery:
     def delete(self): self.op = "delete"; return self
     def eq(self, c, v): self.filters.append(("eq", c, v)); return self
     def lt(self, c, v): self.filters.append(("lt", c, v)); return self
+    def in_(self, c, values): self.filters.append(("in", c, list(values))); return self
     def order(self, c, desc=False): self._order.append((c, desc)); return self
     def limit(self, n): self._limit = n; return self
 
     def _match(self, row) -> bool:
-        return all(
-            (str(row.get(c)) == str(v)) if op == "eq" else (str(row.get(c)) < str(v))
-            for op, c, v in self.filters
-        )
+        def ok(op, c, v):
+            if op == "eq":
+                return str(row.get(c)) == str(v)
+            if op == "in":
+                return row.get(c) in v
+            return str(row.get(c)) < str(v)
+
+        return all(ok(op, c, v) for op, c, v in self.filters)
 
     def execute(self):
         rows = self.store.tables.setdefault(self.table_name, [])
@@ -265,6 +278,88 @@ class YesterdayTest(unittest.TestCase):
             self.assertIsNone(yesterday_motion(self.db, uid, TODAY))
 
 
+class WarmupTest(unittest.IsolatedAsyncioTestCase):
+    """K1: 기동 시 연결을 미리 열고, 서비스는 프로세스당 1개만 만든다."""
+
+    async def test_warmup_calls_embedding_and_supabase(self) -> None:
+        db, openai = FakeSupabase(), FakeOpenAI("")
+        service = make_service(db, openai)
+        with patch("app.api.v1.routine.get_routine_service", return_value=service):
+            await warmup_routine()
+        self.assertIn("pregnancy_knowledge", db.tables)  # 조회로 테이블 접근
+
+    async def test_warmup_failure_does_not_raise(self) -> None:
+        with patch("app.api.v1.routine.get_routine_service", side_effect=RuntimeError("no env")):
+            await warmup_routine()  # 예외가 올라오면 기동이 막힌다
+
+    def test_service_is_created_once_per_process(self) -> None:
+        get_routine_service.cache_clear()
+        with patch("app.api.v1.routine.RoutineService", side_effect=lambda *a, **k: object()) as factory, \
+             patch("app.api.v1.routine.get_supabase_service"), patch("app.api.v1.routine.get_settings"):
+            first, second = get_routine_service(), get_routine_service()
+        get_routine_service.cache_clear()
+        self.assertIs(first, second)
+        self.assertEqual(factory.call_count, 1)
+
+
+class TemplateHouseholdTest(unittest.TestCase):
+    """K8: 템플릿 가사 키를 예정 활동 코드로 맞춰, 폴백 뒤 AI 성공 때 가사가 전부 삭제·추가로 잡히지 않게 한다."""
+
+    def test_no_planned_activities_keeps_yaml_template(self) -> None:
+        self.assertIsNone(template_household([]))
+
+    def test_keys_follow_activity_codes(self) -> None:
+        items = template_household(to_activities(["빨래", "강아지 산책"]))
+        self.assertEqual([i["item_key"] for i in items], ["household:laundry", "household:custom"])
+        self.assertEqual([i["title"] for i in items], ["빨래", "강아지 산책"])
+
+    def test_fallback_then_ai_keeps_same_household_rows(self) -> None:
+        import json
+        db = FakeSupabase()
+        seed(db)
+        asyncio.run(make_service(db, FakeOpenAI("", fail=True)).generate_today(USER, TODAY))  # 폴백
+        before = {i["item_key"]: i["id"] for i in db.tables["routine_items"] if i["category"] == "household"}
+        self.assertEqual(sorted(before), ["household:laundry"])  # seed의 예정 활동
+        saved = asyncio.run(make_service(db, FakeOpenAI(json.dumps(AI_ROUTINE, ensure_ascii=False))).generate_today(USER, TODAY))
+        after = {i["item_key"]: i["id"] for i in db.tables["routine_items"] if i["category"] == "household"}
+        self.assertEqual(after["household:laundry"], before["household:laundry"])  # 같은 행 유지
+        self.assertNotIn("household:laundry", saved["change_summary"]["removed"])
+        self.assertNotIn("household:laundry", saved["change_summary"]["added"])
+
+
+class StretchingVideoTest(unittest.TestCase):
+    """S_stretching_video: 부위별 영상 목록을 health 항목에 붙인다. AI는 URL을 만들지 않는다."""
+
+    VIDEO = {"waist": {"title": "허리 이완 5분", "url": "https://example.com/waist", "duration_min": 5}}
+
+    def test_video_attached_by_body_part(self) -> None:
+        routine = {"health": [
+            {"item_key": "health:waist", "title": "허리", "payload": {"guide": "천천히"}},
+            {"item_key": "health:waist:2", "title": "허리 추가", "payload": {}},
+            {"item_key": "health:leg", "title": "다리", "payload": {}},
+        ]}
+        with patch("app.services.routine.service.load_videos", return_value=self.VIDEO):
+            result = attach_videos(routine)
+        self.assertEqual(result["health"][0]["payload"]["video"], self.VIDEO["waist"])
+        self.assertEqual(result["health"][1]["payload"]["video"], self.VIDEO["waist"])  # 중복 키(:2)도 같은 부위
+        self.assertNotIn("video", result["health"][2]["payload"])  # 목록에 없는 부위는 그대로
+        self.assertEqual(result["health"][0]["payload"]["guide"], "천천히")
+
+    def test_no_video_field_when_list_empty(self) -> None:
+        routine = {"health": [{"item_key": "health:waist", "title": "허리", "payload": {}}]}
+        with patch("app.services.routine.service.load_videos", return_value={}):
+            self.assertEqual(attach_videos(routine), routine)
+
+    def test_default_file_has_six_parts_and_no_urls_yet(self) -> None:
+        """팀이 URL을 채우기 전 상태: 유효한 영상 0개 = video 필드 없음."""
+        import yaml as _yaml
+        from app.services.routine.service import VIDEO_PATH
+        parts = (_yaml.safe_load(VIDEO_PATH.read_text(encoding="utf-8")) or {})["videos"]
+        self.assertEqual(sorted(parts), ["leg", "pelvis", "rest", "waist", "whole", "wrist"])
+        load_videos.cache_clear()
+        self.assertEqual(load_videos(), {})
+
+
 class EditPathTest(unittest.TestCase):
     """S10(R7): 확정 전 루틴이 있을 때 컨디션을 고치면 바뀐 가이드만 다시 만든다(§2.8)."""
 
@@ -452,7 +547,8 @@ class RoutineServiceTest(unittest.TestCase):
         self.assertEqual(saved["source"], "fallback_template")
         self.assertIn("insufficient_quota", saved["error_message"])
         self.assertEqual(len(saved["response"]["meal"]), 3)
-        self.assertEqual(len(self.db.tables["routine_items"]), 7)
+        # 식단 3 + 건강 1 + 수면 1 + 가사(K8: 예정 활동 1건으로 생성) 1 = 6
+        self.assertEqual(len(self.db.tables["routine_items"]), 6)
 
     def test_llm_failure_uses_previous_routine(self) -> None:
         self.db.tables["daily_routines"] = [{
@@ -513,6 +609,38 @@ class RoutineVersionTest(unittest.TestCase):
         self.assertEqual(items["meal:lunch"]["change_kind"], "updated")
         self.assertTrue(all(i["routine_id"] == second["id"] for i in items.values()))
         self.assertEqual(repository.get_routine(self.db, USER, self.day)["id"], second["id"])
+
+    def test_item_with_menu_feedback_is_kept_as_removed(self) -> None:
+        """K9: 메뉴 수락·거절 기록이 있는 항목은 지우지 않는다(cascade로 기록까지 지워지므로)."""
+        old_items = [{"item_key": "meal:snack", "title": "간식", "category": "meal", "payload": {}, "source_ids": [], "sort_order": 0}]
+        repository.save_routine(
+            self.db, USER, TODAY, source="ai", response={"meal": [dict(old_items[0])]}, model="m",
+            prompt_version="v", request_payload={}, error_message=None,
+        )
+        snack = self.db.tables["routine_items"][0]
+        self.db.tables["recommendation_feedback"] = [{"id": "f1", "routine_item_id": snack["id"], "kind": "menu_reject"}]
+        repository.save_routine(
+            self.db, USER, TODAY, source="ai",
+            response={"meal": [{"item_key": "meal:lunch", "title": "점심", "payload": {}, "source_ids": []}]},
+            model="m", prompt_version="v", request_payload={}, error_message=None,
+        )
+        kept = [i for i in self.db.tables["routine_items"] if i["item_key"] == "meal:snack"]
+        self.assertEqual(len(kept), 1)
+        self.assertEqual(kept[0]["change_kind"], "removed")
+        self.assertEqual(len(self.db.tables["recommendation_feedback"]), 1)  # 기록 보존
+
+    def test_item_without_feedback_is_deleted(self) -> None:
+        repository.save_routine(
+            self.db, USER, TODAY, source="ai",
+            response={"meal": [{"item_key": "meal:snack", "title": "간식", "payload": {}, "source_ids": []}]},
+            model="m", prompt_version="v", request_payload={}, error_message=None,
+        )
+        repository.save_routine(
+            self.db, USER, TODAY, source="ai",
+            response={"meal": [{"item_key": "meal:lunch", "title": "점심", "payload": {}, "source_ids": []}]},
+            model="m", prompt_version="v", request_payload={}, error_message=None,
+        )
+        self.assertEqual([i["item_key"] for i in self.db.tables["routine_items"]], ["meal:lunch"])
 
     def test_removed_item_referenced_by_fk_is_marked_not_deleted(self) -> None:
         self.save(self.routine())

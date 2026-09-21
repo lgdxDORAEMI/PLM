@@ -1,6 +1,6 @@
 # AI 루틴 룰 엔진 (파이프라인 B ②). LLM을 거치지 않는 확정 규칙. 결과는 항상 같다.
 # 입력 dict 키: week, is_first_pregnancy, is_multiple_pregnancy, allergies, medical_conditions,
-#              nausea, waist_pain, pelvis_pain, leg_pain, wrist_pain, fatigue, mood, sleep_quality (컨디션 1~5)
+#              nausea, waist_pain, pelvis_pain, leg_pain, wrist_pain, fatigue, mood (컨디션 1~5)
 # when 연산자: <field>_any: [값...] (배열 교집합) / <field>_gte, <field>_lte (숫자) / <field>: 값 (같음)
 #   여러 조건은 모두 만족해야 한다(AND).
 # effect: exclude(금지) / limit(제한) / require(반드시 포함). target 형식 "종류:값". reason은 LLM에 그대로 넘긴다.

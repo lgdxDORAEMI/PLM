@@ -5,6 +5,8 @@ from __future__ import annotations
 from datetime import date
 from typing import Any
 
+import logging
+
 from postgrest.exceptions import APIError
 from supabase import Client
 
@@ -13,6 +15,7 @@ from app.services.routine.diff import by_item_key, carry_over, diff_items
 CATEGORIES = ("meal", "household", "health", "sleep")
 # S3: daily_routines는 버전별 행(revision이 가장 큰 행 = 현재), routine_items는 현재 상태(같은 행을 고쳐 씀).
 ITEM_COLUMNS = ("id", "item_key", "title", "description", "payload", "status", "completed_at", "completed_by")
+logger = logging.getLogger(__name__)
 UNIQUE_VIOLATION = "23505"
 FK_VIOLATION = "23503"
 
@@ -137,8 +140,14 @@ def _sync_items(
     if inserts:
         client.table("routine_items").insert(inserts).execute()
     new_keys = {i["item_key"] for i in new}
-    for key, previous in old_by_key.items():
-        if key in new_keys:
+    dropped = [p for key, p in old_by_key.items() if key not in new_keys]
+    kept_by_feedback = _with_feedback(client, [p["id"] for p in dropped])  # K9
+    for previous in dropped:
+        if previous["id"] in kept_by_feedback:
+            # K9: 메뉴 수락·거절 기록이 달린 항목은 지우지 않는다(recommendation_feedback가 on delete cascade).
+            client.table("routine_items").update(
+                {"change_kind": "removed", "routine_id": routine_id}
+            ).eq("id", previous["id"]).execute()
             continue
         try:
             client.table("routine_items").delete().eq("id", previous["id"]).execute()
@@ -148,6 +157,24 @@ def _sync_items(
             client.table("routine_items").update(
                 {"change_kind": "removed", "routine_id": routine_id}
             ).eq("id", previous["id"]).execute()
+
+
+def _with_feedback(client: Client, item_ids: list[str]) -> set[str]:
+    """K9: 메뉴 수락·거절 기록(Care 소유 recommendation_feedback)이 달린 항목 id. 조회 실패는 '있다'로 보수적 처리."""
+    if not item_ids:
+        return set()
+    try:
+        rows = (
+            client.table("recommendation_feedback")
+            .select("routine_item_id")
+            .in_("routine_item_id", item_ids)
+            .execute()
+            .data
+        )
+    except APIError:
+        logger.warning("피드백 조회 실패, 항목을 지우지 않고 removed로 남긴다")
+        return set(item_ids)
+    return {r["routine_item_id"] for r in rows}
 
 
 def save_routine(

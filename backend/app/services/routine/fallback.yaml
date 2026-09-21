@@ -1,4 +1,4 @@
-# 파이프라인 B ⑥ 2차 폴백: 전일 루틴도 없을 때 쓰는 기본 템플릿 (W-ROUTINE-003, NFR-016).
+# 파이프라인 B ⑥ 2차 폴백: 전일 루틴도 없을 때 쓰는 기본 템플릿 (W-CALLBACK-001, NFR-016).
 # 모양은 prompt.ROUTINE_SCHEMA와 같다. 특정 재료·활동을 단정하지 않는 일반 문구만 둔다(룰 ⑥ 검증도 그대로 통과).
 meal:
   - item_key: meal:breakfast

@@ -276,7 +276,8 @@ class ConditionApiTest(unittest.IsolatedAsyncioTestCase):
         facts = collect_facts(combined_client, "wife-1", self.TARGET_DATE)
         for field, value in VALID_CONDITION.items():
             self.assertEqual(facts[field], value)
-        self.assertIsNone(facts["sleep_quality"])  # 아직 API가 안 건드리는 컬럼
+        # K3(2026-09-20): sleep_quality는 04_1 컨디션 입력 4종에 없어 Routine 입력에서 뺐다(daily_conditions 컬럼은 유지)
+        self.assertNotIn("sleep_quality", facts)
 
     async def test_routine_generator_raises_when_condition_missing(self) -> None:
         combined_client = SimpleNamespace(

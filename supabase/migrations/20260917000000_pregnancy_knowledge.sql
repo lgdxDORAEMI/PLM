@@ -1,4 +1,4 @@
--- RAG 지식 테이블 (W-ROUTINE-001 B③ 검색용). 원본: tools/rag_ingest/01_create_pregnancy_knowledge.sql (팀원 작성, 2026-09-16).
+-- RAG 지식 테이블 (W-HOME-001 B③ 검색용). 원본: tools/rag_ingest/01_create_pregnancy_knowledge.sql (팀원 작성, 2026-09-16).
 -- 적재는 tools/rag_ingest/02_translate_chunk_embed_upload.py로 한다. 임베딩 모델 text-embedding-3-small → vector(1536).
 -- 접근은 backend(service role)만. 다른 테이블과 같이 RLS 켜고 정책 없음.
 

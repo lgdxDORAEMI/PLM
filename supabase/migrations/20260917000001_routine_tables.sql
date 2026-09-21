@@ -1,4 +1,4 @@
--- AI 하루 루틴 생성(W-ROUTINE-001/003)에 필요한 테이블. 설계: docs/ai_wednesday/Ai_wednesday_pipeline_v3.md, payload 모양: docs/api.md
+-- AI 하루 루틴 생성(W-HOME-001/W-CALLBACK-001)에 필요한 테이블. 설계: docs/ai_wednesday/Ai_wednesday_pipeline_v3.md, payload 모양: docs/api.md
 -- 컨벤션(pregnancy_profiles와 동일): enum은 text + check, 접근은 backend(service role)만 → RLS 켜고 정책 없음.
 -- 값 범위는 backend/app/schemas/*.py 검증과 같게 유지한다.
 
@@ -29,7 +29,7 @@ create table if not exists public.daily_conditions (
 );
 alter table public.daily_conditions enable row level security;
 
--- 3) 하루 루틴 원본 응답 (W-ROUTINE-001/003). (user, date) 1행 덮어쓰기. source로 폴백률(NFR-016) 측정.
+-- 3) 하루 루틴 원본 응답 (W-HOME-001/W-CALLBACK-001). (user, date) 1행 덮어쓰기. source로 폴백률(NFR-016) 측정.
 create table if not exists public.daily_routines (
   id              uuid primary key default gen_random_uuid(),
   user_id         uuid not null references auth.users (id) on delete cascade,
