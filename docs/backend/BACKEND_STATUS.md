@@ -1,6 +1,6 @@
 # Backend Implementation Status
 
-- 작성일: 2026-09-17 (STEP 1 갱신, STEP 17(2026-09-18) 구현 결과 반영)
+- 작성일: 2026-09-17 (STEP 1 갱신, STEP 17(2026-09-18) 구현 결과 반영, 2026-09-21 실사용 QA 중 발견한 문서 노후화 정리)
 - 목적: 최신 요구사항(화면설계서·기능/비기능명세서·화면 DB스키마) 대비 현재 Backend 구현 상태를 화면 단위로 정리해 이후 Skeleton 구축의 기준으로 삼는다.
 - 분석 순서: 화면 → FUC → Use Case → 필요한 데이터 → DB Schema → API → 현재 구현 상태.
 - 이 문서는 분석 결과이며 이 단계에서 코드·migration·API는 변경하지 않았다.
@@ -37,27 +37,27 @@
 |---|---|---|---|---|---|---|
 | Wife | B-ENTRY-001 | FUC-B-ENTRY-001 | 로그인 상태, 프로필 완료 여부, 파트너 연동 상태 | `profiles`+`pregnancy_profiles`+`partner_links`(모두 EXISTING) | `GET /account/bootstrap` (STEP 13, Supabase 실연결) | IMPLEMENTED |
 | Wife | W-PROFILE-001 | FUC-W-PROFILE-001 | 출산예정일, 마지막 생리 시작일 | `pregnancy_profiles`(EXISTING) | `PUT /profile/me/due-date` (Supabase 연동) | IMPLEMENTED |
-| Wife | W-PROFILE-002 | FUC-W-PROFILE-002 | 생년월일→나이, 신장, 임신 전 체중 | `pregnancy_profiles.height_cm/pre_pregnancy_weight_kg`(EXISTING). 최신 FUC-W-PROFILE-002에 생년월일 필수 입력과 나이 계산이 복구됐으나 `birth_date` 컬럼은 아직 없음 | `PUT /profile/me/body` (Supabase 연동, 현재 신장·체중만) | PARTIAL — `birth_date` migration과 단계 API 확장 필요 |
+| Wife | W-PROFILE-002 | FUC-W-PROFILE-002 | 생년월일→나이, 신장, 임신 전 체중 | `pregnancy_profiles.birth_date/height_cm/pre_pregnancy_weight_kg`(EXISTING, `birth_date`는 migration `20260920120000`) | `PUT /profile/me/body` (Supabase 연동, 생년월일·신장·체중 전부) | IMPLEMENTED |
 | Wife | W-PROFILE-003 | FUC-W-PROFILE-003 | 초산/경산 여부 | `pregnancy_profiles.is_first_pregnancy`(EXISTING, migration `20260917000001`) | `PUT /profile/me/pregnancy-history`(STEP 8, Supabase 실연결) | IMPLEMENTED |
 | Wife | W-PROFILE-004 | FUC-W-PROFILE-004 | 단태/쌍태 여부 | `pregnancy_profiles.is_multiple_pregnancy`(EXISTING) | `PUT /profile/me/pregnancy-count`(STEP 8, Supabase 실연결) | IMPLEMENTED |
 | Wife | W-PROFILE-005 | FUC-W-PROFILE-005 | 알레르기 다중 선택 | `pregnancy_profiles.allergies`(EXISTING) | `PUT /profile/me/allergies`(STEP 8, Supabase 실연결) | IMPLEMENTED |
 | Wife | W-PROFILE-006 | FUC-W-PROFILE-006 | 주의 진단 다중 선택, 자유 텍스트 | `pregnancy_profiles.medical_conditions/medical_note`(EXISTING) | `PUT /profile/me/medical-notes`(STEP 8, Supabase 실연결) | IMPLEMENTED |
 | Wife | W-PROFILE-007 | FUC-W-PROFILE-007 | 1~6단계 요약, 최종 저장 | 위 컬럼 전체(`pregnancy_profiles`, EXISTING) | `GET /profile/me`(STEP 8/10 확장, 6단계 전체 반환) — 각 단계에서 이미 저장되므로 별도 "완료" 저장 API 불필요(Navigation-only) | IMPLEMENTED |
 | Wife | W-INVITE-001 | FUC-W-INVITE-001 | 초대 토큰/URL/만료시각 | `partner_invitations`(EXISTING) | `POST /account/partner-invitations` (STEP 13, Supabase 실연결, 72시간 CHECK+1회성) | IMPLEMENTED |
-| Wife | W-HOME-001 (컨디션 미입력/통합 2버전 병합) | FUC-W-HOME-001, FUC-W-HOME-002 | 인사말, 주차, 컨디션 요약, 루틴 4종 요약, "일정 마치기" | `daily_conditions`(EXISTING), `daily_routines`/`routine_items`(EXISTING) | `GET /routine/today`(Supabase 연동) + `GET /care/conditions/{date}`(STEP 9, Supabase 실연결) 조합 — 표시 부분은 IMPLEMENTED 수준. "일정 마치기"(FUC-W-HOME-002)는 여전히 `POST /care/daily-reports/.../preview`(Stub) | PARTIAL |
+| Wife | W-HOME-001 (컨디션 미입력/통합 2버전 병합) | FUC-W-HOME-001, FUC-W-HOME-002 | 인사말, 주차, 컨디션 요약, 루틴 4종 요약, "일정 마치기" | `daily_conditions`(EXISTING), `daily_routines`/`routine_items`(EXISTING) | `GET /routine/today`(Supabase 연동) + `GET /care/conditions/{date}`(STEP 9, Supabase 실연결) 조합. "일정 마치기"(FUC-W-HOME-002)는 STEP 12에서 `POST /care/daily-reports/.../preview`가 실연결로 전환됨(미리보기는 저장 없이 매번 재계산, NFR-028) | IMPLEMENTED |
 | Wife | W-COND-001 | FUC-W-COND-001 | 입덧/허리/골반/다리/손목/피로/기분 5단계 7종 | `daily_conditions`(EXISTING, migration `20260917000001`) | `GET/PUT /care/conditions/{date}` (STEP 9에서 Supabase 실연결) | IMPLEMENTED |
 | Wife | W-TASK-001 | FUC-W-TASK-001 | 예정 활동(9종 코드+직접입력) | `daily_conditions.planned_activities`(EXISTING) | `PUT /care/conditions/{date}/activities` (STEP 9에서 Supabase 실연결) | IMPLEMENTED |
 | Wife | W-MEAL-001 | FUC-W-MEAL-001 | 끼니별 추천 요약 | `routine_items`(EXISTING, category=meal) | `GET /meals/today`(STEP 11, Query Layer) + `POST /routine/today`(생성, Supabase 연동, AI 실호출은 OpenAI 크레딧 대기) | IMPLEMENTED |
 | Wife | W-MEAL-002 | FUC-W-MEAL-002 | 메뉴/이유/영양태그/주의사항 | `routine_items.payload`(meal shape, EXISTING) | `GET /meals/today`(items[].payload, STEP 11) | IMPLEMENTED |
-| Wife | W-CHAT-001 (식사 재추천/공통 챗봇 2버전 병합) | FUC-W-MEAL-003, FUC-W-CHAT-001, FUC-W-CHAT-002 | 대화 이력, 대체 메뉴, 수락/거절 | `chat_messages`(MISSING), `recommendation_feedback`(MISSING) | 없음(Router·Service 자체가 없음) | SKELETON_REQUIRED |
+| Wife | W-CHAT-001 (식사 재추천/공통 챗봇 2버전 병합) | FUC-W-MEAL-003, FUC-W-CHAT-001, FUC-W-CHAT-002 | 대화 이력, 대체 메뉴, 수락/거절 | `chat_messages`(EXISTING, migration `20260917010700`), 대체 메뉴 수락/거절은 `recommendation_feedback`(EXISTING) | `GET/POST /chat/messages`(대화 이력 실연결, 2026-09-20) + 메뉴 수락/거절은 별도로 `PUT /care/routine-items/{id}`(STEP 19, care 도메인) — 대화 이력 저장은 실제지만 **AI 응답 자체는 고정 placeholder 문구**(LLM 공급자·크레딧 대기) | PARTIAL — 저장 경로는 완료, 실제 AI 응답만 외부 의존으로 남음 |
 | Wife | W-HOUSE-001 | FUC-W-HOUSE-001, FUC-W-HOUSE-003, FUC-W-HOUSE-003-1 | 3분류 결과, 공유 요청(이유·집안일·보조정보) | `routine_items`(EXISTING, category=household), `household_requests`/`household_request_items`(EXISTING) | `GET /household/today`(STEP 11, Query Layer, 실연결) + `POST/GET /family/household-requests`(STEP 17, Supabase 실연결) | IMPLEMENTED |
 | Wife | W-HEALTH-001 | FUC-W-HEALTH-001, FUC-W-HEALTH-002 | 부위별 부담, 활동 추천, 완료 체크 | `routine_items`(EXISTING, category=health) | `GET /health/today`(STEP 11) + `PUT /care/routine-items/{id}/execution`(STEP 12, `routine_items.status/completed_by` 실연결) | IMPLEMENTED |
-| Wife | W-SLEEP-001 (본문+바텀시트 팝업 병합) | FUC-W-SLEEP-001, FUC-W-SLEEP-001-1, FUC-W-SLEEP-002 | 권장 취침시간, 환경 5항목, override 이력, 가전 실행 | `routine_items`(EXISTING, category=sleep), `recommendation_feedback`(MISSING) | `GET /sleep/today`(STEP 11, Query Layer, 실연결). override 저장·가전 실행 API 없음(ThinQ 연동 W-SLEEP-002는 Phase 2) | PARTIAL |
+| Wife | W-SLEEP-001 (본문+바텀시트 팝업 병합) | FUC-W-SLEEP-001, FUC-W-SLEEP-001-1, FUC-W-SLEEP-002 | 권장 취침시간, 환경 5항목, override 이력, 가전 실행 | `routine_items`(EXISTING, category=sleep), `recommendation_feedback`(EXISTING, migration으로 생성됨) | `GET /sleep/today`(STEP 11, Query Layer, 실연결) + `PUT /care/routine-items/{id}/sleep-environment`(STEP 19, override 이력을 `recommendation_feedback`에 실연결). 가전 실행만 API 없음(ThinQ 연동 W-SLEEP-002는 Phase 2 — 기기 제어 없는 시연 기능) | PARTIAL — override 저장은 완료, ThinQ 가전 실행만 Phase 2로 남음 |
 | Wife | B-CAL-001 | FUC-B-CAL-001 | 날짜별 컨디션 색상, 실행 루틴, 가전, 가족 분담 | `daily_conditions`/`daily_reports`(EXISTING, STEP 12), `household_requests`(EXISTING) | `GET /care/calendar/{month}` (STEP 12, daily_conditions+daily_reports 조합 조회, 새 테이블 없음; STEP 17에서 남편 호출 시 `partner_links` 기반 아내 캘린더 분기) | IMPLEMENTED |
 | Wife | W-REPORT-001 | FUC-W-REPORT-001, FUC-W-REPORT-001-1, FUC-W-REPORT-002 | 실행 통계, 최다 부담 부위, 가족 분담 요약, 홈캠 주의사항 | `daily_reports`(EXISTING, STEP 12) | `POST .../preview`(미저장, NFR-028), `.../finalize`(확정 시에만 1행 저장), `GET .../{date}` (STEP 12, Record+Condition+Movement에서 파생; STEP 17에서 `family` 집계를 `household_requests` 실조회로 교체) | IMPLEMENTED |
 | Wife | B-MOTION-001 | FUC-B-MOTION-001 | ON/OFF, 오늘 누적시간, 임계값 알림 리스트 | `posture_calibration_profiles`/`posture_events`/`motion_consents`(모두 EXISTING) | `WS /movement/live/stream`, `GET /live,/events,/report/daily`(Supabase 연동, 실동작) + `GET/PUT/DELETE /family/motion/*`(STEP 14, `motion_consents` 실연결) | IMPLEMENTED — STEP 18(2026-09-18): WS 연결 시 `motion_consents` 검사(동의 없음/수집 OFF → 4003, 조회 실패 → 1011) |
 | Wife | W-CALLBACK-001 | FUC-W-CALLBACK-001 | 재시도, 전일 루틴/기본 템플릿 폴백 | `daily_routines.source`(EXISTING) | `routine.py` 내부 폴백 로직(Supabase 연동, 실동작 확인됨) | IMPLEMENTED |
-| Wife | W-MENU-001 | FUC-W-MENU-001 | 프로필 요약, 남편 연동 상태 | `pregnancy_profiles`(EXISTING), `partner_links`(MISSING) | `GET /profile/me`(real) + `GET /account/partner-link`(Stub) | PARTIAL |
+| Wife | W-MENU-001 | FUC-W-MENU-001 | 프로필 요약, 남편 연동 상태 | `pregnancy_profiles`(EXISTING), `partner_links`(EXISTING) | `GET /profile/me`(real) + `GET /account/partner-link`(STEP 13, Supabase 실연결) | IMPLEMENTED |
 | Wife | W-SETTING-001 | FUC-W-SETTING-001 | 플레이스홀더 | - | 없음(문서상 "미반영, Phase 2") | PHASE_2 |
 
 ## Husband Screen Matrix
@@ -70,8 +70,8 @@
 | Husband | B-CAL-001 (읽기 전용) | FUC-B-CAL-001 | 날짜별 컨디션/실행/가전/분담 조회 | 위 Wife B-CAL-001과 동일 | `GET /care/calendar/{month}`(STEP 17) — `partner_links`로 연동된 남편은 아내 캘린더를 읽기 전용 조회, 미연동이면 본인(빈) 캘린더 | IMPLEMENTED |
 | Husband | H-NOTI-001 | FUC-H-NOTI-001, FUC-H-NOTI-002 | 알림 유형/요약/시각/읽음여부 | `notifications`(EXISTING) | `GET /family/notifications`, `POST .../read`(STEP 17, Supabase 실연결). 발송 3종: 가사 요청 생성, 하루 첫 루틴 생성(`morning_report`), 루틴 재생성(`condition_changed`) — 뒤 둘은 `POST /routine/today` 성공 직후 | IMPLEMENTED |
 | Husband | H-REPORT-001 | FUC-H-REPORT-001 | 주차, 컨디션 요약, 예정 집안일, 4대 가이드 요약 — **원문 내부 모순**: 문서 내 두 버전이 "가이드 요약 포함 여부"를 서로 다르게 서술 | `partner_links`+`pregnancy_profiles`+`daily_conditions`+`routine_items`(모두 EXISTING) | `GET /family/morning-reports/{date}`(STEP 12, family authorization+projection — 복사 저장 없음, 원본 점수 미노출) | IMPLEMENTED |
-| Husband | H-REQUEST-001 (확인+수행 병합) | FUC-H-REQUEST-001, FUC-H-REQUEST-002 | 요청 상태(요청됨→확인됨→완료됨), 요청 목록 | `household_requests`/`household_request_items`(EXISTING) | `POST .../confirm`, `.../complete`, `GET`(STEP 17, Supabase 실연결) | IMPLEMENTED |
-| Husband | H-REQUEST-002(완료 결과) | FUC-H-REQUEST-003 | 완료 처리 요약, 캘린더 반영 | 위와 동일 | 별도 API 없음(원문에 본문 섹션 누락, `complete` 응답 재사용 추정) | TBD |
+| Husband | H-REQUEST-001 (확인+수행 병합) | FUC-H-REQUEST-001, FUC-H-REQUEST-002 | 요청 상태(요청됨→확인됨→완료됨), 요청 목록 | `household_requests`/`household_request_items`(EXISTING) | `POST .../items/{item_id}/confirm`, `.../complete`, `GET`(STEP 17, Supabase 실연결; 2026-09-21 카드=항목 단위 개별 상태 관리로 전환) | IMPLEMENTED |
+| Husband | H-REQUEST-002(완료 결과) | FUC-H-REQUEST-003 | 완료 처리 요약(요청일 기준 가족 분담 건수), 캘린더 반영 | 위와 동일 | 별도 API 없음 — `GET .../confirm`,`.../complete`(2026-09-21부터 항목 단위 `.../items/{item_id}/confirm`,`.../complete`) 응답에 `daily_summary` 필드로 포함 | IMPLEMENTED |
 | Husband | B-MOTION-001 (조회 전용) | FUC-B-MOTION-001 | 조회 전용 누적시간/알림 | `posture_events`(EXISTING) | `GET /movement/events`, `/report/daily` — STEP 18: 남편은 `partner_links`로 연동된 아내 데이터를 읽기 전용 조회(`api/v1/partner_scope.py`, 캘린더와 공용) | IMPLEMENTED |
 
 ## Shared Screen Matrix
@@ -135,8 +135,8 @@
 - ~~파트너 초대/연동 확정~~ — STEP 13에서 해결. `bootstrap`/`partner-link`/`partner-invitations`(발급·수락) 전부 Supabase 실연결. 화면 흐름 자체(H-INVITE-001 인증 복귀)는 여전히 미확정이지만, 2026-09-20 팀 결정으로 실사용 연동은 `partner_links` 수동 삽입으로 대체해 더 이상 블로커가 아님
 - ~~가사 요청·알림 영속화~~ — STEP 17에서 해결(`app/domains/family/supabase_repository.py`). Daily 리포트의 가족 분담 집계도 같은 STEP에서 `household_requests` 실조회(누적 funnel)로 교체
 - ~~오전 리포트·루틴 변경 알림 발송(FUC-W-COND-002/003)~~ — STEP 17에서 해결. `POST /routine/today` 성공 직후 `FamilyService.notify_routine_ready`가 첫 생성이면 `morning_report`, 재생성이면 `condition_changed`를 남편에게 발송(미연동 시 생략, 발송 실패해도 201). `app/api/v1/routine.py` 라우트만 최소 수정(`app/services/routine/**` 불변)
-- 챗봇(W-CHAT-001) — STEP 8에서 Stub 골격 생성, 실제 AI 응답·이력 영속화는 미구현(NFR-027 보관 정책 TBD)
-- 메뉴 수락/거절 이력, 수면 환경 override 저장 — STEP 8에서 Stub 골격 생성, `recommendation_feedback` 실 연결은 미구현
+- 챗봇(W-CHAT-001) — 대화 이력 저장은 실연결됐으나(`chat_messages`), 실제 AI 응답은 여전히 고정 placeholder 문구(LLM 공급자·크레딧 대기, NFR-027 보관 정책도 TBD)
+- ~~메뉴 수락/거절 이력, 수면 환경 override 저장~~ — STEP 19에서 해결. `recommendation_feedback`에 이력 실연결(`PUT /care/routine-items/{id}`, `.../sleep-environment`)
 - ~~모션 동의(`motion_consents`)를 WS 연결 게이트에 실제로 연동~~ — STEP 18에서 해결(`movement.py` `stream_live`, 토큰 검증 직후 `FamilyService.motion_privacy` 재사용). 연결 시점 검사이며, 스트림 도중 철회는 프론트가 WS를 끊는 것으로 처리(NFR-012)
 - ThinQ 가전 실행(W-HOUSE-002, W-SLEEP-002) — Phase 2/MVP 표시까지만
 - 남편 조회 권한(부부 연동 검증) 분기 — `B-CAL-001`(캘린더)은 STEP 17에서 해결(`care.py` `get_calendar_target_user_id`). `B-MOTION-001`(`/movement/events`, `/report/daily`)은 STEP 18에서 해결 — 캘린더 헬퍼를 `api/v1/partner_scope.py`로 공용화해 두 도메인이 같은 규칙을 쓴다. `/live`는 데모 단일 세션이라 제외. Profile은 STEP 10에서 남편이 아내 원본에 접근할 경로 자체가 없음을 코드·테스트로 재확인함(`tests/test_profile.py::test_husband_cannot_read_wifes_profile`)
@@ -151,9 +151,9 @@
 ## TBD
 
 - ~~`FUC-H-INVITE-001`: 초대 수락 화면·인증 복귀 계약 미확정~~ — 2026-09-20 팀 결정: 화면·로그인 방식 확정 자체는 보류하고, 실사용(시연) 연동은 `partner_links`를 운영자가 수동으로 미리 삽입하는 방식으로 대체한다. 수락 화면(`InvitationEntryScreen`)·API는 코드에 남겨두되 신규 연동을 이 경로에 의존하지 않는다
-- `FUC-W-COND-003` vs 유스케이스 UC2 A1 설명 불일치 — 최신 FUC는 "남편 변경 알림 발송"으로 명시했으나 UC 문서는 미정 (`DOMAIN_OWNERSHIP.md` 기존 TBD)
-- `H-REPORT-001`(남편 화면 DB스키마 PDF): 오전 리포트에 4대 AI 가이드 요약 포함 여부가 같은 화면 ID 내 두 버전에서 서로 다르게 서술됨 — 확정 필요
-- `H-REQUEST-002`(가사 요청 완료 결과): 남편 화면설계서 인덱스에는 있으나 본문 상세 섹션이 문서에 없음 — 별도 API 필요 여부 확인 필요
+- `FUC-W-COND-003` vs 유스케이스 UC2 A1 설명 불일치 — 최신 FUC는 "남편 변경 알림 발송"으로 명시했으나 UC 문서는 미정 (`DOMAIN_OWNERSHIP.md` 기존 TBD). 코드는 이미 발송하는 쪽으로 구현됨(STEP 17, `condition_changed` 알림) — 문서 정합만 남음
+- `H-REPORT-001`(남편 화면 DB스키마 PDF): 오전 리포트에 4대 AI 가이드 요약 포함 여부가 같은 화면 ID 내 두 버전에서 서로 다르게 서술됨. 코드는 이미 포함하는 쪽으로 구현됨(`MorningReportResponse.guide_summaries`) — 문서 정합만 남음
+- ~~`H-REQUEST-002`(가사 요청 완료 결과): 별도 API 필요 여부~~ — 2026-09-21 해결. 별도 API 없이 기존 `GET`/`confirm`/`complete` 응답에 `daily_summary` 필드(요청일 기준 항목 개수 합산)를 추가해 반영
 - Calendar 4단계 컨디션 지수 계산식 — 문서상 수치 미확정 (`DOMAIN_OWNERSHIP.md` 기존 TBD). ~~Motion 감지 임계값~~ — STEP 18: MVP 임계값은 `rules.yaml` 데모값으로 확정(소유자 결정). 실서비스 값 재산정은 Phase 2
 - ~~Account Stub의 기본 역할이 Wife로 고정~~ — STEP 13의 `SupabaseAccountRepository._role()`이 이미 `profiles.role`을 조회한다(행이 없으면 Wife 기본값, 남편은 초대 수락 시 `profiles`에 기록). STEP 17 재확인으로 종료
 - `posture_calibration_profiles`/`posture_events`의 `motion_sessions` 연동(§5 가정 1, `/live` 조회를 DB 기반으로 전환할지) — `TARGET_DB_SCHEMA.md`에서 NOT_REQUIRED(이번 MVP)
