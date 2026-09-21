@@ -1,7 +1,7 @@
 # AI 하루 루틴 생성 파이프라인 v3 (웬즈데이 AI)
 
 - 최초 작성: 2026-09-16 / v3 갱신: 2026-09-18 (컨디션 수정 영향 누적·부분 재생성 추가)
-- 표기: ~~취소선~~ = 완료된 부분. 작업이 끝나 커밋할 때 취소선을 지운다.
+- 표기: 문장 끝 **(완료)** = 완료된 부분. 취소선은 2026-09-21 정리하며 모두 제거했다.
 - 실호출 규칙(2026-09-18 확정): 계정 `testwife@gmail.com` + 테스트 전용 날짜 `2026-12-31`만 사용(오늘 날짜·팀원 데이터 건드리지 않음, 프로필은 읽기만). `POST /api/v1/routine/today`를 실제 API 경로로 호출해 남편 알림(testhusband `notifications` 행 생성)까지 확인. 정리는 testwife·testhusband의 2026-12-31 행만 삭제하고 실행 전후 행 수로 원상복구 확인
 - 작업 디렉토리: `/Users/ella/PLM`
 - 관련 기능: W-HOME-001(구 W-ROUTINE-001), W-CALLBACK-001(구 W-ROUTINE-003), W-MEAL-002, W-HEALTH-001, W-SLEEP-001, W-HOUSE-001
@@ -32,18 +32,18 @@ Flutter ─▶ FastAPI ─┬─ Supabase (pregnancy_profiles · daily_condition
 
 | 항목 | 대체 전 선택지 | 적용 완료 이력 |
 |---|---|---|
-| 지식 원본 | 자체 PDF → pypdf | ~~팀원 패키지: 미국 HHS/OWH 공개 자료 10건 → 영문 청크 75개(staging)~~ |
-| 청크·임베딩 | 자체 스크립트, Voyage 1024 | ~~`02_translate_chunk_embed_upload.py`: 번역(OpenAI) → 한국어 재청크(1200/150) → `text-embedding-3-small` 1536~~ |
-| 테이블 | `guideline_documents` + `guideline_chunks(tags jsonb, vector 1024)` | ~~`pregnancy_knowledge(id bigint, category text, week_start, week_end, content, source, embedding vector 1536)` 단일~~ |
-| 검색 | 직접 SQL | ~~RPC `match_pregnancy_knowledge(query_embedding, match_count, filter_week, filter_category)`~~ |
-| 태그 | LLM 자동 태깅 jsonb | ~~`category` 키워드 룰(`CATEGORY_RULES`) + 주차 범위 컬럼~~ |
-| `source_ids` | chunk uuid | ~~`pregnancy_knowledge.id` (bigint)~~ |
-| 룰 저장 | `routine_rules` 테이블 | ~~`rules.yaml` (모션 파트 방식). `source_ref` FK 삭제~~ |
-| 카테고리명 | `chores` | ~~`household` (DB·프론트와 통일)~~ |
-| LLM 출력 | 자체 스키마 | ~~`routine_items.payload` 모양(`docs/api.md` payload 표)으로 통일~~ |
-| 백엔드 의존성 | anthropic, pypdf, voyageai | ~~openai 하나~~ |
-| 판단 LLM | Claude | ~~OpenAI (2026-09-16 변경). 임베딩·생성 같은 SDK·같은 키~~ |
-| 환경변수 | `VOYAGE_API_KEY`, `LLM_API_KEY`(Claude) | ~~`LLM_API_KEY` 값 = OpenAI 키. 추가 변수 없음~~ |
+| 지식 원본 | 자체 PDF → pypdf | 팀원 패키지: 미국 HHS/OWH 공개 자료 10건 → 영문 청크 75개(staging) (완료) |
+| 청크·임베딩 | 자체 스크립트, Voyage 1024 | `02_translate_chunk_embed_upload.py`: 번역(OpenAI) → 한국어 재청크(1200/150) → `text-embedding-3-small` 1536 (완료) |
+| 테이블 | `guideline_documents` + `guideline_chunks(tags jsonb, vector 1024)` | `pregnancy_knowledge(id bigint, category text, week_start, week_end, content, source, embedding vector 1536)` 단일 (완료) |
+| 검색 | 직접 SQL | RPC `match_pregnancy_knowledge(query_embedding, match_count, filter_week, filter_category)` (완료) |
+| 태그 | LLM 자동 태깅 jsonb | `category` 키워드 룰(`CATEGORY_RULES`) + 주차 범위 컬럼 (완료) |
+| `source_ids` | chunk uuid | `pregnancy_knowledge.id` (bigint) (완료) |
+| 룰 저장 | `routine_rules` 테이블 | `rules.yaml` (모션 파트 방식). `source_ref` FK 삭제 (완료) |
+| 카테고리명 | `chores` | `household` (DB·프론트와 통일) (완료) |
+| LLM 출력 | 자체 스키마 | `routine_items.payload` 모양(`docs/api.md` payload 표)으로 통일 (완료) |
+| 백엔드 의존성 | anthropic, pypdf, voyageai | openai 하나 (완료) |
+| 판단 LLM | Claude | OpenAI (2026-09-16 변경). 임베딩·생성 같은 SDK·같은 키 (완료) |
+| 환경변수 | `VOYAGE_API_KEY`, `LLM_API_KEY`(Claude) | `LLM_API_KEY` 값 = OpenAI 키. 추가 변수 없음 (완료) |
 
 ## 1. 파이프라인 A: 지식 적재 (팀원 패키지, 한 번만)
 
@@ -53,27 +53,27 @@ staging.jsonl(영문75) ─▶ ① 번역 ─▶ ② 한국어 재청크 ─▶ 
 
 | 단계 | 명령 | 완료 확인 |
 |---|---|---|
-| 0 | ~~`01_create_pregnancy_knowledge.sql` → Supabase SQL Editor 실행~~ | ~~함수 `match_pregnancy_knowledge` 존재~~ |
-| ① | ~~`python 02_... --step translate`~~ | ~~`pregnancy_knowledge_ko.jsonl` 75행, `pregnancy_knowledge_supabase.jsonl` 88행(재청크 후)~~ |
-| ③ | ~~`--step embed`~~ | ~~`embedding` 길이 1536~~ |
-| ④ | ~~`--step upload`~~ | ~~`select count(*)` = 88~~ |
+| 0 | `01_create_pregnancy_knowledge.sql` → Supabase SQL Editor 실행 | 함수 `match_pregnancy_knowledge` 존재 (완료) |
+| ① | `python 02_... --step translate` | `pregnancy_knowledge_ko.jsonl` 75행, `pregnancy_knowledge_supabase.jsonl` 88행(재청크 후) (완료) |
+| ③ | `--step embed` | `embedding` 길이 1536 (완료) |
+| ④ | `--step upload` | `select count(*)` = 88 (완료) |
 
-- ~~위치: 패키지 폴더를 `PLM/tools/rag_ingest/`로 이동. SQL은 `supabase/migrations/20260917000000_pregnancy_knowledge.sql`로 복사(저장소에 스키마 기록).~~
-- ~~실행 환경: 패키지 자체 `.env`(OPENAI + SUPABASE service role). `requirements.txt` 별도 → `pip install -r tools/rag_ingest/requirements.txt`.~~
-- ~~데이터 현황(2026-09-17 실행 결과): 번역 75/75, 재청크 88, 임베딩 88, 업로드 88행. 소요 약 20분. 결과 jsonl 2개는 09-17에 커밋.~~
-- ~~주의: 번역 모델 기본값 `gpt-5.6-luna`는 스크립트 하드코딩. 계정에 없으면 `--translation-model` 옵션으로 변경.~~
+- 위치: 패키지 폴더를 `PLM/tools/rag_ingest/`로 이동. SQL은 `supabase/migrations/20260917000000_pregnancy_knowledge.sql`로 복사(저장소에 스키마 기록). (완료)
+- 실행 환경: 패키지 자체 `.env`(OPENAI + SUPABASE service role). `requirements.txt` 별도 → `pip install -r tools/rag_ingest/requirements.txt`. (완료)
+- 데이터 현황(2026-09-17 실행 결과): 번역 75/75, 재청크 88, 임베딩 88, 업로드 88행. 소요 약 20분. 결과 jsonl 2개는 09-17에 커밋. (완료)
+- 주의: 번역 모델 기본값 `gpt-5.6-luna`는 스크립트 하드코딩. 계정에 없으면 `--translation-model` 옵션으로 변경. (완료)
 
 ## 2. 파이프라인 B: 루틴 생성 (`POST /api/v1/routine/today`)
 
 | 단계 | 하는 일 | 테이블/외부 | 완료 확인 |
 |---|---|---|---|
-| ① 입력 | ~~프로필(주차·다태·알레르기·진단)·오늘 컨디션·예정활동~~ / 전일 루틴·홈캠은 미연결(R5) | `pregnancy_profiles`, `daily_conditions` | ~~입력 dict 키 채워짐~~ |
-| ② 룰 | ~~`rules.yaml` 대조 → `{exclude, limit, require}`. exclude는 `keywords`(메뉴 단어) 포함~~ | 파일 | ~~통증 4 → `activity:walk` exclude~~ |
-| ③ RAG | ~~컨디션 문장 → OpenAI 임베딩 1회 batch → RPC `match_pregnancy_knowledge(emb, 5, 주차, category)` ×4 카테고리~~ | `pregnancy_knowledge` | ~~카테고리별 청크 ≤5, `source` 있음~~ |
-| ④ 프롬프트 | ~~시스템(역할·금지·"의료 자문 아님") + ①②③ + 출력 스키마. 카테고리별로 그 카테고리 규칙·문단만~~ | - | ~~입력 약 2.3k~3.4k 토큰/호출~~ |
-| ⑤ LLM | ~~OpenAI chat `response_format=json_schema(strict)` — 카테고리별 4회 동시 호출~~ | OpenAI | ~~파싱 성공~~ |
-| ⑥ 검증·폴백 | ~~exclude 항목 제거(`title`·`nutritionTags`만 검사), 없는 `source_ids` 제거. 실패/9.5초 → 전일 루틴 → 기본 템플릿~~ | `daily_routines` | ~~빈 화면 0건~~ |
-| ⑦ 저장 | ~~`daily_routines` 1행(`source`, `prompt_version`, `request_payload`, `response`) + `routine_items` N행~~ | 쓰기 | ~~홈 4종 카드~~ |
+| ① 입력 | 프로필(주차·다태·알레르기·진단)·오늘 컨디션·예정활동 / 전일 루틴·홈캠은 미연결(R5) | `pregnancy_profiles`, `daily_conditions` | 입력 dict 키 채워짐 (완료) |
+| ② 룰 | `rules.yaml` 대조 → `{exclude, limit, require}`. exclude는 `keywords`(메뉴 단어) 포함 | 파일 | 통증 4 → `activity:walk` exclude (완료) |
+| ③ RAG | 컨디션 문장 → OpenAI 임베딩 1회 batch → RPC `match_pregnancy_knowledge(emb, 5, 주차, category)` ×4 카테고리 | `pregnancy_knowledge` | 카테고리별 청크 ≤5, `source` 있음 (완료) |
+| ④ 프롬프트 | 시스템(역할·금지·"의료 자문 아님") + ①②③ + 출력 스키마. 카테고리별로 그 카테고리 규칙·문단만 | - | 입력 약 2.3k~3.4k 토큰/호출 (완료) |
+| ⑤ LLM | OpenAI chat `response_format=json_schema(strict)` — 카테고리별 4회 동시 호출 | OpenAI | 파싱 성공 (완료) |
+| ⑥ 검증·폴백 | exclude 항목 제거(`title`·`nutritionTags`만 검사), 없는 `source_ids` 제거. 실패/9.5초 → 전일 루틴 → 기본 템플릿 | `daily_routines` | 빈 화면 0건 (완료) |
+| ⑦ 저장 | `daily_routines` 1행(`source`, `prompt_version`, `request_payload`, `response`) + `routine_items` N행 | 쓰기 | 홈 4종 카드 (완료) |
 
 위 ①~⑦ 표의 완료 표시는 **최초 루틴 생성 경로**의 이력이다. 컨디션 수정 요청의 추가 경로는 §2.5~2.8과 S9·S10에 정의한다. 최초 생성은 기존 4종 병렬 생성, 수정은 카테고리별 영향 판단 후 부분 생성으로 구분한다.
 
@@ -81,14 +81,14 @@ staging.jsonl(영문75) ─▶ ① 번역 ─▶ ② 한국어 재청크 ─▶ 
 
 | 루틴 카테고리 | filter_category | 비고 |
 |---|---|---|
-| meal | ~~`식사·영양`~~ | 입덧 심하면 `입덧` 추가 검색(미적용) |
-| household | ~~`활동·운동`~~ | ~~부담 회피 근거~~ |
-| health | ~~`통증`~~ | ~~컨디션 최고 통증 부위 문장으로 질의~~ |
-| sleep | ~~`수면`~~ | |
+| meal | `식사·영양` | 입덧 심하면 `입덧` 추가 검색(미적용) (완료) |
+| household | `활동·운동` | 부담 회피 근거 (완료) |
+| health | `통증` | 컨디션 최고 통증 부위 문장으로 질의 (완료) |
+| sleep | `수면` | (완료) |
 
 ### 2.2 출력 JSON 스키마 (⑤ json_schema strict, `docs/api.md` payload와 동일 키)
 
-~~`item_key`는 스키마 값 목록으로 고정(09-18): meal 4종, health 6종(`waist|pelvis|leg|wrist|whole|rest`), sleep 1종. household는 활동 코드표 미확정이라 자유 문자열 + 코드가 `household:` 접두사 보정.~~
+`item_key`는 스키마 값 목록으로 고정(09-18): meal 4종, health 6종(`waist|pelvis|leg|wrist|whole|rest`), sleep 1종. household는 활동 코드표 미확정이라 자유 문자열 + 코드가 `household:` 접두사 보정.
 
 ```json
 {
@@ -279,51 +279,51 @@ Rule Engine을 준수하고, 근거 밖 의학적 내용을 추가하지 마세�
 
 | # | 할 일 | 완료 확인 |
 |---|---|---|
-| 0-a | ~~패키지 → `tools/rag_ingest/`, SQL → migrations, 문서 2개 → `docs/`~~ | ~~`git status`~~ |
-| 0-b | ~~`requirements.txt`에 `openai==<고정>`. `.env`의 `LLM_API_KEY`가 OpenAI 키인지 확인~~ | ~~import 성공, 모델명 1개 결정~~ |
-| 0-c | ~~마이그레이션 2건 Supabase 적용~~ | ~~테이블 6개 select 성공~~ |
-| 1 | ~~A 실행 (①③④) — OPENAI 키 필요~~ | ~~`count(*)` = 88, RPC 결과 5행~~ |
-| 2 | ~~B ② rules.yaml + rules.py + 테스트~~ | ~~통증 4 → walk exclude~~ |
-| 3 | ~~B ⑤ OpenAI JSON (룰·RAG 없이)~~ | ~~4종 키 JSON~~ |
-| 4 | ~~B ③④ RAG 연결~~ | ~~`source_ids` 채워짐~~ |
-| 5 | ~~B ①⑥⑦ + API + `docs/api.md`~~ | ~~키 빼고 실행 → 폴백 200~~ |
-| 6 | ~~실호출 검증 + 식단 0건 버그 수정 + 4회 동시 생성~~ | ~~실호출 3회 `source=ai`, 10초 이내~~ |
-| S1 | ~~`item_key` 규칙 고정(K2)~~ | ~~스키마 값 목록 + 실호출 키 4종 규칙 통과(09-18, 커밋 전)~~ |
-| S2 | ~~R2 diff 함수: 이전 루틴 ↔ 새 루틴 `item_key` 비교(added/updated/removed) + 완료 체크 이어받기~~ | ~~`diff.py` + 테스트 6개 통과(전체 69개). DB·API 변경 없음(09-18, 커밋 전)~~ |
-| S3 | ~~R1 마이그레이션 + 저장 방식: `daily_routines` 버전별 행(revision·confirmed_at·change_summary), `routine_items`는 현재 상태로 같은 행 갱신(change_kind added/updated/removed), 지난 날짜 중간 버전 정리 함수~~ | ~~SQL Editor 적용·pg_cron 등록, 실DB에서 같은 날 2회 생성 시 `daily_routines` 2행·`routine_items` 중복 없음(09-18, 커밋 전)~~ |
-| S4 | ~~R2 응답: `revision`·`is_regeneration`·`change_summary` + `docs/api.md` 갱신~~ | ~~재생성 호출 응답에 변경 요약 (선행: S2, S3) — GET·POST 응답 필드 추가, 남편 알림 분기를 `is_regeneration`으로 통일, 테스트 165개 통과(09-18, 커밋 전)~~ |
-| S5 | ~~R3 계약 문구: `source != ai` 의미·실패 화면 기준을 `docs/api.md`에 명시~~ | ~~문구 반영 — `docs/api.md` "AI 실패 처리" 절 추가. 폴백이면 남편 알림 없음, 첫 알림은 오늘 첫 AI 루틴 기준(폴백 뒤 재시도 성공 = 오전 리포트). 테스트 167개 통과(09-18, 커밋 전)~~ |
-| S6 | ~~K4 컨디션 저장 API `PUT /api/v1/condition/today` 계약 + 활동 코드표 9종~~ | ~~계약 문서화, household `item_key` 값 목록 확정 (선행: 팀 합의) — 저장 API는 팀원의 기존 `PUT /care/conditions/{date}`·`/activities`를 사용(신규 없음). 코드표는 `inputs.py` `ACTIVITY_CODES`(DB는 한글 라벨 유지, 입력 단계에서만 변환), household 키 10종 enum, `docs/api.md` 호출 순서·코드표. 테스트 168개 통과(09-18, 커밋 전)~~ |
-| S7 | ~~R4 웰컴 카드 '오늘의 팁' 1개 AI 개인화(FUC-W-HOME-001) — 출력 스키마에 팁 필드 추가~~ | ~~실호출 응답에 팁 1개 포함, `docs/api.md` 갱신 (선행: 팁을 AI 출력에 넣을지 결정) — 5번째 동시 호출(`TIP_SCHEMA`), `response.tip={text, source_ids}` 또는 null, 팁 실패·지연·금지어는 tip=null로 루틴과 분리. 테스트 173개, 실호출 팁 포함 확인(09-18, 커밋 전)~~ |
-| S8 | ~~R5 전일 활동·홈캠 요약을 ① 입력에 연결~~ | ~~`request_payload`에 전일 요약 포함 (선행: 모션 팀과 요약 데이터 계약, K5 UTC/KST 날짜 기준 통일) — 모션 팀 요약 함수 읽기만(계약 신규 없음), K5 1안, `facts.yesterday={routine, motion}`. 테스트 4개 추가, 실호출 `source=ai` 확인(09-19, 커밋 전)~~ |
-| S9 | ~~R6 컨디션 diff + `impact_map.yaml`·`impact.py`: 항목별 변화와 경계값 판단, primary/secondary 매핑, 카테고리별 악화·호전 압력 누적, `mode`·`strength`·`direction` 결정~~ | ~~§2.5·§2.8 사례 고정 테스트. 복수 악화 누적·상반 변화 비상쇄·예정 가사 조건·척도 방향 확인 (선행: S6 컨디션 필드·활동 코드 계약) — `impact_map.yaml`·`impact.py`(`resolve_impact`), 이전 컨디션은 그날 최신 revision의 `request_payload`에서 읽음(09-19 결정, 연결은 S10). §2.8 사례 6개 + 기분 척도 반전·예정 활동 변경·미변경 항목 제외 테스트 9개, 전체 190개 통과(09-19, 커밋 전)~~ |
-| S10 | ~~R7 컨디션 수정 시 대상 가이드만 Rule·RAG·LLM 호출, 이전 루틴 기반 TUNE/REPLAN 프롬프트, KEEP 병합, 부분 실패 처리, diff/revision·API 문서 연결~~ | ~~수정된 카테고리만 호출·저장, 미대상 항목과 완료 기록 보존, 실패 시 무관한 가이드 불변. `docs/api.md`의 `source`·`change_summary` 계약 갱신 (선행: S4, S5, S9) — 수정 경로 실호출 확인: 대상 가이드만 호출, 미대상 항목 id·완료 기록 유지, 변화 없으면 호출·새 버전 없음(09-20, push 전)~~ |
-| S_stretching_video | ~~건강 가이드 대표 활동 스트레칭 영상(FUC-W-HEALTH-001 "대표 활동(영상·소요 시간)"): 부위별 영상 목록 파일(`health:<부위>` → 제목·URL·길이)을 두고 백엔드가 health 항목에 `video` 필드를 붙인다. AI는 영상 URL을 만들지 않는다~~ | ~~건강 항목 응답에 `video` 포함, `docs/api.md` payload 표 갱신 (선행: 팀이 부위별 영상 6종 URL 선정 — 허리·골반·다리·손목·전신·휴식) — 목록 파일 `stretching_videos.yaml`(6부위) + `service.attach_videos()`가 `payload.video`에 붙임. **URL은 팀 선정 대기라 전부 빈 값**이고, 빈 부위는 `video` 키를 붙이지 않는다. `docs/api.md` payload 표 갱신. 테스트 3개. 팀이 URL만 채우면 코드 수정 없이 적용(09-20, 커밋 전)~~ |
-| S_createroutine_loading | ~~루틴 생성·수정 대기 시간을 로딩 화면으로 가리기(09-18 회의 의견). 백엔드는 `docs/api.md`에 대기 계약만 명시: 예상 시간(p50·p95 실측), 서버 상한 9.5초 뒤 폴백 응답, 앱 요청 타임아웃은 12초 이상, 로딩 중 버튼 비활성으로 중복 호출 금지. 화면 구현은 프론트 팀~~ | ~~`docs/api.md` 대기 계약 반영, 프론트 팀 확인 (선행: K1 실측값 갱신. 로딩 화면은 체감 대기만 줄이고 9.5초 초과 폴백은 줄이지 못함) — 백엔드 몫인 대기 계약을 `docs/api.md` '생성 대기 화면' 절에 명시: 로딩 중 버튼 비활성(중복 호출 금지), 앱 타임아웃 12초 이상, 실측 중앙값 7.7초·최대 10.2초·폴백 9회 중 4회, 수정 경로 4.9초. 화면 구현은 프론트 팀 몫(09-20, 커밋 전)~~ |
-| S_date_modification | ~~팀원 테스트 `backend/tests/test_guide_query.py`의 `TARGET_DATE`를 고정값 `date(2026, 9, 18)`에서 실행일 `dates.today_kst()`로 바꿈(09-19, 커밋 전. 고정값이면 다음 날부터 `/today` 조회가 404). 팀원이 고정 날짜를 원하면 `TARGET_DATE`를 다시 고정하고 테스트에서 `app.utils.dates.today_kst`를 같은 날짜로 `patch`해 API 오늘 날짜도 고정한다~~ | ~~팀원 결정 후 `test_guide_query` 10개 통과, 날짜를 바꿔 실행해도 통과 (선행: 팀원 회신)~~ → **과제에서 제외(09-21)**: 팀원과 협의 완료, 실행일 기준 유지 |
+| 0-a | 패키지 → `tools/rag_ingest/`, SQL → migrations, 문서 2개 → `docs/` | `git status` (완료) |
+| 0-b | `requirements.txt`에 `openai==<고정>`. `.env`의 `LLM_API_KEY`가 OpenAI 키인지 확인 | import 성공, 모델명 1개 결정 (완료) |
+| 0-c | 마이그레이션 2건 Supabase 적용 | 테이블 6개 select 성공 (완료) |
+| 1 | A 실행 (①③④) — OPENAI 키 필요 | `count(*)` = 88, RPC 결과 5행 (완료) |
+| 2 | B ② rules.yaml + rules.py + 테스트 | 통증 4 → walk exclude (완료) |
+| 3 | B ⑤ OpenAI JSON (룰·RAG 없이) | 4종 키 JSON (완료) |
+| 4 | B ③④ RAG 연결 | `source_ids` 채워짐 (완료) |
+| 5 | B ①⑥⑦ + API + `docs/api.md` | 키 빼고 실행 → 폴백 200 (완료) |
+| 6 | 실호출 검증 + 식단 0건 버그 수정 + 4회 동시 생성 | 실호출 3회 `source=ai`, 10초 이내 (완료) |
+| S1 | `item_key` 규칙 고정(K2) | 스키마 값 목록 + 실호출 키 4종 규칙 통과(09-18, 커밋 전) (완료) |
+| S2 | R2 diff 함수: 이전 루틴 ↔ 새 루틴 `item_key` 비교(added/updated/removed) + 완료 체크 이어받기 | `diff.py` + 테스트 6개 통과(전체 69개). DB·API 변경 없음(09-18, 커밋 전) (완료) |
+| S3 | R1 마이그레이션 + 저장 방식: `daily_routines` 버전별 행(revision·confirmed_at·change_summary), `routine_items`는 현재 상태로 같은 행 갱신(change_kind added/updated/removed), 지난 날짜 중간 버전 정리 함수 | SQL Editor 적용·pg_cron 등록, 실DB에서 같은 날 2회 생성 시 `daily_routines` 2행·`routine_items` 중복 없음(09-18, 커밋 전) (완료) |
+| S4 | R2 응답: `revision`·`is_regeneration`·`change_summary` + `docs/api.md` 갱신 | 재생성 호출 응답에 변경 요약 (선행: S2, S3) — GET·POST 응답 필드 추가, 남편 알림 분기를 `is_regeneration`으로 통일, 테스트 165개 통과(09-18, 커밋 전) (완료) |
+| S5 | R3 계약 문구: `source != ai` 의미·실패 화면 기준을 `docs/api.md`에 명시 | 문구 반영 — `docs/api.md` "AI 실패 처리" 절 추가. 폴백이면 남편 알림 없음, 첫 알림은 오늘 첫 AI 루틴 기준(폴백 뒤 재시도 성공 = 오전 리포트). 테스트 167개 통과(09-18, 커밋 전) (완료) |
+| S6 | K4 컨디션 저장 API `PUT /api/v1/condition/today` 계약 + 활동 코드표 9종 | 계약 문서화, household `item_key` 값 목록 확정 (선행: 팀 합의) — 저장 API는 팀원의 기존 `PUT /care/conditions/{date}`·`/activities`를 사용(신규 없음). 코드표는 `inputs.py` `ACTIVITY_CODES`(DB는 한글 라벨 유지, 입력 단계에서만 변환), household 키 10종 enum, `docs/api.md` 호출 순서·코드표. 테스트 168개 통과(09-18, 커밋 전) |
+| S7 | R4 웰컴 카드 '오늘의 팁' 1개 AI 개인화(FUC-W-HOME-001) — 출력 스키마에 팁 필드 추가 | 실호출 응답에 팁 1개 포함, `docs/api.md` 갱신 (선행: 팁을 AI 출력에 넣을지 결정) — 5번째 동시 호출(`TIP_SCHEMA`), `response.tip={text, source_ids}` 또는 null, 팁 실패·지연·금지어는 tip=null로 루틴과 분리. 테스트 173개, 실호출 팁 포함 확인(09-18, 커밋 전) (완료) |
+| S8 | R5 전일 활동·홈캠 요약을 ① 입력에 연결 | `request_payload`에 전일 요약 포함 (선행: 모션 팀과 요약 데이터 계약, K5 UTC/KST 날짜 기준 통일) — 모션 팀 요약 함수 읽기만(계약 신규 없음), K5 1안, `facts.yesterday={routine, motion}`. 테스트 4개 추가, 실호출 `source=ai` 확인(09-19, 커밋 전) (완료) |
+| S9 | R6 컨디션 diff + `impact_map.yaml`·`impact.py`: 항목별 변화와 경계값 판단, primary/secondary 매핑, 카테고리별 악화·호전 압력 누적, `mode`·`strength`·`direction` 결정 | §2.5·§2.8 사례 고정 테스트. 복수 악화 누적·상반 변화 비상쇄·예정 가사 조건·척도 방향 확인 (선행: S6 컨디션 필드·활동 코드 계약) — `impact_map.yaml`·`impact.py`(`resolve_impact`), 이전 컨디션은 그날 최신 revision의 `request_payload`에서 읽음(09-19 결정, 연결은 S10). §2.8 사례 6개 + 기분 척도 반전·예정 활동 변경·미변경 항목 제외 테스트 9개, 전체 190개 통과(09-19, 커밋 전) |
+| S10 | R7 컨디션 수정 시 대상 가이드만 Rule·RAG·LLM 호출, 이전 루틴 기반 TUNE/REPLAN 프롬프트, KEEP 병합, 부분 실패 처리, diff/revision·API 문서 연결 | 수정된 카테고리만 호출·저장, 미대상 항목과 완료 기록 보존, 실패 시 무관한 가이드 불변. `docs/api.md`의 `source`·`change_summary` 계약 갱신 (선행: S4, S5, S9) — 수정 경로 실호출 확인: 대상 가이드만 호출, 미대상 항목 id·완료 기록 유지, 변화 없으면 호출·새 버전 없음(09-20, push 전) |
+| S_stretching_video | 건강 가이드 대표 활동 스트레칭 영상(FUC-W-HEALTH-001 "대표 활동(영상·소요 시간)"): 부위별 영상 목록 파일(`health:<부위>` → 제목·URL·길이)을 두고 백엔드가 health 항목에 `video` 필드를 붙인다. AI는 영상 URL을 만들지 않는다 | 건강 항목 응답에 `video` 포함, `docs/api.md` payload 표 갱신 (선행: 팀이 부위별 영상 6종 URL 선정 — 허리·골반·다리·손목·전신·휴식) — 목록 파일 `stretching_videos.yaml`(6부위) + `service.attach_videos()`가 `payload.video`에 붙임. **URL은 팀 선정 대기라 전부 빈 값**이고, 빈 부위는 `video` 키를 붙이지 않는다. `docs/api.md` payload 표 갱신. 테스트 3개. 팀이 URL만 채우면 코드 수정 없이 적용(09-20, 커밋 전) (완료) |
+| S_createroutine_loading | 루틴 생성·수정 대기 시간을 로딩 화면으로 가리기(09-18 회의 의견). 백엔드는 `docs/api.md`에 대기 계약만 명시: 예상 시간(p50·p95 실측), 서버 상한 9.5초 뒤 폴백 응답, 앱 요청 타임아웃은 12초 이상, 로딩 중 버튼 비활성으로 중복 호출 금지. 화면 구현은 프론트 팀 | `docs/api.md` 대기 계약 반영, 프론트 팀 확인 (선행: K1 실측값 갱신. 로딩 화면은 체감 대기만 줄이고 9.5초 초과 폴백은 줄이지 못함) — 백엔드 몫인 대기 계약을 `docs/api.md` '생성 대기 화면' 절에 명시: 로딩 중 버튼 비활성(중복 호출 금지), 앱 타임아웃 12초 이상, 실측 중앙값 7.7초·최대 10.2초·폴백 9회 중 4회, 수정 경로 4.9초. 화면 구현은 프론트 팀 몫(09-20, 커밋 전) (완료) |
+| S_date_modification | 팀원 테스트 `backend/tests/test_guide_query.py`의 `TARGET_DATE`를 고정값 `date(2026, 9, 18)`에서 실행일 `dates.today_kst()`로 바꿈(09-19, 커밋 전. 고정값이면 다음 날부터 `/today` 조회가 404). 팀원이 고정 날짜를 원하면 `TARGET_DATE`를 다시 고정하고 테스트에서 `app.utils.dates.today_kst`를 같은 날짜로 `patch`해 API 오늘 날짜도 고정한다 | 팀원 결정 후 `test_guide_query` 10개 통과, 날짜를 바꿔 실행해도 통과 (선행: 팀원 회신) → **과제에서 제외(09-21)**: 팀원과 협의 완료, 실행일 기준 유지 |
 
 ## 4. 가정 (아니면 말해달라)
 
 | # | 가정 | 대안 |
 |---|---|---|
-| 1 | ~~질의 임베딩 = OpenAI `text-embedding-3-small` (적재와 동일 모델 필수). 생성도 OpenAI → SDK 1개~~ | 생성만 다른 업체 쓰면 SDK 2개 |
-| 2 | ~~번역·임베딩은 팀원 스크립트 그대로, 수정 없음~~ | category 룰 보강 시 스크립트 수정 후 재실행 |
-| 3 | ~~산후 자료(`week null` 6건)는 RPC 필터에서 자동 포함됨 → 프롬프트에서 "산후 내용 무시" 지시 → `SYSTEM_PROMPT`에 반영 완료~~ | RPC에 `and week_start is not null` 추가 |
-| 4 | ~~룰은 yaml~~ | 규칙 20개 초과 시 테이블(현재 16개) |
-| 5 | ~~최초 생성의 현행 동작: 4개 카테고리 중 하나라도 실패하면 4종 전체 폴백. **컨디션 수정은 R7/S10에서 실패 카테고리만 안전 검증·유지 또는 부분 폴백** → S10 완료(09-20): 실패 가이드는 직전 내용 유지, 전부 실패면 `fallback_prev`~~ | 수정 요청까지 4종 전체 폴백을 적용하는 기존 가정은 R7과 충돌. `source` 의미·check는 S5/S10에서 정의 |
-| 6 | ~~(결정1) 루틴 이력 = 버전별 행 누적 + 과거 날짜 중간 버전은 pg_cron으로 정리~~ ✅ 확정 09-18 | 한 행 덮어쓰기 + revision(R1 불충족으로 제외) |
-| 7 | ~~(결정2) 재생성 시 내용은 전부 새로 만들고, 완료 기록은 item_key(끼니·부위·가사) 기준으로 유지. 제목 변화는 `change_kind='updated'`로만 표시~~ ✅ 확정 09-18 | 제목이 바뀌면 완료 초기화(실DB에서 공통 5개 중 4개 제목이 바뀌어 거의 매번 초기화되므로 제외) |
-| 8 | ~~결정2의 취소선은 당시 완료 이력으로 보존. **S9·S10 적용 이후 컨디션 수정 요청에는 '전부 새로 만들기'를 적용하지 않고** 관련 가이드만 TUNE/REPLAN한다. `item_key` 기준 완료 기록 처리와 revision 이력은 유지 → S9·S10 적용 완료(09-20)~~ | 전체 재생성은 최초 생성 또는 별도 명시된 전체 재계획 요청에 한정 |
+| 1 | 질의 임베딩 = OpenAI `text-embedding-3-small` (적재와 동일 모델 필수). 생성도 OpenAI → SDK 1개 | 생성만 다른 업체 쓰면 SDK 2개 (완료) |
+| 2 | 번역·임베딩은 팀원 스크립트 그대로, 수정 없음 | category 룰 보강 시 스크립트 수정 후 재실행 (완료) |
+| 3 | 산후 자료(`week null` 6건)는 RPC 필터에서 자동 포함됨 → 프롬프트에서 "산후 내용 무시" 지시 → `SYSTEM_PROMPT`에 반영 완료 | RPC에 `and week_start is not null` 추가 (완료) |
+| 4 | 룰은 yaml | 규칙 20개 초과 시 테이블(현재 16개) (완료) |
+| 5 | 최초 생성의 현행 동작: 4개 카테고리 중 하나라도 실패하면 4종 전체 폴백. **컨디션 수정은 R7/S10에서 실패 카테고리만 안전 검증·유지 또는 부분 폴백** → S10 완료(09-20): 실패 가이드는 직전 내용 유지, 전부 실패면 `fallback_prev` | 수정 요청까지 4종 전체 폴백을 적용하는 기존 가정은 R7과 충돌. `source` 의미·check는 S5/S10에서 정의 (완료) |
+| 6 | (결정1) 루틴 이력 = 버전별 행 누적 + 과거 날짜 중간 버전은 pg_cron으로 정리 ✅ 확정 09-18 | 한 행 덮어쓰기 + revision(R1 불충족으로 제외) |
+| 7 | (결정2) 재생성 시 내용은 전부 새로 만들고, 완료 기록은 item_key(끼니·부위·가사) 기준으로 유지. 제목 변화는 `change_kind='updated'`로만 표시 ✅ 확정 09-18 | 제목이 바뀌면 완료 초기화(실DB에서 공통 5개 중 4개 제목이 바뀌어 거의 매번 초기화되므로 제외) |
+| 8 | 결정2의 취소선은 당시 완료 이력으로 보존. **S9·S10 적용 이후 컨디션 수정 요청에는 '전부 새로 만들기'를 적용하지 않고** 관련 가이드만 TUNE/REPLAN한다. `item_key` 기준 완료 기록 처리와 revision 이력은 유지 → S9·S10 적용 완료(09-20) | 전체 재생성은 최초 생성 또는 별도 명시된 전체 재계획 요청에 한정 (완료) |
 
 ## 5. NFR
 
 | NFR | 대응 |
 |---|---|
 | 001 p50 5초·p95 10초 | ⑥ 타임아웃 9.5초 → 폴백. 임베딩 1회 batch + 생성 4회 동시 + 식단 출력 제한(K1, 09-20). **실측 09-20 3회 4.99/5.39/8.26초(폴백 0) → p50 5.4초로 목표에 근접하나 미달**. 제한 전 9회는 중앙값 7.7초·폴백 4회. 컨디션 수정 경로는 대상 가이드만 호출해 4.9초(1회) . 09-21 기동 준비 적용 후 5.14/4.63초 |
-| 009 키 | ~~`LLM_API_KEY`(OpenAI) backend `.env`만. 팀원 적재 패키지 `.env`는 저장소 밖~~ |
-| 014 최소 전송 | ~~① 선택 항목만 `request_payload` 기록. 이름·이메일 미전송~~ |
-| 016 폴백 | ~~전일 → 템플릿 2단~~ |
-| 비용(실측) | ~~호출당 약 $0.0067(입력 11,175 / 출력 1,405 토큰 평균, gpt-4.1-mini 입력 $0.40·출력 $1.60 per 1M). 적재 포함 누적 $0.10~~ |
+| 009 키 | `LLM_API_KEY`(OpenAI) backend `.env`만. 팀원 적재 패키지 `.env`는 저장소 밖 (완료) |
+| 014 최소 전송 | ① 선택 항목만 `request_payload` 기록. 이름·이메일 미전송 (완료) |
+| 016 폴백 | 전일 → 템플릿 2단 (완료) |
+| 비용(실측) | 호출당 약 $0.0067(입력 11,175 / 출력 1,405 토큰 평균, gpt-4.1-mini 입력 $0.40·출력 $1.60 per 1M). 적재 포함 누적 $0.10 (완료) |
 
 ## 6. 진행 기록
 
@@ -337,6 +337,8 @@ Rule Engine을 준수하고, 근거 밖 의학적 내용을 추가하지 마세�
 | 2026-09-17 | 커밋·push: `66fe1fd` 기능, `d1f268f` 문서(ERD·개발순서 삭제, 이 문서 이름 변경, 적재 jsonl), `3583cc7` migration 주석 |
 | 2026-09-20 | K9 해소(커밋 전): 피드백이 달린 항목은 삭제하지 않고 `removed` 표시(테스트 2개 추가, 전체 206개 통과). `recommendation_feedback`의 cascade는 Care 담당이 09-17 `f88a8dc`에 만든 것으로 확인 |
 | 2026-09-20 | K9를 §7.2에 기록(재생성 시 메뉴 피드백 cascade 삭제). K7·K9·영상 URL은 팀 공유 항목으로 정리 |
+| 2026-09-21 | K7 정리: 추론 스레드 분리는 모션 담당이 이미 처리(`c174052`)해 웬즈데이 작업 없음으로 닫음. 팀 목록의 '조성윤: 추론 별도 스레드 작업 예정'은 중복이라 공유 필요. 문서 전체 취소선을 제거하고 완료 표시를 문장 끝 (완료)로 통일 |
+| 2026-09-21 | 현황: §3 만드는 순서 22개 항목 전부 완료(S_date_modification·K7은 과제에서 제외), §7.2 열린 문제 없음. push `846082b`(K1·K3·K6·K8·K9, 영상 목록, 대기 계약) → `750bcc9`(기동 준비). 작업 디렉토리 충돌 표시 0건, 미커밋 0건, 테스트 218개 통과. 남은 대기: 스트레칭 영상 URL 6종(팀 선정), K7(모션 담당). 다음은 팀원 백엔드·프론트와 통합 |
 | 2026-09-21 | K1 원인 규명·조치: 카테고리별 재측정에서 1회차만 전 카테고리가 느림(식단 5.49·건강 3.89·수면 3.71·가사 2.42 → 2회차 3.63/3.05/2.32/1.88) = 첫 호출의 연결 준비 비용. 요청마다 새로 만들던 `RoutineService`를 프로세스당 1개로 캐시하고, 기동 훅(`main.py` lifespan)에서 `warmup_routine()`으로 임베딩 1회·`pregnancy_knowledge` 조회 1회를 미리 실행(실패해도 기동 계속). 실측: 준비 0.83초, 첫 요청 5.14초·두 번째 4.63초(이전 9.20/9.97초). 재측정 $0.0199 + 검증 $0.0133. 테스트 3개 추가, 전체 218개 통과. S_date_modification·K7은 과제에서 제외 |
 | 2026-09-20 | K1 개선(커밋 전): 가장 느린 식단 호출의 출력 분량을 지시문으로 제한(`PROMPT_VERSION=2026-09-20.1`). 실호출 3회(testwife 2026-12-31, 원상복구 확인) 4.99/5.39/8.26초 모두 `source=ai`, 카테고리별 식단 3.92~5.21 / 건강 3.38~3.87 / 수면 2.50~3.19 / 가사 1.19~2.36초, 식단 출력 444~488토큰(이전 807). 비용 $0.0204(3회 합계). `docs/api.md` 대기 계약 수치도 갱신 |
 | 2026-09-20 | K3·K6·K8 해소(커밋 전): K3 = 루틴 입력에서 `sleep_quality` 제외(Care 계약 테스트 1줄 수정), K8 = 폴백 가사 항목을 예정 활동 코드로 생성해 폴백→AI 성공 때 같은 행 유지(실패 시 항목 7→6개), K6 = 옛 화면 ID를 웬즈데이 소유 파일 7곳에서 정리. 테스트 3개 추가, 전체 203개 통과. K7은 모션 담당 영역이라 팀 공유로 남김 |
@@ -358,14 +360,14 @@ Rule Engine을 준수하고, 근거 밖 의학적 내용을 추가하지 마세�
 | 2026-09-18 | S1 완료(커밋 전): `item_key` 스키마 값 목록 고정 + household 접두사 보정. 테스트 63개 통과. 실호출 2회(9.85초 폴백 1회, `source=ai` 6.19초 1회에 키 규칙 통과) |
 
 남은 실행 확인:
-1. ~~마이그레이션 실행~~ 완료(2026-09-16)
-2. ~~`tools/rag_ingest`에서 `--step all` → `select count(*) from pregnancy_knowledge` ≥ 75~~ 완료(2026-09-17, 88행)
-3. ~~실호출 → `source=ai`, `source_ids` 채워짐 확인~~ 완료(2026-09-17, 3회)
-4. ~~S3 migration을 SQL Editor에서 적용 → **코드 배포(push)보다 먼저**. 적용 전에 이 코드가 돌면 `revision` 컬럼이 없어 저장이 실패한다~~ 완료(2026-09-18)
-5. ~~pg_cron 켜고 정리 스케줄 등록(migration 파일 하단 주석의 SQL)~~ 완료(2026-09-18, job 1)
-6. ~~적용 후 실DB 확인: 같은 날 2회 생성 → `daily_routines` 2행, `routine_items` 중복 없음~~ 완료(2026-09-18, 2회)
-7. ~~S1~S3 수정분 커밋·push + 팀원에게 `routine_items.change_kind` 추가 공지~~ 완료(2026-09-18, `8b7b85a`·`423fcc4`)
-8. ~~S4 이후는 §3 표 기준으로 진행. 결정1과 결정2의 완료 이력은 유지하되, 새 컨디션 수정 정책은 §2.5~2.8 및 S9·S10을 따른다. S2·S3의 `item_key`·revision 체계는 이어서 사용~~ 완료(2026-09-20, S4~S10 및 S_stretching_video·S_createroutine_loading. 남은 것은 S_date_modification·K1)
+1. 마이그레이션 실행 완료(2026-09-16)
+2. `tools/rag_ingest`에서 `--step all` → `select count(*) from pregnancy_knowledge` ≥ 75 완료(2026-09-17, 88행)
+3. 실호출 → `source=ai`, `source_ids` 채워짐 확인 완료(2026-09-17, 3회)
+4. S3 migration을 SQL Editor에서 적용 → **코드 배포(push)보다 먼저**. 적용 전에 이 코드가 돌면 `revision` 컬럼이 없어 저장이 실패한다 완료(2026-09-18)
+5. pg_cron 켜고 정리 스케줄 등록(migration 파일 하단 주석의 SQL) 완료(2026-09-18, job 1)
+6. 적용 후 실DB 확인: 같은 날 2회 생성 → `daily_routines` 2행, `routine_items` 중복 없음 완료(2026-09-18, 2회)
+7. S1~S3 수정분 커밋·push + 팀원에게 `routine_items.change_kind` 추가 공지 완료(2026-09-18, `8b7b85a`·`423fcc4`)
+8. S4 이후는 §3 표 기준으로 진행. 결정1과 결정2의 완료 이력은 유지하되, 새 컨디션 수정 정책은 §2.5~2.8 및 S9·S10을 따른다. S2·S3의 `item_key`·revision 체계는 이어서 사용 완료(2026-09-20, S4~S10 및 S_stretching_video·S_createroutine_loading. 남은 것은 S_date_modification·K1)
 
 ## 7. 남은 것 (요구사항 변경·알려진 문제)
 
@@ -373,24 +375,24 @@ Rule Engine을 준수하고, 근거 밖 의학적 내용을 추가하지 마세�
 
 | # | 요구 | 현재 | 단계 |
 |---|---|---|---|
-| R1 | ~~확정 후 컨디션 재입력 = 덮어쓰지 않고 새 루틴(FUC-W-COND-004), Daily 리포트는 날짜당 1개(NFR-028)~~ | ~~`daily_routines` 사용자·날짜당 1행 덮어쓰기, 확정 상태 없음~~ | ~~S3 완료(09-18): revision·confirmed_at·pg_cron 정리~~ |
-| R2 | ~~확정 전 수정 = 루틴 재생성 + 남편 알림(FUC-W-COND-003, FUC-H-NOTI-002)~~ | ~~재생성 신호 없음, 완료 체크 유실~~ | ~~S2, S4 → S2·S4 완료(09-18): diff.py·change_summary·is_regeneration~~ |
-| R3 | ~~AI 실패 → 실패 화면(W-CALLBACK-001) + 다시 시도 → 연속 실패 시 폴백~~ | ~~실패 즉시 폴백 저장 후 201~~ | ~~S5 완료(09-18): `docs/api.md` 'AI 실패 처리'~~ |
-| R4 | ~~웰컴 카드 '오늘의 팁' 1개 AI 개인화(FUC-W-HOME-001)~~ | ~~출력 4종뿐~~ | ~~S7 완료(09-18): 팁 전용 호출, 실패 시 tip=null~~ |
-| R5 | ~~입력에 전일 활동·홈캠 데이터~~ | ~~미포함~~ | ~~S8 완료(09-19): facts.yesterday(전일 루틴·모션 요약)~~ |
-| R6 | ~~복수 컨디션 변경을 항목별로 해석하고 같은 가이드에 누적. 악화·호전은 상쇄하지 않으며 `mode`·`strength`·`direction`을 카테고리별로 산출~~ | ~~항목 하나의 최대 변화만 적용하는 방식으로는 허리·손목 동시 악화나 mixed 상태를 표현할 수 없음~~ | ~~S9 완료(09-19): impact_map.yaml·impact.py~~ |
-| R7 | ~~컨디션 수정 시 관련 가이드만 이전 루틴 기준으로 TUNE/REPLAN, 무관한 가이드는 KEEP. 실제 예정 활동과 secondary 연관성, 카테고리별 실패 처리·병합·revision 반영~~ | ~~현행 4종 동시 재생성·전체 폴백 가정과 충돌. 최초 생성 경로는 유지~~ | ~~S10 완료(09-20): 수정 경로 실호출 확인~~ |
+| R1 | 확정 후 컨디션 재입력 = 덮어쓰지 않고 새 루틴(FUC-W-COND-004), Daily 리포트는 날짜당 1개(NFR-028) | `daily_routines` 사용자·날짜당 1행 덮어쓰기, 확정 상태 없음 | S3 완료(09-18): revision·confirmed_at·pg_cron 정리 |
+| R2 | 확정 전 수정 = 루틴 재생성 + 남편 알림(FUC-W-COND-003, FUC-H-NOTI-002) | 재생성 신호 없음, 완료 체크 유실 | S2, S4 → S2·S4 완료(09-18): diff.py·change_summary·is_regeneration |
+| R3 | AI 실패 → 실패 화면(W-CALLBACK-001) + 다시 시도 → 연속 실패 시 폴백 | 실패 즉시 폴백 저장 후 201 | S5 완료(09-18): `docs/api.md` 'AI 실패 처리' |
+| R4 | 웰컴 카드 '오늘의 팁' 1개 AI 개인화(FUC-W-HOME-001) | 출력 4종뿐 | S7 완료(09-18): 팁 전용 호출, 실패 시 tip=null |
+| R5 | 입력에 전일 활동·홈캠 데이터 | 미포함 | S8 완료(09-19): facts.yesterday(전일 루틴·모션 요약) |
+| R6 | 복수 컨디션 변경을 항목별로 해석하고 같은 가이드에 누적. 악화·호전은 상쇄하지 않으며 `mode`·`strength`·`direction`을 카테고리별로 산출 | 항목 하나의 최대 변화만 적용하는 방식으로는 허리·손목 동시 악화나 mixed 상태를 표현할 수 없음 | S9 완료(09-19): impact_map.yaml·impact.py |
+| R7 | 컨디션 수정 시 관련 가이드만 이전 루틴 기준으로 TUNE/REPLAN, 무관한 가이드는 KEEP. 실제 예정 활동과 secondary 연관성, 카테고리별 실패 처리·병합·revision 반영 | 현행 4종 동시 재생성·전체 폴백 가정과 충돌. 최초 생성 경로는 유지 | S10 완료(09-20): 수정 경로 실호출 확인 |
 
 ### 7.2 알려진 문제
 
 | # | 문제 |
 |---|---|
 | K1 | NFR-001 p50 5초 **미달이지만 개선**(09-20): 식단 출력 제한(title 20자·reason/evidence 각 한 문장·태그 3개·주의 1개)으로 식단 출력 807→470토큰, 식단 호출 5.8→3.9초, 전체 중앙값 7.7→5.4초, 폴백 4/9→0/3. 남은 차이 0.4초는 모델 교체나 카테고리 축소 등 별도 검토. **범위 = 최초 전체 생성(4종 동시 호출)**. 컨디션 수정 경로는 대상 가이드만 불러 4.9~5.2초로 목표 안팎이라 대상이 아니다. 09-21 실측 전체 생성 9.97초(폴백 직전) — 변동 폭이 커 카테고리별 재측정 필요 09-21 재측정으로 원인 확인: 프로세스 첫 호출만 느림(네 카테고리 동시에 느려짐 = 연결 준비 비용). 조치 = 서비스 인스턴스를 프로세스당 1개로 캐시 + 기동 훅에서 임베딩·DB 1회 미리 호출(`warmup_routine`). **첫 요청 9.20→5.14초, 이후 4.63초** |
-| ~~K2~~ | ~~AI가 만든 `item_key`가 `breakfast_1` 형식(설계 `meal:lunch`)~~ → S1에서 고정 완료(09-18) |
-| ~~K3~~ | ~~`daily_conditions.sleep_quality`·`LLM_FACT_KEYS`에 수면 값 잔존. 04_1 컨디션 입력 4종에 수면 없음~~ → 09-20 해소: 루틴 입력·전송(`CONDITION_COLUMNS`·`LLM_FACT_KEYS`)에서 제외. DB 컬럼은 Care 소유라 유지, Care 계약 테스트 1줄 수정 |
-| ~~K4~~ | ~~컨디션 저장 API 없음 → 실제 앱에선 항상 409. 활동 코드표 9종(프론트 한글 라벨 vs 백엔드 코드) 확정 필요~~ → S6에서 해소(09-18): 저장 API는 팀원 구현분 사용, 코드표 확정 |
-| ~~K5~~ | ~~날짜 기준 모션=UTC, 웬즈데이=KST~~ → S8에서 1안 적용(09-19): 모션 요약은 UTC 하루(어제 09:00~오늘 09:00 KST) 그대로 사용. Daily 리포트(care)와 같은 함수·같은 수치 |
-| ~~K6~~ | ~~옛 요구사항 ID `W-ROUTINE-001/003`이 코드 주석·`backend/README.md`·`docs/api.md`·`fallback.yaml`·migration 주석에 남음 → `W-HOME-001`/`W-CALLBACK-001`~~ → 09-20 해소: 웬즈데이 소유 파일 7곳 정리. `docs/development/**`·`docs/backend/**`의 화면 ID는 팀원 문서라 손대지 않음 |
-| ~~K7~~ | ~~MediaPipe 추론이 이벤트 루프 동기 점유 → 웬즈데이 응답 지연 위험. 마이그레이션 접두사 `20260916000000` 중복. **모션 담당 소유 영역(`app/services/movement/**`)이라 웬즈데이가 고치지 않는다 → 팀 공유 항목**(09-20)~~ → 웬즈데이 과제에서 제외(09-21): 모션 담당 소유 영역이라 팀 공유만 하고 여기서는 다루지 않는다 |
-| ~~K8~~ | ~~기본 템플릿 가사 키(`household:light_only`, `household:partner_share`)가 S6 코드표 밖 → 폴백 뒤 AI 성공 시 가사 항목이 전부 삭제·추가로 잡힘. 처리 여부 미정~~ → 09-20 해소: 예정 활동이 있으면 폴백 가사 항목을 `household:<활동 코드>`로 만든다(`service.template_household`). 예정 활동이 없으면 기존 템플릿 유지 |
-| ~~K9~~ | ~~재생성으로 빠진 항목을 지울 때 메뉴 수락·거절 기록도 함께 사라짐: `recommendation_feedback.routine_item_id`가 `on delete cascade`(`20260917010800` 8행). 09-18 팀원 구현으로 실제 데이터가 쌓이기 시작해 발생 가능. 해결안 = 피드백이 있는 항목은 삭제하지 않고 `change_kind='removed'`로 남기기. **Care 담당 회신 대기**(09-20 기록)~~ → 09-20 해소: `repository._sync_items`가 삭제 전 `recommendation_feedback`을 조회해 기록이 있는 항목은 `change_kind='removed'`로만 남긴다(조회 실패 시에도 지우지 않음). `docs/api.md`에 `removed` 항목은 오늘 루틴으로 표시하지 않는다는 계약 추가. 가이드 조회 API에서 제외할지는 Guide 담당과 협의 |
+| K2 | AI가 만든 `item_key`가 `breakfast_1` 형식(설계 `meal:lunch`) → S1에서 고정 완료(09-18) |
+| K3 | `daily_conditions.sleep_quality`·`LLM_FACT_KEYS`에 수면 값 잔존. 04_1 컨디션 입력 4종에 수면 없음 → 09-20 해소: 루틴 입력·전송(`CONDITION_COLUMNS`·`LLM_FACT_KEYS`)에서 제외. DB 컬럼은 Care 소유라 유지, Care 계약 테스트 1줄 수정 |
+| K4 | 컨디션 저장 API 없음 → 실제 앱에선 항상 409. 활동 코드표 9종(프론트 한글 라벨 vs 백엔드 코드) 확정 필요 → S6에서 해소(09-18): 저장 API는 팀원 구현분 사용, 코드표 확정 |
+| K5 | 날짜 기준 모션=UTC, 웬즈데이=KST → S8에서 1안 적용(09-19): 모션 요약은 UTC 하루(어제 09:00~오늘 09:00 KST) 그대로 사용. Daily 리포트(care)와 같은 함수·같은 수치 (완료) |
+| K6 | 옛 요구사항 ID `W-ROUTINE-001/003`이 코드 주석·`backend/README.md`·`docs/api.md`·`fallback.yaml`·migration 주석에 남음 → `W-HOME-001`/`W-CALLBACK-001` → 09-20 해소: 웬즈데이 소유 파일 7곳 정리. `docs/development/**`·`docs/backend/**`의 화면 ID는 팀원 문서라 손대지 않음 |
+| K7 | MediaPipe 추론의 이벤트 루프 동기 점유는 **해결**(09-20, 커밋 `c174052`, 이성혁): 프레임 추론을 `asyncio.to_thread`로 넘겨 루프를 막지 않는다(`api/v1/movement.py` 185·199행). 마이그레이션 접두사 `20260916000000` 중복은 이미 적용된 파일이라 이름을 바꾸지 않고 둔다(새 환경에서 적용 순서만 주의). 웬즈데이 쪽 작업 없음 (완료) |
+| K8 | 기본 템플릿 가사 키(`household:light_only`, `household:partner_share`)가 S6 코드표 밖 → 폴백 뒤 AI 성공 시 가사 항목이 전부 삭제·추가로 잡힘. 처리 여부 미정 → 09-20 해소: 예정 활동이 있으면 폴백 가사 항목을 `household:<활동 코드>`로 만든다(`service.template_household`). 예정 활동이 없으면 기존 템플릿 유지 |
+| K9 | 재생성으로 빠진 항목을 지울 때 메뉴 수락·거절 기록도 함께 사라짐: `recommendation_feedback.routine_item_id`가 `on delete cascade`(`20260917010800` 8행). 09-18 팀원 구현으로 실제 데이터가 쌓이기 시작해 발생 가능. 해결안 = 피드백이 있는 항목은 삭제하지 않고 `change_kind='removed'`로 남기기. **Care 담당 회신 대기**(09-20 기록) → 09-20 해소: `repository._sync_items`가 삭제 전 `recommendation_feedback`을 조회해 기록이 있는 항목은 `change_kind='removed'`로만 남긴다(조회 실패 시에도 지우지 않음). `docs/api.md`에 `removed` 항목은 오늘 루틴으로 표시하지 않는다는 계약 추가. 가이드 조회 API에서 제외할지는 Guide 담당과 협의 |
