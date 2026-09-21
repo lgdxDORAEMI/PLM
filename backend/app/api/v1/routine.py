@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from functools import lru_cache
 from typing import Annotated, Any
 
 import httpx
@@ -29,11 +30,24 @@ def _storage_unavailable() -> HTTPException:
     return HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, STORAGE_UNAVAILABLE)
 
 
+@lru_cache(maxsize=1)
 def get_routine_service() -> RoutineService:
+    """프로세스당 1개만 만든다(K1). 요청마다 새로 만들면 OpenAI·Supabase 연결을 매번 새로 맺어 첫 응답이 4초 가까이 느리다."""
     try:
         return RoutineService(get_supabase_service().client, get_settings())
     except ValueError as error:  # Supabase 환경변수 누락
         raise _storage_unavailable() from error
+
+
+async def warmup_routine() -> None:
+    """서버 기동 시 연결을 미리 열어 첫 사용자가 그 비용을 치르지 않게 한다(K1). 실패해도 기동을 막지 않는다."""
+    try:
+        service = get_routine_service()
+        await service.retriever.embed(["웬즈데이 연결 준비"])
+        service.supabase.table("pregnancy_knowledge").select("id").limit(1).execute()
+        logger.info("루틴 생성 연결 준비 완료")
+    except Exception as exc:
+        logger.warning("루틴 생성 연결 준비 실패(무시): %s", f"{type(exc).__name__}: {exc}"[:200])
 
 
 User = Annotated[CurrentUser, Depends(get_current_user)]

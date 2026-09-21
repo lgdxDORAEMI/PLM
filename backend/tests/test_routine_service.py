@@ -10,7 +10,7 @@ from httpx import ASGITransport, AsyncClient
 from postgrest.exceptions import APIError
 
 from app.api.v1.family import get_family_service
-from app.api.v1.routine import get_routine_service
+from app.api.v1.routine import get_routine_service, warmup_routine
 from app.core.config import Settings
 from app.core.security import CurrentUser, get_current_user
 from app.domains.family.service import FamilyService
@@ -276,6 +276,30 @@ class YesterdayTest(unittest.TestCase):
             self.assertIsNone(yesterday_motion(self.db, uid, TODAY))
         with patch("app.services.routine.inputs.generate_daily_report", side_effect=RuntimeError("db down")):
             self.assertIsNone(yesterday_motion(self.db, uid, TODAY))
+
+
+class WarmupTest(unittest.IsolatedAsyncioTestCase):
+    """K1: 기동 시 연결을 미리 열고, 서비스는 프로세스당 1개만 만든다."""
+
+    async def test_warmup_calls_embedding_and_supabase(self) -> None:
+        db, openai = FakeSupabase(), FakeOpenAI("")
+        service = make_service(db, openai)
+        with patch("app.api.v1.routine.get_routine_service", return_value=service):
+            await warmup_routine()
+        self.assertIn("pregnancy_knowledge", db.tables)  # 조회로 테이블 접근
+
+    async def test_warmup_failure_does_not_raise(self) -> None:
+        with patch("app.api.v1.routine.get_routine_service", side_effect=RuntimeError("no env")):
+            await warmup_routine()  # 예외가 올라오면 기동이 막힌다
+
+    def test_service_is_created_once_per_process(self) -> None:
+        get_routine_service.cache_clear()
+        with patch("app.api.v1.routine.RoutineService", side_effect=lambda *a, **k: object()) as factory, \
+             patch("app.api.v1.routine.get_supabase_service"), patch("app.api.v1.routine.get_settings"):
+            first, second = get_routine_service(), get_routine_service()
+        get_routine_service.cache_clear()
+        self.assertIs(first, second)
+        self.assertEqual(factory.call_count, 1)
 
 
 class TemplateHouseholdTest(unittest.TestCase):
