@@ -284,8 +284,7 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
       for (final item in plan.items) ...[
         RoutineGuideCard(
           item: item,
-          onTap: () =>
-              Navigator.pushNamed(context, _routeForRoutine(item.type)),
+          onTap: () => unawaited(_openRoutine(item.type)),
         ),
         const SizedBox(height: AppSpacing.md),
       ],
@@ -296,10 +295,29 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
         label: '오늘의 일정 마치기',
         onPressed: () => Navigator.pushNamed(
           context,
-          RouteNames.dailyReport(recordDateKey(DateTime.now())),
+          RouteNames.dailyReport(recordDateKey(plan.date)),
         ),
       ),
     ];
+  }
+
+  /// Refreshes routine_items after a detail screen changes execution state.
+  Future<void> _openRoutine(RoutineType type) async {
+    final plan = _routineController.plan;
+    final today = DateTime.now().toUtc().add(const Duration(hours: 9));
+    if (plan == null || recordDateKey(plan.date) != recordDateKey(today)) {
+      await _restoreTodayCare();
+      if (mounted && _todayCareStore.hasTodayCare) {
+        await _routineController.loadToday();
+      }
+      return;
+    }
+    await Navigator.pushNamed(context, _routeForRoutine(type));
+    if (!mounted) return;
+    await _restoreTodayCare();
+    if (mounted && _todayCareStore.hasTodayCare) {
+      await _routineController.loadToday();
+    }
   }
 
   String _routeForRoutine(RoutineType type) {

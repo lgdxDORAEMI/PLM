@@ -37,10 +37,14 @@ PLM Frontend는 임산부와 배우자의 생활관리 경험을 제공하기 �
 - Daily 리포트·캘린더의 미확정 관절 수치를 홈캠 주의사항 문구로 교체
 - 남편은 캘린더를 Home으로 사용하고 Bottom Navigation 없이 알림·리포트·요청·오늘 실시간으로 이동
 - 남편 알림 3종과 요청 카드 전체 상태, 완료 결과 전체 화면 구현
+- 아내 가사 가이드 재진입 시 Backend 요청 목록에서 남편의 항목별 확인·완료 상태 복원
+- Home 루틴 카드와 진행률을 상세 가이드와 같은 날짜의 `routine_items` 실행 상태에서 조회하고, 상세 화면 복귀 시 갱신
 - ThinQ 초대 handoff 성공 시 남편 연결 상태와 `activeRole`을 갱신한 뒤 캘린더로 진입
 - 브라우저 카메라 프레임 캡처 및 WebSocket 전송
 - 캘리브레이션 진행률, 실시간 자세·부담 상태와 landmark 오버레이 표시
 - 카메라와 WebSocket을 추상화한 Controller 단위 테스트
+
+기능별 FE–BE 연결 상태와 남은 연동 경계는 [FE–BE 연결 기준 상태](../docs/FE_BE_CONNECTION_STATUS.md)를 참고하세요.
 
 ### Skeleton 완료, 상세 UI 구현 전
 

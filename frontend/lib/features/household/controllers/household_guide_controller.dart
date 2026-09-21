@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/network/api_client.dart';
+import '../../partner/models/partner_request.dart';
 import '../models/household_task.dart';
 import '../services/api_household_request_service.dart';
 import '../services/household_request_service.dart';
@@ -44,6 +45,36 @@ class HouseholdGuideController extends ChangeNotifier {
     notifyListeners();
     try {
       _tasks = await requestService.fetchGuide();
+      if (requestService is ApiHouseholdRequestService) {
+        final today = DateTime.now();
+        final dateKey =
+            '${today.year.toString().padLeft(4, '0')}-'
+            '${today.month.toString().padLeft(2, '0')}-'
+            '${today.day.toString().padLeft(2, '0')}';
+        final requests = (await requestService.fetchAll())
+            .where((request) => request.recordDate == dateKey)
+            .toList();
+        _shared = requests.isNotEmpty;
+        _lastRequestId = requests.isEmpty ? null : requests.last.id;
+        final progressByTitle = {
+          for (final request in requests)
+            for (final item in request.tasks) item.title: item.status,
+        };
+        _tasks = [
+          for (final task in _tasks)
+            if (progressByTitle.containsKey(task.title))
+              task.copyWith(
+                status: switch (progressByTitle[task.title]) {
+                  PartnerRequestStatus.completed => HouseholdTaskStatus.done,
+                  PartnerRequestStatus.confirmed =>
+                    HouseholdTaskStatus.confirmed,
+                  _ => HouseholdTaskStatus.shared,
+                },
+              )
+            else
+              task,
+        ];
+      }
     } on ApiException catch (error) {
       if (error.statusCode == 404) {
         _tasks = const [];
