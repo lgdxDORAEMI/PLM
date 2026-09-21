@@ -415,31 +415,31 @@
 - Error: 403(권한 없는 부부 조합), 404
 - Status: **implemented** — 요청 소유 부부가 아니면 403(STEP 17)
 
-### `POST /api/v1/family/household-requests/{request_id}/confirm`
+### `POST /api/v1/family/household-requests/{request_id}/items/{item_id}/confirm`
 
 - Actor: Husband
-- Screen: H-REQUEST-001("확인")
+- Screen: H-REQUEST-001("확인", 카드=항목별 버튼)
 - FUC: FUC-H-REQUEST-002
 - Use Case: UC9
 - Request: 없음
-- Response: `HouseholdRequestResponse`(`status: confirmed`)
-- Source Data: `household_requests.status`(MISSING)
+- Response: `HouseholdRequestResponse` — 해당 `item_id`만 `status: confirmed`, 요청 전체 `status`는 항목들로부터 재계산(전부 completed면 completed, 하나라도 unconfirmed가 아니면 confirmed)
+- Source Data: `household_request_items.status`(MISSING)
 - Authorization: 기본값(수신 남편만)
-- Error: 403, 409(이미 확인/완료됨)
-- Status: **implemented** — 수신 남편만 가능, 이미 completed면 409. `household_requests.status/confirmed_at`과 각 `household_request_items.status` 갱신(STEP 17)
+- Error: 403, 404(항목 없음), 409(이미 확인된 항목)
+- Status: **implemented** — "여러 요청이 있는 경우 카드별로 개별 확인·완료 상태 관리"(FUC-H-REQUEST-002)에 따라 **항목(카드) 단위**로 상태를 관리한다. 기존 요청 전체 단위 `/confirm`은 이 요구사항을 어겨서(항목 하나만 확인해도 전부 확인됨으로 바뀜) 폐기하고 item 단위로 교체했다(2026-09-21)
 
-### `POST /api/v1/family/household-requests/{request_id}/complete`
+### `POST /api/v1/family/household-requests/{request_id}/items/{item_id}/complete`
 
 - Actor: Husband
-- Screen: H-REQUEST-001("완료했어요"+확인팝업)
+- Screen: H-REQUEST-001("완료했어요"+확인팝업, 카드=항목별 버튼)
 - FUC: FUC-H-REQUEST-002, FUC-H-REQUEST-003
 - Use Case: UC9
 - Request: 없음
-- Response: `HouseholdRequestResponse`(`status: completed`)
-- Source Data: `household_requests.status`(MISSING) + `routine_items.status/completed_by=husband`(동기화)
+- Response: `HouseholdRequestResponse` — 해당 `item_id`만 `status: completed`, 요청 전체 `status`는 위와 동일하게 재계산
+- Source Data: `household_request_items.status`(MISSING) + `routine_items.status/completed_by=husband`(동기화)
 - Authorization: 기본값(수신 남편만)
-- Error: 403, 409(미확인 상태에서 완료 시도)
-- Status: **implemented** — confirmed 상태에서만 가능, 그 외 409. 상태 변화 자체는 새 알림을 만들지 않는다(FUC-H-NOTI-001 제약, STEP 17)
+- Error: 403, 404(항목 없음), 409(해당 항목이 confirmed 상태가 아닐 때)
+- Status: **implemented** — 항목이 confirmed 상태일 때만 가능, 그 외 409. 상태 변화 자체는 새 알림을 만들지 않는다(FUC-H-NOTI-001 제약). 기존 요청 전체 단위 `/complete`는 폐기하고 item 단위로 교체했다(2026-09-21)
 
 ---
 

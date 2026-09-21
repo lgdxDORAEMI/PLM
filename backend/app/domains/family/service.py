@@ -31,9 +31,13 @@ class FamilyServicePort(Protocol):
 
     def get_request(self, user_id: str, request_id: str) -> HouseholdRequestResponse: ...
 
-    def confirm_request(self, user_id: str, request_id: str) -> HouseholdRequestResponse: ...
+    def confirm_item(
+        self, user_id: str, request_id: str, item_id: str
+    ) -> HouseholdRequestResponse: ...
 
-    def complete_request(self, user_id: str, request_id: str) -> HouseholdRequestResponse: ...
+    def complete_item(
+        self, user_id: str, request_id: str, item_id: str
+    ) -> HouseholdRequestResponse: ...
 
     def notifications(self, user_id: str) -> list[NotificationResponse]: ...
 
@@ -90,43 +94,74 @@ class FamilyService(FamilyServicePort):
         request = self._authorized_request(user_id, request_id)
         return request
 
-    def confirm_request(self, user_id: str, request_id: str) -> HouseholdRequestResponse:
+    def confirm_item(
+        self, user_id: str, request_id: str, item_id: str
+    ) -> HouseholdRequestResponse:
         request = self._partner_request(user_id, request_id)
-        if request.status == HouseholdRequestStatus.COMPLETED:
-            raise DomainConflictError("이미 완료된 요청입니다.")
-        now = datetime.now(timezone.utc)
-        updated = request.model_copy(
-            update={
-                "status": HouseholdRequestStatus.CONFIRMED,
-                "confirmed_at": request.confirmed_at or now,
-                "items": [
-                    item.model_copy(update={"status": HouseholdItemStatus.CONFIRMED})
-                    if item.status == HouseholdItemStatus.UNCONFIRMED
-                    else item
-                    for item in request.items
-                ],
-            }
-        )
-        self.repository.save_request(updated)
-        return updated
+        item = self._find_item(request, item_id)
+        if item.status != HouseholdItemStatus.UNCONFIRMED:
+            raise DomainConflictError("이미 확인된 항목입니다.")
+        return self._apply_item_status(request, item_id, HouseholdItemStatus.CONFIRMED)
 
-    def complete_request(self, user_id: str, request_id: str) -> HouseholdRequestResponse:
+    def complete_item(
+        self, user_id: str, request_id: str, item_id: str
+    ) -> HouseholdRequestResponse:
         request = self._partner_request(user_id, request_id)
-        if request.status != HouseholdRequestStatus.CONFIRMED:
-            raise DomainConflictError("확인 상태의 요청만 완료할 수 있습니다.")
+        item = self._find_item(request, item_id)
+        if item.status != HouseholdItemStatus.CONFIRMED:
+            raise DomainConflictError("확인 상태의 항목만 완료할 수 있습니다.")
+        # 요구사항에 따라 상태 변경 알림은 새로 만들지 않는다.
+        return self._apply_item_status(request, item_id, HouseholdItemStatus.COMPLETED)
+
+    def _find_item(self, request: HouseholdRequestResponse, item_id: str):
+        for item in request.items:
+            if item.item_id == item_id:
+                return item
+        raise DomainNotFoundError("집안일 항목을 찾을 수 없습니다.")
+
+    def _apply_item_status(
+        self,
+        request: HouseholdRequestResponse,
+        item_id: str,
+        new_status: HouseholdItemStatus,
+    ) -> HouseholdRequestResponse:
+        """카드(항목)별로 독립된 확인·완료 상태를 관리한다(FUC-H-REQUEST-002) —
+        요청 전체 status는 항목들의 상태로부터 다시 계산한다: 전부 completed면
+        completed, 하나라도 unconfirmed가 아니면 confirmed."""
+        items = [
+            item.model_copy(update={"status": new_status})
+            if item.item_id == item_id
+            else item
+            for item in request.items
+        ]
+        now = datetime.now(timezone.utc)
+        if all(item.status == HouseholdItemStatus.COMPLETED for item in items):
+            status = HouseholdRequestStatus.COMPLETED
+            confirmed_at = request.confirmed_at or now
+            completed_at = request.completed_at or now
+        elif any(item.status != HouseholdItemStatus.UNCONFIRMED for item in items):
+            status = HouseholdRequestStatus.CONFIRMED
+            confirmed_at = request.confirmed_at or now
+            completed_at = request.completed_at
+        else:
+            status = HouseholdRequestStatus.UNCONFIRMED
+            confirmed_at = request.confirmed_at
+            completed_at = request.completed_at
         updated = request.model_copy(
             update={
-                "status": HouseholdRequestStatus.COMPLETED,
-                "completed_at": datetime.now(timezone.utc),
-                "items": [
-                    item.model_copy(update={"status": HouseholdItemStatus.COMPLETED})
-                    for item in request.items
-                ],
+                "items": items,
+                "status": status,
+                "confirmed_at": confirmed_at,
+                "completed_at": completed_at,
             }
         )
         self.repository.save_request(updated)
-        # 요구사항에 따라 상태 변경 알림은 새로 만들지 않는다.
-        return updated
+        # daily_summary는 그날 다른 요청까지 합산한 값이라 save 시점에 다시
+        # 읽어야 한다 — 위 model_copy가 들고 있는 값은 이 항목을 바꾸기 전에
+        # 조회했던 stale 값이다.
+        refreshed = self.repository.get_request(request.request_id)
+        assert refreshed is not None
+        return refreshed
 
     def notifications(self, user_id: str) -> list[NotificationResponse]:
         return self.repository.list_notifications(user_id)

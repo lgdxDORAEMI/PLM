@@ -284,14 +284,15 @@ class SupabaseFamilyRepository(FamilyRepository):
     def _daily_summary(
         self, wife_user_id: str, target_date: date
     ) -> HouseholdDailySummary:
-        """해당 날짜에 아내가 보낸 모든 요청의 항목(item) 개수를 status별로 합산한다.
+        """해당 날짜에 아내가 보낸 모든 요청의 항목(item)을 자신의 status 기준으로
+        직접 합산한다(카드=항목별로 독립된 확인·완료 상태를 갖는다, FUC-H-REQUEST-002).
         `household_requests`의 (wife_user_id, date)는 유니크가 아니라 인덱스일
         뿐이라 하루에 여러 건이 있을 수 있다 — 건수(row)가 아니라 항목(item)
         개수를 세야 해서 care/supabase_repository.py의 _family_summary()는
         재사용하지 않는다."""
         request_rows = self._run(
             lambda: self.client.table("household_requests")
-            .select("id,status")
+            .select("id")
             .eq("wife_user_id", wife_user_id)
             .eq("date", target_date.isoformat())
             .execute()
@@ -302,24 +303,16 @@ class SupabaseFamilyRepository(FamilyRepository):
         request_ids = [row["id"] for row in request_rows]
         item_rows = self._run(
             lambda: self.client.table("household_request_items")
-            .select("request_id")
+            .select("status")
             .in_("request_id", request_ids)
             .execute()
         )
-        item_counts: dict[str, int] = {}
-        for item in item_rows:
-            item_counts[item["request_id"]] = item_counts.get(item["request_id"], 0) + 1
-
-        requested = confirmed = completed = 0
-        for row in request_rows:
-            count = item_counts.get(row["id"], 0)
-            requested += count
-            if row["status"] in ("confirmed", "completed"):
-                confirmed += count
-            if row["status"] == "completed":
-                completed += count
         return HouseholdDailySummary(
-            requested=requested, confirmed=confirmed, completed=completed
+            requested=len(item_rows),
+            confirmed=sum(
+                1 for item in item_rows if item["status"] in ("confirmed", "completed")
+            ),
+            completed=sum(1 for item in item_rows if item["status"] == "completed"),
         )
 
     def add_notification(

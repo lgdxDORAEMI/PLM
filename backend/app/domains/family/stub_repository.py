@@ -77,25 +77,26 @@ class StubFamilyRepository(FamilyRepository):
     def _daily_summary(
         self, wife_user_id: str, target_date: date
     ) -> HouseholdDailySummary:
-        """해당 날짜에 아내가 보낸 모든 요청의 항목(item) 개수를 status별로 합산한다
-        (SupabaseFamilyRepository._daily_summary와 동일한 집계 규칙)."""
-        requested = confirmed = completed = 0
-        for request_id, request in self._requests.items():
-            if request.target_date != target_date:
-                continue
-            if self._owners[request_id][0] != wife_user_id:
-                continue
-            count = len(request.items)
-            requested += count
-            if request.status in (
-                HouseholdRequestStatus.CONFIRMED,
-                HouseholdRequestStatus.COMPLETED,
-            ):
-                confirmed += count
-            if request.status == HouseholdRequestStatus.COMPLETED:
-                completed += count
+        """해당 날짜에 아내가 보낸 모든 요청의 항목(item)을 자신의 status 기준으로
+        직접 합산한다(SupabaseFamilyRepository._daily_summary와 동일한 규칙)."""
+        items = [
+            item
+            for request_id, request in self._requests.items()
+            if request.target_date == target_date
+            and self._owners[request_id][0] == wife_user_id
+            for item in request.items
+        ]
         return HouseholdDailySummary(
-            requested=requested, confirmed=confirmed, completed=completed
+            requested=len(items),
+            confirmed=sum(
+                1
+                for item in items
+                if item.status
+                in (HouseholdItemStatus.CONFIRMED, HouseholdItemStatus.COMPLETED)
+            ),
+            completed=sum(
+                1 for item in items if item.status == HouseholdItemStatus.COMPLETED
+            ),
         )
 
     def request_owner_ids(self, request_id: str) -> tuple[str, str] | None:

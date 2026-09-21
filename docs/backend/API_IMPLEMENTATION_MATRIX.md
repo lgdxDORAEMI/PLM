@@ -11,6 +11,7 @@
 - STEP 14에서 모션 동의(`family/motion/privacy`·`/consent` PUT·DELETE·`/collection`) 4개를 stub→implemented로 전환했다 — `motion_consents` 실 연결. `posture_events`/`posture_calibration_profiles`(Protected)는 이미 `EventStore` Protocol(+`InMemoryEventStore`+`SupabaseEventStore`) 경계를 갖추고 있어 신규 Repository를 추가하지 않았다.
 - STEP 19(2026-09-18)에서 routine-item 피드백 2개(`PUT /care/routine-items/{id}` 메뉴 수락/거절/재요청, `.../sleep-environment` 수면 override)를 stub→implemented로 전환했다 — `recommendation_feedback`에 이력만 기록하고 `routine_items`(Protected)는 소유자 확인·응답용으로 읽기만 한다.
 - STEP 17(2026-09-18)에서 Household 5개(`family/household-requests` 생성·목록·단건·confirm·complete)와 Notification 2개(`family/notifications` 목록·read)를 stub→implemented로 전환했다 — `household_requests`/`household_request_items`/`notifications` 실 연결. 같은 STEP에서 `GET /care/calendar/{month}`에 남편 role 분기(`partner_links`로 연동된 아내 캘린더 읽기 전용 조회)를 추가하고, Daily 리포트의 `family` 집계를 `household_requests` 실조회(누적 funnel)로 교체했으며, `POST /routine/today` 성공 시 남편 알림(첫 생성 `morning_report`, 재생성 `condition_changed`)을 발송하도록 연결했다(FUC-W-COND-002/003).
+- 2026-09-21 실사용 QA 중 발견: `confirm`/`complete`가 요청 전체 단위라 카드(항목) 하나만 확인해도 같은 요청의 모든 항목이 동시에 바뀌는 버그가 있었다(FUC-H-REQUEST-002 "카드별로 개별 확인·완료 상태 관리" 위반). `.../items/{item_id}/confirm`·`.../complete`로 교체해 항목 단위로 상태를 관리하도록 고쳤다 — 요청 전체 `status`는 항목들로부터 재계산한다.
 
 ## 전체 매트릭스
 
@@ -42,8 +43,8 @@
 | Household | POST | `/api/v1/family/household-requests` | Wife | W-HOUSE-001 | FUC-W-HOUSE-003 | implemented |
 | Household | GET | `/api/v1/family/household-requests` | Wife, Husband | W-HOUSE-001, H-REQUEST-001 | FUC-W-RECORD-002, FUC-H-REQUEST-001 | implemented |
 | Household | GET | `/api/v1/family/household-requests/{request_id}` | Husband | H-REQUEST-001 | FUC-H-REQUEST-001 | implemented |
-| Household | POST | `/api/v1/family/household-requests/{request_id}/confirm` | Husband | H-REQUEST-001 | FUC-H-REQUEST-002 | implemented |
-| Household | POST | `/api/v1/family/household-requests/{request_id}/complete` | Husband | H-REQUEST-001 | FUC-H-REQUEST-002/003 | implemented |
+| Household | POST | `/api/v1/family/household-requests/{request_id}/items/{item_id}/confirm` | Husband | H-REQUEST-001 | FUC-H-REQUEST-002 | implemented |
+| Household | POST | `/api/v1/family/household-requests/{request_id}/items/{item_id}/complete` | Husband | H-REQUEST-001 | FUC-H-REQUEST-002/003 | implemented |
 | Report | GET | `/api/v1/family/morning-reports/{target_date}` | Husband | H-REPORT-001 | FUC-H-REPORT-001 | implemented |
 | Notification | GET | `/api/v1/family/notifications` | Husband | H-NOTI-001 | FUC-H-NOTI-001 | implemented |
 | Notification | POST | `/api/v1/family/notifications/{notification_id}/read` | Husband | H-NOTI-001 | FUC-H-NOTI-001 | implemented |

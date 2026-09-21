@@ -60,23 +60,35 @@ void main() {
     await partner.load();
     final firstTask = partner.request!.tasks.first;
     await partner.confirmTask(firstTask.id);
+    // 카드(항목)별로 독립된 상태를 가지므로 확인한 항목만 바뀌고, 같은 요청의
+    // 나머지 항목은 그대로 shared 상태여야 한다.
+    final selectedTasks = controller.tasks
+        .where((task) => task.selected)
+        .toList(growable: false);
     expect(
-      controller.tasks.where((task) => task.selected),
-      everyElement(
-        predicate<HouseholdTask>(
-          (task) => task.status == HouseholdTaskStatus.confirmed,
-        ),
-      ),
+      selectedTasks.firstWhere((task) => task.title == firstTask.title).status,
+      HouseholdTaskStatus.confirmed,
+    );
+    expect(
+      selectedTasks.firstWhere((task) => task.title != firstTask.title).status,
+      HouseholdTaskStatus.shared,
     );
 
     await partner.completeTask(firstTask.id);
+    final selectedAfterComplete = controller.tasks
+        .where((task) => task.selected)
+        .toList(growable: false);
     expect(
-      controller.tasks.where((task) => task.selected),
-      everyElement(
-        predicate<HouseholdTask>(
-          (task) => task.status == HouseholdTaskStatus.done,
-        ),
-      ),
+      selectedAfterComplete
+          .firstWhere((task) => task.title == firstTask.title)
+          .status,
+      HouseholdTaskStatus.done,
+    );
+    expect(
+      selectedAfterComplete
+          .firstWhere((task) => task.title != firstTask.title)
+          .status,
+      HouseholdTaskStatus.shared,
     );
   });
 }

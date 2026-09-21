@@ -80,17 +80,27 @@ class MockHouseholdRequestService implements HouseholdRequestService {
       _store.request(requestId);
 
   @override
-  Future<PartnerRequestData> confirm(String requestId) async =>
-      _setAll(requestId, PartnerRequestStatus.confirmed);
+  Future<PartnerRequestData> confirm(String requestId, String itemId) async =>
+      _setOne(requestId, itemId, PartnerRequestStatus.confirmed);
 
   @override
-  Future<PartnerRequestData> complete(String requestId) async =>
-      _setAll(requestId, PartnerRequestStatus.completed);
+  Future<PartnerRequestData> complete(String requestId, String itemId) async =>
+      _setOne(requestId, itemId, PartnerRequestStatus.completed);
 
-  PartnerRequestData _setAll(String requestId, PartnerRequestStatus status) {
+  /// 카드(항목)별로 독립된 확인·완료 상태를 관리한다 — 같은 요청의 다른 항목은
+  /// 건드리지 않는다. 요청 전체 status는 PartnerRequestData.status getter가
+  /// 항목 상태로부터 그때그때 계산한다.
+  PartnerRequestData _setOne(
+    String requestId,
+    String itemId,
+    PartnerRequestStatus status,
+  ) {
     final current = _store.request(requestId);
     final updated = current.copyWith(
-      tasks: [for (final task in current.tasks) task.copyWith(status: status)],
+      tasks: [
+        for (final task in current.tasks)
+          if (task.id == itemId) task.copyWith(status: status) else task,
+      ],
     );
     _store.save(updated);
     return updated;

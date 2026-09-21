@@ -144,6 +144,7 @@ class BackendSkeletonContractTest(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 201)
         request_id = response.json()["request_id"]
+        item_id = response.json()["items"][0]["item_id"]
         initial_notifications = len(
             self.family_repository.list_notifications(HUSBAND_ID)
         )
@@ -152,11 +153,11 @@ class BackendSkeletonContractTest(unittest.TestCase):
             id=HUSBAND_ID
         )
         response = self.client.post(
-            f"/api/v1/family/household-requests/{request_id}/confirm"
+            f"/api/v1/family/household-requests/{request_id}/items/{item_id}/confirm"
         )
         self.assertEqual(response.json()["status"], HouseholdRequestStatus.CONFIRMED)
         response = self.client.post(
-            f"/api/v1/family/household-requests/{request_id}/complete"
+            f"/api/v1/family/household-requests/{request_id}/items/{item_id}/complete"
         )
         self.assertEqual(response.json()["status"], HouseholdRequestStatus.COMPLETED)
         self.assertEqual(

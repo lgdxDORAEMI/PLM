@@ -164,13 +164,14 @@ void main() {
     const taskIds = ['heavy-grocery', 'table-cleanup', 'water-plants'];
     final requestStore = PartnerRequestStore.instance;
 
+    // 항목 하나만 확인해도 같은 요청의 다른 항목은 그대로여야 한다(카드별 개별 상태 관리).
     await _tapTaskAction(tester, 'husband-request-confirm-${taskIds.first}');
     expect(
       requestStore.request('demo-request').tasks.map((task) => task.status),
       [
         PartnerRequestStatus.confirmed,
-        PartnerRequestStatus.confirmed,
-        PartnerRequestStatus.confirmed,
+        PartnerRequestStatus.requested,
+        PartnerRequestStatus.requested,
       ],
     );
     expect(
@@ -181,9 +182,35 @@ void main() {
           .backgroundColor,
       AppColors.infoBackground,
     );
+    expect(
+      tester
+          .widget<AppCard>(
+            find.byKey(ValueKey('partner-request-task-${taskIds[1]}')),
+          )
+          .backgroundColor,
+      AppColors.surface,
+    );
 
     await _tapTaskAction(tester, 'husband-request-complete-${taskIds.first}');
     await _acceptCompletionDialog(tester);
+    // 항목 하나만 완료했을 뿐 나머지 두 항목이 남아 있으니 요청 전체 완료 화면으로는
+    // 아직 넘어가지 않는다.
+    expect(find.text('가사 요청을 완료했어요'), findsNothing);
+    expect(
+      requestStore.request('demo-request').tasks.map((task) => task.status),
+      [
+        PartnerRequestStatus.completed,
+        PartnerRequestStatus.requested,
+        PartnerRequestStatus.requested,
+      ],
+    );
+
+    for (final taskId in taskIds.skip(1)) {
+      await _tapTaskAction(tester, 'husband-request-confirm-$taskId');
+      await _tapTaskAction(tester, 'husband-request-complete-$taskId');
+      await _acceptCompletionDialog(tester);
+    }
+
     expect(find.text('가사 요청을 완료했어요'), findsOneWidget);
     expect(find.text('반영 위치'), findsOneWidget);
     expect(find.text('3건'), findsNWidgets(3));

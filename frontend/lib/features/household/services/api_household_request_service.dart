@@ -102,16 +102,21 @@ class ApiHouseholdRequestService extends ChangeNotifier
   }
 
   @override
-  Future<PartnerRequestData> confirm(String requestId) =>
-      _update(requestId, 'confirm');
+  Future<PartnerRequestData> confirm(String requestId, String itemId) =>
+      _update(requestId, itemId, 'confirm');
 
   @override
-  Future<PartnerRequestData> complete(String requestId) =>
-      _update(requestId, 'complete');
+  Future<PartnerRequestData> complete(String requestId, String itemId) =>
+      _update(requestId, itemId, 'complete');
 
-  Future<PartnerRequestData> _update(String requestId, String action) async {
+  Future<PartnerRequestData> _update(
+    String requestId,
+    String itemId,
+    String action,
+  ) async {
     final response = await _client.post(
-      '/api/v1/family/household-requests/${Uri.encodeComponent(requestId)}/$action',
+      '/api/v1/family/household-requests/${Uri.encodeComponent(requestId)}'
+      '/items/${Uri.encodeComponent(itemId)}/$action',
     );
     if (response == null) throw StateError('가사 요청 응답이 없습니다.');
     return PartnerRequestData.fromJson(response);

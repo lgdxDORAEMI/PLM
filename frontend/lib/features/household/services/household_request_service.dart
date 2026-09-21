@@ -25,6 +25,6 @@ abstract interface class HouseholdRequestService implements Listenable {
 
   Future<List<PartnerRequestData>> fetchAll();
   Future<PartnerRequestData?> fetchRequest(String requestId);
-  Future<PartnerRequestData> confirm(String requestId);
-  Future<PartnerRequestData> complete(String requestId);
+  Future<PartnerRequestData> confirm(String requestId, String itemId);
+  Future<PartnerRequestData> complete(String requestId, String itemId);
 }

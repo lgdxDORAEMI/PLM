@@ -34,11 +34,11 @@ class PartnerRequestController extends ChangeNotifier {
 
   Future<void> load() async => _run(() => service.fetchRequest(requestId));
 
-  Future<void> confirmTask(String _) async =>
-      _run(() => service.confirm(requestId));
+  Future<void> confirmTask(String taskId) async =>
+      _run(() => service.confirm(requestId, taskId));
 
-  Future<void> completeTask(String _) async =>
-      _run(() => service.complete(requestId));
+  Future<void> completeTask(String taskId) async =>
+      _run(() => service.complete(requestId, taskId));
 
   /// 서버의 요청 전체 상태 전이를 그대로 반영하고 로컬 Store는 화면 간 캐시로만 쓴다.
   Future<void> _run(Future<PartnerRequestData?> Function() action) async {

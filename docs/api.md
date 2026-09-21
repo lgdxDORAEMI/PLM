@@ -35,8 +35,8 @@
 |---|---|---|---|
 | POST/GET | `/api/v1/family/household-requests` | 가사 요청 생성·목록 조회 | FUC-W-HOUSE-003, FUC-H-REQUEST-001 |
 | GET | `/api/v1/family/household-requests/{requestId}` | 권한이 있는 부부의 요청 조회 | FUC-H-REQUEST-001 |
-| POST | `/api/v1/family/household-requests/{requestId}/confirm` | 미확인 → 확인 | FUC-H-REQUEST-002 |
-| POST | `/api/v1/family/household-requests/{requestId}/complete` | 확인 → 완료 | FUC-H-REQUEST-002~003 |
+| POST | `/api/v1/family/household-requests/{requestId}/items/{itemId}/confirm` | 항목(카드) 단위 미확인 → 확인 | FUC-H-REQUEST-002 |
+| POST | `/api/v1/family/household-requests/{requestId}/items/{itemId}/complete` | 항목(카드) 단위 확인 → 완료 | FUC-H-REQUEST-002~003 |
 | GET | `/api/v1/family/notifications` | 오전 리포트·가사 요청·컨디션 변경 알림 | FUC-H-NOTI-001~002 |
 | POST | `/api/v1/family/notifications/{notificationId}/read` | 알림 읽음 처리 | FUC-H-NOTI-001 |
 | GET | `/api/v1/family/morning-reports/{date}` | 남편 공유 범위의 오전 요약 | FUC-H-REPORT-001, NFR-013 |

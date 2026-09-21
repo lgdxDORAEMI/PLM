@@ -78,27 +78,27 @@ def read_household_request(
 
 
 @router.post(
-    "/household-requests/{request_id}/confirm",
+    "/household-requests/{request_id}/items/{item_id}/confirm",
     response_model=HouseholdRequestResponse,
 )
-def confirm_household_request(
-    request_id: str, user: User, service: Service
+def confirm_household_request_item(
+    request_id: str, item_id: str, user: User, service: Service
 ) -> HouseholdRequestResponse:
     try:
-        return service.confirm_request(user.id, request_id)
+        return service.confirm_item(user.id, request_id, item_id)
     except Exception as error:
         raise to_http_exception(error) from error
 
 
 @router.post(
-    "/household-requests/{request_id}/complete",
+    "/household-requests/{request_id}/items/{item_id}/complete",
     response_model=HouseholdRequestResponse,
 )
-def complete_household_request(
-    request_id: str, user: User, service: Service
+def complete_household_request_item(
+    request_id: str, item_id: str, user: User, service: Service
 ) -> HouseholdRequestResponse:
     try:
-        return service.complete_request(user.id, request_id)
+        return service.complete_item(user.id, request_id, item_id)
     except Exception as error:
         raise to_http_exception(error) from error
 

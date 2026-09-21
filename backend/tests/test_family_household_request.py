@@ -168,6 +168,7 @@ class HouseholdRequestApiTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(body["recipient_display_name"], "남편")
             self.assertEqual(len(body["items"]), 1)
             request_id = body["request_id"]
+            item_id = body["items"][0]["item_id"]
 
         # DB에 실제로 저장됐는지 확인 — 응답 재구성이 아니라 영속화 자체를 검증
         self.assertEqual(len(self.fake.tables["household_requests"]), 1)
@@ -176,12 +177,12 @@ class HouseholdRequestApiTest(unittest.IsolatedAsyncioTestCase):
         app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=HUSBAND)
         async with client_for(self.fake) as client:
             response = await client.post(
-                f"/api/v1/family/household-requests/{request_id}/confirm"
+                f"/api/v1/family/household-requests/{request_id}/items/{item_id}/confirm"
             )
             self.assertEqual(response.json()["status"], HouseholdRequestStatus.CONFIRMED)
 
             response = await client.post(
-                f"/api/v1/family/household-requests/{request_id}/complete"
+                f"/api/v1/family/household-requests/{request_id}/items/{item_id}/complete"
             )
             self.assertEqual(response.json()["status"], HouseholdRequestStatus.COMPLETED)
 
@@ -191,19 +192,58 @@ class HouseholdRequestApiTest(unittest.IsolatedAsyncioTestCase):
         self.assertIsNotNone(stored["completed_at"])
         self.assertEqual(self.fake.tables["household_request_items"][0]["status"], "completed")
 
-    async def test_completed_request_cannot_be_confirmed_again(self) -> None:
+    async def test_completed_item_cannot_be_confirmed_again(self) -> None:
         self.fake.link()
         self.fake.seed_profile(HUSBAND, "남편")
         async with client_for(self.fake) as client:
             response = await client.post("/api/v1/family/household-requests", json=REQUEST_PAYLOAD)
             request_id = response.json()["request_id"]
+            item_id = response.json()["items"][0]["item_id"]
 
         app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=HUSBAND)
         async with client_for(self.fake) as client:
-            await client.post(f"/api/v1/family/household-requests/{request_id}/confirm")
-            await client.post(f"/api/v1/family/household-requests/{request_id}/complete")
-            response = await client.post(f"/api/v1/family/household-requests/{request_id}/confirm")
+            await client.post(f"/api/v1/family/household-requests/{request_id}/items/{item_id}/confirm")
+            await client.post(f"/api/v1/family/household-requests/{request_id}/items/{item_id}/complete")
+            response = await client.post(f"/api/v1/family/household-requests/{request_id}/items/{item_id}/confirm")
         self.assertEqual(response.status_code, 409)
+
+    async def test_each_item_confirms_and_completes_independently(self) -> None:
+        """남편 가사 요청 화면은 카드(항목)별로 독립된 확인·완료 버튼을 보여준다
+        (FUC-H-REQUEST-002 "카드별로 개별 확인·완료 상태 관리") — 항목 하나를
+        확인/완료해도 같은 요청의 다른 항목은 그대로여야 한다."""
+        self.fake.link()
+        self.fake.seed_profile(HUSBAND, "남편")
+        payload = {
+            "target_date": TARGET_DATE,
+            "reason": "장보기랑 빨래 부탁해요.",
+            "items": [{"title": "장보기"}, {"title": "빨래"}],
+        }
+        async with client_for(self.fake) as client:
+            response = await client.post("/api/v1/family/household-requests", json=payload)
+            request_id = response.json()["request_id"]
+            first_item_id = response.json()["items"][0]["item_id"]
+            second_item_id = response.json()["items"][1]["item_id"]
+
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=HUSBAND)
+        async with client_for(self.fake) as client:
+            response = await client.post(
+                f"/api/v1/family/household-requests/{request_id}/items/{first_item_id}/confirm"
+            )
+            body = response.json()
+            self.assertEqual(body["status"], HouseholdRequestStatus.CONFIRMED)
+            statuses = {item["item_id"]: item["status"] for item in body["items"]}
+            self.assertEqual(statuses[first_item_id], "confirmed")
+            self.assertEqual(statuses[second_item_id], "unconfirmed")
+
+            response = await client.post(
+                f"/api/v1/family/household-requests/{request_id}/items/{first_item_id}/complete"
+            )
+            body = response.json()
+            # 항목 하나만 완료했을 뿐 나머지 항목이 남아 있으니 요청 전체는 아직 완료가 아니다.
+            self.assertEqual(body["status"], HouseholdRequestStatus.CONFIRMED)
+            statuses = {item["item_id"]: item["status"] for item in body["items"]}
+            self.assertEqual(statuses[first_item_id], "completed")
+            self.assertEqual(statuses[second_item_id], "unconfirmed")
 
     async def test_only_the_owner_pair_can_see_the_request(self) -> None:
         self.fake.link()
@@ -246,6 +286,7 @@ class HouseholdRequestApiTest(unittest.IsolatedAsyncioTestCase):
                 "/api/v1/family/household-requests", json=REQUEST_PAYLOAD
             )
             first_id = response.json()["request_id"]
+            first_item_id = response.json()["items"][0]["item_id"]
             response = await client.post(
                 "/api/v1/family/household-requests", json=second_payload
             )
@@ -253,8 +294,12 @@ class HouseholdRequestApiTest(unittest.IsolatedAsyncioTestCase):
 
         app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=HUSBAND)
         async with client_for(self.fake) as client:
-            await client.post(f"/api/v1/family/household-requests/{first_id}/confirm")
-            await client.post(f"/api/v1/family/household-requests/{first_id}/complete")
+            await client.post(
+                f"/api/v1/family/household-requests/{first_id}/items/{first_item_id}/confirm"
+            )
+            await client.post(
+                f"/api/v1/family/household-requests/{first_id}/items/{first_item_id}/complete"
+            )
 
             response = await client.get(f"/api/v1/family/household-requests/{first_id}")
             summary = response.json()["daily_summary"]
@@ -267,6 +312,34 @@ class HouseholdRequestApiTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(summary["requested"], 3)
             self.assertEqual(summary["confirmed"], 1)
             self.assertEqual(summary["completed"], 1)
+
+    async def test_daily_summary_counts_only_the_confirmed_item_in_a_mixed_request(
+        self,
+    ) -> None:
+        """요청 하나 안에 항목이 2개 있고 그중 1개만 확인한 경우, daily_summary의
+        confirmed는 1이어야 한다(요청 status 기준으로 항목 2개를 통째로 세면 안 됨 —
+        항목별 독립 상태 도입 전에는 이 케이스를 만들 수 없어 놓쳤던 버그)."""
+        self.fake.link()
+        self.fake.seed_profile(HUSBAND, "남편")
+        payload = {
+            "target_date": TARGET_DATE,
+            "reason": "장보기랑 빨래 부탁해요.",
+            "items": [{"title": "장보기"}, {"title": "빨래"}],
+        }
+        async with client_for(self.fake) as client:
+            response = await client.post("/api/v1/family/household-requests", json=payload)
+            request_id = response.json()["request_id"]
+            first_item_id = response.json()["items"][0]["item_id"]
+
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=HUSBAND)
+        async with client_for(self.fake) as client:
+            response = await client.post(
+                f"/api/v1/family/household-requests/{request_id}/items/{first_item_id}/confirm"
+            )
+            summary = response.json()["daily_summary"]
+            self.assertEqual(summary["requested"], 2)
+            self.assertEqual(summary["confirmed"], 1)
+            self.assertEqual(summary["completed"], 0)
 
     async def test_storage_failure_returns_503(self) -> None:
         def raise_connect_error(name: str):
