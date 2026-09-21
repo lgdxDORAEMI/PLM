@@ -144,9 +144,9 @@ class _ResultContent extends StatelessWidget {
           children: [
             Text('가족 분담 요약', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: AppSpacing.lg),
-            _count('요청받은 집안일', request.tasks.length),
-            _count('내가 확인한 항목', request.confirmedCount),
-            _count('내가 완료한 항목', request.completedCount),
+            _count('요청받은 집안일', request.dailyRequestedCount),
+            _count('내가 확인한 항목', request.dailyConfirmedCount),
+            _count('내가 완료한 항목', request.dailyCompletedCount),
           ],
         ),
       ),

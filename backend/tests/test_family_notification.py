@@ -40,6 +40,10 @@ class FakeTable:
         self._filters[column] = value
         return self
 
+    def in_(self, column: str, values: list) -> "FakeTable":
+        self._filters[column] = ("in", set(values))
+        return self
+
     def order(self, column: str, desc: bool = False) -> "FakeTable":
         self._order = (column, desc)
         return self
@@ -57,7 +61,12 @@ class FakeTable:
         return self
 
     def _matches(self, row: dict) -> bool:
-        return all(row.get(k) == v for k, v in self._filters.items())
+        def matches_one(key: str, value) -> bool:
+            if isinstance(value, tuple) and value[0] == "in":
+                return row.get(key) in value[1]
+            return row.get(key) == value
+
+        return all(matches_one(k, v) for k, v in self._filters.items())
 
     def execute(self) -> SimpleNamespace:
         if self._op == "insert":

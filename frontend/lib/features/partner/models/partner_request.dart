@@ -30,6 +30,25 @@ class PartnerRequestTask {
       );
 }
 
+class HouseholdDailySummary {
+  const HouseholdDailySummary({
+    required this.requested,
+    required this.confirmed,
+    required this.completed,
+  });
+
+  final int requested;
+  final int confirmed;
+  final int completed;
+
+  factory HouseholdDailySummary.fromJson(Map<String, dynamic> json) =>
+      HouseholdDailySummary(
+        requested: (json['requested'] as num?)?.toInt() ?? 0,
+        confirmed: (json['confirmed'] as num?)?.toInt() ?? 0,
+        completed: (json['completed'] as num?)?.toInt() ?? 0,
+      );
+}
+
 class PartnerRequestData {
   const PartnerRequestData({
     required this.id,
@@ -38,6 +57,7 @@ class PartnerRequestData {
     required this.tasks,
     required this.supportingInfo,
     this.recordDate = '2026-09-13',
+    this.dailySummary,
   });
 
   final String id;
@@ -46,13 +66,21 @@ class PartnerRequestData {
   final List<PartnerRequestTask> tasks;
   final String supportingInfo;
   final String recordDate;
+  final HouseholdDailySummary? dailySummary;
 
+  // 이 요청 1건만의 확인/완료 여부 — status getter가 여기에 의존하므로
+  // dailySummary(그날 전체 합산)로 바꾸면 안 됨. 화면 표시용 합산 값은
+  // daily*Count getter를 대신 쓴다.
   int get confirmedCount => tasks
       .where((task) => task.status != PartnerRequestStatus.requested)
       .length;
   int get completedCount => tasks
       .where((task) => task.status == PartnerRequestStatus.completed)
       .length;
+
+  int get dailyRequestedCount => dailySummary?.requested ?? tasks.length;
+  int get dailyConfirmedCount => dailySummary?.confirmed ?? confirmedCount;
+  int get dailyCompletedCount => dailySummary?.completed ?? completedCount;
 
   PartnerRequestStatus get status {
     if (tasks.isNotEmpty && completedCount == tasks.length) {
@@ -70,6 +98,7 @@ class PartnerRequestData {
         tasks: tasks ?? this.tasks,
         supportingInfo: supportingInfo,
         recordDate: recordDate,
+        dailySummary: dailySummary,
       );
 
   factory PartnerRequestData.fromJson(Map<String, dynamic> json) {
@@ -77,6 +106,7 @@ class PartnerRequestData {
     if (items is! List) {
       throw const FormatException('가사 요청 응답 형식이 올바르지 않습니다.');
     }
+    final dailySummary = json['daily_summary'];
     return PartnerRequestData(
       id: json['request_id']?.toString() ?? '',
       requester: json['requester_display_name']?.toString() ?? '',
@@ -87,6 +117,9 @@ class PartnerRequestData {
           .toList(growable: false),
       supportingInfo: '',
       recordDate: json['target_date']?.toString() ?? '',
+      dailySummary: dailySummary is Map
+          ? HouseholdDailySummary.fromJson(dailySummary.cast())
+          : null,
     );
   }
 }

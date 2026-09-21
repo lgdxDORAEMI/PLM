@@ -42,6 +42,14 @@ class HouseholdRequestItem(BaseModel):
     status: HouseholdItemStatus
 
 
+class HouseholdDailySummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    requested: int
+    confirmed: int
+    completed: int
+
+
 class HouseholdRequestResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -55,6 +63,7 @@ class HouseholdRequestResponse(BaseModel):
     requested_at: datetime
     confirmed_at: datetime | None = None
     completed_at: datetime | None = None
+    daily_summary: HouseholdDailySummary
 
 
 class NotificationType(StrEnum):

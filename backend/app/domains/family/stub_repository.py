@@ -3,6 +3,7 @@ from uuid import uuid4
 
 from .repository import FamilyRepository, PartnerIdentity
 from .schemas import (
+    HouseholdDailySummary,
     HouseholdItemStatus,
     HouseholdRequestCreate,
     HouseholdRequestItem,
@@ -52,13 +53,50 @@ class StubFamilyRepository(FamilyRepository):
                 for item in payload.items
             ],
             requested_at=datetime.now(timezone.utc),
+            daily_summary=HouseholdDailySummary(requested=0, confirmed=0, completed=0),
         )
         self._requests[request_id] = response
         self._owners[request_id] = (wife_user_id, partner.user_id)
+        response = response.model_copy(
+            update={"daily_summary": self._daily_summary(wife_user_id, payload.target_date)}
+        )
+        self._requests[request_id] = response
         return response
 
     def get_request(self, request_id: str) -> HouseholdRequestResponse | None:
-        return self._requests.get(request_id)
+        request = self._requests.get(request_id)
+        if request is None:
+            return None
+        wife_user_id, _ = self._owners[request_id]
+        return request.model_copy(
+            update={
+                "daily_summary": self._daily_summary(wife_user_id, request.target_date)
+            }
+        )
+
+    def _daily_summary(
+        self, wife_user_id: str, target_date: date
+    ) -> HouseholdDailySummary:
+        """해당 날짜에 아내가 보낸 모든 요청의 항목(item) 개수를 status별로 합산한다
+        (SupabaseFamilyRepository._daily_summary와 동일한 집계 규칙)."""
+        requested = confirmed = completed = 0
+        for request_id, request in self._requests.items():
+            if request.target_date != target_date:
+                continue
+            if self._owners[request_id][0] != wife_user_id:
+                continue
+            count = len(request.items)
+            requested += count
+            if request.status in (
+                HouseholdRequestStatus.CONFIRMED,
+                HouseholdRequestStatus.COMPLETED,
+            ):
+                confirmed += count
+            if request.status == HouseholdRequestStatus.COMPLETED:
+                completed += count
+        return HouseholdDailySummary(
+            requested=requested, confirmed=confirmed, completed=completed
+        )
 
     def request_owner_ids(self, request_id: str) -> tuple[str, str] | None:
         return self._owners.get(request_id)
@@ -68,7 +106,13 @@ class StubFamilyRepository(FamilyRepository):
 
     def list_requests(self, user_id: str) -> list[HouseholdRequestResponse]:
         return [
-            request
+            request.model_copy(
+                update={
+                    "daily_summary": self._daily_summary(
+                        self._owners[request_id][0], request.target_date
+                    )
+                }
+            )
             for request_id, request in self._requests.items()
             if user_id in self._owners[request_id]
         ]

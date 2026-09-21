@@ -382,11 +382,12 @@
 - FUC: FUC-W-HOUSE-003
 - Use Case: UC5
 - Request: `HouseholdRequestCreate { target_date, reason, items: [{ title, helper_info?, routine_item_id? }] }`(1~20개)
-- Response: `HouseholdRequestResponse { request_id, target_date, requester_display_name, recipient_display_name, reason, status: unconfirmed, items[{item_id,title,helper_info?,routine_item_id?,status}], requested_at }`
+- Response: `HouseholdRequestResponse { request_id, target_date, requester_display_name, recipient_display_name, reason, status: unconfirmed, items[{item_id,title,helper_info?,routine_item_id?,status}], requested_at, daily_summary: {requested,confirmed,completed} }`
 - Source Data: `household_requests`+`household_request_items`(MISSING, `routine_item_id`로 `routine_items` FK 재사용)
 - Authorization: 기본값
 - Error: 409(파트너 미연동)
 - Status: **implemented** — `household_requests` 실 연결(STEP 17). 남편 연동(`partner_links`) 없으면 409, 생성 시 남편에게 `household_request` 알림 1건 발송
+- `daily_summary`: 같은 `wife_user_id`+`target_date`의 요청 전체를 항목(item) 개수 기준으로 합산(`requested`=전체, `confirmed`=confirmed 이상 상태인 요청들의 항목 합, `completed`=completed 요청들의 항목 합) — 하루 여러 건 요청을 허용하므로(H-REQUEST-002) 이 요청 1건이 아니라 그날 전체 기준(STEP 17)
 
 ### `GET /api/v1/family/household-requests`
 

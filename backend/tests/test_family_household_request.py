@@ -40,6 +40,10 @@ class FakeTable:
         self._filters[column] = value
         return self
 
+    def in_(self, column: str, values: list) -> "FakeTable":
+        self._filters[column] = ("in", set(values))
+        return self
+
     def limit(self, size: int) -> "FakeTable":
         self._limit = size
         return self
@@ -53,7 +57,12 @@ class FakeTable:
         return self
 
     def _matches(self, row: dict) -> bool:
-        return all(row.get(k) == v for k, v in self._filters.items())
+        def matches_one(key: str, value) -> bool:
+            if isinstance(value, tuple) and value[0] == "in":
+                return row.get(key) in value[1]
+            return row.get(key) == value
+
+        return all(matches_one(k, v) for k, v in self._filters.items())
 
     def execute(self) -> SimpleNamespace:
         if self._op == "insert":
@@ -222,6 +231,42 @@ class HouseholdRequestApiTest(unittest.IsolatedAsyncioTestCase):
         async with client_for(self.fake) as client:
             response = await client.get("/api/v1/family/household-requests")
         self.assertEqual(len(response.json()), 1)
+
+    async def test_daily_summary_sums_items_across_same_day_requests(self) -> None:
+        self.fake.link()
+        self.fake.seed_profile(HUSBAND, "남편")
+        second_payload = {
+            "target_date": TARGET_DATE,
+            "reason": "빨래도 부탁해요.",
+            "items": [{"title": "빨래"}, {"title": "청소"}],
+        }
+
+        async with client_for(self.fake) as client:
+            response = await client.post(
+                "/api/v1/family/household-requests", json=REQUEST_PAYLOAD
+            )
+            first_id = response.json()["request_id"]
+            response = await client.post(
+                "/api/v1/family/household-requests", json=second_payload
+            )
+            second_id = response.json()["request_id"]
+
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=HUSBAND)
+        async with client_for(self.fake) as client:
+            await client.post(f"/api/v1/family/household-requests/{first_id}/confirm")
+            await client.post(f"/api/v1/family/household-requests/{first_id}/complete")
+
+            response = await client.get(f"/api/v1/family/household-requests/{first_id}")
+            summary = response.json()["daily_summary"]
+            self.assertEqual(summary["requested"], 3)
+            self.assertEqual(summary["confirmed"], 1)
+            self.assertEqual(summary["completed"], 1)
+
+            response = await client.get(f"/api/v1/family/household-requests/{second_id}")
+            summary = response.json()["daily_summary"]
+            self.assertEqual(summary["requested"], 3)
+            self.assertEqual(summary["confirmed"], 1)
+            self.assertEqual(summary["completed"], 1)
 
     async def test_storage_failure_returns_503(self) -> None:
         def raise_connect_error(name: str):
