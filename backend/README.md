@@ -10,7 +10,7 @@ Backend는 세 명이 독립적으로 작업할 수 있도록 `account`, `care`,
 | Care | `/api/v1/care` | 컨디션·예정 활동, 실행 기록, Daily report, Calendar |
 | Family | `/api/v1/family` | 가사 요청, 남편 알림·오전 리포트, Motion 동의·수집 설정 |
 
-상세 소유권과 교체 지점은 [DOMAIN_OWNERSHIP.md](DOMAIN_OWNERSHIP.md)를 확인합니다. 2026-09-18 기준 Account(파트너 연동)·Care·Family·Guide 도메인은 Supabase adapter로 교체됐고, Stub이 남은 곳은 `GET/PUT /account/profile`과 Chat뿐입니다(`docs/backend/API_IMPLEMENTATION_MATRIX.md`: implemented 43 / stub 4).
+상세 소유권과 교체 지점은 [DOMAIN_OWNERSHIP.md](DOMAIN_OWNERSHIP.md)를 확인합니다. 2026-09-21 기준 Account·Care·Family·Guide·Chat 도메인 전부 Supabase adapter로 교체됐고 Stub은 0건입니다(`docs/backend/API_IMPLEMENTATION_MATRIX.md`: implemented 43 / stub 0). `GET/PUT /account/profile`(6단계 통합 API)은 단계별 API(`/profile/me/*`)와 중복인 죽은 계약이라 2026-09-20에 제거됐고, Chat은 대화 이력 저장(`chat_messages`)만 실연결됐으며 실제 AI 응답은 여전히 고정 안내 문구입니다(NFR-027 보관 정책 미정).
 
 PLM Backend는 FastAPI 기반 서버입니다. 기본 상태 확인, Supabase Auth 토큰 검증, 임산부 프로필 6단계, 당일 컨디션·예정 활동, AI 하루 루틴 생성(룰 엔진 + RAG + OpenAI, 폴백 포함), 4종 가이드 조회, 실행 기록·Daily 리포트·캘린더, 가사 요청·남편 알림·오전 리포트, 파트너 초대/연동, 모션 인식(동의 게이트 포함) API를 제공합니다.
 
@@ -31,12 +31,13 @@ AI 루틴은 2026-09-18 실 DB 검증에서 `source=ai`로 생성을 확인했�
 
 - `GET /api/v1/profile/me`: 현재 사용자 프로필과 완료 단계 조회
 - `PUT /api/v1/profile/me/due-date`: 1/6 출산예정일 또는 마지막 생리 시작일 저장
-- `PUT /api/v1/profile/me/body`: 2/6 신장과 임신 전 체중 저장
+- `PUT /api/v1/profile/me/body`: 2/6 생년월일·신장·임신 전 체중 저장(2026-09-20부터 `birth_date` 포함, migration `20260920120000`)
 - Supabase access token 검증
 - 임신 주수·일수 및 연속 완료 단계 계산
 - `pregnancy_profiles` migration과 RLS 활성화
 
 - 3~6단계: `PUT /api/v1/profile/me/pregnancy-history`·`/pregnancy-count`·`/allergies`·`/medical-notes`(STEP 8, Supabase 실연결)
+- **(2026-09-20) `GET/PUT /account/profile`(6단계 통합 API) 제거**: Frontend가 호출하지 않는 죽은 계약이었고 `birth_date`는 단계별 계약(`/profile/me/body`)에 통합했습니다. 프로필 API는 이제 단계별 경로 하나뿐입니다
 
 요청·응답 및 오류 계약은 [API 문서](../docs/api.md)와 [API_CONTRACT.md](../docs/backend/API_CONTRACT.md)를 기준으로 합니다.
 
@@ -80,10 +81,16 @@ cd ../tools/rag_ingest && ../../backend/.venv/bin/python 02_translate_chunk_embe
 - `POST /api/v1/care/daily-reports/{date}/preview|finalize`, `GET .../{date}`: Daily 리포트(확정 시에만 `daily_reports` 1행). `family` 집계는 `household_requests` 실조회(2026-09-18)
 - `GET /api/v1/care/calendar/{month}`: 저장 없이 `daily_conditions`+`daily_reports` 조합. **남편이 호출하면 `partner_links`로 연동된 아내 캘린더를 읽기 전용 반환**(2026-09-18, `app/api/v1/partner_scope.py`)
 
+### 챗봇 대화 (Chat)
+
+- `GET /api/v1/chat/messages`, `POST .../messages`: 식사 가이드 재조정 한정(FUC-W-CHAT-001) 대화 이력. 2026-09-20부터 `chat_messages`에 실제로 저장·조회됩니다(무기한 보관 — NFR-027 보관·파기 기준 미정이라 삭제 로직 없음)
+- **실제 AI 응답은 아직 없습니다.** 사용자 메시지는 그대로 저장하지만, 어시스턴트 응답은 고정 안내 문구("아직 실제 AI 응답 기능은 준비 중이에요...")를 저장·반환합니다(LLM 공급자·크레딧 대기)
+
 ### 파트너 연동·가사 요청·알림 (Account / Family)
 
-- `GET /api/v1/account/bootstrap`, `GET .../partner-link`, `POST .../partner-invitations`, `POST .../{token}/accept`: 초대 72시간·1회성, `partner_links`가 유일한 관계 SOURCE
-- `POST/GET /api/v1/family/household-requests`, `GET .../{id}`, `POST .../confirm|complete`: 가사 요청 생성→남편 확인→완료(2026-09-18 Supabase 실연결)
+- `GET /api/v1/account/bootstrap`, `GET .../partner-link`, `POST .../partner-invitations`, `POST .../{token}/accept`: 초대 72시간·1회성, `partner_links`가 유일한 관계 SOURCE. 화면·인증 복귀 흐름(H-INVITE-001)은 여전히 미확정이며, 2026-09-20 팀 결정으로 실사용 연동은 이 경로 대신 `partner_links`를 운영자가 수동으로 삽입하는 방식으로 진행합니다
+- `POST/GET /api/v1/family/household-requests`, `GET .../{id}`: 가사 요청 생성·조회(2026-09-18 Supabase 실연결)
+- `POST .../{request_id}/items/{item_id}/confirm|complete`: 가사 요청 **항목(카드) 단위** 확인·완료(2026-09-21). 요청 전체가 아니라 항목마다 개별 상태를 가지며, 요청 전체 status는 항목 상태로부터 재계산됩니다. 응답의 `daily_summary` 필드는 요청일 기준 항목 개수 합산(H-REQUEST-002)입니다
 - `GET /api/v1/family/notifications`, `POST .../{id}/read`: 남편 알림 3종 — 가사 요청 도착, 오전 리포트 도착, 루틴 변경(2026-09-18 실연결·발송 전부 구현)
 - `GET /api/v1/family/morning-reports/{date}`: 남편 오전 리포트. 저장 없이 아내 테이블을 projection, 원본 점수 미노출
 - `GET/PUT/DELETE /api/v1/family/motion/*`: 모션 동의·수집 ON/OFF(`motion_consents`)
@@ -102,12 +109,13 @@ cd ../tools/rag_ingest && ../../backend/.venv/bin/python 02_translate_chunk_embe
 
 `/live`는 시연용 단일 세션 구조(`_current_session_id` 전역)라 다중 사용자 격리를 제공하지 않습니다.
 
-## 미구현 영역 (2026-09-18 기준)
+## 미구현 영역 (2026-09-21 기준)
 
-- `GET/PUT /account/profile`(6단계 통합 API) — `birth_date` 컬럼 미존재로 Stub. 단계별 API(`/profile/me/*`)는 실연결 완료
-- 식사 재추천 챗봇(`/chat/messages`) — NFR-027 보관 정책 TBD, AI 담당 영역
+- 챗봇 실제 AI 응답(`/chat/messages`) — 대화 이력 저장은 완료, 응답 생성 자체가 미구현(고정 문구). NFR-027 보관 정책도 TBD, AI 담당 영역
+- H-INVITE-001 화면·인증 복귀 계약 — 여전히 미확정. 실사용은 `partner_links` 수동 삽입으로 대체해 블로커는 아님
 - 컨디션 저장 → 루틴 재생성 자동화(현재는 프론트가 `PUT conditions` 뒤 `POST routine/today`를 따로 호출)
 - ThinQ 가전 연동(Phase 2)
+- Calendar 4단계 컨디션 지수 계산식 — 계산 로직 자체는 있으나 수치 확정이 팀 결정 대기
 - NFR: 민감정보 컬럼 암호화(NFR-008), 백업·가용성·부하 측정, 운영 인증·권한·배포 정책
 
 `LLMService`의 공급자 구현은 `services/routine/generator.py`의 `OpenAIRoutineGenerator`입니다. `MediaPipeService`는 확장 경계만 제공하며, 범용 `MediaPipeService.analyze_pose()`는 호출 시 `NotImplementedError`를 발생시킵니다. 실제 모션 데모는 별도 `services/movement/` 파이프라인을 사용합니다.
@@ -196,11 +204,11 @@ LLM_API_BASE_URL=
 
 ## Supabase 준비
 
-1. Supabase SQL Editor에서 `supabase/migrations/*.sql` **15건 전부**를 파일명(타임스탬프) 순서로 적용합니다. `20260917000002_grant_service_role.sql`을 빼면 service_role이 `42501 permission denied`를 받습니다. migration은 CLI로 자동 적용되지 않으므로 파일을 추가한 사람이 실제 프로젝트에도 반영해야 합니다.
+1. Supabase SQL Editor에서 `supabase/migrations/*.sql` **17건 전부**를 파일명(타임스탬프) 순서로 적용합니다. `20260917000002_grant_service_role.sql`을 빼면 service_role이 `42501 permission denied`를 받습니다. migration은 CLI로 자동 적용되지 않으므로 파일을 추가한 사람이 실제 프로젝트에도 반영해야 합니다.
 2. `backend/.env`에 URL, service role key, OpenAI 키(`LLM_API_KEY`)를 입력합니다.
 3. 로그인으로 발급받은 access token을 프로필 요청의 `Authorization: Bearer <token>`에 전달합니다.
 
-현재 migration은 프로필 1~6단계 컬럼, `daily_conditions`, `daily_routines`, `routine_items`, `pregnancy_knowledge`(pgvector), 권한(6건, `20260915000000`~`20260917000002`)에 더해 STEP 7의 신규 테이블 9건(`profiles`, `partner_invitations`, `partner_links`, `household_requests`(+items), `daily_reports`, `notifications`, `motion_consents`, `chat_messages`, `recommendation_feedback`; `20260917010000`~`010800`)을 포함합니다.
+현재 migration은 프로필 1~6단계 컬럼, `daily_conditions`, `daily_routines`, `routine_items`, `pregnancy_knowledge`(pgvector), 권한(6건, `20260915000000`~`20260917000002`)에 더해 STEP 7의 신규 테이블 9건(`profiles`, `partner_invitations`, `partner_links`, `household_requests`(+items), `daily_reports`, `notifications`, `motion_consents`, `chat_messages`, `recommendation_feedback`; `20260917010000`~`010800`), 루틴 버전 관리(`20260918000000`), `pregnancy_profiles.birth_date`(`20260920120000`, 2026-09-20)를 포함합니다.
 
 **⚠️ 루틴 버전 제약 충돌(2026-09-18 저녁 확인, 조치 필요)**: 웬즈데이 S3 migration(`20260918000000`)은 같은 날 여러 버전을 쌓기 위해 `daily_routines_user_id_date_key`(사용자·날짜당 1행)를 **지우고** `unique (user_id, date, revision)`으로 바꿨습니다. 그런데 새 코드 push 전에 이전 코드(`upsert on_conflict user_id,date`)가 42P10으로 실패하자 아래 보정으로 제약이 **다시 추가**됐습니다. 지금(새 코드 push 후) 이 제약이 있으면 **같은 날 두 번째 `POST /routine/today`가 23505로 실패**합니다(테스트 날짜 2026-12-31로 재현 확인). 팀원 모두 `423fcc4` 이후로 pull한 뒤 SQL Editor에서 `alter table public.daily_routines drop constraint if exists daily_routines_user_id_date_key;`를 실행해야 합니다. 새 환경에서는 아래 unique 추가 SQL을 **실행하지 마세요**.
 
@@ -215,7 +223,7 @@ LLM_API_BASE_URL=
 .venv\Scripts\python.exe -m unittest discover -s tests
 ```
 
-테스트 177개(2026-09-18 저녁)는 기본 API, 프로필 6단계, 컨디션, 가이드 조회, 실행 기록·리포트·캘린더(남편 분기 포함), 파트너 연동, 가사 요청, 알림(루틴 생성 알림 포함), 오전 리포트, 모션 동의, AI 루틴(룰 엔진·스키마·폴백·저장·API), 모션 WebSocket(origin·토큰·동의 게이트·남편 조회)과 일일 리포트 집계를 다룹니다. 전부 가짜 Supabase·OpenAI·Pose extractor를 주입하므로 외부 키·카메라·네트워크가 필요하지 않습니다.
+테스트 218개(2026-09-21)는 기본 API, 프로필 6단계, 컨디션, 가이드 조회, 실행 기록·리포트·캘린더(남편 분기 포함), 파트너 연동, 가사 요청(항목 단위 확인·완료 포함), 알림(루틴 생성 알림 포함), 오전 리포트, 모션 동의, 챗봇 대화 이력, AI 루틴(룰 엔진·스키마·폴백·저장·API), 모션 WebSocket(origin·토큰·동의 게이트·남편 조회)과 일일 리포트 집계를 다룹니다. 전부 가짜 Supabase·OpenAI·Pose extractor를 주입하므로 외부 키·카메라·네트워크가 필요하지 않습니다.
 
 실 DB 수동 검증 절차(토큰 발급, 가사 요청→알림, 루틴 생성→오전 리포트 알림, 모션 동의 게이트)는 팀 노션의 "테스트 계정 토큰 발급"·"모션 인식 기능 테스트 방법" 페이지를 참고합니다.
 
@@ -259,7 +267,7 @@ LLM_API_BASE_URL=
 - 최신 요구사항 대비 화면 단위 재감사(`docs/backend/BACKEND_STATUS.md`), 데이터 소유권·목표 스키마·47개 API 계약 문서화, 신규 migration 9건 작성(`20260917010000`~`010800`)
 - 프로필 3~6단계, 컨디션, 가이드 조회 4종, 실행 기록·Daily 리포트·캘린더, 남편 오전 리포트, 파트너 초대/연동, 모션 동의를 Supabase 실연결. 상세는 `docs/backend/API_IMPLEMENTATION_MATRIX.md`
 
-### 2026-09-18 (금) — 현재
+### 2026-09-18 (금)
 
 - (새벽) Frontend Repository 패턴 도입·최종 검증(STEP 15~16, `docs/backend/REQUIREMENT_TRACEABILITY.md`)
 - **가사 요청·알림 Supabase 실연결**(`app/domains/family/supabase_repository.py`): 생성→확인→완료 전이, 부부 외 403, 상태 오류 409. 목록 라우트 2개의 저장소 장애 503 처리 보강
@@ -275,7 +283,28 @@ LLM_API_BASE_URL=
 - **(저녁) 웬즈데이 AI S1~S7**(커밋 `8b7b85a`·`423fcc4`): 식단 1개만 저장되던 버그 수정, 루틴 버전별 저장(migration `20260918000000` 적용·pg_cron 정리 job), 재생성 비교·완료 기록 키 기준 유지, 응답 필드 추가, AI 실패 시 알림 조건 수정(`docs/api.md` "AI 실패 처리"), 예정 활동 코드표 9종, 웰컴 카드 팁. 실 DB 실호출 확인(당시 third 계정, 이후 실호출은 testwife + 2026-12-31 전용). 파이프라인 문서 `docs/ai_wednesday/Ai_wednesday_pipeline_v3.md`로 교체
 - 협업 규칙 개정: 보호 테이블은 `posture_*` 2개와 `auth.users`만, Routine AI 테이블은 Routine AI 담당 단독 변경(`docs/development/BACKEND_COLLABORATION.md` §2.4)
 - Backend 테스트 177개 전부 통과
-- 남은 작업: `routine.py` 훅 리뷰, Chat 저장 계층(경계 확인 후), `account/profile` 통합 API(`birth_date` migration), 메뉴 수락·수면 override 실연결, 기획 대기 3건(H-INVITE-001 흐름, H-REQUEST-002, Calendar 지수식)과 컨디션 변경 알림 문서 충돌(`03_유스케이스명세서` 구판) 정리
+
+### 2026-09-19 (토) — 웬즈데이 AI
+
+- 루틴에 "임팩트" 요약 추가: `services/routine/impact.py`·`impact_map.yaml`(항목이 어떤 컨디션/활동 근거로 나왔는지 요약), `inputs.py`·`prompt.py`·`generator.py` 확장
+- `backend/README.md` AI 하루 루틴 절 갱신(루틴 버전 제약 충돌 경고 추가, 테스트 177개 반영) — 이 문서 중 Routine 담당 소유 구간만 해당, Account/Care/Family/Chat 절은 이때 갱신되지 않음
+
+### 2026-09-20 (일) — 프로필 정리·챗봇 실연결·초대 문서화
+
+- **프로필 API 정리**(`c174052`): `GET/PUT /account/profile`(6단계 통합, Stub) 제거. Frontend가 호출하지 않는 죽은 계약이었고, `birth_date` 필드는 단계별 계약(`PUT /profile/me/body`, migration `20260920120000`)에 통합했습니다. 프로필 저장 경로가 단계별 API 하나로 단순화됨
+- **챗봇 대화 이력 Supabase 실연결**(`672c020`): `SupabaseChatRepository` 추가, `GET/POST /api/v1/chat/messages`가 `chat_messages`에 실제로 저장·조회. 어시스턴트 응답은 여전히 고정 안내 문구(AI 담당 영역)
+- **웬즈데이 AI**: 루틴 재생성 비교에 `change_kind` 필드 추가, 재생성 시 제거된 항목을 응답·실행 통계에서 제외하는 처리 보강(`eae0d7f`, `8cd1601`)
+- **H-INVITE-001 문서화**(`b03962c`): 초대 수락 화면·API는 이미 구현돼 있었음을 확인. 다만 화면·인증 복귀 흐름 확정은 계속 보류하고, 실사용 연동은 `partner_links`를 운영자가 수동 삽입하는 방식으로 진행하기로 팀 결정 — `DOMAIN_OWNERSHIP.md`·`BACKEND_STATUS.md`·`REQUIREMENT_TRACEABILITY.md`·요구사항 문서 갱신
+
+### 2026-09-21 (월) — 가사 요청 항목 단위 전환·QA 문서 정리
+
+- **가사 요청 일일 요약**(`0a09978`): `HouseholdDailySummary` 추가, 확인/완료 응답에 요청일 기준 항목 개수 합산(`daily_summary`)을 포함해 H-REQUEST-002(완료 결과 화면) 별도 API 필요 없이 해결
+- **가사 요청 확인·완료를 항목(카드) 단위로 전환**(`4b2a020`): 실사용 QA 중 "항목이 여러 개인 요청에서 하나만 확인해도 전부 확인됨으로 바뀌는" 버그를 발견. 원인은 confirm/complete API가 처음부터 요청 전체 단위였던 것 — `POST .../items/{item_id}/confirm`·`.../complete`로 교체하고, 요청 전체 status는 항목 상태로부터 재계산하도록 변경
+- **웬즈데이 AI**: K1(식단 출력 제한)·K3(sleep_quality 제외)·K6(옛 화면 ID)·K8(폴백 가사 키)·K9(피드백 있는 항목 removed 표시) 처리(`846082b`), 기동 시 `RoutineService`를 프로세스당 1개로 캐시하고 임베딩·지식 조회를 미리 실행해 첫 요청 지연을 9.20초 → 5.14초로 개선(`750bcc9`, K1)
+- **문서 노후화 정리**(실사용 QA 중 발견): `FUC-W-COND-003` vs 유스케이스 UC2 A1 알림 발송 불일치가 실제로는 이미 해소돼 있었음을 재확인(`DOMAIN_OWNERSHIP.md`의 낡은 TBD 삭제), W-SETTING-001(글자 크기)을 "Phase 2 미반영"에서 "요구사항은 확정됐으나 기기 로컬 저장이라 백엔드 불필요(NOT_APPLICABLE)"로 정정(`0205219`, `ca29c24`)
+- Backend 테스트 218개 전부 통과
+
+남은 작업: 챗봇 실제 AI 응답(LLM 공급자·크레딧 대기, AI 담당), H-INVITE-001 화면·인증 복귀 계약 확정(급하지 않음, 수동 연동으로 대체 중), Calendar 4단계 컨디션 지수 계산식 팀 결정 대기, `routine.py` 훅 리뷰
 
 ## 관련 문서
 
