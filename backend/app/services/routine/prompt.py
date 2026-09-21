@@ -17,7 +17,8 @@ from app.services.routine.inputs import ACTIVITY_CODES, CUSTOM_ACTIVITY
 # 2026-09-18.3: 팁에서 스트레칭·운동·메뉴·가사·취침 제외(가이드와 중복 방지)
 # 2026-09-19.1: 전일 루틴 완료·모션 요약(yesterday) 입력 추가(S8)
 # 2026-09-19.2: 컨디션 수정 시 대상 가이드만 조정하는 수정 호출(EDIT_SYSTEM_PROMPT, S10)
-PROMPT_VERSION = "2026-09-19.2"
+# 2026-09-20.1: K1 — 가장 느린 식단 호출의 출력 분량 제한(문장 길이·태그·주의 개수)
+PROMPT_VERSION = "2026-09-20.1"
 CATEGORIES = ("meal", "household", "health", "sleep")
 
 
@@ -136,7 +137,9 @@ def category_schema(category: str) -> dict[str, Any]:
 SYSTEM_PROMPT = """당신은 임산부의 하루 생활 루틴을 설계하는 보조 도구다. 의료 진단이나 처방을 하지 않는다.
 규칙:
 - 출력은 주어진 JSON 스키마만. 한국어.
-- meal: 아침·점심·저녁 각 1개 이상. 금지(exclude) 재료는 절대 포함하지 않는다. 제한(limit)은 양을 줄이고 이유를 적는다.
+- meal: 아침·점심·저녁 각 1개, 필요하면 간식 1개까지. 금지(exclude) 재료는 절대 포함하지 않는다. 제한(limit)은 양을 줄이고 이유를 적는다.
+- meal 분량 제한(응답 속도): title 20자 이내, reason·evidence는 각각 한 문장(60자 이내), nutritionTags 3개 이내,
+  cautions는 꼭 필요할 때만 1개(없으면 빈 배열). 같은 내용을 여러 항목에 반복하지 않는다.
 - household: 사용자가 고른 예정 활동을 각각 owner(self=직접, appliance=가전, partner=가족)로 분류한다. 금지 가사는 self로 두지 않는다.
 - household: planned_activities의 각 항목({code, label})마다 1개. item_key는 `household:<code>`(예: household:laundry), 직접 입력(code=custom)은 household:custom. title·설명은 label을 기준으로 쓴다.
 - health: 통증이 높은 부위 우선. 금지 활동은 넣지 않는다. 5~15분 내 활동.

@@ -154,7 +154,7 @@ OFF면 **4003**(앱 정의 코드)으로 닫아 1008(origin/토큰)과 구분한
 | 422 | 입력 검증 실패. 필드 오류는 `detail[].loc`의 마지막 값이 필드명, 본문 전체 규칙 오류(두 값 모두 누락, 미래 생리 시작일, 출산예정일 범위 초과)는 `loc`이 `["body"]` |
 | 503 | Supabase 설정 누락 또는 연결 실패 |
 
-## AI 하루 루틴 (W-ROUTINE-001/003, W-HOME-001)
+## AI 하루 루틴 (W-HOME-001 생성·조회, W-CALLBACK-001 폴백)
 
 모든 요청에 `Authorization: Bearer <Supabase access token>`이 필요합니다. 구현: `backend/app/api/v1/routine.py`,
 파이프라인 설계: `docs/ai_wednesday/Ai_wednesday_pipeline_v3.md`.
@@ -201,7 +201,7 @@ OFF면 **4003**(앱 정의 코드)으로 닫아 1008(origin/토큰)과 구분한
 | --- | --- |
 | meal (배열) | `{period: breakfast\|lunch\|dinner\|snack, reasonTitle, reason, evidence, nutritionTags: [문자열], cautions: [{title, description, badge}]}` |
 | household (배열) | `{owner: self\|appliance\|partner, applianceAction: now\|reserve\|night\|none, reason}` |
-| health (배열) | `{bodyArea, loads: [{area, label, value(숫자)}], guide, durationMin(정수), reason}` |
+| health (배열) | `{bodyArea, loads: [{area, label, value(숫자)}], guide, durationMin(정수), reason, video?}`. `video`는 서버가 부위별 목록에서 붙이는 대표 활동 영상 `{title, url, duration_min}`이며 **AI가 만들지 않는다**. 영상이 정해지지 않은 부위에는 키 자체가 없다 |
 | sleep (객체 1개) | `{recommendedBedtime, environments: [{type, value, options: [문자열]}], tips: [문자열], reason}` |
 
 `response.tip` (S7, FUC-W-HOME-001): `{text: 문자열(한 문장, 40자 안팎), source_ids: [정수]}` 또는 `null`. 루틴 항목이 아니므로 `item_key`·완료 체크가 없다. `null`인 경우 — 폴백 루틴(`source != ai`), 팁 생성만 실패·지연, 알레르기 금지어 포함 — 앱은 기본 문구를 표시한다. 팁이 `null`이어도 4종 루틴은 정상(`source`는 그대로).
@@ -215,6 +215,8 @@ OFF면 **4003**(앱 정의 코드)으로 닫아 1008(origin/토큰)과 구분한
 
 같은 날 다시 POST하면 `daily_routines`에 새 revision 행이 쌓이고(이전 버전은 보존), `routine_items`는 같은 `item_key`의 행을 고쳐 씁니다. 같은 키 항목은 제목이 바뀌어도 완료 기록(`status`·`completed_at`·`completed_by`)이 유지되고, 변화는 `routine_items.change_kind`(`added`/`updated`/`removed`, 변화 없으면 `null`)로 표시됩니다.
 
+`change_kind == "removed"`는 **이번 버전에 포함되지 않는 항목**입니다. 가사 요청·채팅이 참조 중이거나 메뉴 수락·거절 기록(`recommendation_feedback`)이 달린 항목은 그 기록을 잃지 않으려고 지우지 않고 이 표시만 남깁니다. **앱과 가이드 조회는 `removed` 항목을 오늘 루틴으로 보여주지 않습니다**(숨기거나 지난 항목으로 구분).
+
 AI 실패 처리 (FUC-W-CALLBACK-001, W-CALLBACK-001)
 
 - 백엔드는 AI가 실패해도 폴백 루틴을 저장하고 **201**을 돌려준다(빈 화면 0건, NFR-016). HTTP 오류로 실패를 알리지 않는다.
@@ -225,6 +227,14 @@ AI 실패 처리 (FUC-W-CALLBACK-001, W-CALLBACK-001)
 - 재시도하지 않거나 연속 실패하면 **이미 받은 응답의 `response`(폴백 루틴)를 그대로 표시**한다. 앱 자체 목업 폴백은 쓰지 않는다.
 - `GET /api/v1/routine/today`도 같은 규칙: 마지막 버전의 `source`가 `ai`가 아니면 실패 안내를 띄울 수 있다.
 - 남편 알림(FUC-W-COND-002/003)은 `source == "ai"`일 때만 백엔드가 보낸다. 오늘 첫 AI 루틴이면 오전 리포트, 이미 AI 루틴이 있었으면 루틴 변경 알림이다(폴백 뒤 재시도 성공은 오전 리포트).
+
+생성 대기 화면 (S_createroutine_loading)
+
+- `POST /api/v1/routine/today`는 오래 걸린다. 앱은 로딩 화면을 띄우고, **응답을 받을 때까지 버튼을 비활성**해 같은 요청이 두 번 가지 않게 한다(두 번 가면 버전이 2개 쌓인다).
+- 앱 요청 타임아웃은 **12초 이상**으로 둔다. 서버는 9.5초에 스스로 폴백해 201을 돌려주므로, 그보다 짧게 끊으면 앱만 실패로 처리하고 서버에는 루틴이 저장된 상태가 된다.
+- 실측(2026-09-20, 식단 출력 제한 후 3회): 전체 생성 **5.0/5.4/8.3초**(중앙값 5.4초), 폴백 0회. 컨디션 수정은 바뀐 가이드만 부르므로 1회 측정 **4.9초**. 제한 전에는 중앙값 7.7초·9회 중 4회 폴백이었다.
+- 로딩 화면은 **10초까지 유지될 수 있다**고 보고 만든다(서버 상한 9.5초 + 네트워크). 폴백이면 `source != "ai"`이므로 아래 실패 처리 규칙을 따른다.
+- 이 수치는 K1(생성 속도) 개선 전 값이다. 개선되면 이 절의 숫자를 갱신한다.
 
 컨디션 수정 경로 (FUC-W-COND-003, S10)
 

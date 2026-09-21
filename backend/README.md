@@ -246,7 +246,7 @@ LLM_API_BASE_URL=
 
 - Frontend에 디자인 시스템(`design_system/`), 라우팅(`routing/`), 화면 스켈레톤이 추가되었습니다. Backend 코드 변경은 없습니다
 - W-PROFILE-001 출산예정일 규칙 완화: 입력 상한을 오늘 + 280일에서 **365일**로 늘리고, 마지막 생리 시작일을 선택 입력으로 명확히 했습니다. 출산예정일과 마지막 생리 시작일이 `+280일` 관계로 일치해야 하던 제약을 스키마와 DB에서 제거했습니다(`supabase/migrations/20260916000000_relax_due_date_constraint.sql`). 마지막 생리 시작일만 보내면 출산예정일은 여전히 자동 계산됩니다
-- AI 하루 루틴(W-ROUTINE-001/003) 파이프라인 구현. 결정 사항: 판단 LLM·임베딩 모두 **OpenAI 단일**(Claude 결정 철회, `anthropic` 의존성 없음), 룰은 `rules.yaml`(모션 파트 방식), 카테고리명 `household`, LLM 출력은 `routine_items.payload` 모양과 동일
+- AI 하루 루틴(W-HOME-001/W-CALLBACK-001, 당시 표기 W-ROUTINE-001/003) 파이프라인 구현. 결정 사항: 판단 LLM·임베딩 모두 **OpenAI 단일**(Claude 결정 철회, `anthropic` 의존성 없음), 룰은 `rules.yaml`(모션 파트 방식), 카테고리명 `household`, LLM 출력은 `routine_items.payload` 모양과 동일
 - 팀원 RAG 패키지를 `tools/rag_ingest/`로 편입(영문 공개자료 75청크, `text-embedding-3-small` 1536). 자체 PDF·Voyage 계획은 폐기
 - 마이그레이션 3건 추가: `20260917000000_pregnancy_knowledge.sql`(pgvector·RPC), `20260917000001_routine_tables.sql`(프로필 3~6단계 컬럼·컨디션·루틴·항목), `20260917000002_grant_service_role.sql`. Supabase에 5건 전부 적용 확인
 - `.env.example`에 실제 값이 들어간 것을 발견해 placeholder로 원복

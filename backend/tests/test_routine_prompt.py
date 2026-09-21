@@ -67,3 +67,13 @@ class RoutinePromptTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MealOutputLimitTest(unittest.TestCase):
+    """K1: 가장 느린 식단 호출의 출력 분량을 지시문으로 제한한다(09-20)."""
+
+    def test_meal_limits_in_system_prompt(self) -> None:
+        from app.services.routine.prompt import SYSTEM_PROMPT
+
+        for phrase in ("title 20자 이내", "60자 이내", "nutritionTags 3개 이내", "cautions는 꼭 필요할 때만 1개"):
+            self.assertIn(phrase, SYSTEM_PROMPT)

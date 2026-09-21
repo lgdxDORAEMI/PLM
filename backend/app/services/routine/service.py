@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from datetime import date
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +25,7 @@ from app.services.routine.rules import apply_rules
 logger = logging.getLogger(__name__)
 
 FALLBACK_PATH = Path(__file__).resolve().parent / "fallback.yaml"
+VIDEO_PATH = Path(__file__).resolve().parent / "stretching_videos.yaml"
 # NFR-001 p95 10초. 임베딩+검색+생성 전체 상한. 넘으면 폴백.
 TOTAL_TIMEOUT_SEC = 9.5
 # S7: 팁은 4종 루틴과 동시에 만든다. 루틴이 끝난 뒤 팁을 이만큼만 더 기다리고, 못 받으면 tip=None(루틴은 그대로 ai).
@@ -33,13 +35,55 @@ TIP_CHUNKS_PER_CATEGORY = 2
 # NFR-014: 이 키만 LLM에 보낸다. 자유 텍스트 진료 메모(medical_note)는 W-PROFILE-006 요구대로 포함.
 LLM_FACT_KEYS = (
     "week", "is_first_pregnancy", "is_multiple_pregnancy", "allergies", "medical_conditions", "medical_note",
-    "nausea", "waist_pain", "pelvis_pain", "leg_pain", "wrist_pain", "fatigue", "mood", "sleep_quality",
+    "nausea", "waist_pain", "pelvis_pain", "leg_pain", "wrist_pain", "fatigue", "mood",  # K3: sleep_quality 제외
     "planned_activities", "yesterday",
 )
 
 
 def load_template() -> dict[str, Any]:
     return yaml.safe_load(FALLBACK_PATH.read_text(encoding="utf-8"))
+
+
+@lru_cache(maxsize=1)
+def load_videos() -> dict[str, dict[str, Any]]:
+    """S_stretching_video: 부위별 대표 활동 영상. url이 빈 부위는 붙이지 않는다."""
+    data = yaml.safe_load(VIDEO_PATH.read_text(encoding="utf-8")) or {}
+    return {part: v for part, v in (data.get("videos") or {}).items() if (v or {}).get("url")}
+
+
+def attach_videos(routine: dict[str, Any]) -> dict[str, Any]:
+    """health 항목의 item_key(health:<부위>, 중복이면 :2)로 영상을 찾아 payload.video에 넣는다. AI는 URL을 만들지 않는다."""
+    videos = load_videos()
+    if not videos:
+        return routine
+    items = []
+    for entry in routine.get("health") or []:
+        part = (entry.get("item_key") or "").split(":")[1:2]
+        video = videos.get(part[0]) if part else None
+        items.append({**entry, "payload": {**(entry.get("payload") or {}), "video": video}} if video else entry)
+    return {**routine, "health": items}
+
+
+def template_household(activities: list[dict[str, str]] | None) -> list[dict[str, Any]] | None:
+    """K8: 폴백 가사 항목을 예정 활동 코드로 만든다. 키가 AI 결과와 같아 재생성 때 삭제·추가로 잡히지 않는다.
+
+    예정 활동이 없으면 None(= fallback.yaml의 일반 문구 유지).
+    """
+    if not activities:
+        return None
+    return [
+        {
+            "item_key": f"household:{a['code']}",
+            "title": a["label"],
+            "payload": {
+                "owner": "partner",
+                "applianceAction": "none",
+                "reason": "AI 추천을 불러오지 못했습니다. 무리가 되면 가족과 나눠 주세요.",
+            },
+            "source_ids": [],
+        }
+        for a in activities
+    ]
 
 
 def _banned_words(constraints: dict[str, list[dict[str, Any]]]) -> list[str]:
@@ -183,9 +227,9 @@ class RoutineService:
         deadline = asyncio.get_running_loop().time() + TOTAL_TIMEOUT_SEC
         try:
             generated, allowed = await asyncio.wait_for(self._generate(facts, constraints, deadline), TOTAL_TIMEOUT_SEC)
-            routine = _normalize_item_keys(validate(generated, constraints, allowed))
+            routine = attach_videos(_normalize_item_keys(validate(generated, constraints, allowed)))
             routine["tip"] = validate_tip(generated.get("tip"), constraints, allowed)
-        except Exception as exc:  # 타임아웃·API 오류·JSON 오류 모두 폴백 (W-ROUTINE-003)
+        except Exception as exc:  # 타임아웃·API 오류·JSON 오류 모두 폴백 (W-CALLBACK-001)
             error = f"{type(exc).__name__}: {exc}"[:500]
             logger.warning("루틴 생성 실패, 폴백 사용: %s", error)
             previous = repository.get_latest_before(self.supabase, user_id, today)
@@ -193,8 +237,11 @@ class RoutineService:
                 source, routine = "fallback_prev", previous["response"]
             else:
                 source, routine = "fallback_template", load_template()
+                household = template_household(facts.get("planned_activities"))
+                if household:
+                    routine = {**routine, "household": household}
             model = None
-            routine = _normalize_item_keys(validate(routine, constraints, set()))
+            routine = attach_videos(_normalize_item_keys(validate(routine, constraints, set())))
             routine["tip"] = None  # 폴백에는 팁이 없다(전일 팁을 그대로 쓰지 않음). 앱은 기본 문구를 쓴다
 
         saved = repository.save_routine(
@@ -242,7 +289,7 @@ class RoutineService:
             for category in failed:
                 if not routine.get(category):
                     routine[category] = template[category]
-        routine = _normalize_item_keys(routine)
+        routine = attach_videos(_normalize_item_keys(routine))
         routine["tip"] = validate_tip(tip, constraints, allowed)
 
         generated = [c for c in targets if c in results]

@@ -1,4 +1,4 @@
-"""AI 하루 루틴 (W-ROUTINE-001 생성, W-ROUTINE-003 폴백, W-HOME-001 조회)."""
+"""AI 하루 루틴 (W-HOME-001 생성·조회, W-CALLBACK-001 폴백). 구 ID W-ROUTINE-001/003."""
 
 from __future__ import annotations
 
