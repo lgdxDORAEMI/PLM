@@ -26,12 +26,13 @@ class WeekNotesTest(unittest.TestCase):
         empty = home_block(None, {})
         self.assertEqual((empty["week"], empty["week_notes"], empty["caution"]), (None, [], None))
 
-    def test_summaries_ai_first_then_template(self) -> None:
-        """09-22 홈 카드 4장: AI 요약이 있는 가이드는 그 문구, 없는 가이드(예전 루틴·폴백)는 템플릿 문구."""
-        block = home_block(28, {"summaries": {"meal": "오늘은 입덧이 있어 속 편한 메뉴로", "sleep": None}})
-        self.assertEqual(set(block["summaries"]), {"meal", "household", "health", "sleep"})
-        self.assertEqual(block["summaries"]["meal"], "오늘은 입덧이 있어 속 편한 메뉴로")
-        self.assertEqual(block["summaries"]["sleep"], "편안한 잠자리 환경을 준비해요")
+    def test_summaries_are_fixed_text(self) -> None:
+        """09-22 팀 결정: 홈 카드 4장 문구는 고정. 루틴 응답에 무엇이 있어도 fallback.yaml 문구를 쓴다."""
+        block = home_block(28, {"summaries": {"meal": "AI 문구"}})
+        self.assertEqual(block["summaries"], {
+            "meal": "오늘 컨디션에 맞춘 편한 식사로", "household": "무리한 집안일은 나누거나 가전에 맡기고",
+            "health": "몸에 부담 없는 가벼운 움직임으로", "sleep": "편안한 잠자리 환경을 준비해요",
+        })
 
     def test_current_week_from_due_date(self) -> None:
         rows = [{"due_date": "2026-12-10"}]

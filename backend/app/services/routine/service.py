@@ -44,12 +44,6 @@ def load_template() -> dict[str, Any]:
     return yaml.safe_load(FALLBACK_PATH.read_text(encoding="utf-8"))
 
 
-def fill_summaries(*sources: dict[str, Any] | None) -> dict[str, str]:
-    """09-22 홈 카드 요약 4종. 가이드별로 앞의 출처부터 빈 값이 아닌 것을 쓰고, 끝까지 없으면 템플릿 문구."""
-    template = load_template()["summaries"]
-    return {c: next((s[c] for s in sources if s and s.get(c)), template[c]) for c in CATEGORIES}
-
-
 @lru_cache(maxsize=1)
 def load_videos() -> dict[str, dict[str, Any]]:
     """S_stretching_video: 부위별 대표 활동 영상. url이 빈 부위는 붙이지 않는다."""
@@ -235,7 +229,6 @@ class RoutineService:
             generated, allowed = await asyncio.wait_for(self._generate(facts, constraints, deadline), TOTAL_TIMEOUT_SEC)
             routine = attach_videos(_normalize_item_keys(validate(generated, constraints, allowed)))
             routine["tip"] = validate_tip(generated.get("tip"), constraints, allowed)
-            routine["summaries"] = fill_summaries(generated.get("summaries"))
         except Exception as exc:  # 타임아웃·API 오류·JSON 오류 모두 폴백 (W-CALLBACK-001)
             error = f"{type(exc).__name__}: {exc}"[:500]
             logger.warning("루틴 생성 실패, 폴백 사용: %s", error)
@@ -248,9 +241,7 @@ class RoutineService:
                 if household:
                     routine = {**routine, "household": household}
             model = None
-            summaries = fill_summaries(routine.get("summaries"))  # 전일 루틴이면 그 요약, 템플릿이면 고정 문구
             routine = attach_videos(_normalize_item_keys(validate(routine, constraints, set())))
-            routine["summaries"] = summaries
             routine["tip"] = None  # 폴백에는 팁이 없다(전일 팁을 그대로 쓰지 않음). 앱은 기본 문구를 쓴다
 
         saved = repository.save_routine(
@@ -280,12 +271,12 @@ class RoutineService:
         previous = base["response"]
         deadline = asyncio.get_running_loop().time() + TOTAL_TIMEOUT_SEC
         try:
-            results, summaries, tip, allowed = await asyncio.wait_for(
+            results, tip, allowed = await asyncio.wait_for(
                 self._generate_edit(facts, constraints, impact, targets, previous, deadline), TOTAL_TIMEOUT_SEC
             )
         except Exception as exc:  # 검색 실패·전체 시간 초과 → 대상 전부 실패로 처리
             logger.warning("루틴 수정 실패: %s", f"{type(exc).__name__}: {exc}"[:200])
-            results, summaries, tip, allowed = {}, {}, None, set()
+            results, tip, allowed = {}, None, set()
 
         merged = {c: previous.get(c) for c in CATEGORIES}
         merged.update(results)
@@ -300,7 +291,6 @@ class RoutineService:
                     routine[category] = template[category]
         routine = attach_videos(_normalize_item_keys(routine))
         routine["tip"] = validate_tip(tip, constraints, allowed)
-        routine["summaries"] = fill_summaries(summaries, previous.get("summaries"))  # 다시 만든 가이드만 새 요약
 
         generated = [c for c in targets if c in results]
         source = "ai" if generated else "fallback_prev"  # fallback_prev = 전일 또는 직전 버전 유지
@@ -327,8 +317,8 @@ class RoutineService:
     async def _generate_edit(
         self, facts: dict[str, Any], constraints: dict[str, Any], impact: dict[str, Any],
         targets: dict[str, dict[str, Any]], previous: dict[str, Any], deadline: float,
-    ) -> tuple[dict[str, Any], dict[str, str | None], dict[str, Any] | None, set[int]]:
-        """대상 가이드만 검색·수정 호출을 동시에. 가이드별로 성공한 것만 (항목, 요약)으로 돌려준다(부분 실패 허용)."""
+    ) -> tuple[dict[str, Any], dict[str, Any] | None, set[int]]:
+        """대상 가이드만 검색·수정 호출을 동시에. 가이드별로 성공한 것만 돌려준다(부분 실패 허용)."""
         loop = asyncio.get_running_loop()
         chunks_by_category = await self.retriever.retrieve(facts, list(targets))
         llm_facts = {k: facts.get(k) for k in LLM_FACT_KEYS}
@@ -346,10 +336,10 @@ class RoutineService:
         done, pending = await asyncio.wait(tasks.values(), timeout=max(0.0, deadline - loop.time() - 0.1))
         for task in pending:
             task.cancel()
-        results, summaries = {}, {}
+        results = {}
         for category, task in tasks.items():
             if task in done and task.exception() is None:
-                results[category], summaries[category] = task.result()
+                results[category] = task.result()
             else:
                 reason = task.exception() if task in done else "시간 초과"
                 logger.warning("가이드 수정 실패(%s), 직전 내용 유지: %s", category, str(reason)[:200])
@@ -359,7 +349,7 @@ class RoutineService:
         except asyncio.TimeoutError:
             tip = None
         allowed = {int(c["id"]) for chunks in chunks_by_category.values() for c in chunks}
-        return results, summaries, tip, allowed
+        return results, tip, allowed
 
 
 def _decision(decision: dict[str, Any]) -> dict[str, Any]:

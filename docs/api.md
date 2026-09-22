@@ -194,14 +194,14 @@ OFF면 **4003**(앱 정의 코드)으로 닫아 1008(origin/토큰)과 구분한
 | source | `ai` = AI 생성 성공(컨디션 수정 시 대상 가이드 중 하나 이상 성공). `fallback_prev`(전일 루틴 또는 직전 버전 유지) / `fallback_template`(기본 템플릿) = **AI 생성 실패**(시간 초과·AI 오류). 처리 기준은 아래 "AI 실패 처리". 폴백률(NFR-016) 측정용 |
 | model | 생성에 쓴 LLM 모델명. 폴백이면 `null` |
 | response | `{meal: [...], household: [...], health: [...], sleep: {...}, tip: {...} 또는 null}`. `tip`은 웰컴 카드 '오늘 시도해보세요' 팁 1개(아래 표). 나머지 4종은 각 항목 `{item_key, title, payload, source_ids}`. `payload` 모양은 아래 표. `source_ids`는 근거 문단 `pregnancy_knowledge.id` |
-| home | **2026-09-22 추가.** 홈 화면용 묶음 `{week, week_notes: [2줄], caution, summaries: {meal, household, health, sleep}}`. `summaries`는 **4종 카드 한 줄 요약**(AI가 가이드와 같이 작성, 폴백·09-22 이전 루틴은 고정 문구라 항상 4개 다 있음). 주차 특징 블록은 `week_notes`는 주차별 고정 문구(`backend/app/services/routine/week_notes.yaml`, 4주 구간, **팀 검수 전 초안**). `caution`은 `response.tip.text`가 있으면 그 팁, 없으면(폴백) 주차별 기본 주의 문구. 프로필이 없으면 `{week: null, week_notes: [], caution: null}`. 프론트는 "{week}주차에는 이런 시기예요" + `week_notes` + `caution`을 그린다 |
+| home | **2026-09-22 추가.** 홈 화면용 묶음 `{week, week_notes: [2줄], caution, summaries: {meal, household, health, sleep}}`. `summaries`는 **4종 카드 한 줄 고정 문구**(09-22 팀 결정: 홈은 AI 맞춤이 필요 없음, 맞춤 정보는 각 가이드 상세 화면에서. 항상 4개 다 있음). 주차 특징 블록은 `week_notes`는 주차별 고정 문구(`backend/app/services/routine/week_notes.yaml`, 4주 구간, **팀 검수 전 초안**). `caution`은 `response.tip.text`가 있으면 그 팁, 없으면(폴백) 주차별 기본 주의 문구. 프로필이 없으면 `{week: null, week_notes: [], caution: null}`. 프론트는 "{week}주차에는 이런 시기예요" + `week_notes` + `caution`을 그린다 |
 
 **프론트 요청 (2026-09-22, 시급) — 홈 '오늘의 하루 루틴'을 카드 4장으로**
 
 지금 홈은 `routine_items` 항목마다 카드를 그려 10장 넘게 펼쳐진다(`frontend/lib/features/home/screens/wife_home_screen.dart:287` `for (final item in plan.items)`). 시안(`docs/screens/W-HOME-001-1.png`)대로 바꿔 주세요.
 
 1. 카드는 식사·가사·건강·수면 **4장 고정**. 항목 수와 무관하게 가이드 종류별 1장이다.
-2. 카드 제목은 "식사 가이드" 등 고정, 카드 설명은 `home.summaries.{meal|household|health|sleep}`.
+2. 카드 제목은 "식사 가이드" 등 고정, 카드 설명은 `home.summaries.{meal|household|health|sleep}`(고정 문구, AI 호출 없음).
 3. 카드를 누르면 해당 가이드 상세 화면으로 이동한다(기존 `_openRoutine(type)` → `RouteNames.mealGuide|householdGuide|healthGuide|sleepGuide`). 항목 목록은 상세 화면에서만 보여준다.
 4. 진행률(`RoutineProgress`)은 지금처럼 전체 항목 기준으로 계산해도 된다.
 

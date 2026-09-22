@@ -18,7 +18,7 @@ from app.services.routine.inputs import ACTIVITY_CODES, CUSTOM_ACTIVITY
 # 2026-09-19.1: 전일 루틴 완료·모션 요약(yesterday) 입력 추가(S8)
 # 2026-09-19.2: 컨디션 수정 시 대상 가이드만 조정하는 수정 호출(EDIT_SYSTEM_PROMPT, S10)
 # 2026-09-20.1: K1 — 가장 느린 식단 호출의 출력 분량 제한(문장 길이·태그·주의 개수)
-PROMPT_VERSION = "2026-09-22.1"  # 09-22: 가이드별 홈 카드 한 줄 요약(summary) 추가
+PROMPT_VERSION = "2026-09-20.1"
 CATEGORIES = ("meal", "household", "health", "sleep")
 
 
@@ -131,8 +131,8 @@ TIP_REQUEST = (
 
 
 def category_schema(category: str) -> dict[str, Any]:
-    """카테고리 1개만 담은 strict 스키마. 응답은 {category: ..., summary: 홈 카드 한 줄} 모양(09-22 summary 추가)."""
-    return _obj({category: ROUTINE_SCHEMA["properties"][category], "summary": _STR})
+    """카테고리 1개만 담은 strict 스키마. 응답은 {category: ...} 모양."""
+    return _obj({category: ROUTINE_SCHEMA["properties"][category]})
 
 SYSTEM_PROMPT = """당신은 임산부의 하루 생활 루틴을 설계하는 보조 도구다. 의료 진단이나 처방을 하지 않는다.
 규칙:
@@ -149,9 +149,7 @@ SYSTEM_PROMPT = """당신은 임산부의 하루 생활 루틴을 설계하는 �
 - sleep: 권장 취침 시각, 환경(조명·온도·습도·소리·공기청정기) 제안값, 팁.
 - 근거 자료(참고 문단)가 주어지면 그 내용에 기반해 작성하고, 사용한 문단의 id만 source_ids에 넣는다. 자료가 없으면 빈 배열.
 - 자료에 없는 수치·의학 주장은 만들지 않는다. 산후 관련 내용은 무시한다.
-- 응급·위험 신호 판단은 하지 않고 "이상 증상은 의료진 상담" 한 줄만 허용한다.
-- summary: 홈 화면 가이드 카드에 쓰는 한 줄 요약. 20자 안팎, 오늘 컨디션을 반영한 방향만(예: "오늘은 입덧이 있어 속 편한 메뉴로",
-  "허리 부담 큰 집안일은 가전에 맡기고"). 메뉴명·수치·진단은 쓰지 않는다."""
+- 응급·위험 신호 판단은 하지 않고 "이상 증상은 의료진 상담" 한 줄만 허용한다."""
 
 
 def build_user_prompt(

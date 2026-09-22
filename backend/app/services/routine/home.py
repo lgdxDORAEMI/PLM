@@ -1,7 +1,8 @@
 """홈 웰컴 카드 ① 주차 특징 블록(FUC-W-HOME-001 ①). GET/POST /routine/today 응답의 `home`.
 
 주차별 고정 문구(week_notes.yaml)는 AI가 판단하지 않는다. 주의 문구는 오늘의 팁(AI, 루틴 response.tip)이 있으면
-팁을, 없으면(폴백 등) 주차별 기본 문구를 쓴다. summaries = 4종 카드 한 줄 요약(09-22, 없으면 템플릿 문구).
+팁을, 없으면(폴백 등) 주차별 기본 문구를 쓴다. summaries = 4종 카드 한 줄 고정 문구(fallback.yaml).
+09-22 팀 결정: 홈 카드는 AI 맞춤이 필요 없다(맞춤 정보는 각 가이드 상세 화면에서). 그래서 AI 요약은 만들지 않는다.
 이름·컨디션 한 줄은 이 블록에 아직 없다(별도 결정).
 """
 
@@ -15,7 +16,7 @@ from typing import Any
 import yaml
 from supabase import Client
 
-from app.services.routine.service import fill_summaries
+from app.services.routine.service import load_template
 from app.utils import dates
 
 WEEK_NOTES_PATH = Path(__file__).resolve().parent / "week_notes.yaml"
@@ -34,7 +35,7 @@ def week_band(week: int) -> dict[str, Any]:
 
 def home_block(week: int | None, routine_response: dict[str, Any] | None) -> dict[str, Any]:
     """{week, week_notes, caution, summaries}. 주차를 모르면(프로필 없음) week_notes 빈 목록·caution None."""
-    summaries = fill_summaries((routine_response or {}).get("summaries"))  # 09-22 전에 저장된 루틴은 템플릿 문구
+    summaries = dict(load_template()["summaries"])
     if week is None:
         return {"week": None, "week_notes": [], "caution": None, "summaries": summaries}
     band = week_band(week)
