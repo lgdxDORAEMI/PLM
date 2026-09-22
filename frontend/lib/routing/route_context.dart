@@ -7,7 +7,7 @@ enum AppLaunchState {
 
 enum ProfileMode { create, edit }
 
-enum InviteEntryContext { onboarding, profileMenu }
+enum InviteEntryContext { onboarding, profileMenu, dailyFlow }
 
 enum ConditionMode { create, edit }
 

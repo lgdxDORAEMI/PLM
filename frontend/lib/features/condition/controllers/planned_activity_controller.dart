@@ -74,4 +74,18 @@ class PlannedActivityController extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /// The first daily flow saves activities before opening the invitation step.
+  Future<void> saveActivities() async {
+    if (_generating) return;
+    _generating = true;
+    notifyListeners();
+    try {
+      await service.saveActivities(DateTime.now(), _selected.toList());
+      store.save(_selected);
+    } finally {
+      _generating = false;
+      notifyListeners();
+    }
+  }
 }

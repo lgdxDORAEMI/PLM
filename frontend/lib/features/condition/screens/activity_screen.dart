@@ -140,10 +140,12 @@ class _ActivityScreenState extends State<ActivityScreen> {
             AppButton(
               key: const ValueKey('activity-submit-button'),
               label: _controller.generating
-                  ? '오늘 루틴 만드는 중…'
+                  ? widget.editing
+                        ? '오늘 루틴 만드는 중…'
+                        : '저장 중…'
                   : widget.editing
                   ? '수정 완료'
-                  : '오늘 루틴 만들기',
+                  : '다음',
               onPressed: _controller.generating ? null : _generate,
             ),
           ],
@@ -164,6 +166,21 @@ class _ActivityScreenState extends State<ActivityScreen> {
   Future<void> _generate() async {
     FocusManager.instance.primaryFocus?.unfocus();
     if (_controller.generating) return;
+    if (!widget.editing) {
+      try {
+        await _controller.saveActivities();
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, RouteNames.dailyInvite);
+        }
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('예정 활동을 저장하지 못했어요. 다시 시도해 주세요.')),
+          );
+        }
+      }
+      return;
+    }
     final navigator = Navigator.of(context, rootNavigator: true);
     final loadingRoute = DialogRoute<void>(
       context: context,

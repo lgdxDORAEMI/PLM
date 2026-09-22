@@ -6,6 +6,8 @@ import 'package:plm_frontend/design_system/components/app_button.dart';
 import 'package:plm_frontend/features/condition/data/planned_activity_store.dart';
 import 'package:plm_frontend/features/condition/screens/activity_screen.dart';
 import 'package:plm_frontend/features/condition/services/planned_activity_service.dart';
+import 'package:plm_frontend/features/profile/screens/partner_invite_screen.dart';
+import 'package:plm_frontend/routing/route_context.dart';
 import 'package:plm_frontend/routing/route_names.dart';
 
 void main() {
@@ -51,12 +53,16 @@ void main() {
     expect(find.text('수정 완료'), findsOneWidget);
   });
 
-  testWidgets('루틴 생성 중 애니메이션 창을 표시하고 완료되면 자동으로 닫는다', (tester) async {
+  testWidgets('할 일 저장 후 초대를 거쳐야 루틴이 생성된다', (tester) async {
     final service = _PendingActivityService();
     await tester.pumpWidget(
       MaterialApp(
         home: ActivityScreen(service: service),
         routes: {
+          RouteNames.dailyInvite: (_) => PartnerInviteScreen(
+            entryContext: InviteEntryContext.dailyFlow,
+            activityService: service,
+          ),
           RouteNames.wifeHome: (_) => const Scaffold(body: Text('홈 도착')),
         },
       ),
@@ -70,9 +76,22 @@ void main() {
     );
     await tester.tap(submit);
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
+    expect(find.byType(PartnerInviteScreen), findsOneWidget);
+    expect(service.savedActivities, isTrue);
+    expect(service.generationCalls, 0);
+    await tester.scrollUntilVisible(
+      find.text('나중에'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(find.text('나중에'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('나중에'));
+    await tester.pump();
     expect(find.text('AI 루틴 생성중...'), findsOneWidget);
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(service.generationCalls, 1);
     expect(find.text('홈 도착'), findsNothing);
     await tester.pump(const Duration(seconds: 1));
     expect(find.text('AI 루틴 생성중...'), findsOneWidget);
@@ -86,7 +105,7 @@ void main() {
   testWidgets('루틴 생성 실패 시 로딩 창을 닫고 다시 시도할 수 있다', (tester) async {
     final service = _PendingActivityService();
     await tester.pumpWidget(
-      MaterialApp(home: ActivityScreen(service: service)),
+      MaterialApp(home: ActivityScreen(editing: true, service: service)),
     );
     await tester.pump();
     final submit = find.byKey(const ValueKey('activity-submit-button'));
@@ -108,6 +127,8 @@ void main() {
 
 class _PendingActivityService implements PlannedActivityService {
   final Completer<void> _generation = Completer<void>();
+  bool savedActivities = false;
+  int generationCalls = 0;
 
   @override
   Future<List<String>> fetch(DateTime date) async => const [];
@@ -115,6 +136,17 @@ class _PendingActivityService implements PlannedActivityService {
   @override
   Future<void> saveAndGenerate(DateTime date, List<String> activities) =>
       _generation.future;
+
+  @override
+  Future<void> saveActivities(DateTime date, List<String> activities) async {
+    savedActivities = true;
+  }
+
+  @override
+  Future<void> generateRoutine() {
+    generationCalls += 1;
+    return _generation.future;
+  }
 
   void complete() => _generation.complete();
 

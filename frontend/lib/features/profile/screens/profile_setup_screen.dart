@@ -452,7 +452,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     if (!mounted) return;
     _controller.markSaved();
     if (widget.mode == ProfileMode.create) {
-      Navigator.pushReplacementNamed(context, RouteNames.partnerInvite);
+      Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
       return;
     }
     if (Navigator.canPop(context)) {

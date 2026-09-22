@@ -156,9 +156,6 @@ abstract final class AppRouter {
     if (path.startsWith('/wife/profile/onboarding/') && !hasProfile) {
       return RouteNames.profileSetup;
     }
-    if (path == RouteNames.wifeInvite && auth.husbandLinked) {
-      return RouteNames.wifeHome;
-    }
     if (path.startsWith('/wife/profile/onboarding/') && hasProfile) {
       return RouteNames.wifeHome;
     }
@@ -342,9 +339,11 @@ abstract final class AppRouter {
     }
     if (path == RouteNames.wifeInvite) {
       return PartnerInviteScreen(
-        entryContext: uri.queryParameters['source'] == 'onboarding'
-            ? InviteEntryContext.onboarding
-            : InviteEntryContext.profileMenu,
+        entryContext: switch (uri.queryParameters['source']) {
+          'onboarding' => InviteEntryContext.onboarding,
+          'daily' => InviteEntryContext.dailyFlow,
+          _ => InviteEntryContext.profileMenu,
+        },
       );
     }
     if (path == RouteNames.condition) {
