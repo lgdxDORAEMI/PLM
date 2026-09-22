@@ -393,8 +393,15 @@ class CurrentUserTest(unittest.TestCase):
         return SimpleNamespace(client=SimpleNamespace(auth=SimpleNamespace(get_user=get_user)))
 
     def test_valid_token(self) -> None:
-        supabase = self.supabase_with(lambda jwt: SimpleNamespace(user=SimpleNamespace(id="user-1")))
-        self.assertEqual(get_current_user(self.credentials, supabase), CurrentUser(id="user-1"))
+        supabase = self.supabase_with(
+            lambda jwt: SimpleNamespace(
+                user=SimpleNamespace(id="user-1", email="user-1@example.com")
+            )
+        )
+        self.assertEqual(
+            get_current_user(self.credentials, supabase),
+            CurrentUser(id="user-1", email="user-1@example.com"),
+        )
 
     def test_rejected_or_unreachable(self) -> None:
         def raises(error: Exception):

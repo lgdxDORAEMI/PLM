@@ -103,7 +103,7 @@ def _fake_supabase_service(user_id: str) -> SimpleNamespace:
     def get_user(token: str):
         if token != _VALID_TOKEN:
             return None
-        return SimpleNamespace(user=SimpleNamespace(id=user_id))
+        return SimpleNamespace(user=SimpleNamespace(id=user_id, email=f"{user_id}@example.com"))
 
     return SimpleNamespace(client=SimpleNamespace(auth=SimpleNamespace(get_user=get_user)))
 
