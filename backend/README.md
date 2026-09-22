@@ -181,6 +181,24 @@ uvicorn app.main:app --reload
 - Swagger UI: <http://localhost:8000/docs>
 - OpenAPI: <http://localhost:8000/openapi.json>
 
+## 팀원 수동 테스트
+
+```powershell
+# Backend
+cd backend
+.venv\Scripts\python.exe -m uvicorn app.main:app --reload
+
+# Frontend
+cd frontend
+flutter run -d chrome
+
+# 모션 인식 전용 진입점 (main.dart가 아니라 별도 파일로 실행)
+cd frontend
+flutter run -d chrome -t lib/main_movement_debug.dart
+```
+
+`main_movement_debug.dart`는 `frontend/.env`의 `DEMO_EMAIL`/`DEMO_PASSWORD`로 자동 로그인한 뒤 모션 화면으로 바로 진입합니다(토큰 수동 발급 불필요). WS가 4003으로 끊기면 토큰이 아니라 해당 계정의 모션 동의/수집이 꺼져 있는 것입니다(`PUT /api/v1/family/motion/consent`·`/collection`으로 켜기).
+
 ## 환경변수
 
 ```dotenv
