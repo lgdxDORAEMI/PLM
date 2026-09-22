@@ -230,24 +230,13 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
       return const [_RoutineLoadingSection()];
     }
     return [
-      Semantics(
-        liveRegion: true,
-        label: _routineController.isFallback ? '기본 루틴 준비 완료' : '맞춤 루틴 준비 완료',
-        child: Text(
-          plan.updatedLabel,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: AppColors.textTertiary),
-        ),
-      ),
       Align(
         alignment: Alignment.centerRight,
         child: TextButton.icon(
           key: const ValueKey('home-edit-activities'),
-          onPressed: () =>
-              Navigator.pushNamed(context, '${RouteNames.activity}?mode=edit'),
+          onPressed: _editActivities,
           icon: const Icon(Icons.edit_outlined),
-          label: const Text('예정 활동 수정'),
+          label: const Text('오늘 할일 수정하기'),
         ),
       ),
       const SizedBox(height: AppSpacing.lg),
@@ -322,6 +311,14 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
     if (!mounted) return;
     await _restoreTodayCare();
     if (mounted && _todayCareStore.hasTodayCare) {
+      await _routineController.loadToday();
+    }
+  }
+
+  /// Requery the routine when returning from activity editing.
+  Future<void> _editActivities() async {
+    await Navigator.pushNamed(context, '${RouteNames.activity}?mode=edit');
+    if (mounted) {
       await _routineController.loadToday();
     }
   }
