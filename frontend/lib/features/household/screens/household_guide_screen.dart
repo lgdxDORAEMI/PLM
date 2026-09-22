@@ -202,7 +202,7 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
       _SectionTitle(
         number: 2,
         title: '가족과 나누기',
-        label: '${_controller.shareableTasks.length}개 할일',
+        label: '${_controller.remainingShareableCount}개 할일',
       ),
       const SizedBox(height: AppSpacing.md),
       Column(
@@ -216,10 +216,16 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
           for (final task in _controller.shareableTasks) ...[
             HouseholdTaskCard(
               task: task,
-              selectable: true,
-              onTap: _controller.shared
-                  ? null
-                  : () => _controller.toggleSelection(task.id),
+              selectable: _controller.canShareTask(task),
+              trailingLabel: switch (task.status) {
+                HouseholdTaskStatus.shared => '공유됨',
+                HouseholdTaskStatus.confirmed => '확인됨',
+                HouseholdTaskStatus.done => '완료됨',
+                _ => null,
+              },
+              onTap: _controller.canShareTask(task)
+                  ? () => _controller.toggleSelection(task.id)
+                  : null,
             ),
             const SizedBox(height: AppSpacing.sm),
           ],
@@ -236,14 +242,11 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
             key: const ValueKey('household-share-button'),
             label: _controller.sharing
                 ? '요청 보내는 중…'
-                : _controller.shared
+                : _controller.remainingShareableCount == 0 && _controller.shared
                 ? '남편에게 공유했어요'
                 : '남편에게 공유하기',
             loading: _controller.sharing,
-            onPressed:
-                _controller.selectedCount == 0 ||
-                    _controller.shared ||
-                    _controller.sharing
+            onPressed: _controller.selectedCount == 0 || _controller.sharing
                 ? null
                 : _share,
           ),
@@ -292,8 +295,9 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
   }
 
   Future<void> _share() async {
-    await _controller.shareSelected();
-    if (!mounted || !_controller.shared) return;
+    final selectedCount = _controller.selectedCount;
+    final shared = await _controller.shareSelected();
+    if (!mounted || !shared) return;
     final requestRoute = RouteNames.partnerRequest(_controller.lastRequestId!);
     await showAppDialog<void>(
       context: context,
@@ -304,7 +308,7 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('선택한 ${_controller.selectedCount}개 항목을 요청 카드로 보냈어요.'),
+            Text('선택한 $selectedCount개 항목을 요청 카드로 보냈어요.'),
             const SizedBox(height: AppSpacing.md),
             Semantics(
               label: '파트너 요청 경로 $requestRoute',

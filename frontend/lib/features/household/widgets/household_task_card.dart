@@ -69,11 +69,21 @@ class HouseholdTaskCard extends StatelessWidget {
                 child: Text(actionLabel!),
               )
             else if (trailingLabel != null)
-              Text(
-                trailingLabel!,
-                style: Theme.of(
-                  context,
-                ).textTheme.labelMedium?.copyWith(color: visual.foreground),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                  vertical: AppSpacing.xs,
+                ),
+                decoration: BoxDecoration(
+                  color: visual.foreground.withValues(alpha: .12),
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                ),
+                child: Text(
+                  trailingLabel!,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelMedium?.copyWith(color: visual.foreground),
+                ),
               )
             else if (selectable)
               Icon(
@@ -101,6 +111,10 @@ class HouseholdTaskCard extends StatelessWidget {
   };
 
   _TaskVisual _visual(HouseholdTask task) => switch (task.status) {
+    HouseholdTaskStatus.shared => const _TaskVisual(
+      AppColors.categoryPartner,
+      AppColors.categoryPartnerBackground,
+    ),
     HouseholdTaskStatus.confirmed => const _TaskVisual(
       AppColors.info,
       AppColors.infoBackground,

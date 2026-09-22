@@ -24,7 +24,7 @@ class MockHouseholdRequestService implements HouseholdRequestService {
 
   @override
   Future<HouseholdShareResult> send({
-    required List<String> tasks,
+    required List<HouseholdTask> tasks,
     required String reason,
     required String supportingInfo,
   }) async {
@@ -36,9 +36,14 @@ class MockHouseholdRequestService implements HouseholdRequestService {
       reason: reason,
       tasks: List.unmodifiable([
         for (var index = 0; index < tasks.length; index += 1)
-          PartnerRequestTask(id: '$requestId-task-$index', title: tasks[index]),
+          PartnerRequestTask(
+            id: '$requestId-task-$index',
+            title: tasks[index].title,
+            routineItemId: tasks[index].id,
+          ),
       ]),
       supportingInfo: supportingInfo,
+      requestedAt: DateTime.now(),
     );
     _store.save(request);
     PartnerNotificationStore.instance.add(
@@ -47,8 +52,8 @@ class MockHouseholdRequestService implements HouseholdRequestService {
         type: PartnerNotificationType.householdRequest,
         title: '가사 요청이 도착했어요',
         message: tasks.length == 1
-            ? tasks.first
-            : '${tasks.first} 외 ${tasks.length - 1}건',
+            ? tasks.first.title
+            : '${tasks.first.title} 외 ${tasks.length - 1}건',
         timeLabel: '방금',
         requestId: requestId,
       ),
@@ -57,12 +62,11 @@ class MockHouseholdRequestService implements HouseholdRequestService {
   }
 
   @override
-  HouseholdRequestProgress? progressForTask(
-    String requestId,
-    String taskTitle,
-  ) {
+  HouseholdRequestProgress? progressForTask(String requestId, String taskId) {
     final request = _store.request(requestId);
-    final matching = request.tasks.where((task) => task.title == taskTitle);
+    final matching = request.tasks.where(
+      (task) => task.routineItemId == taskId,
+    );
     if (matching.isEmpty) return null;
     return switch (matching.first.status) {
       PartnerRequestStatus.requested => HouseholdRequestProgress.requested,
@@ -72,8 +76,10 @@ class MockHouseholdRequestService implements HouseholdRequestService {
   }
 
   @override
-  Future<List<PartnerRequestData>> fetchAll() async =>
-      _store.requests.toList(growable: false);
+  Future<List<PartnerRequestData>> fetchAll() async {
+    if (_store.requests.isEmpty) _store.request('demo-request');
+    return _store.requests.toList(growable: false);
+  }
 
   @override
   Future<PartnerRequestData?> fetchRequest(String requestId) async =>

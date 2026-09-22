@@ -27,6 +27,7 @@ class HouseholdGuideController extends ChangeNotifier {
   bool _sharing = false;
   String? _lastRequestId;
   String? _shareError;
+  final Map<String, String> _requestIdByTaskId = {};
   bool _loading = AppConfig.hasSupabaseConfig;
   bool _loadFailed = false;
 
@@ -60,15 +61,38 @@ class HouseholdGuideController extends ChangeNotifier {
             .toList();
         _shared = requests.isNotEmpty;
         _lastRequestId = requests.isEmpty ? null : requests.last.id;
-        final progressByTitle = {
+        _requestIdByTaskId.clear();
+        for (final request in requests) {
+          for (final item in request.tasks) {
+            if (item.routineItemId case final taskId?) {
+              _requestIdByTaskId[taskId] = request.id;
+            } else {
+              for (final task in _tasks.where(
+                (task) => task.title == item.title,
+              )) {
+                _requestIdByTaskId[task.id] = request.id;
+              }
+            }
+          }
+        }
+        final progressByTaskId = {
           for (final request in requests)
-            for (final item in request.tasks) item.title: item.status,
+            for (final item in request.tasks)
+              if (item.routineItemId != null) item.routineItemId!: item.status,
+        };
+        final legacyProgressByTitle = {
+          for (final request in requests)
+            for (final item in request.tasks)
+              if (item.routineItemId == null) item.title: item.status,
         };
         _tasks = [
           for (final task in _tasks)
-            if (progressByTitle.containsKey(task.title))
+            if (progressByTaskId.containsKey(task.id) ||
+                legacyProgressByTitle.containsKey(task.title))
               task.copyWith(
-                status: switch (progressByTitle[task.title]) {
+                selected: true,
+                status: switch (progressByTaskId[task.id] ??
+                    legacyProgressByTitle[task.title]) {
                   PartnerRequestStatus.completed => HouseholdTaskStatus.done,
                   PartnerRequestStatus.confirmed =>
                     HouseholdTaskStatus.confirmed,
@@ -108,44 +132,70 @@ class HouseholdGuideController extends ChangeNotifier {
             task.status != HouseholdTaskStatus.done,
       )
       .toList(growable: false);
-  List<HouseholdTask> get shareableTasks => List.unmodifiable(_shareableTasks);
+
+  /// Keep unshared tasks first while preserving the guide order within each group.
+  List<HouseholdTask> get shareableTasks => List.unmodifiable([
+    ..._shareableTasks.where(_canShareTask),
+    ..._shareableTasks.where((task) => !_canShareTask(task)),
+  ]);
+  int get remainingShareableCount =>
+      _shareableTasks.where(_canShareTask).length;
   int get selectedCount => _selectedShareTasks.length;
 
   List<HouseholdTask> get _shareableTasks => _tasks
       .where((task) => task.owner != HouseholdTaskOwner.appliance)
       .toList(growable: false);
 
-  List<HouseholdTask> get _selectedShareTasks =>
-      _shareableTasks.where((task) => task.selected).toList(growable: false);
+  List<HouseholdTask> get _selectedShareTasks => _shareableTasks
+      .where((task) => _canShareTask(task) && task.selected)
+      .toList(growable: false);
+
+  bool canShareTask(HouseholdTask task) => _canShareTask(task);
+
+  bool _canShareTask(HouseholdTask task) =>
+      task.owner != HouseholdTaskOwner.appliance &&
+      task.status != HouseholdTaskStatus.shared &&
+      task.status != HouseholdTaskStatus.confirmed &&
+      task.status != HouseholdTaskStatus.done;
 
   void toggleSelection(String id) {
-    _update(id, (task) => task.copyWith(selected: !task.selected));
+    _update(
+      id,
+      (task) =>
+          _canShareTask(task) ? task.copyWith(selected: !task.selected) : task,
+    );
   }
 
   /// 선택 항목을 Route 계약에서 사용하는 Partner Request 데이터로 변환한다.
-  Future<void> shareSelected() async {
-    if (selectedCount == 0 || _sharing) return;
+  Future<bool> shareSelected() async {
+    if (selectedCount == 0 || _sharing) return false;
     _sharing = true;
     _shareError = null;
     notifyListeners();
     try {
       final selected = _selectedShareTasks;
       final result = await requestService.send(
-        tasks: selected.map((task) => task.title).toList(growable: false),
+        tasks: selected,
         reason: '선택한 집안일을 함께 부탁해요.',
         supportingInfo: '선택한 가사 항목을 전달했어요.',
       );
       _lastRequestId = result.requestId;
+      for (final task in selected) {
+        _requestIdByTaskId[task.id] = result.requestId;
+      }
       _shared = true;
+      final selectedIds = selected.map((task) => task.id).toSet();
       _tasks = [
         for (final task in _tasks)
-          if (task.owner != HouseholdTaskOwner.appliance && task.selected)
+          if (selectedIds.contains(task.id))
             task.copyWith(status: HouseholdTaskStatus.shared)
           else
             task,
       ];
+      return true;
     } on Object {
       _shareError = '요청을 보내지 못했어요. 다시 시도해 주세요.';
+      return false;
     } finally {
       _sharing = false;
       notifyListeners();
@@ -157,20 +207,20 @@ class HouseholdGuideController extends ChangeNotifier {
   }
 
   void _syncPartnerProgress() {
-    final requestId = _lastRequestId;
-    if (requestId == null) return;
+    if (_requestIdByTaskId.isEmpty) return;
     _tasks = [
       for (final task in _tasks)
-        if (task.owner != HouseholdTaskOwner.appliance && task.selected)
+        if (_requestIdByTaskId.containsKey(task.id))
           task.copyWith(
             status: switch (requestService.progressForTask(
-              requestId,
-              task.title,
+              _requestIdByTaskId[task.id]!,
+              task.id,
             )) {
               HouseholdRequestProgress.confirmed =>
                 HouseholdTaskStatus.confirmed,
               HouseholdRequestProgress.completed => HouseholdTaskStatus.done,
-              _ => HouseholdTaskStatus.shared,
+              HouseholdRequestProgress.requested => HouseholdTaskStatus.shared,
+              null => task.status,
             },
           )
         else

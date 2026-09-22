@@ -158,8 +158,7 @@ class _PartnerNotificationsScreenState extends State<PartnerNotificationsScreen>
     final route = switch (item.type) {
       PartnerNotificationType.morningReport when item.reportDate != null =>
         RouteNames.partnerMorningReport(item.reportDate!),
-      PartnerNotificationType.householdRequest when item.requestId != null =>
-        RouteNames.partnerRequest(item.requestId!),
+      PartnerNotificationType.householdRequest => RouteNames.partnerRequests,
       PartnerNotificationType.routineChanged when item.reportDate != null =>
         _routineChangedRoute(item.reportDate!),
       _ => null,

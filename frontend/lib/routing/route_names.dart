@@ -30,6 +30,7 @@ abstract final class RouteNames {
   static const husbandMenu = '/husband/menu';
   static const husbandMovement = '/husband/live';
   static const husbandNotifications = '/husband/notifications';
+  static const husbandRequests = '/husband/requests';
   static const husbandMorningReportPattern = '/husband/report/morning/:date';
   static const husbandDailyReportPattern = '/husband/report/daily/:date';
   static const husbandRequestPattern = '/husband/requests/:requestId';
@@ -43,6 +44,7 @@ abstract final class RouteNames {
   static const partnerMovement = husbandMovement;
   static const partnerCalendar = husbandCalendar;
   static const partnerNotifications = husbandNotifications;
+  static const partnerRequests = husbandRequests;
   static const partnerMorningReportPattern = husbandMorningReportPattern;
   static const partnerRequestPattern = husbandRequestPattern;
 

@@ -63,5 +63,21 @@ void main() {
       find.byKey(const ValueKey('household-direct-list-clear-table')),
       findsOneWidget,
     );
+    expect(find.text('공유됨'), findsOneWidget);
+
+    await tester.tap(find.text('확인'));
+    await tester.pumpAndSettle();
+    final remainingTask = find.byKey(
+      const ValueKey('household-task-clear-table'),
+    );
+    await tester.ensureVisible(remainingTask);
+    await tester.pumpAndSettle();
+    await tester.tap(remainingTask);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(shareButton);
+    await tester.tap(shareButton);
+    await tester.pumpAndSettle();
+    expect(PartnerRequestStore.instance.requests, hasLength(2));
+    expect(find.text('선택한 1개 항목을 요청 카드로 보냈어요.'), findsOneWidget);
   });
 }

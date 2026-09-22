@@ -19,6 +19,7 @@ import '../features/partner/screens/partner_calendar_screen.dart';
 import '../features/partner/screens/partner_morning_report_screen.dart';
 import '../features/partner/screens/partner_notifications_screen.dart';
 import '../features/partner/screens/partner_request_screen.dart';
+import '../features/partner/screens/partner_request_list_screen.dart';
 import '../features/partner/screens/partner_request_result_screen.dart';
 import '../features/profile/data/profile_store.dart';
 import '../features/profile/screens/partner_invite_screen.dart';
@@ -63,6 +64,7 @@ abstract final class AppRouter {
     RouteNames.husbandMenu,
     RouteNames.husbandMovement,
     RouteNames.husbandNotifications,
+    RouteNames.husbandRequests,
     RouteNames.husbandMorningReportPattern,
     RouteNames.husbandDailyReportPattern,
     RouteNames.husbandRequestPattern,
@@ -300,6 +302,7 @@ abstract final class AppRouter {
     RouteNames.husbandMenu,
     RouteNames.husbandMovement,
     RouteNames.husbandNotifications,
+    RouteNames.husbandRequests,
   };
 
   static Widget _screenFor(Uri uri) {
@@ -398,6 +401,9 @@ abstract final class AppRouter {
     if (path == RouteNames.husbandMenu) return const HusbandMenuScreen();
     if (path == RouteNames.husbandNotifications) {
       return const PartnerNotificationsScreen();
+    }
+    if (path == RouteNames.husbandRequests) {
+      return const PartnerRequestListScreen();
     }
     if (parts.length == 4 && parts[0] == 'husband' && parts[1] == 'report') {
       if (parts[2] == 'morning') {

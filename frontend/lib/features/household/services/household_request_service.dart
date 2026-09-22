@@ -16,12 +16,12 @@ abstract interface class HouseholdRequestService implements Listenable {
   Future<List<HouseholdTask>> fetchGuide();
 
   Future<HouseholdShareResult> send({
-    required List<String> tasks,
+    required List<HouseholdTask> tasks,
     required String reason,
     required String supportingInfo,
   });
 
-  HouseholdRequestProgress? progressForTask(String requestId, String taskTitle);
+  HouseholdRequestProgress? progressForTask(String requestId, String taskId);
 
   Future<List<PartnerRequestData>> fetchAll();
   Future<PartnerRequestData?> fetchRequest(String requestId);

@@ -154,6 +154,11 @@ void main() {
       find.byKey(const ValueKey('notification-request-demo-request')),
     );
     await tester.pumpAndSettle();
+    expect(find.text('전체 요청 1건'), findsOneWidget);
+    await tester.tap(
+      find.byKey(const ValueKey('partner-request-open-demo-request')),
+    );
+    await tester.pumpAndSettle();
 
     expect(find.text('오늘 요청한 이유'), findsNothing);
     expect(find.text('참고 정보'), findsNothing);
@@ -219,6 +224,44 @@ void main() {
     await tester.tap(find.text('캘린더로 돌아가기'));
     await tester.pumpAndSettle();
     expect(find.text('컨디션 캘린더'), findsOneWidget);
+  });
+
+  testWidgets('가사 알림을 열면 요청 횟수와 관계없이 전체 요청과 상태를 표시한다', (tester) async {
+    final store = PartnerRequestStore.instance;
+    store.request('demo-request');
+    store.save(
+      const PartnerRequestData(
+        id: 'another-request',
+        requester: '희선님',
+        reason: '추가로 도움이 필요해요.',
+        tasks: [
+          PartnerRequestTask(
+            id: 'another-task',
+            title: '추가 가사 요청',
+            status: PartnerRequestStatus.confirmed,
+          ),
+        ],
+        supportingInfo: '',
+      ),
+    );
+
+    await _pumpRoute(tester, RouteNames.husbandNotifications);
+    await tester.tap(
+      find.byKey(const ValueKey('notification-request-demo-request')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('전체 요청 2건'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('partner-request-summary-demo-request')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('partner-request-summary-another-request')),
+      findsOneWidget,
+    );
+    expect(find.text('추가 가사 요청'), findsOneWidget);
+    expect(find.text('확인됨'), findsWidgets);
   });
 }
 

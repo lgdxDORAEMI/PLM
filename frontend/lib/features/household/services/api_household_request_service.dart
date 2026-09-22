@@ -63,7 +63,7 @@ class ApiHouseholdRequestService extends ChangeNotifier
 
   @override
   Future<HouseholdShareResult> send({
-    required List<String> tasks,
+    required List<HouseholdTask> tasks,
     required String reason,
     required String supportingInfo,
   }) async {
@@ -77,23 +77,25 @@ class ApiHouseholdRequestService extends ChangeNotifier
       'reason': reason,
       'items': [
         for (final task in tasks)
-          {'title': task, 'helper_info': supportingInfo},
+          {
+            'title': task.title,
+            'helper_info': supportingInfo,
+            'routine_item_id': task.id,
+          },
       ],
     });
     final id = response?['request_id']?.toString();
     if (id == null) throw StateError('가사 요청 번호가 없습니다.');
     _progress[id] = {
-      for (final task in tasks) task: HouseholdRequestProgress.requested,
+      for (final task in tasks) task.id: HouseholdRequestProgress.requested,
     };
     notifyListeners();
     return HouseholdShareResult(requestId: id);
   }
 
   @override
-  HouseholdRequestProgress? progressForTask(
-    String requestId,
-    String taskTitle,
-  ) => _progress[requestId]?[taskTitle];
+  HouseholdRequestProgress? progressForTask(String requestId, String taskId) =>
+      _progress[requestId]?[taskId];
 
   @override
   Future<List<PartnerRequestData>> fetchAll() async {
