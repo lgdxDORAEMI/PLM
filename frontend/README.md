@@ -1,6 +1,6 @@
 # PLM Frontend
 
-PLM Frontend는 임산부와 배우자의 생활관리 경험을 제공하기 위한 Flutter Web 앱입니다. 화면은 기존 공통 UI를 사용하고, 라우팅은 `docs/development/ROUTE_MAP_V2.md`의 아내·남편 경로를 따릅니다. API 설정이 없고 실제 데이터가 없는 영역은 `연동이필요합니다` 상태로 표시합니다. Mock 데이터는 테스트에서만 명시적으로 표시합니다.
+PLM Frontend는 임산부와 배우자의 생활관리 경험을 제공하기 위한 Flutter Web 앱입니다. 화면은 기존 공통 UI를 사용하고, 라우팅은 `docs/development/ROUTE_MAP_V2.md`의 아내·남편 경로를 따릅니다. 실제 데이터가 없는 화면은 연동 상태를 표시하며, 명시적 화면 미리보기 모드에서는 로컬 예시로 구현된 경로를 확인할 수 있습니다.
 
 ## 지원 플랫폼
 
@@ -37,10 +37,15 @@ PLM Frontend는 임산부와 배우자의 생활관리 경험을 제공하기 �
 - Daily 리포트·캘린더의 미확정 관절 수치를 홈캠 주의사항 문구로 교체
 - 남편은 캘린더를 Home으로 사용하고 Bottom Navigation 없이 알림·리포트·요청·오늘 실시간으로 이동
 - 남편 알림 3종과 요청 카드 전체 상태, 완료 결과 전체 화면 구현
+- 아내 가사 가이드 재진입 시 Backend 요청 목록에서 남편의 항목별 확인·완료 상태 복원
+- Home 루틴 카드와 진행률을 상세 가이드와 같은 날짜의 `routine_items` 실행 상태에서 조회하고, 상세 화면 복귀 시 갱신
+- `PLM_PREVIEW=true` 실행 시 인증·프로필·배우자 연결 없이 아내·남편 화면 경로를 로컬 예시로 직접 확인
 - ThinQ 초대 handoff 성공 시 남편 연결 상태와 `activeRole`을 갱신한 뒤 캘린더로 진입
 - 브라우저 카메라 프레임 캡처 및 WebSocket 전송
 - 캘리브레이션 진행률, 실시간 자세·부담 상태와 landmark 오버레이 표시
 - 카메라와 WebSocket을 추상화한 Controller 단위 테스트
+
+기능별 FE–BE 연결 상태와 남은 연동 경계는 [FE–BE 연결 기준 상태](../docs/FE_BE_CONNECTION_STATUS.md)를 참고하세요.
 
 ### Skeleton 완료, 상세 UI 구현 전
 
@@ -53,7 +58,7 @@ PLM Frontend는 임산부와 배우자의 생활관리 경험을 제공하기 �
 - 화면별 실제 콘텐츠·상태·접근성 세부 구현
 - Feature Controller와 테스트용 Mock Service
 
-화면 구현은 [화면 구현 계획](../docs/development/05_ui_implementation_plan.md)의 `UI-001`부터 Placeholder를 한 화면씩 교체합니다. 전체 현황과 공용 파일 경계는 [Frontend 진행 현황](../docs/FRONTEND_PROGRESS.md)을 확인합니다. 실제 API가 없는 기능의 Mock Service는 테스트에 남겨 둡니다.
+화면 구현은 [화면 구현 계획](../docs/development/05_ui_implementation_plan.md)의 `UI-001`부터 Placeholder를 한 화면씩 교체합니다. 전체 현황과 공용 파일 경계는 [Frontend 진행 현황](../docs/FRONTEND_PROGRESS.md)을 확인합니다. Mock Service는 테스트와 명시적 화면 미리보기에서 사용합니다.
 
 ```text
 Page

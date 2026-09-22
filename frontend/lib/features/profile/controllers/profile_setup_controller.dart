@@ -14,7 +14,10 @@ class ProfileSetupController extends ChangeNotifier {
   }) : _step = initialStep,
        _editingFromSummary = returnToSummary,
        _draft = mode == ProfileMode.edit
-           ? ProfileStore.instance.profile ?? const ProfileDraft()
+           ? ProfileStore.instance.profile ??
+                 (AppConfig.previewMode
+                     ? ProfileDraft.mockEdit()
+                     : const ProfileDraft())
            : const ProfileDraft() {
     if (returnToSummary) _summarySnapshot = _draft;
   }

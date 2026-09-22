@@ -113,7 +113,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             child: Column(
               children: [
                 if (widget.mode == ProfileMode.edit &&
-                    ProfileStore.instance.profile == null)
+                    ProfileStore.instance.profile == null &&
+                    !AppConfig.previewMode)
                   const Padding(
                     padding: EdgeInsets.all(AppSpacing.md),
                     child: IntegrationRequiredState(),

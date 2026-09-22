@@ -16,6 +16,7 @@ import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_names.dart';
 import '../../condition/data/today_care_store.dart';
+import '../../condition/models/condition_draft.dart';
 import '../../routine/controllers/daily_routine_controller.dart';
 import '../../routine/models/daily_routine.dart';
 import '../../routine/services/mock_routine_service.dart';
@@ -24,6 +25,7 @@ import '../../routine/services/routine_service.dart';
 import '../../routine/widgets/routine_guide_card.dart';
 import '../../routine/widgets/routine_progress.dart';
 import '../../profile/data/profile_store.dart';
+import '../../profile/models/profile_draft.dart';
 import '../../report/models/daily_record.dart';
 import '../../../shared/widgets/integration_required_state.dart';
 import '../widgets/pregnancy_week_hero.dart';
@@ -59,7 +61,7 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
     _todayCareStore.addListener(_onTodayCareChanged);
     _profileStore.addListener(_refresh);
     unawaited(_restoreTodayCare());
-    if (_todayCareStore.hasTodayCare) {
+    if (_todayCareStore.hasTodayCare || AppConfig.previewMode) {
       unawaited(_routineController.loadToday());
     }
   }
@@ -88,7 +90,7 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
   void _refresh() => setState(() {});
 
   void _onTodayCareChanged() {
-    if (_todayCareStore.hasTodayCare &&
+    if ((_todayCareStore.hasTodayCare || AppConfig.previewMode) &&
         _routineController.state == RoutineViewState.idle) {
       unawaited(_routineController.loadToday());
     }
@@ -97,10 +99,11 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final hasTodayCare = _todayCareStore.hasTodayCare;
-    final pregnancyWeek = _profileStore.profile?.pregnancyWeekAt(
-      DateTime.now(),
-    );
+    final hasTodayCare = _todayCareStore.hasTodayCare || AppConfig.previewMode;
+    final pregnancyWeek =
+        (_profileStore.profile ??
+                (AppConfig.previewMode ? ProfileDraft.mockEdit() : null))
+            ?.pregnancyWeekAt(DateTime.now());
     return WifeNavigationScaffold(
       currentIndex: 0,
       appBar: TopAppBar(
@@ -169,7 +172,7 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
     hasTodayCare: hasTodayCare,
     summary: hasTodayCare
         ? TodayConditionSummary(
-            condition: _todayCareStore.today!,
+            condition: _todayCareStore.today ?? const ConditionDraft(),
             onEdit: _editCondition,
           )
         : null,
@@ -284,8 +287,7 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
       for (final item in plan.items) ...[
         RoutineGuideCard(
           item: item,
-          onTap: () =>
-              Navigator.pushNamed(context, _routeForRoutine(item.type)),
+          onTap: () => unawaited(_openRoutine(item.type)),
         ),
         const SizedBox(height: AppSpacing.md),
       ],
@@ -296,10 +298,32 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
         label: '오늘의 일정 마치기',
         onPressed: () => Navigator.pushNamed(
           context,
-          RouteNames.dailyReport(recordDateKey(DateTime.now())),
+          RouteNames.dailyReport(
+            recordDateKey(AppConfig.previewMode ? DateTime.now() : plan.date),
+          ),
         ),
       ),
     ];
+  }
+
+  /// Refreshes routine_items after a detail screen changes execution state.
+  Future<void> _openRoutine(RoutineType type) async {
+    final plan = _routineController.plan;
+    final today = DateTime.now().toUtc().add(const Duration(hours: 9));
+    if (!AppConfig.previewMode &&
+        (plan == null || recordDateKey(plan.date) != recordDateKey(today))) {
+      await _restoreTodayCare();
+      if (mounted && _todayCareStore.hasTodayCare) {
+        await _routineController.loadToday();
+      }
+      return;
+    }
+    await Navigator.pushNamed(context, _routeForRoutine(type));
+    if (!mounted) return;
+    await _restoreTodayCare();
+    if (mounted && _todayCareStore.hasTodayCare) {
+      await _routineController.loadToday();
+    }
   }
 
   String _routeForRoutine(RoutineType type) {
