@@ -18,6 +18,8 @@ from .schemas import (
 class CareRepository(Protocol):
     """Care 영속화 adapter의 최소 계약. Routine 생성 구현에는 의존하지 않는다."""
 
+    def reset_daily_experience(self, user_id: str, target_date: date) -> None: ...
+
     def get_condition(self, user_id: str, target_date: date) -> ConditionResponse | None: ...
 
     def save_condition(

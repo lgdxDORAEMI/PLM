@@ -12,6 +12,7 @@ import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_names.dart';
+import '../../../routing/route_refresh_observer.dart';
 import '../../household/services/api_household_request_service.dart';
 import '../../household/services/household_request_service.dart';
 import '../../household/services/mock_household_request_service.dart';
@@ -33,12 +34,14 @@ class PartnerRequestScreen extends StatefulWidget {
   State<PartnerRequestScreen> createState() => _PartnerRequestScreenState();
 }
 
-class _PartnerRequestScreenState extends State<PartnerRequestScreen> {
+class _PartnerRequestScreenState extends State<PartnerRequestScreen>
+    with RouteAware, WidgetsBindingObserver {
   late final PartnerRequestController _controller;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _controller = PartnerRequestController(
       requestId: widget.requestId,
       service:
@@ -51,7 +54,29 @@ class _PartnerRequestScreenState extends State<PartnerRequestScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute<dynamic>) {
+      routeRefreshObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void didPopNext() => unawaited(_controller.load());
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        ModalRoute.of(context)?.isCurrent == true) {
+      unawaited(_controller.load());
+    }
+  }
+
+  @override
   void dispose() {
+    routeRefreshObserver.unsubscribe(this);
+    WidgetsBinding.instance.removeObserver(this);
     _controller
       ..removeListener(_refresh)
       ..dispose();

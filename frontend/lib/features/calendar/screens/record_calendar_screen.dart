@@ -14,6 +14,7 @@ import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_context.dart';
 import '../../../routing/route_names.dart';
+import '../../../routing/route_refresh_observer.dart';
 import '../../report/models/daily_record.dart';
 import '../../report/services/mock_record_service.dart';
 import '../../report/services/api_record_service.dart';
@@ -34,12 +35,14 @@ class RecordCalendarScreen extends StatefulWidget {
   State<RecordCalendarScreen> createState() => _RecordCalendarScreenState();
 }
 
-class _RecordCalendarScreenState extends State<RecordCalendarScreen> {
+class _RecordCalendarScreenState extends State<RecordCalendarScreen>
+    with RouteAware, WidgetsBindingObserver {
   late final RecordCalendarController _controller;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _controller = RecordCalendarController(
       service:
           widget.service ??
@@ -55,7 +58,29 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute<dynamic>) {
+      routeRefreshObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void didPopNext() => unawaited(_controller.load());
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        ModalRoute.of(context)?.isCurrent == true) {
+      unawaited(_controller.load());
+    }
+  }
+
+  @override
   void dispose() {
+    routeRefreshObserver.unsubscribe(this);
+    WidgetsBinding.instance.removeObserver(this);
     _controller
       ..removeListener(_refresh)
       ..dispose();

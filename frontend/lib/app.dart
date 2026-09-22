@@ -6,6 +6,7 @@ import 'design_system/theme/app_scroll_behavior.dart';
 import 'features/settings/controllers/app_text_scale_store.dart';
 import 'features/settings/widgets/app_text_scale_frame.dart';
 import 'routing/app_router.dart';
+import 'routing/route_refresh_observer.dart';
 
 class PLMApp extends StatelessWidget {
   const PLMApp({super.key});
@@ -34,6 +35,7 @@ class PLMApp extends StatelessWidget {
       ),
       onGenerateRoute: AppRouter.onGenerateRoute,
       onGenerateInitialRoutes: AppRouter.onGenerateInitialRoutes,
+      navigatorObservers: [routeRefreshObserver],
     );
   }
 }

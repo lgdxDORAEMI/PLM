@@ -15,6 +15,10 @@ import '../../../routing/route_names.dart';
 import '../../../routing/app_router.dart';
 import '../../../routing/app_session.dart';
 import '../../../shared/widgets/consecutive_tap_detector.dart';
+import '../../calendar/data/calendar_selection_store.dart';
+import '../../condition/data/api_today_reset_service.dart';
+import '../../condition/data/planned_activity_store.dart';
+import '../../condition/data/today_care_store.dart';
 import '../../invitation/controllers/partner_link_controller.dart';
 import '../../invitation/data/partner_connection_store.dart';
 import '../../invitation/services/api_partner_link_service.dart';
@@ -22,6 +26,10 @@ import '../../invitation/services/mock_partner_link_service.dart';
 import '../../profile/data/profile_store.dart';
 import '../../profile/models/profile_draft.dart';
 import '../../entry/services/account_session_service.dart';
+import '../../meal/data/meal_selection_store.dart';
+import '../../partner/data/partner_request_store.dart';
+import '../../report/data/appliance_execution_store.dart';
+import '../../routine/services/api_routine_service.dart';
 import '../../../shared/widgets/integration_required_state.dart';
 
 class WifeMenuScreen extends StatefulWidget {
@@ -38,6 +46,7 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
   final _profileStore = ProfileStore.instance;
   late final PartnerLinkController _linkController;
   bool _switchingAccount = false;
+  bool _resettingToday = false;
 
   @override
   void initState() {
@@ -144,6 +153,16 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
                         : () => unawaited(_switchAccount()),
                   ),
                   const SizedBox(height: AppSpacing.md),
+                  _MenuRow(
+                    key: const ValueKey('wife-today-reset'),
+                    icon: Icons.restart_alt,
+                    title: _resettingToday ? '초기화 중…' : '초기화',
+                    description: '오늘 컨디션·루틴·실행·리포트 초기화',
+                    onTap: _resettingToday
+                        ? () {}
+                        : () => unawaited(_resetToday()),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
                 ],
                 _MenuRow(
                   icon: Icons.settings_outlined,
@@ -170,7 +189,7 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
 
   /// Replaces the route stack only after the husband's real session is ready.
   Future<void> _switchAccount() async {
-    if (_switchingAccount) return;
+    if (_switchingAccount || _resettingToday) return;
     setState(() => _switchingAccount = true);
     try {
       final state = await AccountSessionService().switchTo(ActiveRole.husband);
@@ -187,6 +206,52 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
       }
     } finally {
       if (mounted) setState(() => _switchingAccount = false);
+    }
+  }
+
+  /// Invalidate today's local projections only after the atomic reset succeeds.
+  Future<void> _resetToday() async {
+    if (_resettingToday || _switchingAccount) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('오늘 기록을 초기화할까요?'),
+        content: const Text('오늘의 컨디션, 루틴, 실행 이력과 리포트가 삭제됩니다.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('초기화'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    setState(() => _resettingToday = true);
+    try {
+      await ApiTodayResetService().reset();
+      TodayCareStore.instance.clear();
+      PlannedActivityStore.instance.clear();
+      MealSelectionStore.instance.clear();
+      PartnerRequestStore.instance.clear();
+      CalendarSelectionStore.instance.reset();
+      ApplianceExecutionStore.instance.reset();
+      ApiRoutineService.clearGeneration();
+      if (!mounted) return;
+      Navigator.of(
+        context,
+      ).pushNamedAndRemoveUntil(RouteNames.condition, (_) => false);
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('오늘 기록을 초기화하지 못했어요. 다시 시도해 주세요.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _resettingToday = false);
     }
   }
 

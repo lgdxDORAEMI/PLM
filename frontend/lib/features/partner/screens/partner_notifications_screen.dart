@@ -13,6 +13,7 @@ import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_names.dart';
+import '../../../routing/route_refresh_observer.dart';
 import '../../calendar/data/calendar_selection_store.dart';
 import '../../report/models/daily_record.dart';
 import '../controllers/partner_notification_controller.dart';
@@ -32,13 +33,14 @@ class PartnerNotificationsScreen extends StatefulWidget {
       _PartnerNotificationsScreenState();
 }
 
-class _PartnerNotificationsScreenState
-    extends State<PartnerNotificationsScreen> {
+class _PartnerNotificationsScreenState extends State<PartnerNotificationsScreen>
+    with RouteAware, WidgetsBindingObserver {
   late final PartnerNotificationController _controller;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _controller = PartnerNotificationController(
       service:
           widget.service ??
@@ -50,7 +52,29 @@ class _PartnerNotificationsScreenState
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute<dynamic>) {
+      routeRefreshObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void didPopNext() => unawaited(_controller.load());
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        ModalRoute.of(context)?.isCurrent == true) {
+      unawaited(_controller.load());
+    }
+  }
+
+  @override
   void dispose() {
+    routeRefreshObserver.unsubscribe(this);
+    WidgetsBinding.instance.removeObserver(this);
     _controller
       ..removeListener(_refresh)
       ..dispose();
