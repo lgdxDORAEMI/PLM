@@ -97,7 +97,7 @@ class ApiMealService implements MealService {
             MealPeriod.breakfast => '아침',
             MealPeriod.lunch => '점심',
             MealPeriod.dinner => '저녁',
-            MealPeriod.snack => '간식',
+            MealPeriod.snack => '밤',
           },
           summary: matches.first.title,
         ),

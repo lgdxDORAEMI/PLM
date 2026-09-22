@@ -28,6 +28,7 @@ from postgrest.exceptions import APIError
 from supabase import Client
 
 from app.domains.errors import DomainNotFoundError, DomainStorageError
+from app.services.routine.prompt import SLEEP_ENV_LABELS
 
 from .schemas import GuideItem, GuideResponse, RoutineCategory
 
@@ -81,7 +82,7 @@ class GuideQueryService:
                 item_key=row["item_key"],
                 title=row["title"],
                 description=row.get("description"),
-                payload=row.get("payload") or {},
+                payload=_normalize_payload(category, row.get("payload") or {}),
                 status=row["status"],
                 completed_by=row.get("completed_by"),
                 completed_at=row.get("completed_at"),
@@ -101,3 +102,16 @@ class GuideQueryService:
             return request().data
         except (APIError, httpx.HTTPError) as error:
             raise DomainStorageError("루틴 가이드 저장소에 연결할 수 없습니다.") from error
+
+
+def _normalize_payload(category: RoutineCategory, payload: dict[str, Any]) -> dict[str, Any]:
+    """09-22: 예전 루틴은 수면 환경 type이 한글("조명")로 저장돼 프론트가 5개를 모두 조명으로 처리했다.
+    조회할 때 코드(light·temperature·humidity·sound·purifier)로 바꾼다. 새 루틴은 스키마가 코드만 허용한다."""
+    if category != RoutineCategory.SLEEP or not isinstance(payload.get("environments"), list):
+        return payload
+    environments = [
+        {**env, "type": SLEEP_ENV_LABELS.get(str(env.get("type", "")).strip(), env.get("type"))}
+        if isinstance(env, dict) else env
+        for env in payload["environments"]
+    ]
+    return {**payload, "environments": environments}

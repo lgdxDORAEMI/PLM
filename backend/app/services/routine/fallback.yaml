@@ -13,6 +13,10 @@ meal:
     title: 늦지 않게 가벼운 저녁
     payload: {period: dinner, reasonTitle: 기본 안내, reason: "취침 3시간 전에는 식사를 마치는 것이 좋습니다.", evidence: "", nutritionTags: [칼슘], cautions: []}
     source_ids: []
+  - item_key: meal:snack
+    title: 속 편한 가벼운 밤 간식
+    payload: {period: snack, reasonTitle: 기본 안내, reason: "배가 고프면 소화가 편한 음식을 조금만 드세요.", evidence: "", nutritionTags: [수분], cautions: []}
+    source_ids: []
 household:
   - item_key: household:light_only
     title: 오늘은 가벼운 정리만 직접

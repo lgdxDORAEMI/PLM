@@ -225,7 +225,7 @@ class ValidateTest(unittest.TestCase):
     def test_template_matches_schema_shape(self) -> None:
         tpl = load_template()
         self.assertEqual(set(tpl), {"meal", "household", "health", "sleep", "summaries"})  # summaries = 홈 카드 고정 문구(09-22)
-        self.assertEqual(len(repository.to_items(tpl)), 3 + 2 + 1 + 1)
+        self.assertEqual(len(repository.to_items(tpl)), 4 + 2 + 1 + 1)  # 09-22: 식사 4끼
 
 
 class YesterdayTest(unittest.TestCase):
@@ -546,9 +546,9 @@ class RoutineServiceTest(unittest.TestCase):
         saved = asyncio.run(service.generate_today(USER, TODAY))
         self.assertEqual(saved["source"], "fallback_template")
         self.assertIn("insufficient_quota", saved["error_message"])
-        self.assertEqual(len(saved["response"]["meal"]), 3)
-        # 식단 3 + 건강 1 + 수면 1 + 가사(K8: 예정 활동 1건으로 생성) 1 = 6
-        self.assertEqual(len(self.db.tables["routine_items"]), 6)
+        self.assertEqual(len(saved["response"]["meal"]), 4)  # 09-22: 아침·점심·저녁·밤
+        # 식단 4(09-22 밤 추가) + 건강 1 + 수면 1 + 가사(K8: 예정 활동 1건으로 생성) 1 = 7
+        self.assertEqual(len(self.db.tables["routine_items"]), 7)
 
     def test_llm_failure_uses_previous_routine(self) -> None:
         self.db.tables["daily_routines"] = [{
@@ -767,3 +767,17 @@ class RoutineApiTest(unittest.IsolatedAsyncioTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PromptContractTest(unittest.TestCase):
+    """09-22: 식사 4끼 필수·수면 환경 type 코드 고정이 스키마와 템플릿에 반영됐는지."""
+
+    def test_sleep_env_type_enum_and_template(self) -> None:
+        from app.services.routine.prompt import ROUTINE_SCHEMA, SLEEP_ENV_TYPES, SYSTEM_PROMPT
+
+        env = ROUTINE_SCHEMA["properties"]["sleep"]["properties"]["payload"]["properties"]["environments"]["items"]
+        self.assertEqual(env["properties"]["type"]["enum"], list(SLEEP_ENV_TYPES))
+        self.assertIn("반드시 4개", SYSTEM_PROMPT)
+        tpl = load_template()
+        self.assertEqual([m["item_key"] for m in tpl["meal"]][-1], "meal:snack")
+        self.assertTrue(all(e["type"] in SLEEP_ENV_TYPES for e in tpl["sleep"]["payload"]["environments"]))

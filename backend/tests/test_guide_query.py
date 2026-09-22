@@ -234,3 +234,17 @@ class GuideApiTest(unittest.IsolatedAsyncioTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SleepEnvironmentTypeTest(unittest.TestCase):
+    """09-22: 한글 수면 환경 type을 조회 시 코드로 바꾼다(프론트가 전부 조명으로 표시하던 문제)."""
+
+    def test_korean_types_become_codes(self) -> None:
+        from app.domains.guide.query_service import _normalize_payload
+        from app.domains.guide.schemas import RoutineCategory
+
+        payload = {"environments": [{"type": "조명", "value": "어둡게"}, {"type": "온도", "value": "22도"},
+                                    {"type": "humidity", "value": "50%"}, {"type": "공기청정기", "value": "사용 안함"}]}
+        out = _normalize_payload(RoutineCategory.SLEEP, payload)
+        self.assertEqual([e["type"] for e in out["environments"]], ["light", "temperature", "humidity", "purifier"])
+        self.assertIs(_normalize_payload(RoutineCategory.MEAL, payload), payload)  # 수면만 바꾼다

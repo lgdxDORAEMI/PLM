@@ -18,7 +18,7 @@ from app.services.routine.inputs import ACTIVITY_CODES, CUSTOM_ACTIVITY
 # 2026-09-19.1: 전일 루틴 완료·모션 요약(yesterday) 입력 추가(S8)
 # 2026-09-19.2: 컨디션 수정 시 대상 가이드만 조정하는 수정 호출(EDIT_SYSTEM_PROMPT, S10)
 # 2026-09-20.1: K1 — 가장 느린 식단 호출의 출력 분량 제한(문장 길이·태그·주의 개수)
-PROMPT_VERSION = "2026-09-20.1"
+PROMPT_VERSION = "2026-09-22.2"  # 09-22: 식사 4끼 필수(밤=snack), 수면 환경 type 코드 5종 고정
 CATEGORIES = ("meal", "household", "health", "sleep")
 
 
@@ -37,6 +37,9 @@ def _arr(items: dict[str, Any]) -> dict[str, Any]:
 
 _STR = {"type": "string"}
 # item_key는 이전 루틴과 새 루틴을 item_key로 비교(diff)하므로 호출마다 같은 값이어야 한다.
+# 수면 환경 종류 코드. 프론트 SleepEnvironmentType enum 이름과 같아야 한다.
+SLEEP_ENV_TYPES = ("light", "temperature", "humidity", "sound", "purifier")
+SLEEP_ENV_LABELS = {"조명": "light", "온도": "temperature", "습도": "humidity", "소리": "sound", "공기청정기": "purifier"}
 MEAL_KEYS = ("meal:breakfast", "meal:lunch", "meal:dinner", "meal:snack")
 HEALTH_KEYS = ("health:waist", "health:pelvis", "health:leg", "health:wrist", "health:whole", "health:rest")  # rest는 fallback.yaml과 동일
 SLEEP_KEY = "sleep:main"
@@ -99,7 +102,8 @@ _SLEEP = _obj(
         "payload": _obj(
             {
                 "recommendedBedtime": _STR,
-                "environments": _arr(_obj({"type": _STR, "value": _STR, "options": _arr(_STR)})),
+                # 09-22: type은 코드 5종만. 한글("조명")로 오면 프론트가 전부 조명으로 처리했다.
+                "environments": _arr(_obj({"type": {"type": "string", "enum": list(SLEEP_ENV_TYPES)}, "value": _STR, "options": _arr(_STR)})),
                 "tips": _arr(_STR),
                 "reason": _STR,
             }
@@ -137,7 +141,7 @@ def category_schema(category: str) -> dict[str, Any]:
 SYSTEM_PROMPT = """당신은 임산부의 하루 생활 루틴을 설계하는 보조 도구다. 의료 진단이나 처방을 하지 않는다.
 규칙:
 - 출력은 주어진 JSON 스키마만. 한국어.
-- meal: 아침·점심·저녁 각 1개, 필요하면 간식 1개까지. 금지(exclude) 재료는 절대 포함하지 않는다. 제한(limit)은 양을 줄이고 이유를 적는다.
+- meal: 아침(breakfast)·점심(lunch)·저녁(dinner)·밤(snack) 각 1개, 반드시 4개. 밤은 가벼운 간식이나 늦은 저녁이다. 금지(exclude) 재료는 절대 포함하지 않는다. 제한(limit)은 양을 줄이고 이유를 적는다.
 - meal 분량 제한(응답 속도): title 20자 이내, reason·evidence는 각각 한 문장(60자 이내), nutritionTags 3개 이내,
   cautions는 꼭 필요할 때만 1개(없으면 빈 배열). 같은 내용을 여러 항목에 반복하지 않는다.
 - household: 사용자가 고른 예정 활동을 각각 owner(self=직접, appliance=가전, partner=가족)로 분류한다. 금지 가사는 self로 두지 않는다.
@@ -146,7 +150,7 @@ SYSTEM_PROMPT = """당신은 임산부의 하루 생활 루틴을 설계하는 �
 - health: yesterday.motion.top_burdened_area(전일 부담이 컸던 부위)가 있으면 오늘 통증과 함께 우선순위에 반영한다.
 - household: yesterday.motion.bending_burden_events(전일 허리 숙임 부담 횟수)가 많으면 허리를 숙이는 가사는 partner·appliance를 우선 고려한다.
 - yesterday(전일 루틴 완료 현황·모션 요약)는 참고 정보다. 값이 null이면 오늘 입력만으로 판단한다.
-- sleep: 권장 취침 시각, 환경(조명·온도·습도·소리·공기청정기) 제안값, 팁.
+- sleep: 권장 취침 시각, 환경 제안값, 팁. environments.type은 light(조명)·temperature(온도)·humidity(습도)·sound(소리)·purifier(공기청정기) 코드로 쓰고 각 1개씩.
 - 근거 자료(참고 문단)가 주어지면 그 내용에 기반해 작성하고, 사용한 문단의 id만 source_ids에 넣는다. 자료가 없으면 빈 배열.
 - 자료에 없는 수치·의학 주장은 만들지 않는다. 산후 관련 내용은 무시한다.
 - 응급·위험 신호 판단은 하지 않고 "이상 증상은 의료진 상담" 한 줄만 허용한다."""

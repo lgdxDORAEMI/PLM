@@ -210,10 +210,10 @@ OFF면 **4003**(앱 정의 코드)으로 닫아 1008(origin/토큰)과 구분한
 
 | 카테고리 | payload |
 | --- | --- |
-| meal (배열) | `{period: breakfast\|lunch\|dinner\|snack, reasonTitle, reason, evidence, nutritionTags: [문자열], cautions: [{title, description, badge}]}` |
+| meal (배열) | `{period: breakfast\|lunch\|dinner\|snack, reasonTitle, reason, evidence, nutritionTags: [문자열], cautions: [{title, description, badge}]}` . **09-22: 끼니 4개 필수 — breakfast·lunch·dinner·snack(화면 이름 '밤')** |
 | household (배열) | `{owner: self\|appliance\|partner, applianceAction: now\|reserve\|night\|none, reason}` |
 | health (배열) | `{bodyArea, loads: [{area, label, value(숫자)}], guide, durationMin(정수), reason, video?}`. `video`는 서버가 부위별 목록에서 붙이는 대표 활동 영상 `{title, url, duration_min}`이며 **AI가 만들지 않는다**. 영상이 정해지지 않은 부위에는 키 자체가 없다 |
-| sleep (객체 1개) | `{recommendedBedtime, environments: [{type, value, options: [문자열]}], tips: [문자열], reason}` |
+| sleep (객체 1개) | `{recommendedBedtime, environments: [{type, value, options: [문자열]}], tips: [문자열], reason}`. **09-22: `type`은 `light·temperature·humidity·sound·purifier` 코드 5종만**(예전 한글 값은 `/sleep/today`가 코드로 바꿔 준다) |
 
 `response.tip` (S7, FUC-W-HOME-001): `{text: 문자열(한 문장, 40자 안팎), source_ids: [정수]}` 또는 `null`. 루틴 항목이 아니므로 `item_key`·완료 체크가 없다. `null`인 경우 — 폴백 루틴(`source != ai`), 팁 생성만 실패·지연, 알레르기 금지어 포함 — 앱은 기본 문구를 표시한다. 팁이 `null`이어도 4종 루틴은 정상(`source`는 그대로).
 
