@@ -345,12 +345,21 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   }
 
   Future<void> _handleBack() async {
+    if (_saving) return;
     FocusManager.instance.primaryFocus?.unfocus();
-    // 수정 없이 연 프로필 요약에서는 입력 단계들을 거치지 않고 메뉴로 돌아간다.
-    if (widget.mode == ProfileMode.edit &&
-        !_controller.editingFromSummary &&
-        !_controller.isDirty) {
-      _leaveProfile();
+    // 수정 모드는 현재 단계와 관계없이 저장 여부를 결정한 뒤 메뉴로 복귀한다.
+    if (widget.mode == ProfileMode.edit) {
+      if (!_controller.isDirty) {
+        _leaveProfile();
+        return;
+      }
+      final save = await _confirmSaveEdit();
+      if (!mounted || save == null) return;
+      if (save) {
+        await _complete();
+      } else {
+        _leaveProfile();
+      }
       return;
     }
     if (_controller.moveBack()) return;
@@ -393,8 +402,30 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         false;
   }
 
+  /// 수정 화면의 뒤로가기에서는 저장 또는 변경 취소를 명시적으로 선택한다.
+  Future<bool?> _confirmSaveEdit() => showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('변경사항을 저장하시겠어요?'),
+      content: const Text('수정하기를 누르면 변경한 내용이 저장돼요.'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('취소'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, true),
+          child: const Text('수정하기'),
+        ),
+      ],
+    ),
+  );
+
   Future<void> _complete() async {
     if (_saving) return;
+    if (widget.mode == ProfileMode.edit && !_controller.validateForSave()) {
+      return;
+    }
     setState(() => _saving = true);
     try {
       if (AppConfig.hasSupabaseConfig) {

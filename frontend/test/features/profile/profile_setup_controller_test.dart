@@ -4,6 +4,7 @@ import 'package:plm_frontend/features/profile/controllers/profile_setup_controll
 import 'package:plm_frontend/features/profile/data/profile_store.dart';
 import 'package:plm_frontend/features/profile/models/profile_draft.dart';
 import 'package:plm_frontend/features/profile/screens/profile_setup_screen.dart';
+import 'package:plm_frontend/features/profile/widgets/profile_fields.dart';
 import 'package:plm_frontend/features/entry/services/mock_entry_service.dart';
 import 'package:plm_frontend/routing/route_context.dart';
 import 'package:plm_frontend/routing/route_names.dart';
@@ -42,6 +43,51 @@ void main() {
     expect(find.text('메뉴'), findsOneWidget);
     expect(find.text('병원에서 주의받은 게 있나요?'), findsNothing);
   });
+
+  for (final save in [true, false]) {
+    testWidgets('프로필 수정 뒤로가기에서 ${save ? '저장' : '취소'} 선택을 반영한다', (tester) async {
+      ProfileStore.instance.save(ProfileDraft.mockEdit());
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () =>
+                    Navigator.pushNamed(context, RouteNames.wifeProfile),
+                child: const Text('메뉴'),
+              ),
+            ),
+          ),
+          routes: {
+            RouteNames.wifeProfile: (_) => const ProfileSetupScreen(
+              mode: ProfileMode.edit,
+              initialStep: 1,
+            ),
+          },
+        ),
+      );
+
+      await tester.tap(find.text('메뉴'));
+      await tester.pumpAndSettle();
+      final heightField = find.descendant(
+        of: find.byType(ProfileUnitInput).first,
+        matching: find.byType(TextField),
+      );
+      await tester.enterText(heightField, '168');
+      await tester.tap(find.byTooltip('뒤로 가기'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('변경사항을 저장하시겠어요?'), findsOneWidget);
+      expect(find.text('수정하기'), findsOneWidget);
+      expect(find.text('취소'), findsOneWidget);
+      await tester.tap(find.text(save ? '수정하기' : '취소'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('메뉴'), findsOneWidget);
+      expect(find.byType(ProfileSetupScreen), findsNothing);
+      expect(ProfileStore.instance.profile!.height, save ? '168' : '165');
+    });
+  }
 
   test('필수 Profile 입력을 검증한 뒤 Summary까지 이동한다', () {
     final controller = ProfileSetupController(mode: ProfileMode.create);

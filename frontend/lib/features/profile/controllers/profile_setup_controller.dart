@@ -140,6 +140,21 @@ class ProfileSetupController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 어느 수정 단계에서 저장하더라도 전체 프로필의 필수값을 검증한다.
+  bool validateForSave() {
+    for (var step = 0; step < inputStepCount; step += 1) {
+      final message = _validateStep(step);
+      if (message == null) continue;
+      _step = step;
+      _editingFromSummary = false;
+      _summarySnapshot = null;
+      _validationMessage = message;
+      notifyListeners();
+      return false;
+    }
+    return true;
+  }
+
   void _update(ProfileDraft value) {
     _draft = value;
     _dirty = true;
@@ -147,8 +162,10 @@ class ProfileSetupController extends ChangeNotifier {
     notifyListeners();
   }
 
-  String? _validateCurrentStep() {
-    switch (_step) {
+  String? _validateCurrentStep() => _validateStep(_step);
+
+  String? _validateStep(int step) {
+    switch (step) {
       case 0:
         if (_draft.dueDate == null && _draft.lastPeriodDate == null) {
           return '출산예정일 또는 마지막 생리 시작일을 입력해 주세요.';
