@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/config/app_config.dart';
 import '../../design_system/components/app_button.dart';
 import '../../design_system/components/app_card.dart';
+import '../../design_system/components/app_ink_well.dart';
 import '../../design_system/components/app_state_view.dart';
 import '../../design_system/components/info_banner.dart';
 import '../../design_system/components/content_frame.dart';
@@ -37,7 +38,6 @@ class ProductMovementScreen extends StatefulWidget {
 
 class _ProductMovementScreenState extends State<ProductMovementScreen> {
   late final RealtimeAlertController _controller;
-  bool _showAllEvents = false;
 
   bool get _isWife => widget.role == AppUserRole.wife;
 
@@ -119,21 +119,13 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
                 primary: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _CurrentStateCard(
-                      data: _controller.data!,
-                      onMoveToHousehold: _isWife ? _moveToHousehold : null,
-                    ),
+                    _CurrentStateCard(data: _controller.data!),
                   ],
                 ),
                 secondary: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _TodayEventLog(
-                      events: _controller.todayAlerts,
-                      showAll: _showAllEvents,
-                      onShowAll: () => setState(() => _showAllEvents = true),
-                      onOpen: _showAlert,
-                    ),
+                    _TodayEventLog(events: _controller.todayAlerts),
                   ],
                 ),
               ),
@@ -159,9 +151,6 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
     return Scaffold(appBar: appBar, body: body);
   }
 
-  void _moveToHousehold() =>
-      Navigator.pushNamed(context, RouteNames.householdGuide);
-
   void _backToPartnerCalendar() {
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
@@ -170,60 +159,57 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
     }
   }
 
-  Future<void> _showAlert(MovementAlert alert) => showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
-    builder: (context) => SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(alert.title, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: AppSpacing.md),
-            Text(alert.description),
-            const SizedBox(height: AppSpacing.md),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              decoration: BoxDecoration(
-                color: AppColors.warningBackground,
-                borderRadius: BorderRadius.circular(AppRadius.card),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('감지 근거', style: Theme.of(context).textTheme.titleSmall),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(alert.suggestion),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            const Text('움직임 감지 기록은 의료적 판단이나 통증 진단을 제공하지 않아요.'),
-            const SizedBox(height: AppSpacing.xl),
-            AppButton(
-              key: ValueKey('movement-alert-close-${alert.id}'),
-              label: '닫기',
-              onPressed: () => Navigator.pop(context),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
 }
 
+/// 그룹 카드를 누르면 바로 뜨는 상세 목록 — 개별 항목을 또 눌러서 들어가는
+/// 2차 상세 화면은 없앴다(2026-09-23 결정). 카드 자체가 이미 시각·근거·시각을
+/// 다 보여주므로 여기선 그대로 나열만 한다.
+Future<void> _showGroupDetail(
+  BuildContext context,
+  String title,
+  List<MovementAlert> alerts,
+) => showModalBottomSheet<void>(
+  context: context,
+  isScrollControlled: true,
+  showDragHandle: true,
+  builder: (context) => SafeArea(
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.all(AppSpacing.xl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            '오늘 ${alerts.length}회 감지됐어요.',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          for (final alert in alerts) ...[
+            MovementAlertCard(alert: alert),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+          const SizedBox(height: AppSpacing.md),
+          const Text('움직임 감지 기록은 의료적 판단이나 통증 진단을 제공하지 않아요.'),
+          const SizedBox(height: AppSpacing.xl),
+          AppButton(
+            key: ValueKey('movement-group-close-$title'),
+            label: '닫기',
+            onPressed: () => Navigator.pop(context),
+          ),
+        ],
+      ),
+    ),
+  ),
+);
+
 class _CurrentStateCard extends StatelessWidget {
-  const _CurrentStateCard({
-    required this.data,
-    required this.onMoveToHousehold,
-  });
+  const _CurrentStateCard({required this.data});
 
   final MovementDashboardData data;
-  final VoidCallback? onMoveToHousehold;
 
   @override
   Widget build(BuildContext context) {
@@ -273,22 +259,10 @@ class _CurrentStateCard extends StatelessWidget {
                   backgroundColor: AppColors.surfaceSubtle,
                 ),
                 const SizedBox(height: AppSpacing.lg),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        data.narratives.isNotEmpty
-                            ? data.narratives.first
-                            : '부담 행동 ${data.burdenEventCount}건이 감지됐어요.',
-                      ),
-                    ),
-                    if (onMoveToHousehold != null)
-                      OutlinedButton(
-                        key: const ValueKey('movement-to-household'),
-                        onPressed: onMoveToHousehold,
-                        child: const Text('가전으로 옮기기'),
-                      ),
-                  ],
+                Text(
+                  data.narratives.isNotEmpty
+                      ? data.narratives.first
+                      : '부담 행동 ${data.burdenEventCount}건이 감지됐어요.',
                 ),
               ],
             ],
@@ -305,22 +279,21 @@ class _CurrentStateCard extends StatelessWidget {
   }
 }
 
+/// 같은 종류(제목 기준)의 이벤트를 "N회"로 묶어 보여준다. 눌러야 개별 내역이
+/// 바텀시트로 뜬다 — 같은 부담 가능 행동이 하루에도 여러 번 개별 카드로
+/// 나열되면 실제보다 위험해 보인다는 사용자 피드백(2026-09-23)에 따른 변경.
 class _TodayEventLog extends StatelessWidget {
-  const _TodayEventLog({
-    required this.events,
-    required this.showAll,
-    required this.onShowAll,
-    required this.onOpen,
-  });
+  const _TodayEventLog({required this.events});
 
   final List<MovementAlert> events;
-  final bool showAll;
-  final VoidCallback onShowAll;
-  final ValueChanged<MovementAlert> onOpen;
 
   @override
   Widget build(BuildContext context) {
-    final visibleEvents = events;
+    final groups = <String, List<MovementAlert>>{};
+    for (final event in events) {
+      groups.putIfAbsent(event.title, () => []).add(event);
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -333,26 +306,87 @@ class _TodayEventLog extends StatelessWidget {
           ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
         ),
         const SizedBox(height: AppSpacing.md),
-        if (visibleEvents.isEmpty)
+        if (groups.isEmpty)
           Text(
             '아직 감지된 이벤트가 없어요.',
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
           ),
-        for (final event
-            in (showAll ? visibleEvents : visibleEvents.take(3))) ...[
-          MovementAlertCard(alert: event, onTap: () => onOpen(event)),
+        for (final group in groups.entries) ...[
+          _EventGroupCard(title: group.key, alerts: group.value),
           const SizedBox(height: AppSpacing.sm),
         ],
-        if (!showAll && visibleEvents.length > 3)
-          TextButton.icon(
-            key: const ValueKey('movement-show-all-events'),
-            onPressed: onShowAll,
-            icon: const Icon(Icons.expand_more),
-            label: Text('더보기 (${visibleEvents.length - 3})'),
-          ),
       ],
     );
+  }
+}
+
+class _EventGroupCard extends StatelessWidget {
+  const _EventGroupCard({required this.title, required this.alerts});
+
+  final String title;
+  final List<MovementAlert> alerts;
+
+  @override
+  Widget build(BuildContext context) {
+    final (color, background, icon) = alertLevelStyle(alerts.first.level);
+    return AppInkWell(
+      key: ValueKey('movement-alert-group-$title'),
+      onTap: () => _showGroupDetail(context, title, alerts),
+      borderRadius: BorderRadius.circular(AppRadius.card),
+      child: Ink(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          border: Border.all(color: AppColors.borderSubtle),
+          borderRadius: BorderRadius.circular(AppRadius.card),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              backgroundColor: background,
+              foregroundColor: color,
+              child: Icon(icon),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: Theme.of(context).textTheme.titleSmall),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    _representativeSuggestion(alerts),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              '${alerts.length}회',
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(color: AppColors.textTertiary),
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.textTertiary),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 그룹 안에 서로 다른 근거(trigger_reason)가 섞여 있을 수 있어(예: "지속
+  /// 부담"은 state_duration·cumulative_research_threshold 둘 다 해당), 가장
+  /// 많이 나온 근거 하나를 대표로 보여준다 — report.py의 narrative 선택 방식과
+  /// 동일한 원칙(Counter.most_common).
+  static String _representativeSuggestion(List<MovementAlert> alerts) {
+    final counts = <String, int>{};
+    for (final alert in alerts) {
+      counts[alert.suggestion] = (counts[alert.suggestion] ?? 0) + 1;
+    }
+    return counts.entries.reduce((a, b) => a.value >= b.value ? a : b).key;
   }
 }

@@ -149,8 +149,14 @@ def _pick_top_burdened(aggregates: list[PostureAggregate]) -> BodyPart | None:
 
 
 def _build_narratives(groups: dict[_GroupKey, list[PostureEvent]]) -> list[str]:
+    """narratives[0]이 화면(실시간 탭 현재 상태 카드)에 그대로 노출되므로, 순서
+    자체가 "무엇을 대표로 보여줄지" 정하는 기준이다(2026-09-23 결정): 발생
+    횟수가 많은 그룹부터, 횟수가 같으면 더 먼저 발생한 그룹부터. sorted()는
+    안정 정렬이라 groups(발생 순으로 쌓인 dict)의 원래 순서가 동률 시 그대로
+    유지된다 — 동률 처리를 따로 안 해도 되는 이유."""
     narratives: list[str] = []
-    for (posture_type, burden_label), group_events in groups.items():
+    ordered_groups = sorted(groups.items(), key=lambda item: len(item[1]), reverse=True)
+    for (posture_type, burden_label), group_events in ordered_groups:
         if LABEL_LEVEL[burden_label.value] < _NOTABLE_LEVEL:
             continue
 

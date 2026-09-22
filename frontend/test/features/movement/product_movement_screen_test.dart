@@ -17,39 +17,39 @@ void main() {
     expect(find.text('최근 이벤트'), findsNothing);
     expect(find.text('현재 상태'), findsOneWidget);
     expect(find.text('오늘 이벤트 기록'), findsOneWidget);
-    expect(find.byType(MovementAlertCard), findsNWidgets(3));
-    expect(
-      find.byKey(const ValueKey('movement-show-all-events')),
-      findsOneWidget,
-    );
+    // 목업 데이터 5건은 전부 제목이 달라서 그룹 5개(각 "1회")로 보여야 하고,
+    // 펼치기 전에는 개별 카드가 안 보여야 한다.
+    expect(find.byType(MovementAlertCard), findsNothing);
+    expect(find.textContaining('1회'), findsNWidgets(5));
     expect(find.textContaining('어제'), findsNothing);
     expect(find.text('확인함'), findsNothing);
     expect(find.text('기기 상태'), findsNothing);
     expect(find.byType(Switch), findsNothing);
     expect(find.textContaining('활동 감지 ON'), findsNothing);
     expect(find.textContaining('활동 감지 OFF'), findsNothing);
-    expect(find.text('오늘 이벤트 기록'), findsOneWidget);
 
-    final showAllButton = find.byKey(
-      const ValueKey('movement-show-all-events'),
+    const repeatedBendingTitle = '반복해서 숙이는 동작이 감지되었어요';
+    final group = find.byKey(
+      const ValueKey('movement-alert-group-$repeatedBendingTitle'),
     );
-    await tester.drag(find.byType(ListView), const Offset(0, -320));
-    await tester.pumpAndSettle();
-    await tester.tap(showAllButton);
-    await tester.pumpAndSettle();
-    expect(find.byType(MovementAlertCard), findsNWidgets(5));
-
-    final event = find.byKey(const ValueKey('movement-alert-repeated-bending'));
     await tester.drag(find.byType(ListView), const Offset(0, -300));
     await tester.pumpAndSettle();
-    await tester.tap(event);
+    await tester.tap(group);
     await tester.pumpAndSettle();
-    expect(find.text('감지 근거'), findsOneWidget);
+
+    // 그룹을 누르면 2차 상세 화면 없이 바로 개별 내역이 담긴 바텀시트가 뜬다.
+    expect(
+      find.byKey(const ValueKey('movement-alert-repeated-bending')),
+      findsOneWidget,
+    );
     await tester.tap(
-      find.byKey(const ValueKey('movement-alert-close-repeated-bending')),
+      find.byKey(ValueKey('movement-group-close-$repeatedBendingTitle')),
     );
     await tester.pumpAndSettle();
-    expect(find.text('감지 근거'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('movement-alert-repeated-bending')),
+      findsNothing,
+    );
   });
 
   testWidgets('남편 실시간 화면에도 홈카메라 스위치를 표시하지 않는다', (tester) async {

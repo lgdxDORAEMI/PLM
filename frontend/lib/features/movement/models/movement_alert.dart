@@ -1,4 +1,4 @@
-enum MovementAlertLevel { caution, high }
+enum MovementAlertLevel { neutral, caution, high }
 
 class MovementAlert {
   const MovementAlert({
@@ -27,9 +27,13 @@ class MovementAlert {
       description: '${_postureLabel(posture)} · ${_burdenLabel(burden)}',
       suggestion: _triggerLabel(trigger),
       time: startedAt == null ? '' : _timeLabel(startedAt.toLocal()),
-      level: burden == 'Prolonged Load' || burden == 'High-load Action'
-          ? MovementAlertLevel.high
-          : MovementAlertLevel.caution,
+      // High-load Action(앉았다 일어남)은 하루에도 수십 번 일어나는 정상적인
+      // 동작이라 경고 톤이 아니라 중립 톤으로 보여준다(2026-09-23 결정).
+      level: switch (burden) {
+        'Prolonged Load' => MovementAlertLevel.high,
+        'High-load Action' => MovementAlertLevel.neutral,
+        _ => MovementAlertLevel.caution,
+      },
     );
   }
 
@@ -52,8 +56,9 @@ class MovementAlert {
   };
 
   static String _triggerLabel(String value) => switch (value) {
-    'duration_threshold' => '지속 시간 기준을 넘어 감지됐어요.',
-    'repetition_threshold' => '반복 횟수 기준을 넘어 감지됐어요.',
+    'state_duration' => '한 번에 오래 지속돼 감지됐어요.',
+    'repeated_count' => '반복 횟수 기준을 넘어 감지됐어요.',
+    'cumulative_research_threshold' => '누적된 부담 시간이 기준을 넘어 감지됐어요.',
     'sit_to_stand' => '앉았다 일어나는 동작으로 감지됐어요.',
     _ => value,
   };

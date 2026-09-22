@@ -90,6 +90,36 @@ class ReportTest(unittest.TestCase):
         self.assertEqual(len(report.aggregates), 1)
         self.assertEqual(report.narratives, [])
 
+    def test_narratives_sorted_by_group_count_regardless_of_occurrence_order(self) -> None:
+        """narratives[0]이 화면에 그대로 노출되므로(2026-09-23 결정), 먼저
+        발생한 그룹이 아니라 더 많이 발생한 그룹의 문장이 앞에 와야 한다."""
+        store = InMemoryEventStore()
+        # 먼저 발생했지만 2회뿐인 그룹.
+        store.record(_event(8, PostureType.STANDING, BurdenLabel.HIGH_LOAD_ACTION, EventTrigger.SIT_TO_STAND, 0.0))
+        store.record(_event(9, PostureType.STANDING, BurdenLabel.HIGH_LOAD_ACTION, EventTrigger.SIT_TO_STAND, 0.0))
+        # 나중에 발생했지만 3회인 그룹.
+        store.record(_event(14, PostureType.BENDING, BurdenLabel.REPEATED_LOAD, EventTrigger.REPEATED_COUNT, 1.0))
+        store.record(_event(15, PostureType.BENDING, BurdenLabel.REPEATED_LOAD, EventTrigger.REPEATED_COUNT, 1.0))
+        store.record(_event(16, PostureType.BENDING, BurdenLabel.REPEATED_LOAD, EventTrigger.REPEATED_COUNT, 1.0))
+
+        report = generate_daily_report(store, _USER_ID, _TODAY)
+
+        self.assertEqual(len(report.narratives), 2)
+        self.assertIn("반복적으로 관찰됐습니다", report.narratives[0])
+        self.assertIn("낮은 의자에서 일어나는", report.narratives[1])
+
+    def test_narratives_tie_breaks_by_earlier_occurrence(self) -> None:
+        """횟수가 같으면 먼저 발생한 그룹의 문장이 앞에 온다."""
+        store = InMemoryEventStore()
+        store.record(_event(8, PostureType.STANDING, BurdenLabel.PROLONGED_LOAD, EventTrigger.STATE_DURATION, 20.0))
+        store.record(_event(14, PostureType.BENDING, BurdenLabel.REPEATED_LOAD, EventTrigger.REPEATED_COUNT, 1.0))
+
+        report = generate_daily_report(store, _USER_ID, _TODAY)
+
+        self.assertEqual(len(report.narratives), 2)
+        self.assertIn("서 있는", report.narratives[0])
+        self.assertIn("허리를 숙이는", report.narratives[1])
+
     def test_sit_to_stand_frequency_outranks_single_long_bend_for_top_burdened(self) -> None:
         """total_duration_sec 합산만으로 고르면 Sit-to-Stand(항상 duration=0)가
         아무리 자주 일어나도 절대 1위가 될 수 없다는 게 이전에 실제로 확인된
