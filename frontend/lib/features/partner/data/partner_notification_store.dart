@@ -31,7 +31,6 @@ class PartnerNotificationStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  @visibleForTesting
   void reset() {
     _items = _initialItems();
     notifyListeners();

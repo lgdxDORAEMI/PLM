@@ -16,6 +16,13 @@ class EntryController extends ChangeNotifier {
   EntryViewState get state => _state;
   AppLaunchState? get launchState => _launchState;
 
+  /// Accepts a bootstrap result already loaded during automatic sign-in.
+  void complete(AppLaunchState launchState) {
+    _launchState = launchState;
+    _state = EntryViewState.ready;
+    notifyListeners();
+  }
+
   Future<void> load() async {
     _state = EntryViewState.loading;
     notifyListeners();

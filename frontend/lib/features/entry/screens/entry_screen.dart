@@ -13,6 +13,7 @@ import '../../../routing/app_router.dart';
 import '../../../routing/route_context.dart';
 import '../../../routing/route_names.dart';
 import '../controllers/entry_controller.dart';
+import '../services/account_session_service.dart';
 import '../services/api_entry_service.dart';
 import '../services/entry_service.dart';
 import '../services/mock_entry_service.dart';
@@ -29,6 +30,7 @@ class EntryScreen extends StatefulWidget {
 }
 
 class _EntryScreenState extends State<EntryScreen> {
+  static bool _defaultSessionEstablished = false;
   late final EntryController _controller;
   bool _redirectScheduled = false;
   late final bool _apiMode;
@@ -36,6 +38,10 @@ class _EntryScreenState extends State<EntryScreen> {
   final _passwordController = TextEditingController();
   bool _signingIn = false;
   String? _signInError;
+  bool _automaticSignInFailed = false;
+  bool _automaticSignInInProgress = false;
+
+  bool get _automaticEntry => _apiMode && widget.invitationToken == null;
 
   @override
   void initState() {
@@ -46,8 +52,29 @@ class _EntryScreenState extends State<EntryScreen> {
           widget.service ??
           (_apiMode ? ApiEntryService() : const MockEntryService()),
     )..addListener(_onChanged);
-    if (!_apiMode || Supabase.instance.client.auth.currentSession != null) {
+    if (_automaticEntry &&
+        (!_defaultSessionEstablished ||
+            Supabase.instance.client.auth.currentSession == null)) {
+      unawaited(_startDefaultSession());
+    } else if (!_apiMode ||
+        Supabase.instance.client.auth.currentSession != null) {
       unawaited(_controller.load());
+    }
+  }
+
+  /// Fresh launches always authenticate the configured wife before bootstrap.
+  Future<void> _startDefaultSession() async {
+    if (_automaticSignInInProgress) return;
+    _automaticSignInInProgress = true;
+    setState(() => _automaticSignInFailed = false);
+    try {
+      final launchState = await AccountSessionService().startAsWife();
+      _defaultSessionEstablished = true;
+      if (mounted) _controller.complete(launchState);
+    } catch (_) {
+      if (mounted) setState(() => _automaticSignInFailed = true);
+    } finally {
+      _automaticSignInInProgress = false;
     }
   }
 
@@ -90,7 +117,17 @@ class _EntryScreenState extends State<EntryScreen> {
     body: SafeArea(
       child: ResponsivePageContent(
         maxWidth: 1200,
-        child: _apiMode && Supabase.instance.client.auth.currentSession == null
+        child: _automaticEntry && _automaticSignInFailed
+            ? Center(
+                child: AppErrorState(
+                  title: '계정에 연결하지 못했어요',
+                  message: '연결 상태를 확인한 뒤 다시 시도해 주세요.',
+                  onRetry: _startDefaultSession,
+                ),
+              )
+            : _automaticEntry && !_defaultSessionEstablished
+            ? const Center(child: AppLoadingState(message: '계정에 연결하고 있어요.'))
+            : _apiMode && Supabase.instance.client.auth.currentSession == null
             ? _buildSignIn()
             : switch (_controller.state) {
                 EntryViewState.loading => const Center(

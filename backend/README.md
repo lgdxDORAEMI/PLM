@@ -205,6 +205,10 @@ flutter run -d chrome -t lib/main_movement_debug.dart
 SUPABASE_URL=
 SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
+PLM_WIFE_EMAIL=
+PLM_WIFE_PASSWORD=
+PLM_HUSBAND_EMAIL=
+PLM_HUSBAND_PASSWORD=
 LLM_API_KEY=
 LLM_API_BASE_URL=
 ```
@@ -212,13 +216,17 @@ LLM_API_BASE_URL=
 | 변수 | 현재 용도 |
 | --- | --- |
 | `SUPABASE_URL` | Supabase Auth 및 Database 주소 |
-| `SUPABASE_ANON_KEY` | Backend에서는 현재 미사용. `Settings`에 선언만 되어 있고 참조하는 코드가 없습니다(Frontend 전용 공개 키). 사용자 access token 검증은 service role client의 `auth.get_user()`로 수행합니다 |
+| `SUPABASE_ANON_KEY` | 자동 계정 진입·전환 시 별도 Supabase Auth 클라이언트에 사용하는 공개 키. 사용자 access token 검증은 service role client의 `auth.get_user()`로 수행합니다 |
 | `SUPABASE_SERVICE_ROLE_KEY` | 프로필·루틴·지식 테이블 서버 접근. 이 프로젝트는 service_role 기본 GRANT가 없어 `20260917000002_grant_service_role.sql` 적용이 필수 |
+| `PLM_WIFE_EMAIL`, `PLM_WIFE_PASSWORD` | 앱을 열 때 자동으로 로그인할 아내 계정. Backend의 비공개 `.env`에만 설정 |
+| `PLM_HUSBAND_EMAIL`, `PLM_HUSBAND_PASSWORD` | 메뉴에서 전환할 남편 계정. Backend의 비공개 `.env`에만 설정 |
 | `LLM_API_KEY` | **OpenAI API 키.** 루틴 생성(`gpt-4.1-mini`, `LLM_MODEL`로 변경 가능)과 검색 임베딩(`text-embedding-3-small`) 둘 다 이 키 |
 | `LLM_API_BASE_URL` | 비우면 OpenAI SDK 기본 주소 |
 | `LLM_MODEL` | 선택. 루틴 생성 모델명. 기본 `gpt-4.1-mini` |
 
 프로필·루틴 API는 Supabase 설정이 없거나 연결할 수 없으면 `503`을 반환합니다. service role key와 LLM 키는 `backend/.env`에만 둡니다. `.env.example`에는 값을 넣지 않습니다(git 추적 파일). Frontend·Git·배포 산출물에 절대 내보내지 마세요(NFR-009).
+
+실제 앱은 처음 열 때 아내 계정으로 자동 로그인하고, 아내·남편 메뉴의 `계정 전환` 버튼에서 반대 계정의 실제 Supabase 세션을 받습니다. `POST /api/v1/account/session/default`와 `/session/switch`는 Backend가 받은 요청의 원격 주소가 loopback일 때만 응답합니다. 빌드한 Web 앱과 Backend를 같은 PC의 localhost에서 실행하세요. 계정 환경변수를 변경했다면 Backend를 재시작해야 합니다. 이 경로를 공개 서버에 노출하지 마세요.
 
 ## Supabase 준비
 

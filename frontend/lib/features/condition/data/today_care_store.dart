@@ -65,7 +65,6 @@ class TodayCareStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  @visibleForTesting
   void clear() {
     _today = null;
     _loadedDate = null;

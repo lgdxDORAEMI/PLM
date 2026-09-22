@@ -108,10 +108,10 @@ flutter run -d chrome --dart-define=PLM_PREVIEW=true
 
 1. `frontend/.env.example`을 `frontend/.env`로 복사하고 `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `BACKEND_URL`을 입력합니다. `SUPABASE_ANON_KEY`에는 Supabase 공개 키만 사용합니다. service role 키나 서버 비밀 값은 프론트엔드에 넣지 않습니다.
 2. 백엔드가 같은 Supabase 프로젝트를 사용하도록 백엔드 실행 환경을 설정하고, `BACKEND_URL`의 주소에서 FastAPI를 실행합니다. 브라우저에서 실행하는 경우 백엔드 CORS에 허용된 로컬 출처를 사용합니다.
-3. Supabase Auth에 등록된 계정으로 앱의 로그인 화면에서 로그인합니다. 현재 앱에는 계정 생성 화면이 없으므로 계정을 먼저 준비해야 합니다.
-4. 로그인 뒤 계정 상태 조회 API가 역할과 프로필 완료 여부를 결정합니다. 컨디션을 입력한 뒤 화면을 새로고침하면 오늘 기록을 서버에서 다시 읽습니다.
+3. Backend의 비공개 `backend/.env`에 `PLM_WIFE_EMAIL`, `PLM_WIFE_PASSWORD`, `PLM_HUSBAND_EMAIL`, `PLM_HUSBAND_PASSWORD`를 설정하고 Backend를 재시작합니다. 두 계정은 Supabase Auth에 등록되어 있어야 합니다. 계정 비밀번호를 `frontend/.env`에 넣지 않습니다.
+4. 앱을 열면 아내 계정으로 자동 로그인합니다. 아내·남편 메뉴의 `계정 전환` 버튼은 실제 Supabase 세션을 교체합니다. 새로고침하면 다시 아내 계정으로 시작합니다. 계정 상태 조회 API가 역할과 프로필 완료 여부를 결정합니다.
 
-`SUPABASE_URL`과 `SUPABASE_ANON_KEY`가 모두 비어 있으면 기존 로컬 화면 흐름을 사용합니다. 한쪽만 입력한 상태는 연결 설정이 완료된 것으로 취급하지 않습니다. API 요청에서 401이 나오면 Supabase 로그인 세션을, 503이 나오면 백엔드와 Supabase 연결을 확인합니다. 현재 워크스페이스에는 실제 Supabase 연결 값과 백엔드 실행용 `.env`가 없어 이 환경에서 실DB 왕복은 검증할 수 없습니다.
+`SUPABASE_URL`과 `SUPABASE_ANON_KEY`가 모두 비어 있으면 기존 로컬 화면 흐름을 사용합니다. 한쪽만 입력한 상태는 연결 설정이 완료된 것으로 취급하지 않습니다. API 요청에서 401이 나오면 Supabase 로그인 세션을, 503이 나오면 백엔드와 Supabase 연결을 확인합니다. 자동 계정 진입 API는 Backend와 Web 앱을 같은 PC의 localhost에서 실행할 때만 사용할 수 있습니다. Flutter Web의 `.env`는 빌드에 포함되므로 계정 비밀번호를 넣지 마세요.
 
 백엔드 프로필 API는 생년월일을 저장하고 반환합니다. Frontend는 마지막 생리 시작일만 선택한 경우 계산값을 화면에 표시하되, 저장 요청에는 마지막 생리 시작일만 보내 Backend가 출산예정일을 계산하도록 합니다. 가이드 응답의 `item_id`로 건강 활동 완료와 수면 환경 변경을 저장합니다. 루틴 생성 시 컨디션 저장 → 예정 활동 저장 → 루틴 생성 순서를 유지합니다. 401은 로그인 세션, 404는 오늘 루틴 또는 기록의 존재 여부, 409는 선행 입력, 422는 입력값, 503은 서버 연결 상태를 확인하세요.
 

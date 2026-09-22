@@ -21,6 +21,7 @@ import '../../invitation/services/api_partner_link_service.dart';
 import '../../invitation/services/mock_partner_link_service.dart';
 import '../../profile/data/profile_store.dart';
 import '../../profile/models/profile_draft.dart';
+import '../../entry/services/account_session_service.dart';
 import '../../../shared/widgets/integration_required_state.dart';
 
 class WifeMenuScreen extends StatefulWidget {
@@ -36,6 +37,7 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
   final _connection = PartnerConnectionStore.instance;
   final _profileStore = ProfileStore.instance;
   late final PartnerLinkController _linkController;
+  bool _switchingAccount = false;
 
   @override
   void initState() {
@@ -131,6 +133,18 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
                 const SizedBox(height: AppSpacing.xxl),
                 Text('앱 설정', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: AppSpacing.md),
+                if (AppConfig.hasSupabaseConfig) ...[
+                  _MenuRow(
+                    key: const ValueKey('wife-account-switch'),
+                    icon: Icons.swap_horiz,
+                    title: _switchingAccount ? '계정 전환 중…' : '계정 전환',
+                    description: '남편 계정으로 전환',
+                    onTap: _switchingAccount
+                        ? () {}
+                        : () => unawaited(_switchAccount()),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                ],
                 _MenuRow(
                   icon: Icons.settings_outlined,
                   title: '설정',
@@ -153,6 +167,28 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
       },
     ),
   );
+
+  /// Replaces the route stack only after the husband's real session is ready.
+  Future<void> _switchAccount() async {
+    if (_switchingAccount) return;
+    setState(() => _switchingAccount = true);
+    try {
+      final state = await AccountSessionService().switchTo(ActiveRole.husband);
+      if (!mounted) return;
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        AppRouter.resolveLaunchRoute(state),
+        (_) => false,
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('계정을 전환하지 못했어요. 다시 시도해 주세요.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _switchingAccount = false);
+    }
+  }
 
   void _close() {
     if (Navigator.canPop(context)) {

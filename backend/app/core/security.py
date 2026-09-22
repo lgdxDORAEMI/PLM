@@ -18,6 +18,7 @@ AUTH_UNAVAILABLE = "인증 서버에 연결할 수 없습니다. 잠시 후 다�
 @dataclass(frozen=True)
 class CurrentUser:
     id: str
+    email: str | None = None
 
 
 def _unauthorized() -> HTTPException:
@@ -53,4 +54,4 @@ def get_user_from_token(token: str, supabase: SupabaseService) -> CurrentUser:
         raise _unauthorized() from error
     if response is None or response.user is None:
         raise _unauthorized()
-    return CurrentUser(id=response.user.id)
+    return CurrentUser(id=response.user.id, email=response.user.email)

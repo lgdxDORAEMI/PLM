@@ -14,6 +14,9 @@ class ApiRoutineService implements RoutineService {
     _generatedToday = response;
   }
 
+  /// Removes a pending generation result before another account becomes active.
+  static void clearGeneration() => _generatedToday = null;
+
   @override
   Future<DailyRoutinePlan> fetchToday() async {
     final cached = _generatedToday;

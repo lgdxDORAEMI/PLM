@@ -35,7 +35,6 @@ class MealSelectionStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  @visibleForTesting
   void clear() {
     _selectedPeriod = null;
     _appliedRecommendation = null;

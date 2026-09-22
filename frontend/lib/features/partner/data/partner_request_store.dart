@@ -54,7 +54,6 @@ class PartnerRequestStore extends ChangeNotifier {
     );
   }
 
-  @visibleForTesting
   void clear() {
     _requests.clear();
     notifyListeners();

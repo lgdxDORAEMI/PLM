@@ -14,7 +14,6 @@ class PlannedActivityStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  @visibleForTesting
   void clear() {
     _activities = const [];
     notifyListeners();
