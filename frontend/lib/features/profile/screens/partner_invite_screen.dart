@@ -125,9 +125,7 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
           Text('${_partnerLink?.partnerDisplayName ?? '배우자'}님과 연결됐어요'),
           const SizedBox(height: AppSpacing.lg),
           AppButton(
-            label: widget.entryContext == InviteEntryContext.dailyFlow
-                ? '오늘 루틴 만들기'
-                : widget.entryContext == InviteEntryContext.onboarding
+            label: widget.entryContext == InviteEntryContext.onboarding
                 ? '홈으로 이동'
                 : '메뉴로 돌아가기',
             onPressed: _generating ? null : () => unawaited(_finish()),
@@ -214,6 +212,10 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
   Future<void> _send() async {
     if (_linked) {
       InvitePresentationStore.instance.acknowledgeLinkedPartner();
+      if (widget.entryContext == InviteEntryContext.dailyFlow) {
+        await _finish(showLinkedConfirmation: true);
+        return;
+      }
       setState(() => _showConnection = true);
       return;
     }
@@ -255,8 +257,8 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
     if (mounted) await _finish();
   }
 
-  /// Generate once after the daily invite choice; a failure keeps this page retryable.
-  Future<void> _finish() async {
+  /// 초대 선택 직후 루틴 생성을 시작하고 실패하면 초대 화면에서 재시도한다.
+  Future<void> _finish({bool showLinkedConfirmation = false}) async {
     if (widget.entryContext == InviteEntryContext.dailyFlow) {
       if (_generating) return;
       setState(() => _generating = true);
@@ -264,11 +266,20 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
       final loadingRoute = DialogRoute<void>(
         context: context,
         barrierDismissible: false,
-        builder: (_) => const PopScope<void>(
+        builder: (_) => PopScope<void>(
           canPop: false,
           child: AlertDialog(
-            title: Text('AI 루틴 생성중...'),
-            content: CircularProgressIndicator(),
+            title: const Text('AI 루틴 생성중...'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (showLinkedConfirmation) ...[
+                  Text('${_partnerLink?.partnerDisplayName ?? '배우자'}님과 연결됐어요'),
+                  const SizedBox(height: AppSpacing.lg),
+                ],
+                const CircularProgressIndicator(),
+              ],
+            ),
           ),
         ),
       );
