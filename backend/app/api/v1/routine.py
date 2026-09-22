@@ -14,7 +14,7 @@ from app.api.v1.family import get_family_service
 from app.core.config import get_settings
 from app.core.security import CurrentUser, get_current_user
 from app.domains.family.service import FamilyServicePort
-from app.services.routine import repository
+from app.services.routine import home, repository
 from app.services.routine.inputs import ConditionMissingError, ProfileMissingError
 from app.services.routine.service import RoutineService
 from app.services.supabase_service import get_supabase_service
@@ -55,6 +55,16 @@ Service = Annotated[RoutineService, Depends(get_routine_service)]
 Family = Annotated[FamilyServicePort, Depends(get_family_service)]
 
 
+def _with_home(service: RoutineService, user_id: str, routine: dict[str, Any]) -> dict[str, Any]:
+    """FUC-W-HOME-001 ① 주차 특징 블록을 붙인다. 주차 조회가 실패해도 루틴 응답은 막지 않는다."""
+    try:
+        week = home.current_week(service.supabase, user_id, dates.today_kst())
+    except (APIError, httpx.HTTPError):
+        logger.exception("홈 주차 조회 실패 — home.week_notes 빈 값")
+        week = None
+    return {**routine, "home": home.home_block(week, routine.get("response"))}
+
+
 def _with_regeneration_flag(routine: dict[str, Any]) -> dict[str, Any]:
     """S4(R2): revision 2 이상 = 같은 날 재생성. 호출 측(남편 알림·변경 배너)이 이 값으로 분기한다."""
     return {**routine, "is_regeneration": int(routine.get("revision") or 1) > 1}
@@ -70,7 +80,7 @@ def read_today(user: User, service: Service) -> dict[str, Any]:
         raise _storage_unavailable() from error
     if routine is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "오늘 생성된 루틴이 없습니다.")
-    return _with_regeneration_flag(routine)
+    return _with_home(service, user.id, _with_regeneration_flag(routine))
 
 
 @router.post("/today", status_code=status.HTTP_201_CREATED)
@@ -92,11 +102,11 @@ async def generate_today(user: User, service: Service, family: Family) -> dict[s
     # AI 루틴이 이미 있었으면 루틴 변경(FUC-W-COND-003). 알림 실패는 루틴 생성 성공에 영향을 주지 않는다.
     # S10 결정1: 컨디션이 그대로면 새 버전 없이 현재 루틴을 돌려주고 알림도 보내지 않는다.
     if saved.pop("unchanged", False):
-        return saved
+        return _with_home(service, user.id, saved)
     if saved["source"] == "ai":
         try:
             first = not repository.has_ai_routine_before(service.supabase, user.id, today, int(saved["revision"]))
             family.notify_routine_ready(user.id, today, str(saved["id"]), first_of_day=first)
         except Exception:
             logger.exception("루틴 생성 알림 발송 실패")
-    return saved
+    return _with_home(service, user.id, saved)

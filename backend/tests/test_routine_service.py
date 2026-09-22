@@ -224,7 +224,7 @@ class ValidateTest(unittest.TestCase):
 
     def test_template_matches_schema_shape(self) -> None:
         tpl = load_template()
-        self.assertEqual(set(tpl), {"meal", "household", "health", "sleep"})
+        self.assertEqual(set(tpl), {"meal", "household", "health", "sleep", "summaries"})  # 09-22 summaries 추가
         self.assertEqual(len(repository.to_items(tpl)), 3 + 2 + 1 + 1)
 
 
@@ -682,7 +682,7 @@ class RoutineApiTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(created.json()["source"], "fallback_template")
             fetched = await client.get("/api/v1/routine/today")
             self.assertEqual(fetched.status_code, 200)
-            self.assertEqual(set(fetched.json()["response"]), {"meal", "household", "health", "sleep", "tip"})
+            self.assertEqual(set(fetched.json()["response"]), {"meal", "household", "health", "sleep", "tip", "summaries"})
 
     async def test_response_has_revision_and_regeneration_flags(self) -> None:
         """S4(R2): 첫 생성은 revision 1·is_regeneration false·change_summary null, 재생성은 2·true·변경 요약."""
@@ -762,8 +762,24 @@ class RoutineApiTest(unittest.IsolatedAsyncioTestCase):
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost") as client:
             response = await client.post("/api/v1/routine/today")
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(set(response.json()["response"]), {"meal", "household", "health", "sleep", "tip"})
+        self.assertEqual(set(response.json()["response"]), {"meal", "household", "health", "sleep", "tip", "summaries"})
 
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class SummariesTest(unittest.TestCase):
+    """09-22 홈 카드 요약: 생성 응답의 summary를 모으고, 빈 가이드는 템플릿 문구로 채운다."""
+
+    def test_split_and_fill(self) -> None:
+        from app.services.routine.generator import _split
+        from app.services.routine.service import fill_summaries
+
+        items, summary = _split('{"meal": [], "summary": " 오늘은 속 편한 메뉴로 "}', "meal")
+        self.assertEqual((items, summary), ([], "오늘은 속 편한 메뉴로"))
+        self.assertIsNone(_split('{"meal": []}', "meal")[1])  # 예전 응답·가짜 응답에는 summary가 없다
+        filled = fill_summaries({"meal": summary, "health": None}, {"health": "어제 요약"})
+        self.assertEqual(filled["meal"], "오늘은 속 편한 메뉴로")
+        self.assertEqual(filled["health"], "어제 요약")                 # 수정 경로: 다시 안 만든 가이드는 직전 요약
+        self.assertEqual(filled["sleep"], load_template()["summaries"]["sleep"])

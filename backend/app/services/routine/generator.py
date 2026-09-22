@@ -61,11 +61,11 @@ class OpenAIRoutineGenerator(LLMService):
         facts: dict[str, Any],
         constraints: dict[str, list[dict[str, Any]]] | None = None,
         chunks: list[dict[str, Any]] | None = None,
-    ) -> Any:
-        """카테고리 1개 생성. 그 카테고리의 규칙·참고 문단만 넣어 입력과 출력 길이를 줄인다."""
+    ) -> tuple[Any, str | None]:
+        """카테고리 1개 생성 → (항목, 홈 카드 요약). 그 카테고리의 규칙·참고 문단만 넣어 입력과 출력 길이를 줄인다."""
         own = {k: [c for c in v if c.get("category") == category] for k, v in (constraints or {}).items()}
         prompt = build_user_prompt(facts, own, chunks, category)
-        return json.loads(await self.generate(prompt, category_schema(category), f"routine_{category}"))[category]
+        return _split(await self.generate(prompt, category_schema(category), f"routine_{category}"), category)
 
     async def generate_edit(
         self,
@@ -77,12 +77,12 @@ class OpenAIRoutineGenerator(LLMService):
         previous: Any,
         constraints: dict[str, list[dict[str, Any]]] | None = None,
         chunks: list[dict[str, Any]] | None = None,
-    ) -> Any:
-        """S10: 컨디션 수정 시 가이드 1개 조정. 출력 스키마는 최초 생성과 같다."""
+    ) -> tuple[Any, str | None]:
+        """S10: 컨디션 수정 시 가이드 1개 조정 → (항목, 요약). 출력 스키마는 최초 생성과 같다."""
         own = {k: [c for c in v if c.get("category") == category] for k, v in (constraints or {}).items()}
         prompt = build_edit_prompt(category, facts, decision, changes, contributors, previous, own, chunks)
         content = await self.generate(prompt, category_schema(category), f"routine_edit_{category}", EDIT_SYSTEM_PROMPT)
-        return json.loads(content)[category]
+        return _split(content, category)
 
     async def generate_tip(
         self,
@@ -100,7 +100,7 @@ class OpenAIRoutineGenerator(LLMService):
         constraints: dict[str, list[dict[str, Any]]] | None = None,
         chunks_by_category: dict[str, list[dict[str, Any]]] | None = None,
     ) -> dict[str, Any]:
-        """①②③ → 4종 루틴 dict. 카테고리 4개를 동시에 호출한다(한 번에 쓰면 출력이 길어 8초를 넘김).
+        """①②③ → 4종 루틴 dict + summaries(가이드별 홈 카드 요약, 없으면 None). 카테고리 4개를 동시에 호출한다(한 번에 쓰면 출력이 길어 8초를 넘김).
 
         하나라도 실패(타임아웃·API 오류·JSON 오류)하면 예외를 올려 ⑥이 4종 전체를 폴백한다.
         """
@@ -109,4 +109,12 @@ class OpenAIRoutineGenerator(LLMService):
         results = await asyncio.gather(
             *(self.generate_category(c, facts, constraints, chunks_by_category.get(c)) for c in CATEGORIES)
         )
-        return dict(zip(CATEGORIES, results))
+        routine: dict[str, Any] = {c: items for c, (items, _) in zip(CATEGORIES, results)}
+        routine["summaries"] = {c: summary for c, (_, summary) in zip(CATEGORIES, results)}
+        return routine
+
+
+def _split(content: str, category: str) -> tuple[Any, str | None]:
+    data = json.loads(content)
+    summary = (data.get("summary") or "").strip()
+    return data[category], summary or None
