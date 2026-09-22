@@ -29,7 +29,7 @@
 |---|---|---|---|---|---|---|---|---|
 | Wife | B-ENTRY-001 | FUC-B-ENTRY-001 | UC17 | role, 프로필 완료, 연동 상태 | `profiles`, `pregnancy_profiles`, `partner_links` | `GET /account/bootstrap` | `test_account_partner_link.py::RelationshipAuthorizationTest::test_bootstrap_destination_depends_on_partner_links_not_a_copy` | PASS |
 | Wife | W-PROFILE-001 | FUC-W-PROFILE-001 | UC1 | 출산예정일, 마지막 생리 시작일 | `pregnancy_profiles` | `PUT /profile/me/due-date` | `test_profile.py::ProfileApiTest::test_step_by_step_save`, `DueDateInputTest` | PASS |
-| Wife | W-PROFILE-002 | FUC-W-PROFILE-002 | UC1 | 생년월일→나이, 신장, 체중 | `pregnancy_profiles` | `PUT /profile/me/body` | `test_profile.py::BodyInputTest`, `test_step_by_step_save` | PARTIAL — 최신 FUC에 복구된 `birth_date` 컬럼·단계 API 미구현 |
+| Wife | W-PROFILE-002 | FUC-W-PROFILE-002 | UC1 | 생년월일→나이, 신장, 체중 | `pregnancy_profiles` | `PUT /profile/me/body` | `test_profile.py::BodyInputTest`, `test_step_by_step_save` | PASS — `birth_date`는 2026-09-20부터 `BodyInput` 필수 필드·migration `20260920120000`으로 구현됨(이전에 이 표에 남아있던 PARTIAL 표기가 낡은 정보였음) |
 | Wife | W-PROFILE-003 | FUC-W-PROFILE-003 | UC1 | 초산/경산 | `pregnancy_profiles.is_first_pregnancy` | `PUT /profile/me/pregnancy-history` | `test_profile.py::test_steps_3_to_6_require_step_1_first` | PASS |
 | Wife | W-PROFILE-004 | FUC-W-PROFILE-004 | UC1 | 단태/쌍태 | `pregnancy_profiles.is_multiple_pregnancy` | `PUT /profile/me/pregnancy-count` | 동일 | PASS |
 | Wife | W-PROFILE-005 | FUC-W-PROFILE-005 | UC1 | 알레르기 | `pregnancy_profiles.allergies` | `PUT /profile/me/allergies` | 동일 | PASS |
@@ -41,7 +41,7 @@
 | Wife | W-TASK-001 | FUC-W-TASK-001 | UC3 | 예정 활동 | `daily_conditions.planned_activities` | `PUT /care/conditions/{date}/activities` + `POST /routine/today` | `test_care_condition.py::test_save_activities_requires_condition_first`, `test_routine_service.py` | PASS |
 | Wife | W-MEAL-001 | FUC-W-MEAL-001 | UC3, UC11 | 끼니별 요약 | `routine_items`(category=meal) | `GET /meals/today` | `test_guide_query.py` | PASS |
 | Wife | W-MEAL-002 | FUC-W-MEAL-002 | UC3, UC11 | 메뉴/이유/영양태그 | `routine_items.payload` | `GET /meals/today` | 동일 | PASS |
-| Wife | W-CHAT-001(재추천+공통, 병합) | FUC-W-MEAL-003, FUC-W-CHAT-001/002 | UC4, UC11 | 대화, 대체 메뉴 | `chat_messages`(MISSING, 인메모리) | `GET/POST /chat/messages` | `test_backend_skeleton.py::test_chat_message_round_trip_does_not_fabricate_ai_reply` | STUB |
+| Wife | W-CHAT-001(재추천+공통, 병합) | FUC-W-MEAL-003, FUC-W-CHAT-001/002 | UC4, UC11 | 대화, 대체 메뉴 | `chat_messages`(EXISTING, 2026-09-20 Supabase 실연결) | `GET/POST /chat/messages` | `test_chat.py::SupabaseChatRepositoryTest`, `test_chat_context.py`, `test_chat_responder.py` | PARTIAL — 대화 이력 저장은 실연결(PASS 수준). AI 응답 생성 로직(컨텍스트 수집 `context.py`·OpenAI 응답 `responder.py`)도 구현·테스트 완료했으나, `/chat/messages`가 아직 이 로직을 호출하지 않아 여전히 고정 문구를 반환(API 연결·DB 저장 — S3 — 남음) |
 | Wife | W-HOUSE-001 | FUC-W-HOUSE-001/003 | UC3, UC5, UC12 | 3분류, 공유 요청 | `routine_items`(category=household), `household_requests`(+items) | `GET /household/today` + `POST/GET /family/household-requests`,`.../confirm`,`.../complete` | `test_guide_query.py`(조회), `test_family_household_request.py`(6개: 생성→확인→완료 영속화, 미연동 409, 타인 403, 완료 후 재확인 409, 목록, 503) | PASS |
 | Wife | W-HEALTH-001 | FUC-W-HEALTH-001/002 | UC3, UC6, UC11 | 부위 부담, 완료 체크 | `routine_items`(category=health) | `GET /health/today` + `PUT /care/routine-items/{id}/execution` | `test_guide_query.py`, `test_care_report.py::RecordApiTest`(6개) | PASS |
 | Wife | W-SLEEP-001(본문+팝업, 병합) | FUC-W-SLEEP-001/001-1/002 | UC3, UC11, UC12 | 수면 가이드, 환경 override | `routine_items`(category=sleep), `recommendation_feedback`(MISSING) | `GET /sleep/today` + `PUT /care/routine-items/{id}/sleep-environment` | `test_guide_query.py`(조회), `test_backend_skeleton.py::test_routine_item_feedback_and_sleep_environment_echo_request_only`(Stub) | PARTIAL |
@@ -120,7 +120,7 @@ STEP 15에서 `Widget → Store → Repository 인터페이스 → (Mock|Api)Rep
 
 | Domain | 상태 | 근거 |
 |---|---|---|
-| Profile | **PARTIAL** | 기존 1~6단계 계약은 PASS지만 최신 FUC-W-PROFILE-002에 복구된 생년월일을 Supabase 단계 API와 `pregnancy_profiles`에 반영해야 함 |
+| Profile | **READY** | 1~6단계 전부 PASS. `birth_date`도 2026-09-20부터 `pregnancy_profiles`·`PUT /profile/me/body`에 반영 완료(이 표에 남아있던 PARTIAL 표기가 낡은 정보였음) |
 | Condition | **READY** | Create/Read/Update/검증/인증/격리/KST 경계까지 전부 테스트로 커버(STEP 9) |
 | Routine / Routine Item(Routine AI 소유) | **READY** | 미수정 확인, 기존 테스트 전부 통과. AI 실호출 1회만 OpenAI 크레딧 대기(기능 결함 아님, 외부 자원 문제) |
 | Meal / Household(조회) / Health / Sleep(조회) — Guide Query | **READY** | 4개 API 전부 실 연결·테스트 완비(STEP 11), AI 재호출 없이 `routine_items` 읽기 전용 |
@@ -130,11 +130,13 @@ STEP 15에서 `Widget → Store → Repository 인터페이스 → (Mock|Api)Rep
 | Family/Relationship(연동) | **READY** | bootstrap·partner-link·초대 발급/수락 전부 실 DB, 72시간·1회성·중복연동 거절까지 테스트 완비(STEP 13) |
 | Notification | **READY** | `notifications` 실 연결. 발송 트리거 3종(가사 요청/오전 리포트/루틴 변경) 전부 구현·테스트(STEP 17). 오전 리포트·루틴 변경 알림은 `POST /routine/today` 성공 직후 발송(FUC-W-COND-002/003) |
 | Report(남편 오전) | **READY** | family authorization + projection 원칙으로 완결, 원본 비노출 검증까지 포함(STEP 12) |
-| Chat | **BLOCKED** | 지원 테이블 없음(NFR-027 보관 정책 자체가 TBD라 실 연결의 전제조건이 아직 없음) |
+| Chat | **PARTIAL** | 대화 이력 저장은 실연결(2026-09-20), AI 응답 생성 로직(`context.py`/`responder.py`)도 구현·테스트 완료. `/chat/messages` API가 이 로직을 아직 안 불러 고정 문구 반환 중(S3 연결 남음). NFR-027 보관 정책은 여전히 TBD |
 | Movement(Protected) | **READY** | 알고리즘·핵심 데이터 흐름 불변, 전체 회귀 테스트 통과. STEP 18에서 동의↔WS 게이트 연동·남편 조회 분기 완료(라우트 계층만 수정, `services/movement/**` 불변). 임계값은 데모값으로 MVP 확정 |
 | Motion Consent | **READY** | `motion_consents` 실 연결, 카메라 데이터 미저장 재확인(STEP 14) |
 | Frontend Integration | **PARTIAL** | 아키텍처 경계와 패턴은 READY 수준(Condition 1개 화면 증명 완료)이나 나머지 30개 화면은 여전히 MOCK_ONLY — 화면별 로딩/오류 UI 추가가 남은 선행 작업 |
 
 ### 전체 요약
 
-STEP 16 시점 **READY 9 / PARTIAL 2 / BLOCKED 3** → STEP 17 시점 **READY 12 / PARTIAL 1 / BLOCKED 1** (Domain 14개 기준). Household·Notification이 BLOCKED에서 READY로, Report/Calendar가 PARTIAL에서 READY로 올라갔다(가족 분담 집계는 "자동 해소"가 아니라 `care/supabase_repository.py`의 하드코딩 0을 `household_requests` 조회로 직접 교체해야 했다). 남은 BLOCKED는 Chat 1개(AI 담당 영역, NFR-027 TBD), PARTIAL은 Frontend Integration 1개다. STEP 18에서 Movement의 남은 두 항목(동의↔WS 게이트, 남편 조회 분기)을 소유자가 직접 마무리해 B-MOTION-001 아내/남편 행 모두 PASS가 됐다.
+STEP 16 시점 **READY 9 / PARTIAL 2 / BLOCKED 3** → STEP 17 시점 **READY 12 / PARTIAL 1 / BLOCKED 1** (Domain 14개 기준). Household·Notification이 BLOCKED에서 READY로, Report/Calendar가 PARTIAL에서 READY로 올라갔다(가족 분담 집계는 "자동 해소"가 아니라 `care/supabase_repository.py`의 하드코딩 0을 `household_requests` 조회로 직접 교체해야 했다). STEP 18에서 Movement의 남은 두 항목(동의↔WS 게이트, 남편 조회 분기)을 소유자가 직접 마무리해 B-MOTION-001 아내/남편 행 모두 PASS가 됐다.
+
+**2026-09-22 재확인 (문서 노후화 정리)**: 위 표에 낡은 정보 2건을 발견해 정정했다. ① Profile은 이 요약 문단이 이미 PARTIAL로 세지 않던 `birth_date` 이슈가 표에만 남아 있었다 — 실제로는 2026-09-20에 구현 완료돼 READY로 정정. ② Chat은 2026-09-20 `chat_messages` Supabase 실연결, 2026-09-22 AI 응답 로직(`context.py`/`responder.py`) 구현·테스트 완료로 BLOCKED→PARTIAL(API 연결 S3만 남음)로 정정. 현재 **READY 12 / PARTIAL 2(Chat, Frontend Integration) / BLOCKED 0**.

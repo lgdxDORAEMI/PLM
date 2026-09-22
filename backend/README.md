@@ -110,13 +110,12 @@ cd ../tools/rag_ingest && ../../backend/.venv/bin/python 02_translate_chunk_embe
 
 `/live`는 시연용 단일 세션 구조(`_current_session_id` 전역)라 다중 사용자 격리를 제공하지 않습니다.
 
-## 미구현 영역 (2026-09-21 기준)
+## 미구현 영역 (2026-09-22 기준)
 
-- 챗봇 실제 AI 응답(`/chat/messages`) — 대화 이력 저장은 완료, 응답 생성 자체가 미구현(고정 문구). NFR-027 보관 정책도 TBD, AI 담당 영역
+- 챗봇 실제 AI 응답(`/chat/messages`) — 대화 이력 저장은 완료. 컨텍스트 수집(`domains/chat/context.py`, S1)과 OpenAI 응답 생성(`domains/chat/responder.py`, S2)은 구현·테스트까지 끝났으나, 실제 `/chat/messages`가 이 모듈들을 아직 호출하지 않아 여전히 고정 문구를 반환한다(API 연결·DB 저장 — S3 — 남음). NFR-027 보관 정책도 TBD, AI 담당 영역
 - H-INVITE-001 화면·인증 복귀 계약 — 여전히 미확정. 실사용은 `partner_links` 수동 삽입으로 대체해 블로커는 아님
 - 컨디션 저장 → 루틴 재생성 자동화(현재는 프론트가 `PUT conditions` 뒤 `POST routine/today`를 따로 호출)
 - ThinQ 가전 연동(Phase 2)
-- Calendar 4단계 컨디션 지수 계산식 — 계산 로직 자체는 있으나 수치 확정이 팀 결정 대기
 - NFR: 민감정보 컬럼 암호화(NFR-008), 백업·가용성·부하 측정, 운영 인증·권한·배포 정책
 
 `LLMService`의 공급자 구현은 `services/routine/generator.py`의 `OpenAIRoutineGenerator`입니다. `MediaPipeService`는 확장 경계만 제공하며, 범용 `MediaPipeService.analyze_pose()`는 호출 시 `NotImplementedError`를 발생시킵니다. 실제 모션 데모는 별도 `services/movement/` 파이프라인을 사용합니다.
