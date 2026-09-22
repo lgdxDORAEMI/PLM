@@ -43,7 +43,9 @@ class _MealChatScreenState extends State<MealChatScreen> {
   late final ScrollController _scrollController;
 
   bool get _chatAvailable =>
-      widget.service != null || AppConfig.mockPreviewEnabled;
+      widget.service != null ||
+      AppConfig.mockPreviewEnabled ||
+      AppConfig.previewMode;
 
   @override
   void initState() {
@@ -94,7 +96,8 @@ class _MealChatScreenState extends State<MealChatScreen> {
                   controller: _scrollController,
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
                   children: [
-                    if (!_chatAvailable) const IntegrationRequiredState(),
+                    if (!_chatAvailable || AppConfig.previewMode)
+                      const IntegrationRequiredState(),
                     _MealChatContext(period: widget.mealPeriod),
                     const SizedBox(height: AppSpacing.xxl),
                     if (_chatAvailable)

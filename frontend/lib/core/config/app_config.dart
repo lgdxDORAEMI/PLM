@@ -5,7 +5,11 @@ abstract final class AppConfig {
   /// 기존 Mock 화면 동작을 검증하는 위젯 테스트에서만 활성화한다.
   static bool mockPreviewEnabled = false;
 
+  /// Explicit screen preview uses local examples even when API keys exist.
+  static bool previewMode = const bool.fromEnvironment('PLM_PREVIEW');
+
   static bool get hasSupabaseConfig {
+    if (previewMode) return false;
     try {
       return (dotenv.env['SUPABASE_URL']?.trim().isNotEmpty ?? false) &&
           (dotenv.env['SUPABASE_ANON_KEY']?.trim().isNotEmpty ?? false);
@@ -29,7 +33,7 @@ abstract final class AppConfig {
     await dotenv.load(fileName: '.env');
     final url = dotenv.env['SUPABASE_URL']?.trim() ?? '';
     final key = dotenv.env['SUPABASE_ANON_KEY']?.trim() ?? '';
-    if (url.isNotEmpty && key.isNotEmpty) {
+    if (!previewMode && url.isNotEmpty && key.isNotEmpty) {
       await Supabase.initialize(url: url, publishableKey: key);
     }
   }

@@ -5,6 +5,7 @@ import '../features/calendar/screens/wife_calendar_screen.dart';
 import '../features/condition/screens/activity_screen.dart';
 import '../features/condition/screens/condition_screen.dart';
 import '../features/entry/screens/entry_screen.dart';
+import '../features/entry/services/mock_entry_service.dart';
 import '../features/health/screens/health_guide_screen.dart';
 import '../features/home/screens/wife_home_screen.dart';
 import '../features/household/screens/household_guide_screen.dart';
@@ -113,6 +114,14 @@ abstract final class AppRouter {
       return RouteNames.entry;
     }
     final path = uri.path == RouteNames.root ? RouteNames.entry : uri.path;
+    // Explicit preview exposes implemented pages without changing live guards.
+    if (AppConfig.previewMode) {
+      return path == RouteNames.entry ||
+              path == RouteNames.inviteAccept ||
+              _isKnownPath(path)
+          ? uri.replace(path: path).toString()
+          : RouteNames.entry;
+    }
     final auth = AuthSessionStore.instance;
     final roles = ActiveRoleStore.instance;
     if (!auth.isAuthenticated) {
@@ -300,6 +309,11 @@ abstract final class AppRouter {
     final path = uri.path;
     final parts = uri.pathSegments;
     if (path == RouteNames.entry) {
+      if (AppConfig.previewMode) {
+        return const EntryScreen(
+          service: MockEntryService(state: AppLaunchState.wifeNeedsProfile),
+        );
+      }
       if (AppConfig.hasSupabaseConfig) return const EntryScreen();
       final auth = AuthSessionStore.instance;
       final needsInvite =

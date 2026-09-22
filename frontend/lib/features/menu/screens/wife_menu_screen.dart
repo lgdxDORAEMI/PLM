@@ -71,7 +71,8 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
     appBar: TopAppBar(title: '메뉴', onBack: _close),
     body: Builder(
       builder: (context) {
-        final profileAvailable = _profileStore.profile != null;
+        final profileAvailable =
+            _profileStore.profile != null || AppConfig.previewMode;
         return SafeArea(
           top: false,
           child: ResponsivePageContent(
@@ -79,7 +80,9 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
               children: [
                 _ProfileHeader(
-                  profile: profileAvailable ? _profileStore.profile : null,
+                  profile: profileAvailable
+                      ? _profileStore.profile ?? ProfileDraft.mockEdit()
+                      : null,
                   profileAvailable: profileAvailable,
                   onRoleSwitch: () =>
                       AppRouter.switchDemoUser(context, ActiveRole.husband),

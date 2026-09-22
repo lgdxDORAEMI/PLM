@@ -96,6 +96,16 @@ OpenAPI 문서는 `http://localhost:8000/docs`에서 확인합니다. 도메인 
 
 ## 프론트엔드 API 연결 설정
 
+### 연동 정보 없는 화면 미리보기
+
+`frontend/`에서 다음과 같이 실행하면 계정·프로필·배우자 연결이 없어도 구현된 아내·남편 화면 URL을 직접 열 수 있습니다. 이 모드는 기존 Mock 데이터를 사용하며 실제 API, Supabase, OpenAI를 호출하지 않습니다. 화면의 데이터와 채팅 답변은 시연용 예시입니다.
+
+```powershell
+flutter run -d chrome --dart-define=PLM_PREVIEW=true
+```
+
+예: `/wife/home`, `/wife/meal`, `/wife/house`, `/wife/health`, `/wife/sleep`, `/wife/calendar`, `/wife/report/2026-09-13`, `/wife/chat`, `/husband/calendar`, `/husband/notifications`, `/husband/report/morning/2026-09-13`, `/husband/requests/demo-request`. 프로필 설정과 초대 경로도 직접 열 수 있습니다. 미리보기 플래그 없이 실행하면 기존 인증·연동 경로와 API 오류 상태를 유지합니다.
+
 1. `frontend/.env.example`을 `frontend/.env`로 복사하고 `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `BACKEND_URL`을 입력합니다. `SUPABASE_ANON_KEY`에는 Supabase 공개 키만 사용합니다. service role 키나 서버 비밀 값은 프론트엔드에 넣지 않습니다.
 2. 백엔드가 같은 Supabase 프로젝트를 사용하도록 백엔드 실행 환경을 설정하고, `BACKEND_URL`의 주소에서 FastAPI를 실행합니다. 브라우저에서 실행하는 경우 백엔드 CORS에 허용된 로컬 출처를 사용합니다.
 3. Supabase Auth에 등록된 계정으로 앱의 로그인 화면에서 로그인합니다. 현재 앱에는 계정 생성 화면이 없으므로 계정을 먼저 준비해야 합니다.
