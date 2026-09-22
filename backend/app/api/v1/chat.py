@@ -12,7 +12,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.v1.domain_errors import to_http_exception
 from app.core.security import CurrentUser, get_current_user
-from app.domains.chat.schemas import ChatMessageInput, ChatMessageResponse
+from app.domains.chat.schemas import (
+    ChatMessageInput,
+    ChatMessageResponse,
+    MealAlternativeInput,
+    MealAlternativeResponse,
+)
 from app.domains.chat.service import ChatService, ChatServicePort
 from app.domains.chat.supabase_repository import SupabaseChatRepository
 from app.core.config import get_settings
@@ -69,5 +74,16 @@ async def send_message(
     """Generate a contextual LLM answer, then persist both sides of the exchange."""
     try:
         return await service.send_message(user.id, dates.today_kst(), payload)
+    except Exception as error:
+        raise to_http_exception(error) from error
+
+
+@router.post("/meal-alternative", response_model=MealAlternativeResponse)
+async def meal_alternative(
+    payload: MealAlternativeInput, user: User, service: Service
+) -> MealAlternativeResponse:
+    """식사 가이드 '다른 메뉴 보기'(09-22): 조건에 맞는 새 메뉴 1개. 대화로 저장하지 않고 루틴도 바꾸지 않는다."""
+    try:
+        return await service.meal_alternative(user.id, dates.today_kst(), payload)
     except Exception as error:
         raise to_http_exception(error) from error

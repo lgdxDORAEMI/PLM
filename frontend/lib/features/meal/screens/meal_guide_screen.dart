@@ -186,6 +186,7 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
                   decision: _controller.selectedDecision,
                   onAccept: _controller.acceptSelected,
                   onAdjust: _controller.showNextRecommendation,
+                  loadingAlternative: _controller.loadingAlternative,
                 ),
               ],
             );
@@ -269,11 +270,13 @@ class _RecommendationActions extends StatelessWidget {
     required this.decision,
     required this.onAccept,
     required this.onAdjust,
+    this.loadingAlternative = false,
   });
 
   final MealDecision decision;
   final VoidCallback onAccept;
   final VoidCallback onAdjust;
+  final bool loadingAlternative;
 
   @override
   Widget build(BuildContext context) {
@@ -303,9 +306,9 @@ class _RecommendationActions extends StatelessWidget {
             Expanded(
               child: AppButton(
                 key: const ValueKey('meal-adjust-button'),
-                label: '다른 메뉴 보기',
+                label: loadingAlternative ? '다른 메뉴 찾는 중…' : '다른 메뉴 보기',
                 variant: AppButtonVariant.secondary,
-                onPressed: onAdjust,
+                onPressed: loadingAlternative ? null : onAdjust,
               ),
             ),
           ],

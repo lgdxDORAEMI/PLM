@@ -31,8 +31,12 @@ class MealGuideController extends ChangeNotifier {
   MealPeriod? _selectedPeriod;
   final Map<MealPeriod, MealRecommendation> _selectedRecommendations = {};
   bool _showDetails = false;
+  bool _loadingAlternative = false;
 
   MealGuideViewState get state => _state;
+
+  /// '다른 메뉴 보기'로 새 메뉴를 받아오는 중(3~4초). 화면은 버튼을 잠근다.
+  bool get loadingAlternative => _loadingAlternative;
   MealGuideData? get data => _data;
   MealPeriod? get selectedPeriod => _selectedPeriod;
   bool get showDetails => _showDetails;
@@ -168,7 +172,8 @@ class MealGuideController extends ChangeNotifier {
 
     store.recordDecision(current.id, MealDecision.rejected);
     if (recommendations.length < 2) {
-      notifyListeners();
+      // 실제 루틴은 끼니당 메뉴가 1개라 순환할 후보가 없다 → Backend에 새 메뉴 1개를 요청한다(09-22).
+      await _loadAlternative(period, current);
       return;
     }
     final currentIndex = recommendations.indexWhere(
@@ -179,5 +184,28 @@ class MealGuideController extends ChangeNotifier {
         : (currentIndex + 1) % recommendations.length;
     _selectedRecommendations[period] = recommendations[nextIndex];
     notifyListeners();
+  }
+
+  Future<void> _loadAlternative(
+    MealPeriod period,
+    MealRecommendation current,
+  ) async {
+    if (_loadingAlternative) return;
+    _loadingAlternative = true;
+    notifyListeners();
+    try {
+      final next = await service.fetchAlternative(
+        current: current,
+        request: '다른 메뉴 보기',
+      );
+      _selectedRecommendations[period] = next;
+      // 새 메뉴는 아직 고르지 않은 상태다(같은 끼니 id라 직전 거절 표시가 남지 않게 되돌린다).
+      store.recordDecision(next.id, MealDecision.undecided);
+    } on Object {
+      // 새 메뉴를 못 받으면 지금 메뉴를 그대로 보여준다. 거절 기록은 이미 남았다.
+    } finally {
+      _loadingAlternative = false;
+      notifyListeners();
+    }
   }
 }

@@ -14,9 +14,10 @@ from uuid import uuid4
 from app.domains.care.schemas import RoutineItemUpdateInput
 from app.domains.chat.meal_memory import BANNED_REPLY, CARD_ACTIONS
 from app.domains.chat.responder import MEAL_REPLY_SCHEMA, REPLY_SCHEMA
-from app.domains.chat.schemas import ChatMessageInput
+from app.domains.chat.schemas import ChatMessageInput, MealAlternativeInput
 from app.domains.chat.service import ChatService
 from app.domains.chat.supabase_repository import SupabaseChatRepository
+from app.domains.errors import DomainStorageError
 
 TODAY = date(2026, 9, 22)
 USER = "wife-1"
@@ -150,6 +151,29 @@ class MealModeTest(unittest.IsolatedAsyncioTestCase):
         prompt = generator.calls[0][0]
         self.assertIn("user: 요즘 냄새에 예민해요", prompt)                   # 하단 탭 대화도 기억(같은 날짜)
         self.assertIn("assistant: 추천해요. [추천: 찐 감자 + 플레인 요거트]", prompt)  # 반복 추천 방지
+
+    async def test_meal_alternative_returns_card_without_writes(self) -> None:
+        """09-22 식사 가이드 '다른 메뉴 보기': 카드 1장, 대화 저장·루틴 변경 없음, 거절 기록이 지시문에 들어감."""
+        client = FakeClient()
+        generator = FakeGenerator({"content": "바꿔봤어요.", "suggested_actions": [], "recommendation": CARD})
+        service = ChatService(SupabaseChatRepository(client), client=client, generator=generator, retriever=FakeRetriever())
+        with patch("app.domains.chat.service.collect_context", return_value=CONTEXT):
+            card = await service.meal_alternative(USER, TODAY, MealAlternativeInput(routine_item_id=ITEM))
+        self.assertEqual((card.routine_item_id, card.title), (ITEM, CARD["title"]))
+        prompt = generator.calls[0][0]
+        self.assertIn("'다른 메뉴 보기' 버튼이다. recommendation은 반드시 1개", prompt)
+        self.assertIn("안 고름: 미역국", prompt)
+        self.assertNotIn("_writes", client.db)
+
+    async def test_meal_alternative_without_or_banned_card_is_503(self) -> None:
+        for reply in ({"content": "음", "suggested_actions": [], "recommendation": None},
+                      {"content": "새우", "suggested_actions": [], "recommendation": {**CARD, "title": "갑각류 새우찜"}}):
+            client = FakeClient()
+            service = ChatService(SupabaseChatRepository(client), client=client,
+                                  generator=FakeGenerator(reply), retriever=FakeRetriever())
+            with patch("app.domains.chat.service.collect_context", return_value=CONTEXT), \
+                    self.assertRaises(DomainStorageError):
+                await service.meal_alternative(USER, TODAY, MealAlternativeInput(routine_item_id=ITEM))
 
     def test_card_fits_care_api_input(self) -> None:
         """S6: 사용자가 '이걸로 할게요'를 누르면 프론트가 카드를 그대로 Care API로 보낸다."""

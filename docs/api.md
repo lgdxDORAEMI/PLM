@@ -267,6 +267,7 @@ Authorization, Content-Type 헤더와 GET/POST/PUT/PATCH/DELETE/OPTIONS 메서�
 |---|---|---|
 | GET | `/api/v1/chat/messages` | 오늘 대화 전체(모드 구분 없음, 각 행에 `routine_item_id`). 화면은 지금처럼 `routine_item_id`로 걸러 모드별로 보여준다 |
 | POST | `/api/v1/chat/messages` | `{content, routine_item_id?}`. 없음 = 하단 탭 일반 모드, 있음 = 그 끼니의 식사 모드. 질문·답을 저장하고 답 1개를 반환 |
+| POST | `/api/v1/chat/meal-alternative` | **09-22 추가.** 식사 가이드 '다른 메뉴 보기'. `{routine_item_id, request?}` → 새 메뉴 1개 `{routine_item_id, title, reason, nutritionTags, cautions}`. 챗봇 식사 메모리(금지 재료·거절한 메뉴·오늘 다른 끼니 제외)를 그대로 쓰고, 대화로 저장하지 않으며 루틴도 바꾸지 않는다. 카드를 못 만들면 503(지금 메뉴 유지). 프론트는 끼니 후보가 1개뿐일 때 거절 기록(`meal_reject`) 뒤 이 API를 부른다(`meal_guide_controller.dart`) |
 
 응답 `ChatMessageResponse` (2026-09-22 S5 필드 추가)
 

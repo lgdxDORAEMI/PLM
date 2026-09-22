@@ -111,9 +111,45 @@ class ApiMealService implements MealService {
     );
   }
 
+  /// 식사 가이드 '다른 메뉴 보기'(09-22). Backend가 조건에 맞는 새 메뉴 1개를 만든다.
+  /// 같은 routine_item을 가리키도록 id는 그대로 두어, 선택·거절 기록이 원래 끼니 항목에 남는다.
   @override
   Future<MealRecommendation> fetchAlternative({
     required MealRecommendation current,
     required String request,
-  }) => throw UnsupportedError('다른 메뉴를 불러오지 못했어요.');
+  }) async {
+    final response = await _client.post('/api/v1/chat/meal-alternative', {
+      'routine_item_id': current.id,
+      'request': request,
+    });
+    final title = response?['title'];
+    if (title is! String || title.isEmpty) {
+      throw const FormatException('다른 메뉴 형식이 올바르지 않습니다.');
+    }
+    final reason = response?['reason']?.toString() ?? '';
+    final cautions = response?['cautions'];
+    return MealRecommendation(
+      id: current.id,
+      period: current.period,
+      title: title,
+      description: reason,
+      reasonTitle: current.reasonTitle,
+      reason: reason,
+      evidence: '',
+      nutritionTags:
+          (response?['nutritionTags'] as List?)?.whereType<String>().toList() ??
+          const [],
+      cautions: cautions is List
+          ? cautions
+                .whereType<Map>()
+                .map(
+                  (value) => MealCaution(
+                    title: value['title']?.toString() ?? '',
+                    description: value['description']?.toString() ?? '',
+                  ),
+                )
+                .toList()
+          : const [],
+    );
+  }
 }
