@@ -26,45 +26,45 @@ class SleepEnvironmentCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.card),
         child: Ink(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: 11,
+          ),
           decoration: BoxDecoration(
             color: AppColors.surface,
             border: Border.all(color: AppColors.borderSubtle),
             borderRadius: BorderRadius.circular(AppRadius.card),
           ),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 92),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    CircleAvatar(
-                      backgroundColor: _iconBackground(setting.type),
-                      foregroundColor: AppColors.categorySleep,
-                      child: Icon(_icon(setting.type), size: 20),
-                    ),
-                    const Spacer(),
-                    const Icon(
-                      Icons.chevron_right,
-                      color: AppColors.textTertiary,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  setting.label,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: _iconBackground(setting.type),
+                    foregroundColor: AppColors.categorySleep,
+                    child: Icon(_icon(setting.type), size: 20),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  setting.value,
-                  style: Theme.of(context).textTheme.titleSmall,
-                ),
-              ],
-            ),
+                  const Spacer(),
+                  const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.textTertiary,
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                setting.label,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                setting.value,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+            ],
           ),
         ),
       ),

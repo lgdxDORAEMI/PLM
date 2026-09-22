@@ -7,6 +7,7 @@ import '../../../core/config/app_config.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_card.dart';
 import '../../../design_system/components/app_state_view.dart';
+import '../../../design_system/components/hero_card.dart';
 import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/tokens/app_colors.dart';
@@ -144,66 +145,82 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
       children: [
         const _InviteHero(),
-        const SizedBox(height: AppSpacing.xl),
-        Text('연결하면 이런 게 가능해요', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: AppSpacing.xxl),
+        Text(
+          '연결하면 이런 게 가능해요',
+          style: Theme.of(
+            context,
+          ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+        ),
         const SizedBox(height: AppSpacing.md),
         const _BenefitCard(
-          icon: Icons.fact_check_outlined,
+          number: 1,
           title: '오늘 컨디션 요약 받기',
           description: '공유에 동의한 항목만 남편에게 보여요',
         ),
         const SizedBox(height: AppSpacing.sm),
         const _BenefitCard(
-          icon: Icons.home_outlined,
+          number: 2,
           title: '집안일 · 식사 요청 받기',
           description: '가사 가이드에서 보낸 요청이 바로 도착해요',
         ),
         const SizedBox(height: AppSpacing.sm),
         const _BenefitCard(
-          icon: Icons.calendar_month_outlined,
+          number: 3,
           title: '하루 리포트 함께 보기',
           description: '가족 분담이 캘린더에 자동 정리돼요',
         ),
         const SizedBox(height: AppSpacing.xxl),
-        if (!_linked) const AppCard(child: Text('초대장은 남편의 ThinQ 앱 알림으로 전송돼요.')),
-        const SizedBox(height: AppSpacing.xl),
-        Row(
-          children: [
-            Expanded(
-              flex: 2,
-              child: AppButton(
-                key: const ValueKey('partner-invite-send'),
-                label: _controller.state == InvitationActionState.submitting
-                    ? '보내는 중…'
-                    : _linked
-                    ? '초대하기'
-                    : '초대장 보내기',
-                onPressed:
-                    _controller.state == InvitationActionState.submitting ||
-                        _generating
-                    ? null
-                    : _send,
-              ),
+        if (!_linked) ...[
+          const AppCard(child: Text('초대장은 남편의 ThinQ 앱 알림으로 전송돼요.')),
+          const SizedBox(height: AppSpacing.xl),
+        ],
+        // 시안: 두 버튼 같은 폭, 라벨 Bold(700).
+        Theme(
+          data: Theme.of(context).copyWith(
+            textTheme: Theme.of(context).textTheme.copyWith(
+              labelLarge: Theme.of(
+                context,
+              ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
             ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: AppButton(
-                label: '나중에',
-                variant: AppButtonVariant.secondary,
-                onPressed: _generating ? null : () => unawaited(_finish()),
+          ),
+          child: Row(
+            spacing: AppSpacing.md,
+            children: [
+              Expanded(
+                child: AppButton(
+                  key: const ValueKey('partner-invite-send'),
+                  label: _controller.state == InvitationActionState.submitting
+                      ? '보내는 중…'
+                      : _linked
+                      ? '초대하기'
+                      : '초대장 보내기',
+                  onPressed:
+                      _controller.state == InvitationActionState.submitting ||
+                          _generating
+                      ? null
+                      : _send,
+                ),
               ),
-            ),
-          ],
+              Expanded(
+                child: AppButton(
+                  label: '나중에',
+                  variant: AppButtonVariant.secondary,
+                  onPressed: _generating ? null : () => unawaited(_finish()),
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: AppSpacing.md),
         Text(
           _linked
               ? '초대하기를 누르면 현재 연결된 가족을 확인할 수 있어요.'
               : '남편이 ThinQ 알림을 선택하고 연결을 완료하면 함께 볼 수 있어요.',
-          textAlign: TextAlign.center,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w400,
+          ),
         ),
       ],
     ),
@@ -336,49 +353,70 @@ class _InviteHero extends StatelessWidget {
   const _InviteHero();
 
   @override
-  Widget build(BuildContext context) => AppCard(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '남편도 ThinQ에 연결해보세요',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        const Text('ThinQ 알림으로 안전하게 계정을 연결할 수 있어요.'),
-      ],
-    ),
+  Widget build(BuildContext context) => const HeroCard(
+    title: '남편도 ThinQ에 연결해보세요',
+    description: 'ThinQ 알림으로 안전하게 계정을 연결할 수 있어요.',
   );
 }
 
 class _BenefitCard extends StatelessWidget {
   const _BenefitCard({
-    required this.icon,
+    required this.number,
     required this.title,
     required this.description,
   });
 
-  final IconData icon;
+  final int number;
   final String title;
   final String description;
 
   @override
   Widget build(BuildContext context) => AppCard(
+    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 11),
     child: Row(
+      spacing: 14,
       children: [
-        Icon(icon, color: AppColors.primary600, size: 28),
-        const SizedBox(width: AppSpacing.lg),
+        // 시안: primary 원 안에 순번. 숫자색 #DDDBD3은 borderSubtle과 사실상 같아 토큰을 쓴다.
+        ExcludeSemantics(
+          child: Container(
+            width: 39,
+            height: 39,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              color: AppColors.primary600,
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              '$number',
+              style: const TextStyle(
+                color: AppColors.borderSubtle,
+                fontSize: 26,
+                height: 1,
+              ),
+            ),
+          ),
+        ),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 2,
             children: [
-              Text(title, style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: AppSpacing.xs),
+              Text(
+                title,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  height: 1.69,
+                ),
+              ),
               Text(
                 description,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                  height: 1.5,
+                ),
               ),
             ],
           ),

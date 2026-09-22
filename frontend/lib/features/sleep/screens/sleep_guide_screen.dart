@@ -185,9 +185,10 @@ class _SleepContent extends StatelessWidget {
               style: IconButton.styleFrom(
                 backgroundColor: AppColors.categorySleep,
                 foregroundColor: AppColors.textInverse,
-                minimumSize: const Size(56, 56),
+                // 최소 터치 영역(44)까지만 줄인다.
+                minimumSize: const Size(44, 44),
               ),
-              icon: const Icon(Icons.play_arrow_rounded, size: 30),
+              icon: const Icon(Icons.play_arrow_rounded, size: 24),
             ),
           ],
         ),
@@ -222,33 +223,31 @@ class _SleepSummary extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.pageMobile),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        // 시안: 수면 색 40% 채움 + 연한 테두리.
+        color: AppColors.categorySleep.withValues(alpha: 0.4),
         border: Border.all(color: AppColors.borderSubtle),
         borderRadius: BorderRadius.circular(AppRadius.hero),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  guide.summaryTitle,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-              const Icon(
-                Icons.nightlight_round,
-                color: AppColors.categorySleep,
-              ),
-            ],
+          Text(
+            guide.summaryTitle,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              height: 1.41,
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             guide.summary,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 17,
+              height: 1.59,
+            ),
           ),
           const SizedBox(height: AppSpacing.lg),
           Container(
@@ -259,11 +258,29 @@ class _SleepSummary extends StatelessWidget {
             ),
             child: Row(
               children: [
-                const Expanded(child: Text('권장 취침 시간')),
+                const Expanded(
+                  child: Text(
+                    '권장 취침 시간',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 15,
+                      height: 1.6,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.nightlight_round,
+                  size: 22,
+                  color: AppColors.categorySleep,
+                ),
+                const SizedBox(width: 9),
                 Text(
                   guide.recommendedBedtime,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  style: const TextStyle(
                     color: AppColors.categorySleep,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    height: 1.5,
                   ),
                 ),
               ],

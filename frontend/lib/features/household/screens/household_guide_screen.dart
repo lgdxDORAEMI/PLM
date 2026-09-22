@@ -86,6 +86,13 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
                       vertical: AppSpacing.xl,
                     ),
                     children: [
+                      // 시안: 상단 요약 카드(식사 가이드 인사 카드와 같은 구성, 가사 색).
+                      _GuideSummaryCard(
+                        message: _controller.shared
+                            ? '허리 통증이 있어요. 무리한 일은 가족과 나눠요.'
+                            : '허리 통증이 있는 날이에요. 가전 실행 대신 부담을 줄이는 방법을 추천해요.',
+                      ),
+                      const SizedBox(height: AppSpacing.xxl),
                       LayoutBuilder(
                         builder: (context, constraints) {
                           final sections = [
@@ -98,9 +105,9 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 sections[0],
-                                const SizedBox(height: AppSpacing.xl),
+                                const SizedBox(height: AppSpacing.lg),
                                 sections[1],
-                                const SizedBox(height: AppSpacing.xl),
+                                const SizedBox(height: AppSpacing.lg),
                                 sections[2],
                               ],
                             );
@@ -121,15 +128,6 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
                           );
                         },
                       ),
-                      const SizedBox(height: AppSpacing.xl),
-                      Text(
-                        _controller.shared
-                            ? '오늘은 허리 통증이 있어요. 무리한 일은 가족과 나눠요.'
-                            : '오늘은 허리 통증이 있는 날이에요. 가전 실행 대신 부담을 줄이는 방법을 추천해요.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -138,8 +136,7 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
     );
   }
 
-  Widget _directSection() => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _directSection() => _SectionCard(
     children: [
       _SectionTitle(
         number: 1,
@@ -165,8 +162,7 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
     ],
   );
 
-  Widget _applianceSection() => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _applianceSection() => _SectionCard(
     children: [
       _SectionTitle(
         number: 3,
@@ -196,8 +192,7 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
     ],
   );
 
-  Widget _partnerSection() => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _partnerSection() => _SectionCard(
     children: [
       _SectionTitle(
         number: 2,
@@ -208,9 +203,13 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
       Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
+          const Text(
             '공유할 집안일을 선택해 주세요.',
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 15,
+              height: 1.6,
+            ),
           ),
           const SizedBox(height: AppSpacing.md),
           for (final task in _controller.shareableTasks) ...[
@@ -246,6 +245,7 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
                 ? '남편에게 공유했어요'
                 : '남편에게 공유하기',
             loading: _controller.sharing,
+            color: AppColors.accentWarm,
             onPressed: _controller.selectedCount == 0 || _controller.sharing
                 ? null
                 : _share,
@@ -358,7 +358,16 @@ class _DirectTaskListItem extends StatelessWidget {
           ),
         ),
         const SizedBox(width: AppSpacing.md),
-        Expanded(child: Text(task.title)),
+        Expanded(
+          child: Text(
+            task.title,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 15,
+              height: 1.6,
+            ),
+          ),
+        ),
       ],
     ),
   );
@@ -375,24 +384,101 @@ class _SectionTitle extends StatelessWidget {
   final String label;
   @override
   Widget build(BuildContext context) => Row(
+    spacing: AppSpacing.md,
     children: [
       CircleAvatar(
-        radius: 16,
+        radius: 14,
         backgroundColor: AppColors.categoryHome,
-        foregroundColor: AppColors.textInverse,
-        child: Text('$number'),
+        child: Text(
+          '$number',
+          style: const TextStyle(
+            color: AppColors.textInverse,
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            height: 1.6,
+          ),
+        ),
       ),
-      const SizedBox(width: AppSpacing.md),
       Expanded(
-        child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+        child: Text(
+          title,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            height: 1.41,
+          ),
+        ),
       ),
       Text(
         label,
-        style: Theme.of(
-          context,
-        ).textTheme.labelMedium?.copyWith(color: AppColors.categoryHome),
+        style: const TextStyle(
+          color: AppColors.categoryHome,
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          height: 1.5,
+        ),
       ),
     ],
+  );
+}
+
+class _GuideSummaryCard extends StatelessWidget {
+  const _GuideSummaryCard({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
+    decoration: BoxDecoration(
+      color: AppColors.categoryHome.withValues(alpha: 0.4),
+      border: Border.all(color: AppColors.borderSubtle),
+      borderRadius: BorderRadius.circular(AppRadius.hero),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 6,
+      children: [
+        const Text(
+          '오늘의 가사 가이드',
+          style: TextStyle(
+            color: AppColors.primary900,
+            fontSize: 22,
+            fontWeight: FontWeight.w700,
+            height: 1.41,
+          ),
+        ),
+        Text(
+          message,
+          style: const TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 15,
+            height: 1.6,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+/// 시안: 섹션마다 따뜻한 갈색 테두리 카드(radius 20)로 묶는다.
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 20),
+    decoration: BoxDecoration(
+      border: Border.all(color: AppColors.accentWarm),
+      borderRadius: BorderRadius.circular(AppRadius.hero),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: children,
+    ),
   );
 }
 

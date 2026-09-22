@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
 
 import '../../../design_system/tokens/app_colors.dart';
-import '../../../design_system/tokens/app_radius.dart';
-import '../../../design_system/tokens/app_spacing.dart';
 import '../../condition/models/condition_draft.dart';
 
-/// 저장된 값 중 오늘 행동 결정에 중요한 항목만 짧게 요약한다.
+/// 저장된 값 중 오늘 행동 결정에 중요한 항목만 짧게 요약한다(컨디션 · 할 일 두 줄).
 class TodayConditionSummary extends StatelessWidget {
   const TodayConditionSummary({
     super.key,
     required this.condition,
+    required this.activities,
     required this.onEdit,
+    required this.onEditActivities,
   });
 
   final ConditionDraft condition;
+  final List<String> activities;
   final VoidCallback onEdit;
+  final VoidCallback onEditActivities;
 
   @override
   Widget build(BuildContext context) {
@@ -23,41 +25,23 @@ class TodayConditionSummary extends StatelessWidget {
       '피로 ${_discomfortLabel(condition.fatigue)}',
       '${_highestPainPart(condition)} 통증 ${_discomfortLabel(_highestPain(condition))}',
     ];
-    return DecoratedBox(
+    return Column(
       key: const ValueKey('home-condition-complete'),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceSubtle,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Icon(Icons.check_circle_outline, color: AppColors.success),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '오늘 컨디션 입력 완료',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    summaries.join(' · '),
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            TextButton(onPressed: onEdit, child: const Text('수정')),
-          ],
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: 5,
+      children: [
+        _SummaryRow(
+          label: '컨디션',
+          summary: summaries.join(' · '),
+          onEdit: onEdit,
         ),
-      ),
+        _SummaryRow(
+          editKey: const ValueKey('home-edit-activities'),
+          label: '할 일',
+          summary: activities.isEmpty ? '예정 활동 없음' : activities.join(' · '),
+          onEdit: onEditActivities,
+        ),
+      ],
     );
   }
 
@@ -85,5 +69,82 @@ class TodayConditionSummary extends StatelessWidget {
     return painByPart.entries
         .reduce((current, next) => current.value >= next.value ? current : next)
         .key;
+  }
+}
+
+class _SummaryRow extends StatelessWidget {
+  const _SummaryRow({
+    this.editKey,
+    required this.label,
+    required this.summary,
+    required this.onEdit,
+  });
+
+  final Key? editKey;
+  final String label;
+  final String summary;
+  final VoidCallback onEdit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(minHeight: 40),
+      padding: const EdgeInsets.only(left: 9, right: 16),
+      decoration: BoxDecoration(
+        color: AppColors.disabledBackground,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        spacing: 8,
+        children: [
+          const Icon(Icons.check_circle, color: AppColors.success, size: 24),
+          SizedBox(
+            width: 63,
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                height: 1.5,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              summary,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 12,
+                height: 1.5,
+              ),
+            ),
+          ),
+          Semantics(
+            button: true,
+            label: '$label 수정',
+            excludeSemantics: true,
+            child: InkWell(
+              key: editKey,
+              onTap: onEdit,
+              borderRadius: BorderRadius.circular(4),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                child: Text(
+                  '수정',
+                  style: TextStyle(
+                    color: AppColors.primary600,
+                    fontSize: 12,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

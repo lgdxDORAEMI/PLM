@@ -16,6 +16,7 @@ class AppButton extends StatelessWidget {
     this.expand = true,
     this.icon,
     this.loading = false,
+    this.color,
   });
 
   final String label;
@@ -24,6 +25,9 @@ class AppButton extends StatelessWidget {
   final bool expand;
   final IconData? icon;
   final bool loading;
+
+  /// primary 버튼 채움색 override(예: 가사 가이드 공유 버튼). 없으면 primary600.
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
@@ -62,6 +66,7 @@ class AppButton extends StatelessWidget {
             if (states.contains(WidgetState.disabled)) {
               return AppColors.disabledBackground;
             }
+            if (color != null) return color;
             if (states.contains(WidgetState.pressed)) {
               return AppColors.primary800;
             }

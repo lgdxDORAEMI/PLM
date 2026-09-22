@@ -36,6 +36,8 @@ abstract final class AppTheme {
       colorScheme: colorScheme,
       // 제품 공통 shell은 중립 surface를 사용하고 canvas는 콘텐츠 구획에서만 쓴다.
       scaffoldBackgroundColor: AppColors.surface,
+      // 서비스 기본 서체. 굵기 매핑은 pubspec.yaml fonts 참고.
+      fontFamily: 'LG EI Headline TTF',
       fontFamilyFallback: const [
         'Pretendard Variable',
         'Noto Sans KR',

@@ -175,11 +175,13 @@ class _CalendarContent extends StatelessWidget {
         vertical: expandedCalendar ? AppSpacing.xxl : AppSpacing.xl,
       ),
       children: [
-        Text(
+        const Text(
           '날짜를 선택하면 그날의 기록을 바로 확인할 수 있어요.',
-          style: Theme.of(
-            context,
-          ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 16,
+            height: 1.5,
+          ),
         ),
         SizedBox(height: expandedCalendar ? AppSpacing.xxxl : AppSpacing.xl),
         ResponsiveSplitView(
@@ -234,7 +236,12 @@ class _CalendarPanel extends StatelessWidget {
           Expanded(
             child: Text(
               '${month.year}년 ${month.month}월',
-              style: Theme.of(context).textTheme.headlineSmall,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 26,
+                fontWeight: FontWeight.w700,
+                height: 1.5,
+              ),
             ),
           ),
           IconButton(
@@ -286,14 +293,22 @@ class _SelectedDayDetail extends StatelessWidget {
           Expanded(
             child: Text(
               _CalendarContent._koreanDate(record.date),
-              style: Theme.of(context).textTheme.titleLarge,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 24,
+                fontWeight: FontWeight.w700,
+                height: 1.5,
+              ),
             ),
           ),
           Text(
             '임신 ${record.pregnancyWeek}주차',
-            style: Theme.of(
-              context,
-            ).textTheme.titleSmall?.copyWith(color: AppColors.primary600),
+            style: const TextStyle(
+              color: AppColors.primary600,
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              height: 1.5,
+            ),
           ),
         ],
       ),

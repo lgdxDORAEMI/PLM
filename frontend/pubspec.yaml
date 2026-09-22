@@ -24,3 +24,15 @@ flutter:
   uses-material-design: true
   assets:
     - .env
+  # Noto Sans KR 굵기 대응: Regular→Regular, Medium(500)→Semibold, Bold→Bold.
+  fonts:
+    - family: LG EI Headline TTF
+      fonts:
+        - asset: assets/fonts/LGEIHeadlineTTF-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/LGEIHeadlineTTF-Semibold.ttf
+          weight: 500
+        - asset: assets/fonts/LGEIHeadlineTTF-Semibold.ttf
+          weight: 600
+        - asset: assets/fonts/LGEIHeadlineTTF-Bold.ttf
+          weight: 700

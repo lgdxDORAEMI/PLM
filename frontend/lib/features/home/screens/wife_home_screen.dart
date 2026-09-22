@@ -8,13 +8,15 @@ import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/content_frame.dart';
 import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_split_view.dart';
-import '../../../design_system/components/section_header.dart';
 import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/components/wife_navigation_scaffold.dart';
 import '../../../design_system/tokens/app_breakpoints.dart';
 import '../../../design_system/tokens/app_colors.dart';
+import '../../../design_system/tokens/app_elevation.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_names.dart';
+import '../../condition/controllers/planned_activity_controller.dart';
+import '../../condition/data/planned_activity_store.dart';
 import '../../condition/data/today_care_store.dart';
 import '../../condition/models/condition_draft.dart';
 import '../../routine/controllers/daily_routine_controller.dart';
@@ -44,6 +46,7 @@ class WifeHomeScreen extends StatefulWidget {
 class _WifeHomeScreenState extends State<WifeHomeScreen> {
   final _todayCareStore = TodayCareStore.instance;
   final _profileStore = ProfileStore.instance;
+  final _activityStore = PlannedActivityStore.instance;
   late final DailyRoutineController _routineController;
 
   @override
@@ -61,7 +64,10 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
     )..addListener(_refresh);
     _todayCareStore.addListener(_onTodayCareChanged);
     _profileStore.addListener(_refresh);
-    unawaited(_restoreTodayCare());
+    _activityStore.addListener(_refresh);
+    // 할 일도 같은 GET /care/conditions를 쓰므로 컨디션 조회 뒤에 보낸다.
+    // 동시에 보내면 BE 공유 Supabase 연결이 끊겨 503이 날 수 있다.
+    unawaited(_restoreTodayCare().then((_) => _restoreActivities()));
     if (_todayCareStore.hasTodayCare || AppConfig.previewMode) {
       unawaited(_routineController.loadToday());
     }
@@ -78,9 +84,18 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
     }
   }
 
+  Future<void> _restoreActivities() async {
+    try {
+      await PlannedActivityController().loadActivities();
+    } catch (_) {
+      // 할 일 요약만 비어 보일 뿐 홈 사용에는 지장이 없다.
+    }
+  }
+
   @override
   void dispose() {
     _todayCareStore.removeListener(_onTodayCareChanged);
+    _activityStore.removeListener(_refresh);
     _profileStore.removeListener(_refresh);
     _routineController
       ..removeListener(_refresh)
@@ -135,13 +150,21 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
                     const IntegrationRequiredState(message: '임신 주차 데이터가 없습니다.')
                   else
                     PregnancyWeekHero(userName: null, week: pregnancyWeek),
-                  const SizedBox(height: AppSpacing.xxl),
+                  // 두 상태 시안 모두 히어로 아래 27.
+                  const SizedBox(height: 27),
                   if (constraints.maxWidth < AppBreakpoints.desktop) ...[
                     _conditionSection(effectiveHasTodayCare),
-                    const SizedBox(height: AppSpacing.xxl),
+                    // 입력 전: 섹션 설명 바로 아래 버튼(9). 입력 후: 섹션 간격(32).
+                    SizedBox(
+                      height: effectiveHasTodayCare ? AppSpacing.xxl : 9,
+                    ),
                     ..._primaryContent(effectiveHasTodayCare),
-                    const SizedBox(height: AppSpacing.huge),
-                    _weekContext(pregnancyWeek),
+                    SizedBox(
+                      height: effectiveHasTodayCare
+                          ? AppSpacing.xxl
+                          : AppSpacing.huge,
+                    ),
+                    _weekContext(pregnancyWeek, effectiveHasTodayCare),
                   ] else
                     ResponsiveSplitView(
                       primaryFlex: 8,
@@ -156,7 +179,7 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
                         children: [
                           _conditionSection(effectiveHasTodayCare),
                           const SizedBox(height: AppSpacing.xxl),
-                          _weekContext(pregnancyWeek),
+                          _weekContext(pregnancyWeek, effectiveHasTodayCare),
                         ],
                       ),
                     ),
@@ -174,7 +197,9 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
     summary: hasTodayCare
         ? TodayConditionSummary(
             condition: _todayCareStore.today ?? const ConditionDraft(),
+            activities: _activityStore.activities,
             onEdit: _editCondition,
+            onEditActivities: () => unawaited(_editActivities()),
           )
         : null,
   );
@@ -188,17 +213,18 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
       : _routineContent();
 
   /// 주차 안내는 Backend `home.week_notes`·`home.caution`(09-22). 루틴을 받기 전이면 안내 상태를 보여준다.
-  Widget _weekContext(int? pregnancyWeek) {
+  Widget _weekContext(int? pregnancyWeek, bool hasTodayCare) {
     final plan = _routineController.plan;
     final notes = plan?.weekNotes ?? const <String>[];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const SectionHeader(
+        _SectionTitle(
           title: '이번 주에 알아두세요',
           description: '임신 주차와 오늘 상태를 바탕으로 확인하는 보조 정보예요.',
+          beforeCare: !hasTodayCare,
         ),
-        const SizedBox(height: AppSpacing.lg),
+        SizedBox(height: hasTodayCare ? 10 : AppSpacing.lg),
         if (pregnancyWeek == null || notes.isEmpty)
           const IntegrationRequiredState(message: '주차별 안내 데이터가 없습니다.')
         else
@@ -219,14 +245,6 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
         label: '오늘의 컨디션 체크하러 가기',
         onPressed: () => Navigator.pushNamed(context, RouteNames.condition),
       ),
-      const SizedBox(height: AppSpacing.sm),
-      Text(
-        '10초면 끝나요 · 입력 후 식사·가사·건강·수면 가이드를 준비해요.',
-        textAlign: TextAlign.center,
-        style: Theme.of(
-          context,
-        ).textTheme.bodyMedium?.copyWith(color: AppColors.textTertiary),
-      ),
     ];
   }
 
@@ -244,16 +262,6 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
       return const [_RoutineLoadingSection()];
     }
     return [
-      Align(
-        alignment: Alignment.centerRight,
-        child: TextButton.icon(
-          key: const ValueKey('home-edit-activities'),
-          onPressed: _editActivities,
-          icon: const Icon(Icons.edit_outlined),
-          label: const Text('오늘 할일 수정하기'),
-        ),
-      ),
-      const SizedBox(height: AppSpacing.lg),
       if (_routineController.isFallback) ...[
         InfoBanner(
           key: const ValueKey('home-routine-fallback'),
@@ -281,29 +289,58 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
         ),
         const SizedBox(height: AppSpacing.xl),
       ],
-      SectionHeader(
-        key: const ValueKey('home-routine-success'),
-        title: '오늘의 하루 루틴',
-        description: '오늘 컨디션을 반영한 맞춤 가이드예요.',
-      ),
-      const SizedBox(height: AppSpacing.lg),
-      for (final item
-          in plan.homeCards.isEmpty ? plan.items : plan.homeCards) ...[
-        RoutineGuideCard(
-          item: item,
-          onTap: () => unawaited(_openRoutine(item.type)),
+      const _SectionTitle(
+        key: ValueKey('home-routine-success'),
+        title: '오늘 하루 루틴',
+        description: '오늘 컨디션을 반영한 맞춤 가이드를 확인해보세요.',
+        descriptionStyle: TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 14,
+          height: 1.5,
         ),
-        const SizedBox(height: AppSpacing.md),
-      ],
-      const SizedBox(height: AppSpacing.xl),
+      ),
+      const SizedBox(height: AppSpacing.sm),
+      Container(
+        padding: const EdgeInsets.fromLTRB(11, 12, 10, 22),
+        decoration: BoxDecoration(
+          // 시안: primary-600 약 3%(0x073D7165). 반투명 위 그림자는 Flutter에서 비쳐 보여
+          // surface 위에 합성한 불투명색을 쓴다.
+          color: const Color(0xFFF9FAF7),
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: AppElevation.level1,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: 6,
+          children: [
+            for (final item
+                in plan.homeCards.isEmpty ? plan.items : plan.homeCards)
+              RoutineGuideCard(
+                item: item,
+                onTap: () => unawaited(_openRoutine(item.type)),
+              ),
+          ],
+        ),
+      ),
+      const SizedBox(height: AppSpacing.xxl),
       RoutineProgress(items: plan.items),
       const SizedBox(height: AppSpacing.xl),
-      AppButton(
-        label: '오늘의 일정 마치기',
-        onPressed: () => Navigator.pushNamed(
-          context,
-          RouteNames.dailyReport(
-            recordDateKey(AppConfig.previewMode ? DateTime.now() : plan.date),
+      // 시안: 버튼 라벨 Bold(700).
+      Theme(
+        data: Theme.of(context).copyWith(
+          textTheme: Theme.of(context).textTheme.copyWith(
+            labelLarge: Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+          ),
+        ),
+        child: AppButton(
+          label: '오늘의 일정 마치기',
+          onPressed: () => Navigator.pushNamed(
+            context,
+            RouteNames.dailyReport(
+              recordDateKey(AppConfig.previewMode ? DateTime.now() : plan.date),
+            ),
           ),
         ),
       ),
@@ -366,16 +403,23 @@ class _TodayConditionSection extends StatelessWidget {
       ),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SectionHeader(
-          title: '오늘 컨디션',
-          description: hasTodayCare
-              ? '저장한 상태를 오늘 루틴에 반영했어요.'
-              : '아직 오늘 상태를 입력하지 않았어요.',
-        ),
-        if (summary != null) ...[
-          const SizedBox(height: AppSpacing.lg),
-          summary!,
-        ],
+        if (hasTodayCare)
+          const _SectionTitle(
+            title: '컨디션 체크',
+            description: '저장한 상태를 오늘 루틴에 반영했어요.',
+          )
+        else
+          const _SectionTitle(
+            title: '오늘 컨디션',
+            description: '10초면 끝나요 · 입력 후 4가지 가이드를 준비해요.',
+            beforeCare: true,
+            descriptionStyle: TextStyle(
+              color: AppColors.textTertiary,
+              fontSize: 14,
+              height: 1.71,
+            ),
+          ),
+        if (summary != null) ...[const SizedBox(height: 10), summary!],
       ],
     );
   }
@@ -395,7 +439,7 @@ class _RoutineLoadingSection extends StatelessWidget {
         children: [
           const AppLoadingState(message: '오늘의 맞춤 루틴을 만들고 있어요', compact: true),
           const SizedBox(height: AppSpacing.lg),
-          Text('오늘의 하루 루틴', style: Theme.of(context).textTheme.titleLarge),
+          Text('오늘 하루 루틴', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: AppSpacing.lg),
           for (var index = 0; index < 4; index += 1) ...[
             const AppSkeleton(height: 96),
@@ -403,6 +447,47 @@ class _RoutineLoadingSection extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// 홈 섹션 제목 + 설명. 시안상 컨디션 입력 전 화면은 제목이 Bold(700)·간격 4,
+/// 입력 후 화면은 SemiBold(600)·간격 2다. 설명 스타일은 섹션마다 다르다.
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({
+    super.key,
+    required this.title,
+    required this.description,
+    this.descriptionStyle = const TextStyle(
+      color: AppColors.textSecondary,
+      fontSize: 14,
+      height: 1.71,
+    ),
+    this.beforeCare = false,
+  });
+
+  final String title;
+  final String description;
+  final TextStyle descriptionStyle;
+  final bool beforeCare;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: beforeCare ? 4 : 2,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 18,
+            fontWeight: beforeCare ? FontWeight.w700 : FontWeight.w600,
+            height: beforeCare ? 1.5 : 2,
+          ),
+        ),
+        Text(description, style: descriptionStyle),
+      ],
     );
   }
 }

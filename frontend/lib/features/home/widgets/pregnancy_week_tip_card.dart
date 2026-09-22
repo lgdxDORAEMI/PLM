@@ -26,20 +26,24 @@ class PregnancyWeekTipCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border.all(color: AppColors.borderSubtle),
-        borderRadius: BorderRadius.circular(AppRadius.hero),
+        borderRadius: BorderRadius.circular(AppRadius.card),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
               '$week주차에는 이런 시기예요',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(color: AppColors.primary700),
+              // 홈 루틴 카드 제목과 같은 18 Bold.
+              style: const TextStyle(
+                color: AppColors.primary700,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                height: 1.5,
+              ),
             ),
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.sm),
             for (final tip in tips)
               Padding(
                 padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -55,7 +59,16 @@ class PregnancyWeekTipCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
-                    Expanded(child: Text(tip)),
+                    Expanded(
+                      child: Text(
+                        tip,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 14,
+                          height: 1.71,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -63,9 +76,12 @@ class PregnancyWeekTipCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             Text(
               caution,
-              style: Theme.of(
-                context,
-              ).textTheme.labelLarge?.copyWith(color: AppColors.primary700),
+              style: const TextStyle(
+                color: AppColors.primary700,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                height: 1.71,
+              ),
             ),
             if (todayTip case final tip? when tip.isNotEmpty) ...[
               const SizedBox(height: AppSpacing.lg),

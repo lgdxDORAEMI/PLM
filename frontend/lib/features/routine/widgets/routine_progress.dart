@@ -11,12 +11,18 @@ class RoutineProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final completed = items
-        .where((item) => item.status == RoutineStatus.completed)
+    // 분야(식사·가사·건강·수면) 단위로 센다. 분야의 모든 항목이 완료돼야 완료다.
+    final groups = <RoutineType, List<RoutineItem>>{};
+    for (final item in items) {
+      (groups[item.type] ??= []).add(item);
+    }
+    final total = groups.length;
+    final completed = groups.values
+        .where((g) => g.every((i) => i.status == RoutineStatus.completed))
         .length;
-    final progress = items.isEmpty ? 0.0 : completed / items.length;
+    final progress = total == 0 ? 0.0 : completed / total;
     return Semantics(
-      label: '오늘 루틴 ${items.length}개 중 $completed개 완료',
+      label: '오늘 루틴 $total개 분야 중 $completed개 완료',
       child: Column(
         key: const ValueKey('home-routine-progress'),
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -25,19 +31,25 @@ class RoutineProgress extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  '오늘의 진행',
-                  style: Theme.of(context).textTheme.titleMedium,
+                  '루틴 진행도',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    height: 2,
+                  ),
                 ),
               ),
               Text(
-                '$completed / ${items.length} 완료',
-                style: Theme.of(
-                  context,
-                ).textTheme.labelLarge?.copyWith(color: AppColors.primary700),
+                '$completed / $total 완료',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: AppColors.primary700,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.sm),
           LinearProgressIndicator(
             value: progress,
             minHeight: 8,

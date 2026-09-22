@@ -32,7 +32,21 @@ class ConditionCalendar extends StatelessWidget {
         Row(
           children: [
             for (final label in ['일', '월', '화', '수', '목', '금', '토'])
-              Expanded(child: Center(child: Text(label))),
+              Expanded(
+                child: SizedBox(
+                  height: 44,
+                  child: Center(
+                    child: Text(
+                      label,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
         SizedBox(height: comfortable ? AppSpacing.xl : AppSpacing.md),
@@ -44,7 +58,7 @@ class ConditionCalendar extends StatelessWidget {
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 7,
             mainAxisExtent: comfortable ? 60 : 44,
-            mainAxisSpacing: comfortable ? AppSpacing.sm : AppSpacing.xs,
+            mainAxisSpacing: AppSpacing.sm,
             crossAxisSpacing: comfortable ? AppSpacing.sm : AppSpacing.xs,
           ),
           itemBuilder: (context, index) {
@@ -68,29 +82,24 @@ class ConditionCalendar extends StatelessWidget {
                         ? Colors.transparent
                         : _levelColor(record.conditionLevel),
                     border: selected
-                        ? Border.all(color: AppColors.primary600, width: 3)
+                        ? Border.all(color: AppColors.primary600, width: 2)
                         : null,
                   ),
                   alignment: Alignment.center,
                   child: Text(
                     '${date.day}',
-                    style:
-                        (comfortable
-                                ? Theme.of(context).textTheme.titleSmall
-                                : Theme.of(context).textTheme.bodyMedium)
-                            ?.copyWith(
-                              color: record == null
-                                  ? AppColors.textDisabled
-                                  : record.conditionLevel ==
-                                            ConditionLevel.difficult ||
-                                        record.conditionLevel ==
-                                            ConditionLevel.bad
-                                  ? AppColors.textInverse
-                                  : AppColors.textPrimary,
-                              fontWeight: selected
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                            ),
+                    style: TextStyle(
+                      color: record == null
+                          ? AppColors.textTertiary
+                          : record.conditionLevel == ConditionLevel.difficult ||
+                                record.conditionLevel == ConditionLevel.bad
+                          // 시안은 진한 글자지만 대비가 부족해 어두운 배경만 흰 글자를 유지한다.
+                          ? AppColors.textInverse
+                          : AppColors.textPrimary,
+                      fontSize: 15,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+                      height: 1.5,
+                    ),
                   ),
                 ),
               ),
@@ -137,7 +146,6 @@ class ConditionLegend extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: AppColors.surface,
         border: Border.all(color: AppColors.borderSubtle),
         borderRadius: BorderRadius.circular(AppRadius.card),
       ),
@@ -145,11 +153,14 @@ class ConditionLegend extends StatelessWidget {
         spacing: AppSpacing.lg,
         runSpacing: AppSpacing.sm,
         children: [
-          Text(
+          const Text(
             '컨디션 지수',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              height: 1.5,
+            ),
           ),
           for (final entry in entries)
             Row(
@@ -164,8 +175,15 @@ class ConditionLegend extends StatelessWidget {
                     border: Border.all(color: AppColors.borderSubtle),
                   ),
                 ),
-                const SizedBox(width: AppSpacing.xs),
-                Text(entry.$1),
+                const SizedBox(width: 6),
+                Text(
+                  entry.$1,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 15,
+                    height: 1.5,
+                  ),
+                ),
               ],
             ),
         ],

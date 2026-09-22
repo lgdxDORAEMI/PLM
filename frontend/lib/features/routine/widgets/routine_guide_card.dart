@@ -24,54 +24,60 @@ class RoutineGuideCard extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.card),
         child: Ink(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          padding: const EdgeInsets.fromLTRB(12, 16, 16, 16),
           decoration: BoxDecoration(
             color: AppColors.surface,
             border: Border.all(color: AppColors.borderSubtle),
             borderRadius: BorderRadius.circular(AppRadius.card),
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 4,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: visual.foreground,
-                  borderRadius: BorderRadius.circular(AppRadius.pill),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.md),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: visual.background,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child: SizedBox.square(
-                  dimension: 52,
-                  child: Icon(visual.icon, color: visual.foreground),
-                ),
-              ),
-              const SizedBox(width: AppSpacing.lg),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.title,
-                      style: Theme.of(context).textTheme.titleMedium,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 50),
+            child: Row(
+              children: [
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    // 시안: 카테고리 색 40%.
+                    color: visual.foreground.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
+                  ),
+                  child: SizedBox.square(
+                    dimension: 52,
+                    child: Icon(
+                      visual.icon,
+                      color: visual.foreground,
+                      size: 30,
                     ),
-                    const SizedBox(height: AppSpacing.xs),
-                    Text(
-                      item.description,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    spacing: 2,
+                    children: [
+                      Text(
+                        item.title,
+                        style: const TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          height: 1.5,
+                        ),
                       ),
-                    ),
-                  ],
+                      Text(
+                        item.description,
+                        style: const TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 14,
+                          height: 1.71,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const Icon(Icons.chevron_right, color: AppColors.textTertiary),
-            ],
+                const Icon(Icons.chevron_right, color: AppColors.textTertiary),
+              ],
+            ),
           ),
         ),
       ),
@@ -83,35 +89,26 @@ class RoutineGuideCard extends StatelessWidget {
       RoutineType.meal => const _RoutineVisual(
         icon: Icons.ramen_dining_outlined,
         foreground: AppColors.categoryMeal,
-        background: AppColors.categoryMealBackground,
       ),
       RoutineType.household => const _RoutineVisual(
         icon: Icons.local_laundry_service_outlined,
         foreground: AppColors.categoryHome,
-        background: AppColors.categoryHomeBackground,
       ),
       RoutineType.health => const _RoutineVisual(
         icon: Icons.monitor_heart_outlined,
         foreground: AppColors.categoryBody,
-        background: AppColors.categoryBodyBackground,
       ),
       RoutineType.sleep => const _RoutineVisual(
         icon: Icons.bedtime_outlined,
         foreground: AppColors.categorySleep,
-        background: AppColors.categorySleepBackground,
       ),
     };
   }
 }
 
 class _RoutineVisual {
-  const _RoutineVisual({
-    required this.icon,
-    required this.foreground,
-    required this.background,
-  });
+  const _RoutineVisual({required this.icon, required this.foreground});
 
   final IconData icon;
   final Color foreground;
-  final Color background;
 }

@@ -13,29 +13,55 @@ class RoutineRecordCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final skipped = record.status == RoutineRecordStatus.skipped;
+    final visual = _categoryVisual(record.category);
     return Opacity(
       opacity: skipped ? .55 : 1,
       child: AppCard(
+        padding: const EdgeInsets.all(AppSpacing.sm + 2),
         child: Row(
+          spacing: AppSpacing.md,
           children: [
-            AppBadge(
-              label: _categoryLabel(record.category),
-              tone: _categoryTone(record.category),
+            // 시안: 분야 라벨을 42 사각 배지로 통일.
+            Container(
+              width: 42,
+              height: 42,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: visual.background,
+                borderRadius: BorderRadius.circular(5),
+              ),
+              child: Text(
+                _categoryLabel(record.category),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: visual.foreground,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  height: 1.5,
+                ),
+              ),
             ),
-            const SizedBox(width: AppSpacing.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 4,
                 children: [
                   Text(
                     record.title,
-                    style: Theme.of(context).textTheme.titleSmall,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      height: 1.43,
+                    ),
                   ),
-                  const SizedBox(height: AppSpacing.xs),
                   Text(
                     skipped ? '오늘은 건너뜀' : '완료',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    style: const TextStyle(
                       color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      height: 1.5,
                     ),
                   ),
                 ],
@@ -49,17 +75,23 @@ class RoutineRecordCard extends StatelessWidget {
     );
   }
 
+  /// 분야 배지 색(시안: 카테고리 색 40% 배경 + 카테고리 색 글자).
+  ({Color foreground, Color background}) _categoryVisual(
+    RecordCategory category,
+  ) {
+    final color = switch (category) {
+      RecordCategory.meal => AppColors.categoryMeal,
+      RecordCategory.household => AppColors.categoryHousehold,
+      RecordCategory.health => AppColors.categoryHealth,
+      RecordCategory.sleep => AppColors.categorySleep,
+    };
+    return (foreground: color, background: color.withValues(alpha: 0.4));
+  }
+
   String _categoryLabel(RecordCategory category) => switch (category) {
     RecordCategory.meal => '식사',
     RecordCategory.household => '가사',
     RecordCategory.health => '건강',
     RecordCategory.sleep => '수면',
-  };
-
-  AppBadgeTone _categoryTone(RecordCategory category) => switch (category) {
-    RecordCategory.meal => AppBadgeTone.meal,
-    RecordCategory.household => AppBadgeTone.home,
-    RecordCategory.health => AppBadgeTone.body,
-    RecordCategory.sleep => AppBadgeTone.sleep,
   };
 }

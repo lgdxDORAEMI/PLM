@@ -48,15 +48,23 @@ class HouseholdTaskCard extends StatelessWidget {
                 children: [
                   Text(
                     task.title,
-                    style: Theme.of(context).textTheme.titleSmall,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      height: 1.5,
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
                     task.applianceNames.isNotEmpty
                         ? task.applianceNames.join(' · ')
                         : task.description,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    style: const TextStyle(
                       color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      height: 1.5,
                     ),
                   ),
                 ],
@@ -66,6 +74,21 @@ class HouseholdTaskCard extends StatelessWidget {
               OutlinedButton(
                 key: ValueKey('household-action-${task.id}'),
                 onPressed: onAction,
+                // 시안: pill · borderStrong · primary600 14 Medium, 높이 40.
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(44, 40),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg,
+                  ),
+                  shape: const StadiumBorder(),
+                  side: const BorderSide(color: AppColors.borderStrong),
+                  foregroundColor: AppColors.primary600,
+                  textStyle: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    height: 1.43,
+                  ),
+                ),
                 child: Text(actionLabel!),
               )
             else if (trailingLabel != null)
@@ -132,9 +155,10 @@ class HouseholdTaskCard extends StatelessWidget {
         AppColors.categoryHome,
         AppColors.categoryHomeBackground,
       ),
+      // 시안: 가족 공유 카드는 sleep 색 아이콘 + info 배경.
       HouseholdTaskOwner.partner => const _TaskVisual(
         AppColors.categorySleep,
-        AppColors.categorySleepBackground,
+        AppColors.infoBackground,
       ),
     },
   };

@@ -47,10 +47,8 @@ void main() {
     expect(find.byIcon(Icons.check_box), findsOneWidget);
 
     final shareButton = find.byKey(const ValueKey('household-share-button'));
-    await tester.drag(
-      find.byKey(const ValueKey('household-guide-scroll')),
-      const Offset(0, -300),
-    );
+    // 레이아웃 높이에 의존하지 않도록 버튼이 보일 때까지 스크롤한다.
+    await tester.ensureVisible(shareButton);
     await tester.pumpAndSettle();
     await tester.tap(shareButton);
     await tester.pumpAndSettle();

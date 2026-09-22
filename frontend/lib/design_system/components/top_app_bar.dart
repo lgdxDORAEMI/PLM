@@ -42,9 +42,10 @@ class TopAppBar extends StatelessWidget implements PreferredSizeWidget {
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         child: Text(
           title,
-          style: Theme.of(
-            context,
-          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
       automaticallyImplyLeading: false,

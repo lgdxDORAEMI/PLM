@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../design_system/components/app_badge.dart';
 import '../../../design_system/components/app_ink_well.dart';
 import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_radius.dart';
@@ -44,30 +43,55 @@ class MealPeriodCard extends StatelessWidget {
                 ),
                 child: SizedBox.square(
                   dimension: 52,
-                  child: Icon(visual.icon, color: visual.foreground),
+                  child: Icon(visual.icon, color: visual.foreground, size: 30),
                 ),
               ),
               const SizedBox(width: AppSpacing.lg),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 2,
                   children: [
                     Text(
                       summary.label,
-                      style: Theme.of(context).textTheme.titleMedium,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        height: 1.5,
+                      ),
                     ),
-                    const SizedBox(height: AppSpacing.xs),
                     Text(
                       summary.summary,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      style: const TextStyle(
                         color: AppColors.textSecondary,
+                        fontSize: 15,
+                        height: 1.6,
                       ),
                     ),
                   ],
                 ),
               ),
               if (summary.isCurrent) ...[
-                const AppBadge(label: '지금', tone: AppBadgeTone.primary),
+                // 시안: 식사 색 40% 배경 + primary700 12 SemiBold.
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: AppColors.categoryMeal.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(AppRadius.pill),
+                  ),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    child: Text(
+                      '지금',
+                      style: TextStyle(
+                        color: AppColors.primary700,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
                 const SizedBox(width: AppSpacing.sm),
               ],
               const Icon(Icons.chevron_right, color: AppColors.textTertiary),
@@ -78,27 +102,29 @@ class MealPeriodCard extends StatelessWidget {
     );
   }
 
+  /// 시안: 아침→밤으로 갈수록 식사 색이 진해진다(20%·40%·75%·100%).
   _PeriodVisual _visualFor(MealPeriod period) {
+    const meal = AppColors.categoryMeal;
     return switch (period) {
-      MealPeriod.breakfast => const _PeriodVisual(
+      MealPeriod.breakfast => _PeriodVisual(
         Icons.wb_sunny_outlined,
         AppColors.warning,
-        AppColors.warningBackground,
+        meal.withValues(alpha: 0.2),
       ),
-      MealPeriod.lunch => const _PeriodVisual(
+      MealPeriod.lunch => _PeriodVisual(
         Icons.lunch_dining_outlined,
-        AppColors.categoryMeal,
-        AppColors.categoryMealBackground,
+        meal,
+        meal.withValues(alpha: 0.4),
       ),
-      MealPeriod.dinner => const _PeriodVisual(
+      MealPeriod.dinner => _PeriodVisual(
         Icons.dinner_dining_outlined,
-        AppColors.primary700,
-        AppColors.primary50,
+        AppColors.textInverse,
+        meal.withValues(alpha: 0.75),
       ),
       MealPeriod.snack => const _PeriodVisual(
         Icons.bedtime_outlined,
-        AppColors.categorySleep,
-        AppColors.categorySleepBackground,
+        AppColors.textInverse,
+        meal,
       ),
     };
   }

@@ -9,7 +9,6 @@ import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/content_frame.dart';
 import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/responsive_split_view.dart';
-import '../../../design_system/components/section_header.dart';
 import '../../../design_system/components/top_app_bar.dart';
 import '../../../design_system/components/wife_navigation_scaffold.dart';
 import '../../../design_system/tokens/app_breakpoints.dart';
@@ -123,10 +122,7 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
       children: [
         _MealGreeting(data: data),
         const SizedBox(height: AppSpacing.xxl),
-        const SectionHeader(
-          title: '어떤 끼니를 볼까요?',
-          description: '지금은 아침이지만, 다른 끼니도 미리 볼 수 있어요',
-        ),
+        const _PeriodHeader(),
         const SizedBox(height: AppSpacing.lg),
         LayoutBuilder(
           builder: (context, constraints) {
@@ -166,19 +162,28 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
       key: const ValueKey('meal-recommendation-detail'),
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
       children: [
-        Text(
-          _periodLabel(recommendation.period),
-          style: Theme.of(
-            context,
-          ).textTheme.labelLarge?.copyWith(color: AppColors.primary600),
-        ),
-        const SizedBox(height: AppSpacing.md),
         LayoutBuilder(
           builder: (context, constraints) {
+            final periodLabel = Text(
+              _periodLabel(recommendation.period),
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+              ),
+            );
             final recommendationPanel = Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text('오늘의 추천', style: Theme.of(context).textTheme.titleLarge),
+                const Text(
+                  '오늘의 추천',
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
+                    height: 1.41,
+                  ),
+                ),
                 const SizedBox(height: AppSpacing.lg),
                 MealRecommendationCard(recommendation: recommendation),
                 const SizedBox(height: AppSpacing.lg),
@@ -190,11 +195,11 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
                 ),
               ],
             );
+            // Desktop: 두 칸 모두 카드로 시작하게 두어 상단 높이를 맞춘다.
+            // (왼쪽만 '오늘의 추천' 제목으로 시작하면 제목 높이만큼 어긋난다.)
             final contextPanel = Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _RecommendationReason(recommendation: recommendationContext),
-                const SizedBox(height: AppSpacing.lg),
                 _MealAdjustmentEntry(onTap: _openMealChat),
                 const SizedBox(height: AppSpacing.xxl),
                 MealInfoSection(items: recommendation.cautions),
@@ -204,10 +209,12 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  periodLabel,
+                  const SizedBox(height: AppSpacing.md),
                   _RecommendationReason(recommendation: recommendationContext),
                   const SizedBox(height: AppSpacing.xxl),
                   recommendationPanel,
-                  const SizedBox(height: AppSpacing.lg),
+                  const SizedBox(height: AppSpacing.xxl),
                   _MealAdjustmentEntry(onTap: _openMealChat),
                   const SizedBox(height: AppSpacing.xxxl),
                   MealInfoSection(items: recommendation.cautions),
@@ -218,7 +225,17 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
               primaryFlex: 7,
               secondaryFlex: 5,
               gap: AppSpacing.xxl,
-              primary: recommendationPanel,
+              primary: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // 시안: '아침/점심/…' 라벨과 추천 이유 카드는 한 묶음으로 움직인다.
+                  periodLabel,
+                  const SizedBox(height: AppSpacing.md),
+                  _RecommendationReason(recommendation: recommendationContext),
+                  const SizedBox(height: AppSpacing.xxl),
+                  recommendationPanel,
+                ],
+              ),
               secondary: contextPanel,
             );
           },
@@ -327,30 +344,42 @@ class _MealGreeting extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        // 시안: 식사 색 40% 채움.
+        color: AppColors.categoryMeal.withValues(alpha: 0.4),
         border: Border.all(color: AppColors.borderSubtle),
         borderRadius: BorderRadius.circular(AppRadius.hero),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 24),
         child: Row(
+          spacing: AppSpacing.lg,
           children: [
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: 6,
                 children: [
                   Text(
                     data.greeting,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.categoryMeal,
+                    style: const TextStyle(
+                      color: AppColors.primary900,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      height: 1.41,
                     ),
                   ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(data.supportingText),
+                  Text(
+                    data.supportingText,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 15,
+                      height: 1.6,
+                    ),
+                  ),
                 ],
               ),
             ),
-            const Icon(Icons.wb_sunny, size: 36, color: AppColors.warning),
+            const Icon(Icons.wb_sunny, size: 55, color: AppColors.warning),
           ],
         ),
       ),
@@ -365,31 +394,49 @@ class _RecommendationReason extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 시안: 채움 없이 식사 색 테두리.
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppColors.primary50,
+        border: Border.all(color: AppColors.categoryMeal),
         borderRadius: BorderRadius.circular(AppRadius.card),
       ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.pageMobile),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+          spacing: 10,
           children: [
-            Text(
-              recommendation.reasonTitle,
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(color: AppColors.primary700),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: 4,
+              children: [
+                Text(
+                  recommendation.reasonTitle,
+                  style: const TextStyle(
+                    color: AppColors.primary700,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    height: 1.5,
+                  ),
+                ),
+                Text(
+                  recommendation.reason,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 15,
+                    height: 1.6,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(recommendation.reason),
-            const SizedBox(height: AppSpacing.md),
-            const Divider(color: AppColors.primary100),
+            const Divider(height: 1, color: AppColors.disabledBackground),
             Text(
               recommendation.evidence,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                height: 1.5,
+              ),
             ),
           ],
         ),
@@ -414,24 +461,48 @@ class _MealAdjustmentEntry extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.all(AppSpacing.lg),
           decoration: BoxDecoration(
-            color: AppColors.primary50,
+            // 시안: 식사 색 40% 채움.
+            color: AppColors.categoryMeal.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(AppRadius.card),
           ),
           child: const Row(
+            spacing: AppSpacing.lg,
             children: [
               CircleAvatar(
-                backgroundColor: AppColors.primary500,
-                foregroundColor: AppColors.textInverse,
-                child: Text('AI'),
+                radius: 20,
+                backgroundColor: AppColors.surfaceSubtle,
+                child: Text(
+                  'AI',
+                  style: TextStyle(
+                    color: AppColors.success,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    height: 1.6,
+                  ),
+                ),
               ),
-              SizedBox(width: AppSpacing.lg),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  spacing: 4,
                   children: [
-                    Text('“속이 좀 메스꺼워요”'),
-                    SizedBox(height: AppSpacing.xs),
-                    Text('말만 하면 지금 상태에 맞게 다시 골라드려요'),
+                    Text(
+                      'AI와 메뉴 재조정하기',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        height: 1.6,
+                      ),
+                    ),
+                    Text(
+                      '지금 상태에 맞게 다시 골라드려요',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        height: 1.6,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -440,6 +511,39 @@ class _MealAdjustmentEntry extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// 끼니 선택 섹션 제목. 현재 끼니 안내 문구는 기존 고정 문구를 유지한다
+/// (현재 끼니 데이터는 BE 요청 사항).
+class _PeriodHeader extends StatelessWidget {
+  const _PeriodHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: 4,
+      children: [
+        Text(
+          '어떤 끼니를 볼까요?',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            height: 1.5,
+          ),
+        ),
+        Text(
+          '지금은 아침이지만, 다른 끼니도 미리 볼 수 있어요',
+          style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 15,
+            height: 1.6,
+          ),
+        ),
+      ],
     );
   }
 }
