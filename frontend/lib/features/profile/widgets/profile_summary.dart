@@ -24,6 +24,7 @@ class ProfileSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pregnancyAge = draft.pregnancyAgeAt(DateTime.now());
     return ResponsivePageContent.form(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
@@ -32,7 +33,9 @@ class ProfileSummary extends StatelessWidget {
           children: [
             _SummaryItem(
               label: draft.dueDate == null ? '출산예정일 (마지막 생리일 기준)' : '출산예정일',
-              value: _dateValue(draft),
+              value: pregnancyAge == null
+                  ? _dateValue(draft)
+                  : '${_dateValue(draft)} · 임신 ${pregnancyAge.weeks}주 ${pregnancyAge.days}일',
               onTap: () => onEditStep(0),
             ),
             _SummaryItem(

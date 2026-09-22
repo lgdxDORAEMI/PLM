@@ -27,11 +27,23 @@ class DailyRoutinePlan {
     required this.date,
     required this.updatedLabel,
     required this.items,
+    this.homeCards = const [],
     this.isBackendFallback = false,
+    this.weekNotes = const [],
+    this.caution,
   });
 
   final DateTime date;
   final String updatedLabel;
   final List<RoutineItem> items;
+
+  /// Backend home.summaries에서 만든 카테고리별 홈 카드 네 장.
+  final List<RoutineItem> homeCards;
   final bool isBackendFallback;
+
+  /// Backend home.week_notes: 주차별 고정 안내 2줄(09-22). 없으면 빈 목록.
+  final List<String> weekNotes;
+
+  /// Backend home.caution: 오늘의 팁(AI)이 있으면 그 문장, 없으면 주차별 주의 문구.
+  final String? caution;
 }

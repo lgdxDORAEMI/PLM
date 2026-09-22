@@ -194,15 +194,26 @@ OFF면 **4003**(앱 정의 코드)으로 닫아 1008(origin/토큰)과 구분한
 | source | `ai` = AI 생성 성공(컨디션 수정 시 대상 가이드 중 하나 이상 성공). `fallback_prev`(전일 루틴 또는 직전 버전 유지) / `fallback_template`(기본 템플릿) = **AI 생성 실패**(시간 초과·AI 오류). 처리 기준은 아래 "AI 실패 처리". 폴백률(NFR-016) 측정용 |
 | model | 생성에 쓴 LLM 모델명. 폴백이면 `null` |
 | response | `{meal: [...], household: [...], health: [...], sleep: {...}, tip: {...} 또는 null}`. `tip`은 웰컴 카드 '오늘 시도해보세요' 팁 1개(아래 표). 나머지 4종은 각 항목 `{item_key, title, payload, source_ids}`. `payload` 모양은 아래 표. `source_ids`는 근거 문단 `pregnancy_knowledge.id` |
+| home | **2026-09-22 추가.** 홈 화면용 묶음 `{week, week_notes: [2줄], caution, summaries: {meal, household, health, sleep}}`. `summaries`는 **4종 카드 한 줄 고정 문구**(09-22 팀 결정: 홈은 AI 맞춤이 필요 없음, 맞춤 정보는 각 가이드 상세 화면에서. 항상 4개 다 있음). 주차 특징 블록은 `week_notes`는 주차별 고정 문구(`backend/app/services/routine/week_notes.yaml`, 4주 구간, **팀 검수 전 초안**). `caution`은 `response.tip.text`가 있으면 그 팁, 없으면(폴백) 주차별 기본 주의 문구. 프로필이 없으면 `{week: null, week_notes: [], caution: null}`. 프론트는 "{week}주차에는 이런 시기예요" + `week_notes` + `caution`을 그린다 |
+
+**프론트 요청 (2026-09-22, 시급) — 홈 '오늘의 하루 루틴'을 카드 4장으로**
+
+지금 홈은 `routine_items` 항목마다 카드를 그려 10장 넘게 펼쳐진다(`frontend/lib/features/home/screens/wife_home_screen.dart:287` `for (final item in plan.items)`). 시안(`docs/screens/W-HOME-001-1.png`)대로 바꿔 주세요.
+
+1. 카드는 식사·가사·건강·수면 **4장 고정**. 항목 수와 무관하게 가이드 종류별 1장이다.
+2. 카드 제목은 "식사 가이드" 등 고정, 카드 설명은 `home.summaries.{meal|household|health|sleep}`(고정 문구, AI 호출 없음).
+3. 카드를 누르면 해당 가이드 상세 화면으로 이동한다(기존 `_openRoutine(type)` → `RouteNames.mealGuide|householdGuide|healthGuide|sleepGuide`). 항목 목록은 상세 화면에서만 보여준다.
+4. 진행률(`RoutineProgress`)은 지금처럼 전체 항목 기준으로 계산해도 된다.
+
 
 `payload` 모양 (카테고리별, 기준 코드 `backend/app/services/routine/prompt.py` `ROUTINE_SCHEMA`)
 
 | 카테고리 | payload |
 | --- | --- |
-| meal (배열) | `{period: breakfast\|lunch\|dinner\|snack, reasonTitle, reason, evidence, nutritionTags: [문자열], cautions: [{title, description, badge}]}` |
+| meal (배열) | `{period: breakfast\|lunch\|dinner\|snack, reasonTitle, reason, evidence, nutritionTags: [문자열], cautions: [{title, description, badge}]}` . **09-22: 끼니 4개 필수 — breakfast·lunch·dinner·snack(화면 이름 '밤')** |
 | household (배열) | `{owner: self\|appliance\|partner, applianceAction: now\|reserve\|night\|none, reason}` |
 | health (배열) | `{bodyArea, loads: [{area, label, value(숫자)}], guide, durationMin(정수), reason, video?}`. `video`는 서버가 부위별 목록에서 붙이는 대표 활동 영상 `{title, url, duration_min}`이며 **AI가 만들지 않는다**. 영상이 정해지지 않은 부위에는 키 자체가 없다 |
-| sleep (객체 1개) | `{recommendedBedtime, environments: [{type, value, options: [문자열]}], tips: [문자열], reason}` |
+| sleep (객체 1개) | `{recommendedBedtime, environments: [{type, value, options: [문자열]}], tips: [문자열], reason}`. **09-22: `type`은 `light·temperature·humidity·sound·purifier` 코드 5종만**(예전 한글 값은 `/sleep/today`가 코드로 바꿔 준다) |
 
 `response.tip` (S7, FUC-W-HOME-001): `{text: 문자열(한 문장, 40자 안팎), source_ids: [정수]}` 또는 `null`. 루틴 항목이 아니므로 `item_key`·완료 체크가 없다. `null`인 경우 — 폴백 루틴(`source != ai`), 팁 생성만 실패·지연, 알레르기 금지어 포함 — 앱은 기본 문구를 표시한다. 팁이 `null`이어도 4종 루틴은 정상(`source`는 그대로).
 
@@ -247,3 +258,31 @@ AI 실패 처리 (FUC-W-CALLBACK-001, W-CALLBACK-001)
 로컬 Flutter Web의 임의 개발 포트를 허용합니다.
 허용 origin은 `http://localhost[:port]`, `http://127.0.0.1[:port]`입니다.
 Authorization, Content-Type 헤더와 GET/POST/PUT/PATCH/DELETE/OPTIONS 메서드를 허용합니다.   
+
+## 챗봇 (W-CHAT-001, FUC-W-CHAT-001·003·004, FUC-W-MEAL-003)
+
+설계: `docs/chatbot/chatbot_guide.md`. 챗봇은 **루틴을 바꾸지 않는다**. 추천만 하고, 메뉴 선택은 사용자가 Care API로 직접 한다.
+
+| Method | Path | 역할 |
+|---|---|---|
+| GET | `/api/v1/chat/messages` | 오늘 대화 전체(모드 구분 없음, 각 행에 `routine_item_id`). 화면은 지금처럼 `routine_item_id`로 걸러 모드별로 보여준다 |
+| POST | `/api/v1/chat/messages` | `{content, routine_item_id?}`. 없음 = 하단 탭 일반 모드, 있음 = 그 끼니의 식사 모드. 질문·답을 저장하고 답 1개를 반환 |
+| POST | `/api/v1/chat/meal-alternative` | **09-22 추가.** 식사 가이드 '다른 메뉴 보기'. `{routine_item_id, request?}` → 새 메뉴 1개 `{routine_item_id, title, reason, nutritionTags, cautions}`. 챗봇 식사 메모리(금지 재료·거절한 메뉴·오늘 다른 끼니 제외)를 그대로 쓰고, 대화로 저장하지 않으며 루틴도 바꾸지 않는다. 카드를 못 만들면 503(지금 메뉴 유지). 프론트는 끼니 후보가 1개뿐일 때 거절 기록(`meal_reject`) 뒤 이 API를 부른다(`meal_guide_controller.dart`) |
+
+응답 `ChatMessageResponse` (2026-09-22 S5 필드 추가)
+
+| 필드 | 설명 |
+|---|---|
+| `content` | 답변 문장 |
+| `suggested_actions` | 버튼 문구 목록. 식사 모드에서 추천 카드가 있으면 서버가 `["이걸로 할게요", "다른 메뉴 보기"]`로 고정한다 |
+| `recommendation` | **신규.** 식사 모드 추천 카드 `{title, reason, nutritionTags, cautions}` 또는 `null`. 일반 모드는 항상 `null` |
+
+프론트 요청 사항 (S6, `frontend/`는 백엔드가 수정하지 않는다)
+
+1. `recommendation`이 있으면 새 추천 카드(첨부 시안 "새 추천")로 그리고, `suggested_actions` 두 버튼을 카드 아래에 붙인다.
+2. `이걸로 할게요`: 사용자가 직접 식단을 바꾸는 동작이다. 기존 `PUT /api/v1/care/routine-items/{routine_item_id}`에 `{"feedback_kind": "meal_replace", "payload": <recommendation 그대로>}`를 보내고, 식사 가이드 화면의 해당 끼니 카드를 이 값으로 바꿔 보여준다. 챗봇 API는 호출하지 않는다.
+3. `다른 메뉴 보기`: 같은 `routine_item_id`로 `POST /api/v1/chat/messages`에 `content: "다른 메뉴 보기"`를 보낸다. 서버가 이미 보여준 메뉴를 다시 추천하지 않는다.
+4. `가사/건강/수면/식사 가이드 보기` 버튼은 해당 가이드 화면으로 이동하고, 그 밖의 문구 버튼은 그 문구를 질문으로 보낸다.
+5. 챗봇은 같은 날짜 대화를 모드 구분 없이 최근 20개까지 기억한다(하단 탭에서 말한 내용을 식사 모드에서도 안다). 화면 목록은 모드별로 유지한다.
+
+제약: 금지 재료(알레르기 등)가 들어간 카드는 서버가 버리고 `"조건에 맞는 메뉴를 찾지 못했어요. 다시 요청해 주세요."`와 `recommendation: null`을 돌려준다. `recommendation` 저장은 migration `20260922000000_chat_messages_recommendation.sql` 실DB 적용 후 동작한다(적용 전에는 카드가 있는 답만 저장 오류 503).

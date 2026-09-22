@@ -65,6 +65,26 @@ void main() {
     expect(store.decisionFor(currentId), MealDecision.rejected);
   });
 
+  test('끼니당 메뉴가 1개(실제 API)면 다른 메뉴 보기가 Backend 새 메뉴로 바뀐다', () async {
+    final service = _SingleMenuService();
+    final controller = MealGuideController(
+      service: service,
+      store: store,
+      initialPeriod: MealPeriod.breakfast,
+    );
+    addTearDown(controller.dispose);
+
+    await controller.load();
+    final original = controller.selectedRecommendation!;
+    await controller.showNextRecommendation();
+
+    expect(service.requested, isTrue);
+    expect(controller.selectedRecommendation?.title, '바나나 감자 찜');
+    expect(controller.selectedRecommendation?.id, original.id); // 같은 끼니 항목
+    expect(controller.selectedDecision, MealDecision.undecided);
+    expect(controller.loadingAlternative, isFalse);
+  });
+
   test('대체 메뉴를 적용하면 Meal Store에 선택 결과를 보관한다', () async {
     final current = MockMealService.guide.recommendationFor(
       MealPeriod.breakfast,
@@ -106,4 +126,41 @@ class _RecordingMealService implements MealService {
     required MealRecommendation current,
     required String request,
   }) async => current;
+}
+
+/// 실제 API처럼 끼니당 메뉴가 1개인 가이드. 다른 메뉴는 fetchAlternative로만 받는다.
+class _SingleMenuService extends _RecordingMealService {
+  bool requested = false;
+
+  @override
+  Future<MealGuideData> fetchGuide() async {
+    final breakfast = MockMealService.guide.recommendationFor(
+      MealPeriod.breakfast,
+    );
+    return MealGuideData(
+      greeting: '',
+      supportingText: '',
+      periods: MockMealService.guide.periods,
+      recommendations: [breakfast],
+    );
+  }
+
+  @override
+  Future<MealRecommendation> fetchAlternative({
+    required MealRecommendation current,
+    required String request,
+  }) async {
+    requested = true;
+    return MealRecommendation(
+      id: current.id,
+      period: current.period,
+      title: '바나나 감자 찜',
+      description: '소화가 편해요',
+      reasonTitle: current.reasonTitle,
+      reason: '소화가 편해요',
+      evidence: '',
+      nutritionTags: const ['에너지'],
+      cautions: const [],
+    );
+  }
 }

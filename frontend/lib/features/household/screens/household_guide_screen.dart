@@ -168,7 +168,11 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
   Widget _applianceSection() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      const _SectionTitle(number: 3, title: '가전이 대신합니다', label: '추천 3개'),
+      _SectionTitle(
+        number: 3,
+        title: '가전이 대신합니다',
+        label: '추천 ${_controller.tasksFor(HouseholdTaskOwner.appliance).length}개',
+      ),
       const SizedBox(height: AppSpacing.md),
       Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -183,7 +187,7 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
       _SectionTitle(
         number: 2,
         title: '가족과 나누기',
-        label: '${_controller.selectedCount}개 요청',
+        label: '${_controller.shareableTasks.length}개 할일',
       ),
       const SizedBox(height: AppSpacing.md),
       Column(

@@ -56,6 +56,7 @@ void main() {
     );
     expect(find.byKey(const ValueKey('home-routine-success')), findsOneWidget);
     expect(find.byKey(const ValueKey('home-edit-activities')), findsOneWidget);
+    expect(find.text(MockRoutineService.todayPlan.updatedLabel), findsNothing);
     await tester.scrollUntilVisible(
       find.byKey(const ValueKey('home-routine-progress')),
       300,

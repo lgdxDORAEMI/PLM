@@ -132,7 +132,7 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
       builder: (context) => AppDialog(
         icon: Icons.nightlight_round,
         iconColor: AppColors.categorySleep,
-        title: '수면 루틴 실행을 기록했어요',
+        title: '수면 루틴을 실행했습니다',
         message: '수면 환경 전체 실행 1회를 오늘의 가전 실행 내역에 반영했어요.',
         actions: [
           AppDialogAction(label: '확인', onPressed: () => Navigator.pop(context)),

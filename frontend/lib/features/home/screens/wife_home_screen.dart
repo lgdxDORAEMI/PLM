@@ -29,6 +29,7 @@ import '../../profile/models/profile_draft.dart';
 import '../../report/models/daily_record.dart';
 import '../../../shared/widgets/integration_required_state.dart';
 import '../widgets/pregnancy_week_hero.dart';
+import '../widgets/pregnancy_week_tip_card.dart';
 import '../widgets/today_condition_summary.dart';
 
 class WifeHomeScreen extends StatefulWidget {
@@ -140,7 +141,7 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
                     const SizedBox(height: AppSpacing.xxl),
                     ..._primaryContent(effectiveHasTodayCare),
                     const SizedBox(height: AppSpacing.huge),
-                    _weekContext(),
+                    _weekContext(pregnancyWeek),
                   ] else
                     ResponsiveSplitView(
                       primaryFlex: 8,
@@ -155,7 +156,7 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
                         children: [
                           _conditionSection(effectiveHasTodayCare),
                           const SizedBox(height: AppSpacing.xxl),
-                          _weekContext(),
+                          _weekContext(pregnancyWeek),
                         ],
                       ),
                     ),
@@ -186,17 +187,30 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
       ? [const IntegrationRequiredState(), ..._routineContent()]
       : _routineContent();
 
-  Widget _weekContext() => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      const SectionHeader(
-        title: '이번 주에 알아두세요',
-        description: '임신 주차와 오늘 상태를 바탕으로 확인하는 보조 정보예요.',
-      ),
-      const SizedBox(height: AppSpacing.lg),
-      const IntegrationRequiredState(message: '주차별 안내 데이터가 없습니다.'),
-    ],
-  );
+  /// 주차 안내는 Backend `home.week_notes`·`home.caution`(09-22). 루틴을 받기 전이면 안내 상태를 보여준다.
+  Widget _weekContext(int? pregnancyWeek) {
+    final plan = _routineController.plan;
+    final notes = plan?.weekNotes ?? const <String>[];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SectionHeader(
+          title: '이번 주에 알아두세요',
+          description: '임신 주차와 오늘 상태를 바탕으로 확인하는 보조 정보예요.',
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        if (pregnancyWeek == null || notes.isEmpty)
+          const IntegrationRequiredState(message: '주차별 안내 데이터가 없습니다.')
+        else
+          PregnancyWeekTipCard(
+            key: const ValueKey('home-week-tip'),
+            week: pregnancyWeek,
+            tips: notes,
+            caution: plan?.caution ?? '',
+          ),
+      ],
+    );
+  }
 
   List<Widget> _todayCarePrompt() {
     return [
@@ -230,24 +244,13 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
       return const [_RoutineLoadingSection()];
     }
     return [
-      Semantics(
-        liveRegion: true,
-        label: _routineController.isFallback ? '기본 루틴 준비 완료' : '맞춤 루틴 준비 완료',
-        child: Text(
-          plan.updatedLabel,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: AppColors.textTertiary),
-        ),
-      ),
       Align(
         alignment: Alignment.centerRight,
         child: TextButton.icon(
           key: const ValueKey('home-edit-activities'),
-          onPressed: () =>
-              Navigator.pushNamed(context, '${RouteNames.activity}?mode=edit'),
+          onPressed: _editActivities,
           icon: const Icon(Icons.edit_outlined),
-          label: const Text('예정 활동 수정'),
+          label: const Text('오늘 할일 수정하기'),
         ),
       ),
       const SizedBox(height: AppSpacing.lg),
@@ -284,7 +287,8 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
         description: '오늘 컨디션을 반영한 맞춤 가이드예요.',
       ),
       const SizedBox(height: AppSpacing.lg),
-      for (final item in plan.items) ...[
+      for (final item
+          in plan.homeCards.isEmpty ? plan.items : plan.homeCards) ...[
         RoutineGuideCard(
           item: item,
           onTap: () => unawaited(_openRoutine(item.type)),
@@ -322,6 +326,14 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
     if (!mounted) return;
     await _restoreTodayCare();
     if (mounted && _todayCareStore.hasTodayCare) {
+      await _routineController.loadToday();
+    }
+  }
+
+  /// Requery the routine when returning from activity editing.
+  Future<void> _editActivities() async {
+    await Navigator.pushNamed(context, '${RouteNames.activity}?mode=edit');
+    if (mounted) {
       await _routineController.loadToday();
     }
   }

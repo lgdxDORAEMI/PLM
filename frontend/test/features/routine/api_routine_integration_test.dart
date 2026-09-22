@@ -25,6 +25,17 @@ void main() {
             jsonEncode({
               'date': date,
               'source': 'fallback_template',
+              'home': {
+                'summaries': {
+                  'meal': '편한 식사로',
+                  'household': '집안일은 나누고',
+                  'health': '가볍게 움직이고',
+                  'sleep': '잠자리를 준비해요',
+                },
+                'week': 28,
+                'week_notes': ['허리 부담이 늘어요', '다리가 자주 부어요'],
+                'caution': '무거운 물건은 주의해주세요',
+              },
               'response': {
                 'meal': [
                   {'item_key': 'meal:1', 'title': '식사', 'payload': {}},
@@ -89,5 +100,15 @@ void main() {
     expect(plan.items.single.id, 'saved-meal-1');
     expect(plan.items.single.title, '저장된 식사');
     expect(plan.items.single.status, RoutineStatus.completed);
+    expect(plan.homeCards.map((card) => card.type), RoutineType.values);
+    expect(plan.homeCards.map((card) => card.description), [
+      '편한 식사로',
+      '집안일은 나누고',
+      '가볍게 움직이고',
+      '잠자리를 준비해요',
+    ]);
+    expect(plan.homeCards.first.title, '식사 가이드');
+    expect(plan.weekNotes, ['허리 부담이 늘어요', '다리가 자주 부어요']); // 09-22 주차 안내
+    expect(plan.caution, '무거운 물건은 주의해주세요');
   });
 }

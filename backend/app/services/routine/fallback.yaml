@@ -13,6 +13,10 @@ meal:
     title: 늦지 않게 가벼운 저녁
     payload: {period: dinner, reasonTitle: 기본 안내, reason: "취침 3시간 전에는 식사를 마치는 것이 좋습니다.", evidence: "", nutritionTags: [칼슘], cautions: []}
     source_ids: []
+  - item_key: meal:snack
+    title: 속 편한 가벼운 밤 간식
+    payload: {period: snack, reasonTitle: 기본 안내, reason: "배가 고프면 소화가 편한 음식을 조금만 드세요.", evidence: "", nutritionTags: [수분], cautions: []}
+    source_ids: []
 household:
   - item_key: household:light_only
     title: 오늘은 가벼운 정리만 직접
@@ -39,3 +43,9 @@ sleep:
     tips: ["자기 전 스마트폰 사용을 줄여요.", "옆으로 누워 다리 사이에 쿠션을 두면 편합니다."]
     reason: 기본 안내
   source_ids: []
+# 09-22: 홈 카드 한 줄 고정 문구(FUC-W-HOME-001). AI가 만들지 않는다(팀 결정: 홈은 맞춤 정보 불필요). home.py가 그대로 내려준다.
+summaries:
+  meal: 오늘 컨디션에 맞춘 편한 식사로
+  household: 무리한 집안일은 나누거나 가전에 맡기고
+  health: 몸에 부담 없는 가벼운 움직임으로
+  sleep: 편안한 잠자리 환경을 준비해요

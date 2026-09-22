@@ -17,14 +17,14 @@ void main() {
   setUp(store.clear);
   tearDown(store.clear);
 
-  testWidgets('예정 활동 수정 모드는 저장값과 수정 완료 버튼을 표시한다', (tester) async {
+  testWidgets('오늘 할일 수정하기 모드는 저장값과 수정 완료 버튼을 표시한다', (tester) async {
     store.save(const ['장보기', '베란다 정리']);
 
     await tester.pumpWidget(
       const MaterialApp(home: ActivityScreen(editing: true)),
     );
 
-    expect(find.text('예정 활동 수정'), findsOneWidget);
+    expect(find.text('오늘 할일 수정하기'), findsOneWidget);
     expect(find.textContaining('활동을 반영할게요'), findsNothing);
     expect(find.textContaining('Mock 루틴'), findsNothing);
 
@@ -53,6 +53,44 @@ void main() {
     );
     expect(find.text('수정 완료'), findsOneWidget);
   });
+
+  for (final save in [true, false]) {
+    testWidgets('오늘 할일 수정하기 뒤로가기에서 ${save ? '저장하기' : '저장 안 함'} 선택', (
+      tester,
+    ) async {
+      final service = _EditActivityService();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(
+                onPressed: () => Navigator.push<void>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        ActivityScreen(editing: true, service: service),
+                  ),
+                ),
+                child: const Text('활동 수정 열기'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('활동 수정 열기'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('activity-청소')));
+      await tester.tap(find.byTooltip('뒤로 가기'));
+      await tester.pumpAndSettle();
+      expect(find.text('변경사항을 저장하시겠어요?'), findsOneWidget);
+      await tester.tap(find.text(save ? '저장하기' : '저장 안 함'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('활동 수정 열기'), findsOneWidget);
+      expect(service.savedActivities, save ? ['장보기', '청소'] : isEmpty);
+      expect(store.activities, save ? ['장보기', '청소'] : ['장보기']);
+    });
+  }
 
   testWidgets('할 일 저장 후 초대를 거쳐야 루틴이 생성된다', (tester) async {
     final service = _PendingActivityService();
@@ -187,4 +225,24 @@ class _PendingActivityService implements PlannedActivityService {
   void complete() => _generation.complete();
 
   void fail() => _generation.completeError(StateError('generation failed'));
+}
+
+class _EditActivityService implements PlannedActivityService {
+  List<String> savedActivities = [];
+
+  @override
+  Future<List<String>> fetch(DateTime date) async => ['장보기'];
+
+  @override
+  Future<void> saveAndGenerate(DateTime date, List<String> activities) async {
+    savedActivities = activities;
+  }
+
+  @override
+  Future<void> saveActivities(DateTime date, List<String> activities) async {
+    savedActivities = activities;
+  }
+
+  @override
+  Future<void> generateRoutine() async {}
 }

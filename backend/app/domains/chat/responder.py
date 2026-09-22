@@ -19,7 +19,7 @@ from app.services.routine.retriever import KnowledgeRetriever
 logger = logging.getLogger(__name__)
 
 TOTAL_TIMEOUT_SEC = 9.5  # NFR-001 10초. 임베딩 + LLM(8초) 합계 상한
-HISTORY_LIMIT = 6
+HISTORY_LIMIT = 20  # 09-22 결정: 같은 날짜 대화 전체(모드 무관)에서 최근 20개
 MAX_ACTIONS = 2
 FALLBACK_REPLY = "지금은 답변을 만들 수 없어요. 잠시 후 다시 물어봐 주세요."
 
@@ -31,6 +31,30 @@ REPLY_SCHEMA = {
     },
     "required": ["content", "suggested_actions"],
     "additionalProperties": False,
+}
+
+# S5 식사 모드: 추천 카드 1장(없으면 null). 모양 = 웬즈데이 meal payload(prompt._MEAL_ITEM)와 같게.
+_STR = {"type": "string"}
+RECOMMENDATION_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "title": _STR,
+        "reason": _STR,
+        "nutritionTags": {"type": "array", "items": _STR},
+        "cautions": {"type": "array", "items": {
+            "type": "object",
+            "properties": {"title": _STR, "description": _STR, "badge": _STR},
+            "required": ["title", "description", "badge"],
+            "additionalProperties": False,
+        }},
+    },
+    "required": ["title", "reason", "nutritionTags", "cautions"],
+    "additionalProperties": False,
+}
+MEAL_REPLY_SCHEMA = {
+    **REPLY_SCHEMA,
+    "properties": {**REPLY_SCHEMA["properties"], "recommendation": {"anyOf": [RECOMMENDATION_SCHEMA, {"type": "null"}]}},
+    "required": [*REPLY_SCHEMA["required"], "recommendation"],
 }
 
 SYSTEM_PROMPT = """너는 임산부 생활관리 앱의 챗봇이다. 한국어로 3~4문장 이내, 부드러운 존댓말로 답한다.
@@ -48,6 +72,7 @@ class ChatReply:
     content: str
     suggested_actions: list[str] = field(default_factory=list)
     source: str = "ai"  # ai | fallback
+    recommendation: dict[str, Any] | None = None  # S5 식사 모드만
 
 
 def build_prompt(
@@ -73,18 +98,19 @@ async def generate_reply(
     question: str,
     history: list[dict[str, str]],
     extra_rules: str = "",
+    schema: dict[str, Any] = REPLY_SCHEMA,
 ) -> ChatReply:
     """예외를 올리지 않는다. 타임아웃·API 오류·스키마 불일치·빈 답은 모두 FALLBACK_REPLY."""
     try:
         return await asyncio.wait_for(
-            _generate(generator, retriever, context, question, history, extra_rules), TOTAL_TIMEOUT_SEC
+            _generate(generator, retriever, context, question, history, extra_rules, schema), TOTAL_TIMEOUT_SEC
         )
     except Exception:
         logger.exception("챗봇 응답 생성 실패 — 고정 문구로 대체")
         return ChatReply(FALLBACK_REPLY, [], "fallback")
 
 
-async def _generate(generator, retriever, context, question, history, extra_rules) -> ChatReply:
+async def _generate(generator, retriever, context, question, history, extra_rules, schema) -> ChatReply:
     try:
         chunks = await retriever.search(question, context["facts"].get("week"))
     except Exception:
@@ -92,9 +118,9 @@ async def _generate(generator, retriever, context, question, history, extra_rule
         logger.exception("챗봇 RAG 검색 실패 — 참고 자료 없이 진행")
         chunks = []
     prompt = build_prompt(context, question, history, chunks, extra_rules)
-    data = json.loads(await generator.generate(prompt, REPLY_SCHEMA, "chat_reply", SYSTEM_PROMPT))
+    data = json.loads(await generator.generate(prompt, schema, "chat_reply", SYSTEM_PROMPT))
     content = data["content"].strip()
     if not content:
         raise ValueError("빈 답변")
     actions = [a.strip() for a in data["suggested_actions"] if a.strip()][:MAX_ACTIONS]
-    return ChatReply(content, actions, "ai")
+    return ChatReply(content, actions, "ai", data.get("recommendation"))

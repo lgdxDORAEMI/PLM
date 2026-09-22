@@ -306,13 +306,13 @@ class _ProfileHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final due = profile?.effectiveDueDate;
-    final week = profile?.pregnancyWeekAt(DateTime.now());
+    final pregnancyAge = profile?.pregnancyAgeAt(DateTime.now());
     final dueLabel = due == null
         ? null
         : '${due.year}. ${due.month.toString().padLeft(2, '0')}. '
               '${due.day.toString().padLeft(2, '0')}.';
     final hasProfileValues =
-        profileAvailable && week != null && dueLabel != null;
+        profileAvailable && pregnancyAge != null && dueLabel != null;
     return Semantics(
       container: true,
       label: hasProfileValues ? '프로필 임신 정보' : '프로필 정보 없음',
@@ -342,7 +342,7 @@ class _ProfileHeader extends StatelessWidget {
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   hasProfileValues
-                      ? '임신 $week주차 · 출산예정일 $dueLabel'
+                      ? '임신 ${pregnancyAge.weeks}주 ${pregnancyAge.days}일 · 출산예정일 $dueLabel'
                       : '데이터 연결 후 이름과 임신 정보가 표시돼요.',
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: AppColors.textSecondary,

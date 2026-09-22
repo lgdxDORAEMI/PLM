@@ -28,12 +28,16 @@ class ActivityScreen extends StatefulWidget {
 class _ActivityScreenState extends State<ActivityScreen> {
   late final PlannedActivityController _controller;
   late final TextEditingController _customController;
+  late Set<String> _initialSelection;
+  bool _allowPop = false;
+  bool _handlingBack = false;
 
   @override
   void initState() {
     super.initState();
     _controller = PlannedActivityController(service: widget.service)
       ..addListener(_refresh);
+    _initialSelection = _controller.selected;
     _customController = TextEditingController();
     unawaited(_loadActivities());
   }
@@ -41,6 +45,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   Future<void> _loadActivities() async {
     try {
       await _controller.loadActivities();
+      if (mounted) _initialSelection = _controller.selected;
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -62,96 +67,102 @@ class _ActivityScreenState extends State<ActivityScreen> {
   void _refresh() => setState(() {});
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: TopAppBar(
-      title: widget.editing ? '예정 활동 수정' : '오늘 예정 활동',
-      onBack: _handleBack,
-      wifeProfileAction: true,
-    ),
-    body: SafeArea(
-      top: false,
-      child: ResponsivePageContent(
-        maxWidth: 720,
-        child: ListView(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-          children: [
-            Text(
-              '오늘 할 집안일이 있나요?',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              '예정된 일을 알려주면 오늘 컨디션에 맞춰 직접 할 일과 도움받을 일을 나눠드려요.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 220,
-                mainAxisExtent: 92,
-                crossAxisSpacing: AppSpacing.sm,
-                mainAxisSpacing: AppSpacing.sm,
+  Widget build(BuildContext context) => PopScope<void>(
+    canPop: !widget.editing || _allowPop,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop && widget.editing) unawaited(_handleBack());
+    },
+    child: Scaffold(
+      appBar: TopAppBar(
+        title: widget.editing ? '오늘 할일 수정하기' : '오늘 예정 활동',
+        onBack: _handleBack,
+        wifeProfileAction: true,
+      ),
+      body: SafeArea(
+        top: false,
+        child: ResponsivePageContent(
+          maxWidth: 720,
+          child: ListView(
+            padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+            children: [
+              Text(
+                '오늘 할 집안일이 있나요?',
+                style: Theme.of(context).textTheme.headlineSmall,
               ),
-              itemCount: PlannedActivityController.options.length,
-              itemBuilder: (context, index) {
-                final activity = PlannedActivityController.options[index];
-                return _ActivityCard(
-                  activity: activity,
-                  icon: _iconFor(activity),
-                  selected: _controller.selected.contains(activity),
-                  onTap: () => _controller.toggle(activity),
-                );
-              },
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            Text('목록에 없는 활동', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.sm),
-            AppInput(
-              key: const ValueKey('custom-activity-input'),
-              label: '직접 입력',
-              hintText: '예: 베란다 정리',
-              controller: _customController,
-              textInputAction: TextInputAction.done,
-              onSubmitted: _addCustom,
-              suffixIcon: IconButton(
-                tooltip: '활동 추가',
-                onPressed: () => _addCustom(_customController.text),
-                icon: const Icon(Icons.add),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                '예정된 일을 알려주면 오늘 컨디션에 맞춰 직접 할 일과 도움받을 일을 나눠드려요.',
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
               ),
-            ),
-            if (_customSelections.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.md),
-              Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
-                children: [
-                  for (final activity in _customSelections)
-                    InputChip(
-                      label: Text(activity),
-                      onDeleted: () => _controller.toggle(activity),
-                    ),
-                ],
+              const SizedBox(height: AppSpacing.xl),
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: 220,
+                  mainAxisExtent: 92,
+                  crossAxisSpacing: AppSpacing.sm,
+                  mainAxisSpacing: AppSpacing.sm,
+                ),
+                itemCount: PlannedActivityController.options.length,
+                itemBuilder: (context, index) {
+                  final activity = PlannedActivityController.options[index];
+                  return _ActivityCard(
+                    activity: activity,
+                    icon: _iconFor(activity),
+                    selected: _controller.selected.contains(activity),
+                    onTap: () => _controller.toggle(activity),
+                  );
+                },
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              Text('목록에 없는 활동', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: AppSpacing.sm),
+              AppInput(
+                key: const ValueKey('custom-activity-input'),
+                label: '직접 입력',
+                hintText: '예: 베란다 정리',
+                controller: _customController,
+                textInputAction: TextInputAction.done,
+                onSubmitted: _addCustom,
+                suffixIcon: IconButton(
+                  tooltip: '활동 추가',
+                  onPressed: () => _addCustom(_customController.text),
+                  icon: const Icon(Icons.add),
+                ),
+              ),
+              if (_customSelections.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.md),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: [
+                    for (final activity in _customSelections)
+                      InputChip(
+                        label: Text(activity),
+                        onDeleted: () => _controller.toggle(activity),
+                      ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: AppSpacing.xl),
+              AppButton(
+                key: const ValueKey('activity-submit-button'),
+                label: _controller.generating
+                    ? widget.editing || ProfileStore.instance.awaitsResetRoutine
+                          ? '오늘 루틴 만드는 중…'
+                          : '저장 중…'
+                    : widget.editing
+                    ? '수정 완료'
+                    : ProfileStore.instance.awaitsResetRoutine
+                    ? 'AI 루틴 만들기'
+                    : '다음',
+                onPressed: _controller.generating ? null : _generate,
               ),
             ],
-            const SizedBox(height: AppSpacing.xl),
-            AppButton(
-              key: const ValueKey('activity-submit-button'),
-              label: _controller.generating
-                  ? widget.editing || ProfileStore.instance.awaitsResetRoutine
-                        ? '오늘 루틴 만드는 중…'
-                        : '저장 중…'
-                  : widget.editing
-                  ? '수정 완료'
-                  : ProfileStore.instance.awaitsResetRoutine
-                  ? 'AI 루틴 만들기'
-                  : '다음',
-              onPressed: _controller.generating ? null : _generate,
-            ),
-          ],
+          ),
         ),
       ),
     ),
@@ -225,12 +236,65 @@ class _ActivityScreenState extends State<ActivityScreen> {
     if (ProfileStore.instance.awaitsResetRoutine) {
       ProfileStore.instance.completeResetRoutine();
     }
-    Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
+    if (widget.editing) {
+      await _leaveEditing();
+    } else {
+      Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
+    }
   }
 
-  void _handleBack() {
+  bool get _hasUnsavedChanges =>
+      _controller.selected.length != _initialSelection.length ||
+      !_controller.selected.containsAll(_initialSelection);
+
+  /// Confirm unsaved edits before leaving the activity editor.
+  Future<void> _handleBack() async {
+    if (_handlingBack || _controller.generating) return;
+    if (widget.editing) {
+      _handlingBack = true;
+      try {
+        if (_hasUnsavedChanges) {
+          final save = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('변경사항을 저장하시겠어요?'),
+              content: const Text('저장하면 오늘의 루틴에 변경한 활동이 반영돼요.'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('저장 안 함'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('저장하기'),
+                ),
+              ],
+            ),
+          );
+          if (!mounted || save == null) return;
+          if (save) {
+            await _generate();
+            return;
+          }
+        }
+        await _leaveEditing();
+      } finally {
+        _handlingBack = false;
+      }
+      return;
+    }
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
+    } else {
+      Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
+    }
+  }
+
+  Future<void> _leaveEditing() async {
+    if (Navigator.canPop(context)) {
+      setState(() => _allowPop = true);
+      await WidgetsBinding.instance.endOfFrame;
+      if (mounted) Navigator.pop(context);
     } else {
       Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
     }

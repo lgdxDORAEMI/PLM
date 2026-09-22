@@ -21,10 +21,11 @@ from supabase import Client
 from app.domains.errors import DomainStorageError
 
 from .repository import ChatRepository
+from .responder import HISTORY_LIMIT
 from .schemas import ChatMessageInput, ChatMessageResponse, ChatRole
 
 TABLE = "chat_messages"
-COLUMNS = "id,role,content,routine_item_id,suggested_actions,created_at"
+COLUMNS = "id,role,content,routine_item_id,suggested_actions,recommendation,created_at"  # recommendation: 09-22 migration 적용 확인
 
 # Legacy Stub response retained for isolated contract tests; product requests use add_ai_message.
 PLACEHOLDER_REPLY = "아직 실제 AI 응답 기능은 준비 중이에요. 곧 연결할게요."
@@ -45,13 +46,15 @@ class SupabaseChatRepository(ChatRepository):
         )
         return [_to_response(row) for row in rows]
 
-    def history_for_mode(self, user_id: str, target_date: date, routine_item_id: str | None) -> list[dict[str, str]]:
-        """Only recent messages from the same day and conversation mode reach the LLM."""
-        rows = self.list_messages(user_id, target_date)
+    def history_for_day(self, user_id: str, target_date: date) -> list[dict[str, str]]:
+        """LLM에 넘기는 이력: 같은 날짜 대화 전체(모드 무관) 최근 20개. 추천 카드는 메뉴명만 붙여 반복 추천을 막는다."""
         return [
-            {"role": row.role.value, "content": row.content}
-            for row in rows if row.routine_item_id == routine_item_id
-        ][-6:]
+            {
+                "role": row.role.value,
+                "content": row.content + (f" [추천: {row.recommendation['title']}]" if row.recommendation else ""),
+            }
+            for row in self.list_messages(user_id, target_date)
+        ][-HISTORY_LIMIT:]
 
     def validate_meal_item(self, user_id: str, target_date: date, item_id: str) -> bool:
         rows = self._run(
@@ -68,7 +71,7 @@ class SupabaseChatRepository(ChatRepository):
 
     def add_ai_message(
         self, user_id: str, target_date: date, payload: ChatMessageInput,
-        content: str, actions: list[str],
+        content: str, actions: list[str], recommendation: dict | None = None,
     ) -> ChatMessageResponse:
         """Persist the user's text and the generated assistant reply for this mode."""
         base = {"user_id": user_id, "date": target_date.isoformat(), "routine_item_id": payload.routine_item_id}
@@ -77,6 +80,8 @@ class SupabaseChatRepository(ChatRepository):
             lambda: self.client.table(TABLE).insert({
                 **base, "role": ChatRole.ASSISTANT.value, "content": content,
                 "suggested_actions": actions,
+                # 카드가 있을 때만 칸을 쓴다 → migration 적용 전에도 일반 대화 저장은 깨지지 않는다.
+                **({"recommendation": recommendation} if recommendation else {}),
             }).execute()
         )
         return _to_response(rows[0])
@@ -129,5 +134,6 @@ def _to_response(row: dict) -> ChatMessageResponse:
         content=row["content"],
         routine_item_id=row.get("routine_item_id"),
         suggested_actions=row.get("suggested_actions"),
+        recommendation=row.get("recommendation"),
         created_at=created_at,
     )

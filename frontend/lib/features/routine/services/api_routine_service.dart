@@ -34,6 +34,21 @@ class ApiRoutineService implements RoutineService {
         '${date.year.toString().padLeft(4, '0')}-'
         '${date.month.toString().padLeft(2, '0')}-'
         '${date.day.toString().padLeft(2, '0')}';
+    final home = json['home'];
+    final summaries = home is Map ? home['summaries'] : null;
+    if (summaries is! Map) {
+      throw const FormatException('홈 가이드 요약이 없습니다.');
+    }
+    final homeCards = [
+      for (final type in RoutineType.values)
+        RoutineItem(
+          id: 'home:${type.name}',
+          title: _guideTitle(type),
+          description: _summaryFor(summaries, type),
+          type: type,
+          status: RoutineStatus.scheduled,
+        ),
+    ];
     final items = <RoutineItem>[];
     for (final type in RoutineType.values) {
       final guide = await _client.get(
@@ -76,9 +91,30 @@ class ApiRoutineService implements RoutineService {
       date: date,
       updatedLabel: json['source'] == 'ai' ? '오늘의 맞춤 루틴' : '오늘의 기본 루틴',
       items: items,
+      homeCards: homeCards,
       isBackendFallback: json['source'] != 'ai',
+      weekNotes: home is Map
+          ? ((home['week_notes'] as List?)?.whereType<String>().toList() ??
+                const [])
+          : const [],
+      caution: home is Map ? home['caution'] as String? : null,
     );
   }
+
+  String _summaryFor(Map summaries, RoutineType type) {
+    final value = summaries[type.name];
+    if (value is! String || value.trim().isEmpty) {
+      throw FormatException('${type.name} 홈 가이드 요약이 없습니다.');
+    }
+    return value;
+  }
+
+  String _guideTitle(RoutineType type) => switch (type) {
+    RoutineType.meal => '식사 가이드',
+    RoutineType.household => '가사 가이드',
+    RoutineType.health => '건강 가이드',
+    RoutineType.sleep => '수면 가이드',
+  };
 
   String _guidePath(RoutineType type) => switch (type) {
     RoutineType.meal => 'meals',

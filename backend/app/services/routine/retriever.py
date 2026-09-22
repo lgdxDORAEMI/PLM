@@ -77,8 +77,10 @@ class KnowledgeRetriever:
         categories = list(queries)
         embeddings = await self.embed([queries[c] for c in categories])
         week = facts.get("week")
-        # ponytail: supabase-py는 동기 클라이언트. 4회 RPC를 스레드에서 병렬 실행. 비동기 클라이언트 필요해지면 교체.
-        results = await asyncio.gather(
-            *(asyncio.to_thread(self._match, emb, week, cat) for cat, emb in zip(categories, embeddings))
-        )
-        return dict(zip(categories, results))
+        # 09-22: 4회 RPC를 스레드 4개로 동시에 돌리면 supabase-py의 HTTP/2 연결 1개를 여러 스레드가 함께 써서
+        # Windows에서 ReadError [WinError 10035]로 루틴이 폴백됐다. 스레드 1개에서 차례로 실행한다(약 +0.3초 추정).
+        # ponytail: 순차 실행. 더 빨라야 하면 스레드마다 별도 클라이언트 또는 비동기 클라이언트로 교체.
+        def match_all() -> list[list[dict[str, Any]]]:
+            return [self._match(emb, week, cat) for cat, emb in zip(categories, embeddings)]
+
+        return dict(zip(categories, await asyncio.to_thread(match_all)))
