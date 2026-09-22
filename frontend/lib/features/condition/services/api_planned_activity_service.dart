@@ -19,9 +19,19 @@ class ApiPlannedActivityService implements PlannedActivityService {
 
   @override
   Future<void> saveAndGenerate(DateTime date, List<String> activities) async {
+    await saveActivities(date, activities);
+    await generateRoutine();
+  }
+
+  @override
+  Future<void> saveActivities(DateTime date, List<String> activities) async {
     await _client.put('/api/v1/care/conditions/${_key(date)}/activities', {
       'activities': activities,
     });
+  }
+
+  @override
+  Future<void> generateRoutine() async {
     final response = await _client.post('/api/v1/routine/today');
     if (response == null) throw const FormatException('루틴 생성 응답이 비어 있습니다.');
     ApiRoutineService.rememberGeneration(response);

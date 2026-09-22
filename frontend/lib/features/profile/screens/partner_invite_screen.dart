@@ -13,6 +13,13 @@ import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_context.dart';
 import '../../../routing/route_names.dart';
+import '../../condition/services/api_planned_activity_service.dart';
+import '../../condition/services/mock_planned_activity_service.dart';
+import '../../condition/services/planned_activity_service.dart';
+import '../../invitation/data/invite_presentation_store.dart';
+import '../../invitation/models/partner_link.dart';
+import '../../invitation/services/api_partner_link_service.dart';
+import '../../invitation/services/partner_link_service.dart';
 import '../../invitation/controllers/partner_invite_controller.dart';
 import '../../invitation/models/invitation.dart';
 import '../../invitation/services/invitation_service.dart';
@@ -24,10 +31,14 @@ class PartnerInviteScreen extends StatefulWidget {
     super.key,
     required this.entryContext,
     this.service,
+    this.activityService,
+    this.partnerLinkService,
   });
 
   final InviteEntryContext entryContext;
   final InvitationService? service;
+  final PlannedActivityService? activityService;
+  final PartnerLinkService? partnerLinkService;
 
   @override
   State<PartnerInviteScreen> createState() => _PartnerInviteScreenState();
@@ -35,6 +46,13 @@ class PartnerInviteScreen extends StatefulWidget {
 
 class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
   late final PartnerInviteController _controller;
+  PartnerLink? _partnerLink;
+  bool _checkingLink = false;
+  bool _linkError = false;
+  bool _showConnection = false;
+  bool _generating = false;
+
+  bool get _linked => _partnerLink?.linked ?? false;
 
   @override
   void initState() {
@@ -46,8 +64,26 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
               ? ApiInvitationService()
               : const MockInvitationService()),
     )..addListener(_refresh);
-    if (widget.service != null || AppConfig.hasSupabaseConfig) {
+    if (widget.partnerLinkService != null || AppConfig.hasSupabaseConfig) {
+      unawaited(_loadPartnerLink());
+    } else if (widget.service != null) {
       unawaited(_controller.load());
+    }
+  }
+
+  Future<void> _loadPartnerLink() async {
+    setState(() {
+      _checkingLink = true;
+      _linkError = false;
+    });
+    try {
+      final link = await (widget.partnerLinkService ?? ApiPartnerLinkService())
+          .fetch();
+      if (mounted) setState(() => _partnerLink = link);
+    } catch (_) {
+      if (mounted) setState(() => _linkError = true);
+    } finally {
+      if (mounted) setState(() => _checkingLink = false);
     }
   }
 
@@ -75,9 +111,30 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
   );
 
   Widget _buildBody() => switch (_controller.state) {
-    InvitationActionState.loading
-        when widget.service != null || AppConfig.hasSupabaseConfig =>
-      const AppLoadingState(message: 'ThinQ 초대를 준비하고 있어요'),
+    _ when _checkingLink => const AppLoadingState(
+      message: '배우자 연결 상태를 확인하고 있어요',
+    ),
+    _ when _linkError => AppErrorState(
+      title: '배우자 연결 상태를 불러오지 못했어요',
+      onRetry: _loadPartnerLink,
+    ),
+    _ when _showConnection && _linked => Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('${_partnerLink?.partnerDisplayName ?? '배우자'}님과 연결됐어요'),
+          const SizedBox(height: AppSpacing.lg),
+          AppButton(
+            label: widget.entryContext == InviteEntryContext.dailyFlow
+                ? '오늘 루틴 만들기'
+                : widget.entryContext == InviteEntryContext.onboarding
+                ? '홈으로 이동'
+                : '메뉴로 돌아가기',
+            onPressed: _generating ? null : () => unawaited(_finish()),
+          ),
+        ],
+      ),
+    ),
     InvitationActionState.error
         when widget.service != null || AppConfig.hasSupabaseConfig =>
       AppErrorState(
@@ -110,7 +167,7 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
           description: '가족 분담이 캘린더에 자동 정리돼요',
         ),
         const SizedBox(height: AppSpacing.xxl),
-        const AppCard(child: Text('초대장은 남편의 ThinQ 앱 알림으로 전송돼요.')),
+        if (!_linked) const AppCard(child: Text('초대장은 남편의 ThinQ 앱 알림으로 전송돼요.')),
         const SizedBox(height: AppSpacing.xl),
         Row(
           children: [
@@ -120,8 +177,12 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
                 key: const ValueKey('partner-invite-send'),
                 label: _controller.state == InvitationActionState.submitting
                     ? '보내는 중…'
+                    : _linked
+                    ? '초대하기'
                     : '초대장 보내기',
-                onPressed: _controller.state == InvitationActionState.submitting
+                onPressed:
+                    _controller.state == InvitationActionState.submitting ||
+                        _generating
                     ? null
                     : _send,
               ),
@@ -131,14 +192,16 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
               child: AppButton(
                 label: '나중에',
                 variant: AppButtonVariant.secondary,
-                onPressed: _finish,
+                onPressed: _generating ? null : () => unawaited(_finish()),
               ),
             ),
           ],
         ),
         const SizedBox(height: AppSpacing.md),
         Text(
-          '남편이 ThinQ 알림을 선택하고 연결을 완료하면 함께 볼 수 있어요.',
+          _linked
+              ? '초대하기를 누르면 현재 연결된 가족을 확인할 수 있어요.'
+              : '남편이 ThinQ 알림을 선택하고 연결을 완료하면 함께 볼 수 있어요.',
           textAlign: TextAlign.center,
           style: Theme.of(
             context,
@@ -149,6 +212,11 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
   };
 
   Future<void> _send() async {
+    if (_linked) {
+      InvitePresentationStore.instance.acknowledgeLinkedPartner();
+      setState(() => _showConnection = true);
+      return;
+    }
     if (widget.service == null && !AppConfig.hasSupabaseConfig) {
       ScaffoldMessenger.of(
         context,
@@ -166,7 +234,7 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('초대 링크를 복사했어요. 남편에게 전달해 주세요.')),
       );
-      _finish();
+      await _finish();
       return;
     }
     await showDialog<void>(
@@ -184,10 +252,53 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
         ],
       ),
     );
-    if (mounted) _finish();
+    if (mounted) await _finish();
   }
 
-  void _finish() {
+  /// Generate once after the daily invite choice; a failure keeps this page retryable.
+  Future<void> _finish() async {
+    if (widget.entryContext == InviteEntryContext.dailyFlow) {
+      if (_generating) return;
+      setState(() => _generating = true);
+      final navigator = Navigator.of(context, rootNavigator: true);
+      final loadingRoute = DialogRoute<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const PopScope<void>(
+          canPop: false,
+          child: AlertDialog(
+            title: Text('AI 루틴 생성중...'),
+            content: CircularProgressIndicator(),
+          ),
+        ),
+      );
+      navigator.push(loadingRoute);
+      var generated = false;
+      try {
+        final service =
+            widget.activityService ??
+            (AppConfig.hasSupabaseConfig
+                ? ApiPlannedActivityService()
+                : const MockPlannedActivityService());
+        await service.generateRoutine();
+        generated = true;
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('오늘의 루틴을 만들지 못했어요. 다시 시도해 주세요.')),
+          );
+        }
+      } finally {
+        if (navigator.mounted && loadingRoute.isActive) {
+          navigator.removeRoute(loadingRoute);
+        }
+        if (mounted) setState(() => _generating = false);
+      }
+      if (generated && mounted) {
+        Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
+      }
+      return;
+    }
     if (widget.entryContext == InviteEntryContext.onboarding) {
       Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
     } else if (Navigator.canPop(context)) {
@@ -198,6 +309,10 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
   }
 
   void _handleBack() {
+    if (widget.entryContext == InviteEntryContext.dailyFlow) {
+      Navigator.pushReplacementNamed(context, RouteNames.activity);
+      return;
+    }
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
     } else {

@@ -22,5 +22,6 @@ class ChatMessageResponse(BaseModel):
     message_id: str
     role: ChatRole
     content: str
+    routine_item_id: str | None = None
     suggested_actions: list[str] | None = None
     created_at: datetime

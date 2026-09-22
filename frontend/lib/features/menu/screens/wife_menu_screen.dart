@@ -21,6 +21,7 @@ import '../../condition/data/planned_activity_store.dart';
 import '../../condition/data/today_care_store.dart';
 import '../../invitation/controllers/partner_link_controller.dart';
 import '../../invitation/data/partner_connection_store.dart';
+import '../../invitation/data/invite_presentation_store.dart';
 import '../../invitation/services/api_partner_link_service.dart';
 import '../../invitation/services/mock_partner_link_service.dart';
 import '../../profile/data/profile_store.dart';
@@ -57,6 +58,7 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
           : MockPartnerLinkService(),
     )..addListener(_refresh);
     _connection.addListener(_refresh);
+    InvitePresentationStore.instance.addListener(_refresh);
     _profileStore.addListener(_refresh);
     unawaited(_linkController.load());
   }
@@ -64,6 +66,7 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
   @override
   void dispose() {
     _connection.removeListener(_refresh);
+    InvitePresentationStore.instance.removeListener(_refresh);
     _profileStore.removeListener(_refresh);
     _linkController
       ..removeListener(_refresh)
@@ -123,7 +126,9 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
                         : '연결 상태를 불러오지 못했어요',
                     onRetry: _linkController.load,
                   )
-                else if (_isLinked)
+                else if (_isLinked &&
+                    (!AppConfig.hasSupabaseConfig ||
+                        InvitePresentationStore.instance.isAcknowledged))
                   InfoBanner(
                     key: ValueKey('partner-linked-state'),
                     title:
@@ -135,8 +140,10 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
                   _MenuRow(
                     key: const ValueKey('partner-unlinked-state'),
                     icon: Icons.person_add_alt,
-                    title: '남편 초대하기',
-                    description: 'ThinQ 알림으로 초대장을 보내 계정 연결',
+                    title: '가족 초대하기',
+                    description: _isLinked
+                        ? '연결된 가족을 확인해 주세요'
+                        : 'ThinQ 알림으로 초대장을 보내 계정 연결',
                     onTap: () =>
                         Navigator.pushNamed(context, RouteNames.wifeInvite),
                   ),
@@ -241,10 +248,20 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
       CalendarSelectionStore.instance.reset();
       ApplianceExecutionStore.instance.reset();
       ApiRoutineService.clearGeneration();
+      InvitePresentationStore.instance.resetForCurrentAccount();
+      ProfileStore.instance.requireReentry();
+      ProfileStore.instance.reset();
+      final auth = AuthSessionStore.instance;
+      auth.update(
+        accountId: auth.accountId,
+        roles: auth.roles,
+        husbandLinked: auth.husbandLinked,
+        profileComplete: false,
+      );
       if (!mounted) return;
       Navigator.of(
         context,
-      ).pushNamedAndRemoveUntil(RouteNames.condition, (_) => false);
+      ).pushNamedAndRemoveUntil(RouteNames.profileSetup, (_) => false);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

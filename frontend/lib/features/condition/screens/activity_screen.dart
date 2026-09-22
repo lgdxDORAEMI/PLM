@@ -11,6 +11,7 @@ import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_radius.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_names.dart';
+import '../../profile/data/profile_store.dart';
 import '../controllers/planned_activity_controller.dart';
 import '../services/planned_activity_service.dart';
 
@@ -140,10 +141,14 @@ class _ActivityScreenState extends State<ActivityScreen> {
             AppButton(
               key: const ValueKey('activity-submit-button'),
               label: _controller.generating
-                  ? '오늘 루틴 만드는 중…'
+                  ? widget.editing || ProfileStore.instance.awaitsResetRoutine
+                        ? '오늘 루틴 만드는 중…'
+                        : '저장 중…'
                   : widget.editing
                   ? '수정 완료'
-                  : '오늘 루틴 만들기',
+                  : ProfileStore.instance.awaitsResetRoutine
+                  ? 'AI 루틴 만들기'
+                  : '다음',
               onPressed: _controller.generating ? null : _generate,
             ),
           ],
@@ -164,6 +169,21 @@ class _ActivityScreenState extends State<ActivityScreen> {
   Future<void> _generate() async {
     FocusManager.instance.primaryFocus?.unfocus();
     if (_controller.generating) return;
+    if (!widget.editing && !ProfileStore.instance.awaitsResetRoutine) {
+      try {
+        await _controller.saveActivities();
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, RouteNames.dailyInvite);
+        }
+      } catch (_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('예정 활동을 저장하지 못했어요. 다시 시도해 주세요.')),
+          );
+        }
+      }
+      return;
+    }
     final navigator = Navigator.of(context, rootNavigator: true);
     final loadingRoute = DialogRoute<void>(
       context: context,
@@ -201,6 +221,9 @@ class _ActivityScreenState extends State<ActivityScreen> {
         const SnackBar(content: Text('오늘의 루틴을 만들지 못했어요. 다시 시도해 주세요.')),
       );
       return;
+    }
+    if (ProfileStore.instance.awaitsResetRoutine) {
+      ProfileStore.instance.completeResetRoutine();
     }
     Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
   }

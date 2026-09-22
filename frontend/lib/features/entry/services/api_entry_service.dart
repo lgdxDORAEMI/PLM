@@ -24,16 +24,24 @@ class ApiEntryService implements EntryService {
         ? ActiveRole.husband
         : ActiveRole.wife;
     final linked = response['partner_link'] == 'linked';
+    final needsProfileReentry =
+        role == ActiveRole.wife &&
+        ProfileStore.instance.requiresReentryFor(user.id);
     AuthSessionStore.instance.update(
       accountId: user.id,
       roles: {role},
       husbandLinked: linked,
-      profileComplete: response['profile'] == 'complete',
+      profileComplete:
+          response['profile'] == 'complete' && !needsProfileReentry,
     );
-    if (role == ActiveRole.wife && response['profile'] != 'missing') {
+    if (role == ActiveRole.wife &&
+        response['profile'] != 'missing' &&
+        !needsProfileReentry) {
       final profile = await ApiProfileService(client: _client).fetch();
       if (profile != null) ProfileStore.instance.save(profile);
     }
+
+    if (needsProfileReentry) return AppLaunchState.wifeNeedsProfile;
 
     return switch (response['destination']) {
       'wife_home' => AppLaunchState.wifeReady,

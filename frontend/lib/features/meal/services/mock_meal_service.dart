@@ -202,8 +202,11 @@ class MockMealService implements MealService, MealChatService {
   }) async => alternative;
 
   @override
+  Future<List<MealChatMessage>> fetchHistory() async => const [];
+
+  @override
   Future<MealChatReply> sendMessage({
-    required MealRecommendation current,
+    required MealRecommendation? current,
     required String message,
   }) async {
     await Future<void>.delayed(const Duration(milliseconds: 350));

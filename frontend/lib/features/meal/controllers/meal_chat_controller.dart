@@ -6,10 +6,14 @@ import '../models/meal_guide.dart';
 import '../services/meal_chat_service.dart';
 
 class MealChatController extends ChangeNotifier {
-  MealChatController({required this.service, MealSelectionStore? store})
-    : store = store ?? MealSelectionStore.instance;
+  MealChatController({
+    required this.service,
+    this.live = false,
+    MealSelectionStore? store,
+  }) : store = store ?? MealSelectionStore.instance;
 
   final MealChatService service;
+  final bool live;
   final MealSelectionStore store;
 
   final List<MealChatMessage> _messages = [];
@@ -27,16 +31,29 @@ class MealChatController extends ChangeNotifier {
 
   static const suggestedPrompts = ['속이 좀 메스꺼워요', '냄새가 부담스러워요', '부드러운 음식이 좋아요'];
 
-  void initialize(MealRecommendation fallback) {
+  void initialize(MealRecommendation? fallback) {
     _current = store.appliedRecommendation ?? fallback;
     if (_messages.isEmpty) {
       _messages.add(
-        const MealChatMessage(
+        MealChatMessage(
           id: 'welcome',
           author: MealChatAuthor.assistant,
-          text: '아침 메뉴, 어떤 점이 고민이세요?\n냄새·식감·속 불편함 뭐든 말씀해 주세요.',
+          text: fallback == null
+              ? '무엇이 궁금하신가요? 오늘 가이드와 임신 생활에 대해 물어보세요.'
+              : '아침 메뉴, 어떤 점이 고민이세요?\n냄새·식감·속 불편함 뭐든 말씀해 주세요.',
         ),
       );
+    }
+  }
+
+  /// Restore only this conversation's saved messages when opening the screen.
+  Future<void> loadHistory() async {
+    final history = await service.fetchHistory();
+    if (history.isNotEmpty) {
+      _messages
+        ..clear()
+        ..addAll(history);
+      notifyListeners();
     }
   }
 
@@ -44,7 +61,9 @@ class MealChatController extends ChangeNotifier {
   Future<void> sendMessage(String value) async {
     final currentMeal = _current;
     final normalized = value.trim();
-    if (currentMeal == null || normalized.isEmpty || _responding) return;
+    if ((!live && currentMeal == null) || normalized.isEmpty || _responding) {
+      return;
+    }
     _lastRequest = normalized;
     _messages.add(
       MealChatMessage(
@@ -53,7 +72,7 @@ class MealChatController extends ChangeNotifier {
         text: normalized,
       ),
     );
-    if (_isDeferredRoutineRequest(normalized)) {
+    if (!live && _isDeferredRoutineRequest(normalized)) {
       _proposal = null;
       _messages.add(
         MealChatMessage(
@@ -88,19 +107,23 @@ class MealChatController extends ChangeNotifier {
   Future<void> requestAnother() async {
     final currentMeal = _current;
     final request = _lastRequest;
-    if (currentMeal == null || request == null || _responding) return;
+    if ((!live && currentMeal == null) || request == null || _responding) {
+      return;
+    }
     await _requestReply(currentMeal, request);
   }
 
   Future<void> retry() async {
     final currentMeal = _current;
     final request = _lastRequest;
-    if (currentMeal == null || request == null || _responding) return;
+    if ((!live && currentMeal == null) || request == null || _responding) {
+      return;
+    }
     await _requestReply(currentMeal, request);
   }
 
   Future<void> _requestReply(
-    MealRecommendation currentMeal,
+    MealRecommendation? currentMeal,
     String request,
   ) async {
     _responding = true;

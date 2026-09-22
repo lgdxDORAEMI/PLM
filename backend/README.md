@@ -10,7 +10,7 @@ Backend는 세 명이 독립적으로 작업할 수 있도록 `account`, `care`,
 | Care | `/api/v1/care` | 컨디션·예정 활동, 실행 기록, Daily report, Calendar |
 | Family | `/api/v1/family` | 가사 요청, 남편 알림·오전 리포트, Motion 동의·수집 설정 |
 
-상세 소유권과 교체 지점은 [DOMAIN_OWNERSHIP.md](DOMAIN_OWNERSHIP.md)를 확인합니다. 2026-09-21 기준 Account·Care·Family·Guide·Chat 도메인 전부 Supabase adapter로 교체됐고 Stub은 0건입니다(`docs/backend/API_IMPLEMENTATION_MATRIX.md`: implemented 43 / stub 0). `GET/PUT /account/profile`(6단계 통합 API)은 단계별 API(`/profile/me/*`)와 중복인 죽은 계약이라 2026-09-20에 제거됐고, Chat은 대화 이력 저장(`chat_messages`)만 실연결됐으며 실제 AI 응답은 여전히 고정 안내 문구입니다(NFR-027 보관 정책 미정).
+상세 소유권과 교체 지점은 [DOMAIN_OWNERSHIP.md](DOMAIN_OWNERSHIP.md)를 확인합니다. 2026-09-21 기준 Account·Care·Family·Guide·Chat 도메인 전부 Supabase adapter로 교체됐고 Stub은 0건입니다(`docs/backend/API_IMPLEMENTATION_MATRIX.md`: implemented 43 / stub 0). `GET/PUT /account/profile`(6단계 통합 API)은 단계별 API(`/profile/me/*`)와 중복인 죽은 계약이라 2026-09-20에 제거됐습니다. Chat은 `chat_messages` 저장과 실제 OpenAI 응답을 연결했습니다(NFR-027 보관 정책 미정).
 
 PLM Backend는 FastAPI 기반 서버입니다. 기본 상태 확인, Supabase Auth 토큰 검증, 임산부 프로필 6단계, 당일 컨디션·예정 활동, AI 하루 루틴 생성(룰 엔진 + RAG + OpenAI, 폴백 포함), 4종 가이드 조회, 실행 기록·Daily 리포트·캘린더, 가사 요청·남편 알림·오전 리포트, 파트너 초대/연동, 모션 인식(동의 게이트 포함) API를 제공합니다.
 
@@ -84,8 +84,9 @@ cd ../tools/rag_ingest && ../../backend/.venv/bin/python 02_translate_chunk_embe
 
 ### 챗봇 대화 (Chat)
 
-- `GET /api/v1/chat/messages`, `POST .../messages`: 식사 가이드 재조정 한정(FUC-W-CHAT-001) 대화 이력. 2026-09-20부터 `chat_messages`에 실제로 저장·조회됩니다. NFR-027 일반 보관·파기 기준은 미정이며, 오늘 기록 초기화 시 해당 날짜의 루틴 항목을 참조하는 메시지만 삭제합니다
-- **실제 AI 응답은 아직 없습니다.** 사용자 메시지는 그대로 저장하지만, 어시스턴트 응답은 고정 안내 문구("아직 실제 AI 응답 기능은 준비 중이에요...")를 저장·반환합니다(LLM 공급자·크레딧 대기)
+- `GET /api/v1/chat/messages`: 오늘의 저장된 대화 조회. 응답의 `routine_item_id`로 일반 대화와 식사 대화를 구분합니다.
+- `POST /api/v1/chat/messages`: 프로필·오늘 컨디션·가이드와 같은 모드의 최근 대화를 사용해 OpenAI 답변을 생성하고 질문·답변을 `chat_messages`에 저장합니다. 식사 대화는 로그인한 아내의 오늘 식사 `routine_item_id`를 전달해야 합니다. LLM 오류 시 고정 장애 안내를 저장하며, `LLM_API_KEY`가 없으면 503을 반환합니다. 이 호출은 루틴을 변경하지 않습니다.
+- NFR-027 보관·파기 기준은 미정이며, 오늘 기록 초기화 시 해당 날짜의 루틴 항목을 참조하는 메시지만 삭제합니다.
 
 ### 파트너 연동·가사 요청·알림 (Account / Family)
 
@@ -112,7 +113,7 @@ cd ../tools/rag_ingest && ../../backend/.venv/bin/python 02_translate_chunk_embe
 
 ## 미구현 영역 (2026-09-22 기준)
 
-- 챗봇 실제 AI 응답(`/chat/messages`) — 대화 이력 저장은 완료. 컨텍스트 수집(`domains/chat/context.py`, S1)과 OpenAI 응답 생성(`domains/chat/responder.py`, S2)은 구현·테스트까지 끝났으나, 실제 `/chat/messages`가 이 모듈들을 아직 호출하지 않아 여전히 고정 문구를 반환한다(API 연결·DB 저장 — S3 — 남음). NFR-027 보관 정책도 TBD, AI 담당 영역
+- 챗봇 식사 재추천 카드·선택에 따른 메뉴 교체 — 대화와 AI 텍스트 응답은 연결됨. NFR-027 보관 정책은 TBD
 - H-INVITE-001 화면·인증 복귀 계약 — 여전히 미확정. 실사용은 `partner_links` 수동 삽입으로 대체해 블로커는 아님
 - 컨디션 저장 → 루틴 재생성 자동화(현재는 프론트가 `PUT conditions` 뒤 `POST routine/today`를 따로 호출)
 - ThinQ 가전 연동(Phase 2)
@@ -330,7 +331,7 @@ LLM_API_BASE_URL=
 - **문서 노후화 정리**(실사용 QA 중 발견): `FUC-W-COND-003` vs 유스케이스 UC2 A1 알림 발송 불일치가 실제로는 이미 해소돼 있었음을 재확인(`DOMAIN_OWNERSHIP.md`의 낡은 TBD 삭제), W-SETTING-001(글자 크기)을 "Phase 2 미반영"에서 "요구사항은 확정됐으나 기기 로컬 저장이라 백엔드 불필요(NOT_APPLICABLE)"로 정정(`0205219`, `ca29c24`)
 - Backend 테스트 218개 전부 통과
 
-남은 작업: 챗봇 실제 AI 응답(LLM 공급자·크레딧 대기, AI 담당), H-INVITE-001 화면·인증 복귀 계약 확정(급하지 않음, 수동 연동으로 대체 중), Calendar 4단계 컨디션 지수 계산식 팀 결정 대기, `routine.py` 훅 리뷰
+남은 작업: 챗봇 식사 재추천 카드·교체 동작, H-INVITE-001 화면·인증 복귀 계약 확정(급하지 않음, 수동 연동으로 대체 중), Calendar 4단계 컨디션 지수 계산식 팀 결정 대기, `routine.py` 훅 리뷰
 
 ## 관련 문서
 

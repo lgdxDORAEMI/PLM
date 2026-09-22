@@ -9,4 +9,11 @@ class MockPlannedActivityService implements PlannedActivityService {
   @override
   Future<void> saveAndGenerate(DateTime date, List<String> activities) =>
       Future<void>.delayed(const Duration(milliseconds: 300));
+
+  @override
+  Future<void> saveActivities(DateTime date, List<String> activities) async {}
+
+  @override
+  Future<void> generateRoutine() =>
+      Future<void>.delayed(const Duration(milliseconds: 300));
 }

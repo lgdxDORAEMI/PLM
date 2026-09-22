@@ -38,6 +38,7 @@ abstract final class RouteNames {
 
   // 기존 화면의 호출 지점을 유지하는 별칭. URL은 V2 경로만 생성한다.
   static const partnerInvite = '/wife/invite?source=onboarding';
+  static const dailyInvite = '/wife/invite?source=daily';
   static const partnerJoin = inviteAccept;
   static const partnerMovement = husbandMovement;
   static const partnerCalendar = husbandCalendar;
