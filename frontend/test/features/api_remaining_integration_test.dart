@@ -108,8 +108,11 @@ void main() {
   test('배우자 연결 상태와 표시명을 파싱한다', () async {
     final service = ApiPartnerLinkService(
       client: _client(
-        (_) async =>
-            _jsonResponse({'status': 'linked', 'partner_display_name': '연준'}),
+        (_) async => _jsonResponse({
+          'status': 'linked',
+          'partner_display_name': '연준',
+          'my_display_name': '서현',
+        }),
       ),
     );
 
@@ -117,6 +120,7 @@ void main() {
 
     expect(link.linked, isTrue);
     expect(link.partnerDisplayName, '연준');
+    expect(link.myDisplayName, '서현');
   });
 }
 

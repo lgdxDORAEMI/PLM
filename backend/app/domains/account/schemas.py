@@ -43,6 +43,7 @@ class PartnerLinkResponse(BaseModel):
 
     status: PartnerLinkStatus
     partner_display_name: str | None = None
+    my_display_name: str | None = None
 
 
 class InvitationResponse(BaseModel):

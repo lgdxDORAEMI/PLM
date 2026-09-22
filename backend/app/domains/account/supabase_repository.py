@@ -43,6 +43,7 @@ class SupabaseAccountRepository(AccountRepository):
             profile=profile,
             partner_link=partner_link,
             partner_display_name=partner_display_name,
+            my_display_name=self._display_name(user_id),
         )
 
     def create_invitation(self, user_id: str, *, expires_at: datetime) -> InvitationRecord:
@@ -168,15 +169,17 @@ class SupabaseAccountRepository(AccountRepository):
         if not rows:
             return PartnerLinkStatus.UNLINKED, None
         partner_id = rows[0]["husband_user_id"] if role == UserRole.WIFE else rows[0]["wife_user_id"]
-        partner_rows = self._run(
+        return PartnerLinkStatus.LINKED, self._display_name(partner_id)
+
+    def _display_name(self, user_id: str) -> str | None:
+        rows = self._run(
             lambda: self.client.table("profiles")
             .select("display_name")
-            .eq("user_id", partner_id)
+            .eq("user_id", user_id)
             .limit(1)
             .execute()
         )
-        display_name = partner_rows[0].get("display_name") if partner_rows else None
-        return PartnerLinkStatus.LINKED, display_name
+        return rows[0].get("display_name") if rows else None
 
     def _run(self, request: Callable[[], Any]) -> list[dict]:
         try:

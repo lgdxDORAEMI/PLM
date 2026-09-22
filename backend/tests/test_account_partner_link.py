@@ -232,6 +232,41 @@ class RelationshipAuthorizationTest(unittest.IsolatedAsyncioTestCase):
             response = await client.get("/api/v1/account/bootstrap")
         self.assertEqual(response.json()["destination"], "husband_calendar")
 
+    async def test_partner_link_returns_own_display_name_regardless_of_link_status(self) -> None:
+        """my_display_name은 profiles.display_name(본인 행)에서 오며, partner_links
+        연동 여부와 무관하게 항상 조회된다(연동 안 됐어도 내 이름은 알아야 함)."""
+        self.fake.tables["profiles"].append({"user_id": WIFE, "display_name": "한서현"})
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=WIFE)
+        async with client_for(self.fake) as client:
+            response = await client.get("/api/v1/account/partner-link")
+        body = response.json()
+        self.assertEqual(body["status"], "unlinked")
+        self.assertEqual(body["my_display_name"], "한서현")
+        self.assertIsNone(body["partner_display_name"])
+
+    async def test_partner_link_returns_both_display_names_when_linked(self) -> None:
+        self.fake.tables["profiles"].extend(
+            [
+                {"user_id": WIFE, "role": "wife", "display_name": "한서현"},
+                {"user_id": HUSBAND, "role": "husband", "display_name": "최준서"},
+            ]
+        )
+        self.fake.tables["partner_links"].append(
+            {"wife_user_id": WIFE, "husband_user_id": HUSBAND}
+        )
+
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=WIFE)
+        async with client_for(self.fake) as client:
+            wife_view = (await client.get("/api/v1/account/partner-link")).json()
+        self.assertEqual(wife_view["my_display_name"], "한서현")
+        self.assertEqual(wife_view["partner_display_name"], "최준서")
+
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=HUSBAND)
+        async with client_for(self.fake) as client:
+            husband_view = (await client.get("/api/v1/account/partner-link")).json()
+        self.assertEqual(husband_view["my_display_name"], "최준서")
+        self.assertEqual(husband_view["partner_display_name"], "한서현")
+
     async def test_no_unlink_reject_or_auto_reject_endpoints_exist(self) -> None:
         """기능명세서에 없는 연결 해제/거절/자동 거절 기능을 추가하지 않는다."""
         async with client_for(self.fake) as client:

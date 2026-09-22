@@ -50,6 +50,7 @@ class AccountService(AccountServicePort):
         return PartnerLinkResponse(
             status=state.partner_link,
             partner_display_name=state.partner_display_name,
+            my_display_name=state.my_display_name,
         )
 
     def issue_invitation(self, user_id: str) -> InvitationResponse:

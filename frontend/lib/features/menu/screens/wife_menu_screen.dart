@@ -86,6 +86,7 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
                       ? _profileStore.profile ?? ProfileDraft.mockEdit()
                       : null,
                   profileAvailable: profileAvailable,
+                  myDisplayName: _linkController.link?.myDisplayName,
                   onRoleSwitch: () =>
                       AppRouter.switchDemoUser(context, ActiveRole.husband),
                 ),
@@ -212,11 +213,13 @@ class _ProfileHeader extends StatelessWidget {
     required this.onRoleSwitch,
     required this.profile,
     required this.profileAvailable,
+    this.myDisplayName,
   });
 
   final VoidCallback onRoleSwitch;
   final ProfileDraft? profile;
   final bool profileAvailable;
+  final String? myDisplayName;
 
   @override
   Widget build(BuildContext context) {
@@ -249,7 +252,9 @@ class _ProfileHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  hasProfileValues ? '프로필 정보' : '프로필 정보가 없어요',
+                  hasProfileValues
+                      ? (myDisplayName != null ? '$myDisplayName님' : '프로필 정보')
+                      : '프로필 정보가 없어요',
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 const SizedBox(height: AppSpacing.xs),

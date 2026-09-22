@@ -13,6 +13,9 @@ import '../../../routing/app_router.dart';
 import '../../../routing/app_session.dart';
 import '../../../routing/route_names.dart';
 import '../../entry/services/account_session_service.dart';
+import '../../invitation/controllers/partner_link_controller.dart';
+import '../../invitation/services/api_partner_link_service.dart';
+import '../../invitation/services/mock_partner_link_service.dart';
 import '../../../shared/widgets/consecutive_tap_detector.dart';
 import '../widgets/font_size_selector.dart';
 
@@ -24,7 +27,29 @@ class HusbandMenuScreen extends StatefulWidget {
 }
 
 class _HusbandMenuScreenState extends State<HusbandMenuScreen> {
+  late final PartnerLinkController _linkController;
   bool _switchingAccount = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _linkController = PartnerLinkController(
+      service: AppConfig.hasSupabaseConfig
+          ? ApiPartnerLinkService()
+          : MockPartnerLinkService(),
+    )..addListener(_refresh);
+    unawaited(_linkController.load());
+  }
+
+  @override
+  void dispose() {
+    _linkController
+      ..removeListener(_refresh)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _refresh() => setState(() {});
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -37,22 +62,31 @@ class _HusbandMenuScreenState extends State<HusbandMenuScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Row(
-                children: [
-                  ConsecutiveTapDetector(
-                    key: const ValueKey('husband-role-switch-avatar'),
-                    onTriggered: () =>
-                        AppRouter.switchDemoUser(context, ActiveRole.wife),
-                    child: const CircleAvatar(
-                      radius: 36,
-                      backgroundColor: AppColors.primary100,
-                      foregroundColor: AppColors.primary700,
-                      child: Text('연'),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.lg),
-                  Text('연준님', style: Theme.of(context).textTheme.headlineSmall),
-                ],
+              Builder(
+                builder: (context) {
+                  final myDisplayName = _linkController.link?.myDisplayName;
+                  final label = myDisplayName != null
+                      ? '$myDisplayName님'
+                      : '이름 정보 없음';
+                  final initial = myDisplayName?.substring(0, 1) ?? '?';
+                  return Row(
+                    children: [
+                      ConsecutiveTapDetector(
+                        key: const ValueKey('husband-role-switch-avatar'),
+                        onTriggered: () =>
+                            AppRouter.switchDemoUser(context, ActiveRole.wife),
+                        child: CircleAvatar(
+                          radius: 36,
+                          backgroundColor: AppColors.primary100,
+                          foregroundColor: AppColors.primary700,
+                          child: Text(initial),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.lg),
+                      Text(label, style: Theme.of(context).textTheme.headlineSmall),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: AppSpacing.xxl),
               if (AppConfig.hasSupabaseConfig) ...[

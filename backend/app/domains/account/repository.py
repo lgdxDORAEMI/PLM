@@ -11,6 +11,7 @@ class AccountState:
     profile: ProfileCompletion | None
     partner_link: PartnerLinkStatus
     partner_display_name: str | None = None
+    my_display_name: str | None = None
 
 
 @dataclass(frozen=True)
