@@ -18,7 +18,7 @@ from app.services.routine import repository
 from app.services.routine.generator import OpenAIRoutineGenerator
 from app.services.routine.impact import load_impact_map, resolve_impact
 from app.services.routine.inputs import collect_facts, collect_yesterday
-from app.services.routine.prompt import CATEGORIES, PROMPT_VERSION
+from app.services.routine.prompt import CATEGORIES, MEAL_KEYS, PROMPT_VERSION
 from app.services.routine.retriever import KnowledgeRetriever
 from app.services.routine.rules import apply_rules
 
@@ -264,6 +264,15 @@ class RoutineService:
         # 직전 수정에서 실패한 가이드는 컨디션이 그대로여도 다시 시도한다(재시도 버튼).
         for category, decision in (previous_payload.get("failed_categories") or {}).items():
             targets.setdefault(category, decision)
+        # 09-22: 식사 4끼 필수 이전 버전으로 만든 루틴(3끼)은 입덧이 안 바뀌어도 식사를 다시 만든다.
+        # 새 버전인데 끼니가 빠진 경우(알레르기 검증으로 제거 등)는 매 수정마다 다시 만들지 않도록 제외한다.
+        if (
+            "meal" not in targets
+            and base.get("prompt_version")  # 폴백·실패 행(None)은 내용 버전을 알 수 없어 건너뛴다
+            and base["prompt_version"] < MEAL4_PROMPT_VERSION
+            and _missing_meals(base.get("response") or {})
+        ):
+            targets["meal"] = {**impact["category_impacts"]["meal"], "mode": "REPLAN", "strength": "low", "contributors": []}
         if not targets:  # 결정1: 바뀐 것이 없으면 호출·저장·알림 없이 현재 루틴 그대로
             row = {k: v for k, v in base.items() if k != "request_payload"}
             return {**row, "unchanged": True}
@@ -354,6 +363,14 @@ class RoutineService:
 
 def _decision(decision: dict[str, Any]) -> dict[str, Any]:
     return {k: decision[k] for k in ("mode", "strength", "direction", "worsening_pressure", "improvement_pressure")}
+
+
+MEAL4_PROMPT_VERSION = "2026-09-22.2"  # 식사 4끼(밤) 필수가 들어간 프롬프트 버전
+
+
+def _missing_meals(routine: dict[str, Any]) -> bool:
+    """아침·점심·저녁·밤(MEAL_KEYS) 중 빠진 끼니가 있는가."""
+    return not set(MEAL_KEYS) <= {m.get("item_key") for m in routine.get("meal") or []}
 
 
 def _contributors(category: str, decision: dict[str, Any], changes: list[dict[str, Any]]) -> list[dict[str, Any]]:

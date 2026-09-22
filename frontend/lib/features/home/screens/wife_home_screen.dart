@@ -29,6 +29,7 @@ import '../../profile/models/profile_draft.dart';
 import '../../report/models/daily_record.dart';
 import '../../../shared/widgets/integration_required_state.dart';
 import '../widgets/pregnancy_week_hero.dart';
+import '../widgets/pregnancy_week_tip_card.dart';
 import '../widgets/today_condition_summary.dart';
 
 class WifeHomeScreen extends StatefulWidget {
@@ -140,7 +141,7 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
                     const SizedBox(height: AppSpacing.xxl),
                     ..._primaryContent(effectiveHasTodayCare),
                     const SizedBox(height: AppSpacing.huge),
-                    _weekContext(),
+                    _weekContext(pregnancyWeek),
                   ] else
                     ResponsiveSplitView(
                       primaryFlex: 8,
@@ -155,7 +156,7 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
                         children: [
                           _conditionSection(effectiveHasTodayCare),
                           const SizedBox(height: AppSpacing.xxl),
-                          _weekContext(),
+                          _weekContext(pregnancyWeek),
                         ],
                       ),
                     ),
@@ -186,17 +187,30 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
       ? [const IntegrationRequiredState(), ..._routineContent()]
       : _routineContent();
 
-  Widget _weekContext() => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      const SectionHeader(
-        title: '이번 주에 알아두세요',
-        description: '임신 주차와 오늘 상태를 바탕으로 확인하는 보조 정보예요.',
-      ),
-      const SizedBox(height: AppSpacing.lg),
-      const IntegrationRequiredState(message: '주차별 안내 데이터가 없습니다.'),
-    ],
-  );
+  /// 주차 안내는 Backend `home.week_notes`·`home.caution`(09-22). 루틴을 받기 전이면 안내 상태를 보여준다.
+  Widget _weekContext(int? pregnancyWeek) {
+    final plan = _routineController.plan;
+    final notes = plan?.weekNotes ?? const <String>[];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SectionHeader(
+          title: '이번 주에 알아두세요',
+          description: '임신 주차와 오늘 상태를 바탕으로 확인하는 보조 정보예요.',
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        if (pregnancyWeek == null || notes.isEmpty)
+          const IntegrationRequiredState(message: '주차별 안내 데이터가 없습니다.')
+        else
+          PregnancyWeekTipCard(
+            key: const ValueKey('home-week-tip'),
+            week: pregnancyWeek,
+            tips: notes,
+            caution: plan?.caution ?? '',
+          ),
+      ],
+    );
+  }
 
   List<Widget> _todayCarePrompt() {
     return [

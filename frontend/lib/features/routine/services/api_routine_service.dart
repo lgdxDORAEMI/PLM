@@ -93,6 +93,11 @@ class ApiRoutineService implements RoutineService {
       items: items,
       homeCards: homeCards,
       isBackendFallback: json['source'] != 'ai',
+      weekNotes: home is Map
+          ? ((home['week_notes'] as List?)?.whereType<String>().toList() ??
+                const [])
+          : const [],
+      caution: home is Map ? home['caution'] as String? : null,
     );
   }
 

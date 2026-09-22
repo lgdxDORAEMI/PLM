@@ -38,7 +38,7 @@ def get_edit_base(client: Client, user_id: str, on: date) -> dict[str, Any] | No
     """S10: 그날 최신 revision + 생성 당시 입력(request_payload). 컨디션 수정 경로의 비교 기준."""
     rows = (
         client.table("daily_routines")
-        .select("id, date, revision, source, model, generated_at, confirmed_at, change_summary, response, request_payload")
+        .select("id, date, revision, source, model, prompt_version, generated_at, confirmed_at, change_summary, response, request_payload")
         .eq("user_id", user_id)
         .eq("date", on.isoformat())
         .order("revision", desc=True)

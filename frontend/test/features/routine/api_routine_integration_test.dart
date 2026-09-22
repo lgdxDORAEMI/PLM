@@ -32,6 +32,9 @@ void main() {
                   'health': '가볍게 움직이고',
                   'sleep': '잠자리를 준비해요',
                 },
+                'week': 28,
+                'week_notes': ['허리 부담이 늘어요', '다리가 자주 부어요'],
+                'caution': '무거운 물건은 주의해주세요',
               },
               'response': {
                 'meal': [
@@ -105,5 +108,7 @@ void main() {
       '잠자리를 준비해요',
     ]);
     expect(plan.homeCards.first.title, '식사 가이드');
+    expect(plan.weekNotes, ['허리 부담이 늘어요', '다리가 자주 부어요']); // 09-22 주차 안내
+    expect(plan.caution, '무거운 물건은 주의해주세요');
   });
 }

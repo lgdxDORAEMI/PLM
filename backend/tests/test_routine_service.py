@@ -438,6 +438,23 @@ class EditPathTest(unittest.TestCase):
         self.assertEqual((retried["source"], retried["revision"]), ("ai", 3))
         self.assertEqual(self.call_names(), ["routine_edit_health", "routine_tip"])
 
+    def test_old_three_meal_routine_regenerates_meal_on_edit(self) -> None:
+        """09-22: 4끼 필수 이전 버전(3끼) 루틴은 입덧이 그대로여도 컨디션 수정 때 식사를 다시 만든다."""
+        self.condition.update({"waist_pain": 2, "planned_activities": []})
+        self.generate()
+        self.db.tables["daily_routines"][-1]["prompt_version"] = "2026-09-20.1"  # 예전 버전으로 만든 루틴
+        self.condition["waist_pain"] = 3
+        self.generate()
+        self.assertEqual(self.call_names(), ["routine_edit_health", "routine_edit_meal", "routine_tip"])
+
+    def test_new_version_missing_meal_is_not_regenerated(self) -> None:
+        """새 버전인데 끼니가 빠진 경우(알레르기 검증으로 제거)는 매번 다시 만들지 않는다."""
+        self.condition.update({"waist_pain": 2, "planned_activities": []})
+        self.generate()
+        self.condition["waist_pain"] = 3
+        self.generate()
+        self.assertEqual(self.call_names(), ["routine_edit_health", "routine_tip"])
+
     def test_nausea_3_to_5_edits_meal_and_health_only(self) -> None:
         self.condition["nausea"] = 3
         self.generate()
