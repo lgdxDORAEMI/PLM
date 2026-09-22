@@ -32,6 +32,7 @@ WebSocket 프로토콜 (프론트 B-4가 구현할 대상):
 from __future__ import annotations
 
 import asyncio
+import logging
 import re
 import time
 import uuid
@@ -56,7 +57,10 @@ from app.services.movement.events import EventStorageError, EventStore, Supabase
 from app.services.movement.pose_extractor import PoseExtractor
 from app.services.movement.report import generate_daily_report
 from app.services.movement.session_manager import SessionManager
+from app.services.profile_service import ProfileService
 from app.services.supabase_service import SupabaseService, get_supabase_service
+
+logger = logging.getLogger(__name__)
 
 _ORIGIN_PATTERN = re.compile(ALLOWED_ORIGIN_REGEX)
 
@@ -159,7 +163,26 @@ async def stream_live(
         await websocket.close(code=WS_CLOSE_CONSENT_REQUIRED)
         return
 
-    session_id = manager.start_session(uuid.UUID(user.id))
+    # 임신 주수·체중 기반 Bending 판정 각도 개인화(session_manager.start_session
+    # 참고)에 쓸 프로필 조회. 이건 기본 판정에 얹는 보조 기능이라, 프로필이
+    # 없거나(온보딩 미완료) 조회 자체가 어떤 이유로든 실패해도 모션 인식은
+    # 계속돼야 한다 — fallback(20도 고정)으로 넘어간다.
+    pre_pregnancy_weight_kg: float | None = None
+    due_date: date_type | None = None
+    try:
+        profile = ProfileService(supabase.client).get(user.id)
+    except Exception:  # noqa: BLE001 — 개인화는 best-effort, 실패해도 모션 인식은 계속돼야 함
+        logger.exception("Bending 판정 개인화용 프로필 조회 실패 — fallback(20도)으로 진행")
+        profile = None
+    if profile is not None:
+        pre_pregnancy_weight_kg = profile.pre_pregnancy_weight_kg
+        due_date = profile.due_date
+
+    session_id = manager.start_session(
+        uuid.UUID(user.id),
+        pre_pregnancy_weight_kg=pre_pregnancy_weight_kg,
+        due_date=due_date,
+    )
     _current_session_id = session_id
     collector: CalibrationCollector | None = None
     if not manager.has_calibration(session_id):

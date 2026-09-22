@@ -31,9 +31,10 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from uuid import UUID
 
+from ...utils import dates
 from ...schemas.movement import (
     BurdenLabel,
     EventTrigger,
@@ -50,7 +51,7 @@ from .calibration import CalibrationProfile, CalibrationStore
 from .events import EventStore
 from .features import EmaSmoother, compute_features
 from .pose_extractor import LANDMARK_NAMES, PoseExtractor
-from .rule_engine import LABEL_LEVEL, PROLONGED_LOAD, RuleEngine
+from .rule_engine import LABEL_LEVEL, PROLONGED_LOAD, RuleEngine, compute_bending_threshold_deg
 
 
 @dataclass
@@ -96,13 +97,30 @@ class SessionManager:
         self._event_store = event_store
         self._sessions: dict[UUID, _Session] = {}
 
-    def start_session(self, user_id: UUID) -> UUID:
-        """세션을 새로 만든다. 기존 캘리브레이션이 있으면 자동으로 불러온다."""
+    def start_session(
+        self,
+        user_id: UUID,
+        *,
+        pre_pregnancy_weight_kg: float | None = None,
+        due_date: date | None = None,
+    ) -> UUID:
+        """세션을 새로 만든다. 기존 캘리브레이션이 있으면 자동으로 불러온다.
+
+        pre_pregnancy_weight_kg·due_date가 둘 다 주어지면 임신 주수 기반으로
+        Bending 판정 각도를 개인화한다(rule_engine.compute_bending_threshold_deg).
+        둘 중 하나라도 없으면(온보딩 미완료 등) rules.yaml의 기본값(20도)을
+        그대로 쓴다. 이 계산은 세션 시작 시 한 번만 한다.
+        """
         session_id = uuid.uuid4()
+        bending_override = None
+        if pre_pregnancy_weight_kg is not None and due_date is not None:
+            pregnancy_week, _ = dates.pregnancy_age(due_date, dates.today_kst())
+            bending_override = compute_bending_threshold_deg(pregnancy_week, pre_pregnancy_weight_kg)
         session = _Session(
             session_id=session_id,
             user_id=user_id,
             started_at=datetime.now(timezone.utc),
+            rule_engine=RuleEngine(bending_trunk_dev_min_override=bending_override),
         )
         session.calibration = self._calibration_store.load(user_id)
         self._sessions[session_id] = session

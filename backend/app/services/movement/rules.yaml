@@ -4,6 +4,8 @@
 
 posture:
   # 캘리브레이션 기준선 대비 이 이상 벗어나면 "허리 숙임"으로 판정 (도)
+  # 개인화 적용 시(임신 주수·체중, rule_engine.compute_bending_threshold_deg)
+  # 이 값은 조정 전 상한(fallback)이다.
   bending_trunk_dev_min: 20
   # 기준선보다 무릎각이 이만큼 작아지면 "앉음/스쿼트"로 판정 (도)
   sitting_knee_dev_min: 40

@@ -34,6 +34,27 @@ def load_rules(path: Path = RULES_PATH) -> dict:
     return yaml.safe_load(path.read_text(encoding="utf-8"))
 
 
+# 임신 주수·체중 기반 Bending 판정 각도 개인화 (rules.yaml의 20도는 이 조정이
+# 없을 때 쓰는 상한/fallback). 13주부터 배 무게로 늘어난 상체 부하만큼 판정
+# 각도를 낮춘다 — 같은 각도로 숙여도 임신 후반부일수록 허리 부담이 커지기 때문.
+PREGNANCY_WEEK_BENDING_ADJUSTMENT_START = 13
+EXCESS_ABDOMINAL_MASS_PER_WEEK_KG = 0.29
+PRE_PREGNANCY_UPPER_BODY_MASS_FRACTION = 0.58
+
+
+def compute_bending_threshold_deg(
+    pregnancy_week: int, pre_pregnancy_weight_kg: float, base_deg: float = 20.0
+) -> float:
+    excess_abdominal_mass_kg = EXCESS_ABDOMINAL_MASS_PER_WEEK_KG * max(
+        0, pregnancy_week - PREGNANCY_WEEK_BENDING_ADJUSTMENT_START
+    )
+    pre_pregnancy_upper_body_mass_kg = (
+        pre_pregnancy_weight_kg * PRE_PREGNANCY_UPPER_BODY_MASS_FRACTION
+    )
+    upper_body_mass_ratio = 1 + excess_abdominal_mass_kg / pre_pregnancy_upper_body_mass_kg
+    return base_deg / upper_body_mass_ratio
+
+
 @dataclass
 class FrameJudgement:
     t: float
@@ -54,11 +75,17 @@ class RuleEngine:
     같은 인스턴스는 한 세션(한 사람의 연속 스트림)에만 사용해야 한다.
     """
 
-    def __init__(self, rules: dict | None = None):
+    def __init__(
+        self,
+        rules: dict | None = None,
+        bending_trunk_dev_min_override: float | None = None,
+    ):
         self.rules = rules or load_rules()
 
         p = self.rules["posture"]
         self.bending_trunk_dev_min = p["bending_trunk_dev_min"]
+        if bending_trunk_dev_min_override is not None:
+            self.bending_trunk_dev_min = bending_trunk_dev_min_override
         self.sitting_knee_dev_min = p["sitting_knee_dev_min"]
         self.min_state_duration = p["min_state_duration"]
         self.grace_period_sec = p["grace_period_sec"]
