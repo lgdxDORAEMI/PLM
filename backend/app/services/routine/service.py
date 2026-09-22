@@ -35,7 +35,7 @@ TIP_CHUNKS_PER_CATEGORY = 2
 # NFR-014: 이 키만 LLM에 보낸다. 자유 텍스트 진료 메모(medical_note)는 W-PROFILE-006 요구대로 포함.
 LLM_FACT_KEYS = (
     "week", "is_first_pregnancy", "is_multiple_pregnancy", "allergies", "medical_conditions", "medical_note",
-    "nausea", "waist_pain", "pelvis_pain", "leg_pain", "wrist_pain", "fatigue", "mood",  # K3: sleep_quality 제외
+    "nausea", "waist_pain", "pelvis_pain", "leg_pain", "wrist_pain", "fatigue",  # K3: sleep_quality 제외, 09-22: mood 제외
     "planned_activities", "yesterday",
 )
 

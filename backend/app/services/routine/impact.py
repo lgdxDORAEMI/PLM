@@ -63,10 +63,8 @@ def resolve_impact(previous: dict[str, Any], current: dict[str, Any]) -> dict[st
         before, after = previous.get(key), current.get(key)
         if before is None or after is None or before == after:
             continue
-        # 나쁨 정도로 바꿔 계산: 기분(클수록 좋음)은 6-값. 경계 4·5도 이 기준.
-        b0, b1 = (before, after) if rule["higher_is_worse"] else (6 - before, 6 - after)
-        delta = b1 - b0
-        crossed = [n for n in (4, 5) if (b0 >= n) != (b1 >= n)]
+        delta = after - before
+        crossed = [n for n in (4, 5) if (before >= n) != (after >= n)]
         impact = (scores["one_step"] if abs(delta) == 1 else scores["multi_step"]) + sum(
             scores[f"cross_{n}"] for n in crossed
         )

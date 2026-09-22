@@ -13,16 +13,14 @@ strength: {medium: 1.5, high: 3}
 # 이 카테고리의 secondary 영향은 예정 가사가 있을 때만 센다(할 일이 없으면 조정할 것도 없다).
 secondary_needs_chores: [household]
 
-# higher_is_worse=false(기분)는 값이 내려가면 악화. 경계도 뒤집어 2·1단계 진입을 4·5단계처럼 센다.
-# sleep_quality는 04_1 컨디션 입력에 없어 제외(K3).
+# 모든 항목은 값이 클수록 나쁨. sleep_quality는 04_1 컨디션 입력에 없어 제외(K3), mood는 09-22 회의 결정으로 제외.
 conditions:
-  nausea:      {higher_is_worse: true,  primary: [meal],          secondary: [health]}
-  waist_pain:  {higher_is_worse: true,  primary: [health],        secondary: [household]}
-  pelvis_pain: {higher_is_worse: true,  primary: [health],        secondary: [household]}
-  leg_pain:    {higher_is_worse: true,  primary: [health],        secondary: [household]}
-  wrist_pain:  {higher_is_worse: true,  primary: [health],        secondary: [household]}
-  fatigue:     {higher_is_worse: true,  primary: [health, sleep], secondary: [household]}
-  mood:        {higher_is_worse: false, primary: [sleep],         secondary: [health]}
+  nausea:      {primary: [meal],          secondary: [health]}
+  waist_pain:  {primary: [health],        secondary: [household]}
+  pelvis_pain: {primary: [health],        secondary: [household]}
+  leg_pain:    {primary: [health],        secondary: [household]}
+  wrist_pain:  {primary: [health],        secondary: [household]}
+  fatigue:     {primary: [health, sleep], secondary: [household]}
 
 # 예정 활동 목록이 바뀌면(추가·삭제) 이 카테고리는 REPLAN. 압력(strength)에는 더하지 않는다.
 activities_replan: household

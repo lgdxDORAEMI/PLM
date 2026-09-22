@@ -29,6 +29,7 @@ PROFILE_COLUMNS = (
 )
 # K3(09-20): sleep_quality는 04_1 컨디션 입력 4종(입덧·통증 4부위·피로감·기분)에 없고 Care 저장 API도 받지 않아 항상 null이라 뺐다.
 # daily_conditions 컬럼 자체는 Care 소유라 그대로 둔다.
+# 09-22: mood도 뺐다 — 기분은 수치화해서 케어할 대상이 아니라는 회의 결정(원격 4d94b39에서 입력 화면 제거). DB에는 기본값만 남는다.
 CONDITION_COLUMNS = (
     "nausea",
     "waist_pain",
@@ -36,7 +37,6 @@ CONDITION_COLUMNS = (
     "leg_pain",
     "wrist_pain",
     "fatigue",
-    "mood",
     "planned_activities",
 )
 

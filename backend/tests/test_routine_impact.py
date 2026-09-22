@@ -4,7 +4,7 @@ import unittest
 
 from app.services.routine.impact import resolve_impact
 
-BASE = {"nausea": 3, "waist_pain": 2, "pelvis_pain": 1, "leg_pain": 1, "wrist_pain": 3, "fatigue": 2, "mood": 3}
+BASE = {"nausea": 3, "waist_pain": 2, "pelvis_pain": 1, "leg_pain": 1, "wrist_pain": 3, "fatigue": 2}
 CHORES = [{"code": "laundry", "label": "빨래"}]
 
 
@@ -24,6 +24,12 @@ class ImpactCaseTest(unittest.TestCase):
         """허리 3→3(값 그대로): 네 카테고리 KEEP."""
         same = {**BASE, "waist_pain": 3, "planned_activities": CHORES}
         result = resolve_impact(same, same)
+        self.assertEqual(result["changed_conditions"], [])
+        self.assertEqual(set(modes(result).values()), {"KEEP"})
+
+    def test_mood_is_ignored(self) -> None:
+        """09-22 회의 결정: 기분은 판단에 쓰지 않는다. DB 기본값이 바뀌어도 네 카테고리 KEEP."""
+        result = resolve_impact({**BASE, "mood": 3}, {**BASE, "mood": 1})
         self.assertEqual(result["changed_conditions"], [])
         self.assertEqual(set(modes(result).values()), {"KEEP"})
 
@@ -75,14 +81,6 @@ class ImpactCaseTest(unittest.TestCase):
 
 
 class ImpactRuleTest(unittest.TestCase):
-    def test_mood_scale_is_reversed(self) -> None:
-        """기분은 클수록 좋음: 3→1은 악화(나쁨 3→5), 4는 호전. 경계도 뒤집어 센다."""
-        result = run({"mood": 1})  # 3→1: 나쁨 3→5, 2칸 + 4경계 + 5경계
-        self.assertEqual(result["changed_conditions"][0]["direction"], "worsened")
-        self.assertEqual(result["changed_conditions"][0]["impact"], 4)
-        self.assertEqual(modes(result)["sleep"], "REPLAN")
-        self.assertEqual(run({"mood": 4})["changed_conditions"][0]["direction"], "improved")
-
     def test_activity_change_replans_household_only(self) -> None:
         previous = {**BASE, "planned_activities": CHORES}
         current = {**BASE, "planned_activities": [*CHORES, {"code": "cleaning", "label": "청소"}]}

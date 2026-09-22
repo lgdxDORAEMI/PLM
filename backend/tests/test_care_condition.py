@@ -275,9 +275,12 @@ class ConditionApiTest(unittest.IsolatedAsyncioTestCase):
         combined_client = ProfileAndConditionClient(self.supabase)
         facts = collect_facts(combined_client, "wife-1", self.TARGET_DATE)
         for field, value in VALID_CONDITION.items():
-            self.assertEqual(facts[field], value)
+            if field != "mood":
+                self.assertEqual(facts[field], value)
         # K3(2026-09-20): sleep_quality는 04_1 컨디션 입력 4종에 없어 Routine 입력에서 뺐다(daily_conditions 컬럼은 유지)
         self.assertNotIn("sleep_quality", facts)
+        # 2026-09-22: mood도 회의 결정으로 Routine 입력에서 뺐다(Care 저장 계약·컬럼은 유지)
+        self.assertNotIn("mood", facts)
 
     async def test_routine_generator_raises_when_condition_missing(self) -> None:
         combined_client = SimpleNamespace(
