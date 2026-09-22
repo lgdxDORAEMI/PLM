@@ -430,6 +430,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     try {
       if (AppConfig.hasSupabaseConfig) {
         await ApiProfileService().save(_controller.draft);
+        ProfileStore.instance.completeReentry();
         AuthSessionStore.instance.update(
           accountId: AuthSessionStore.instance.accountId,
           roles: AuthSessionStore.instance.roles,

@@ -248,10 +248,20 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
       CalendarSelectionStore.instance.reset();
       ApplianceExecutionStore.instance.reset();
       ApiRoutineService.clearGeneration();
+      InvitePresentationStore.instance.resetForCurrentAccount();
+      ProfileStore.instance.requireReentry();
+      ProfileStore.instance.reset();
+      final auth = AuthSessionStore.instance;
+      auth.update(
+        accountId: auth.accountId,
+        roles: auth.roles,
+        husbandLinked: auth.husbandLinked,
+        profileComplete: false,
+      );
       if (!mounted) return;
       Navigator.of(
         context,
-      ).pushNamedAndRemoveUntil(RouteNames.condition, (_) => false);
+      ).pushNamedAndRemoveUntil(RouteNames.profileSetup, (_) => false);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
