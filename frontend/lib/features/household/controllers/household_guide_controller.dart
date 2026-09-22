@@ -33,6 +33,10 @@ class HouseholdGuideController extends ChangeNotifier {
   bool get loading => _loading;
   bool get loadFailed => _loadFailed;
   bool get empty => !_loading && !_loadFailed && _tasks.isEmpty;
+  String? get applianceConnectionStatus =>
+      requestService is ApiHouseholdRequestService
+      ? (requestService as ApiHouseholdRequestService).applianceConnectionStatus
+      : null;
 
   /// Replaces local task cards with the backend's current household guide.
   Future<void> loadGuide() async {

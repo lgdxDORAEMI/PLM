@@ -1,8 +1,32 @@
 # API
 
+## ThinQ 보유 가전 기반 가사 가이드
+
+두 API 모두 `Authorization: Bearer <Supabase access token>`이 필요하다. 서버의 단일 `THINQ_PAT`로 조회한 기기는 `PLM_WIFE_EMAIL`과 일치하는 아내 계정에만 제공한다. 다른 계정은 `not_configured`와 빈 기기 목록을 받으며, ThinQ API를 호출하지 않는다. PAT는 응답·Frontend에 전달하지 않는다.
+
+| Method | Path | 역할 |
+| --- | --- | --- |
+| GET | `/api/v1/thinq/devices` | 등록 기기를 정규화해 `status`와 `devices` 반환 |
+| GET | `/api/v1/household/today?date=YYYY-MM-DD` | 해당 날짜의 저장된 household 항목을 보유 기기와 매칭해 반환. `date`를 생략하면 KST 오늘 |
+
+기기 목록 응답의 `devices` 원소에는 `device_id`, `name`, `device_type`만 들어간다. 지원하는 가사 매핑은 `household:laundry`→세탁기·건조기, `household:cleaning`→로봇청소기, `household:dishes`→식기세척기다. 저장된 `item_key`를 우선 사용하고 직접 입력 항목은 명시된 제목에만 매칭한다. 매칭된 항목은 `payload.owner=appliance`와 `payload.appliances: [{device_id, name, device_type}]`를 받는다. 두 가전이 빨래를 지원하면 같은 항목의 `appliances`에 모두 들어간다. 보유하지 않은 가전을 AI가 추천했더라도 조회 응답에서는 `owner=partner`로 조정하며 저장된 루틴은 변경하지 않는다.
+
+`GET /api/v1/household/today`는 기존 `GuideResponse`의 `date`, `category`, `items`에 `appliance_connection_status`를 더한다. 해당 날짜 루틴이 없으면 404를 반환한다. ThinQ 조회가 실패하면 가전 항목을 비우고 일반 가사 항목은 유지한다.
+
+| 연결 상태 | 의미 |
+| --- | --- |
+| `connected` | 조회 성공. `devices: []`이면 등록 기기 없음 |
+| `not_configured` | PAT·고정 UUID 또는 계정 연결 설정이 없거나 다른 로그인 계정 |
+| `auth_error` | PAT가 유효하지 않거나 만료됨 |
+| `timeout` | ThinQ 조회 시간 초과 |
+| `unsupported_country` | 지원하지 않는 국가 코드 |
+| `error` | 그 밖의 ThinQ 조회 오류 |
+
+기기 목록은 Backend 메모리에 5분간 캐시한다. 이 연동은 **보유 가전 기반 추천 표시**만 수행하며 실제 가전 제어 API를 호출하지 않는다.
+
 ## Contract First Backend Skeleton
 
-아래 API는 Frontend 병렬 연동을 위한 안정 계약이다. 현재 `account`, `care`, `family` 구현은 인증된 사용자 ID를 받는 메모리 Stub이며, 실제 Repository adapter로 교체해도 URL과 Schema를 유지한다. 모든 경로는 `Authorization: Bearer <Supabase access token>`을 요구한다.
+아래는 초기 Frontend 병렬 연동용 계약 목록이다. 실제 구현·현재 응답 형식은 각 도메인의 Backend 코드가 기준이다. 인증이 필요한 경로는 `Authorization: Bearer <Supabase access token>`을 요구한다.
 
 ### Account
 

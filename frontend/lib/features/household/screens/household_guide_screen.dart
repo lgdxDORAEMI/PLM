@@ -171,9 +171,24 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
       _SectionTitle(
         number: 3,
         title: '가전이 대신합니다',
-        label: '추천 ${_controller.tasksFor(HouseholdTaskOwner.appliance).length}개',
+        label:
+            '추천 ${_controller.tasksFor(HouseholdTaskOwner.appliance).length}개',
       ),
       const SizedBox(height: AppSpacing.md),
+      if (_controller.applianceConnectionStatus case final status?
+          when status != 'connected') ...[
+        Text(
+          switch (status) {
+            'not_configured' => 'ThinQ 연결 설정이 필요해요.',
+            'auth_error' => 'ThinQ 연결을 다시 확인해 주세요.',
+            _ => '가전 목록을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.',
+          },
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+      ],
       Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: _taskCards(HouseholdTaskOwner.appliance),
@@ -256,7 +271,7 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
     ];
   }
 
-  /// 가전 실행 요청을 오늘의 이력에 기록하고 결과를 팝업으로 안내한다.
+  /// 실제 기기 제어 없이 오늘의 로컬 실행 이력만 기록한다.
   Future<void> _runAppliance(HouseholdTask task) async {
     ApplianceExecutionStore.instance.record(
       source: ApplianceExecutionSource.household,
@@ -268,7 +283,7 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
         icon: Icons.check_circle_outline,
         iconColor: AppColors.success,
         title: '가전 실행을 기록했어요',
-        message: '${task.title}\n오늘의 가전 실행 내역에 반영했어요.',
+        message: '${task.title}\n오늘의 가전 실행 내역에 반영했어요. 실제 기기는 작동하지 않았어요.',
         actions: [
           AppDialogAction(label: '확인', onPressed: () => Navigator.pop(context)),
         ],

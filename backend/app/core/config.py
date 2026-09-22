@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     llm_api_base_url: str = ""
     # 루틴 생성 모델. 계정 가용 목록에서 선택(2026-09-16 확인). 임베딩 모델은 적재와 묶여 retriever.py에 고정.
     llm_model: str = "gpt-4.1-mini"
+    thinq_pat: SecretStr = SecretStr("")
+    thinq_country_code: str = "KR"
+    thinq_client_id: str = ""
 
 
 @lru_cache

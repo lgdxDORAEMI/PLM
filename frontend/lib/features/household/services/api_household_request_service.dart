@@ -13,6 +13,7 @@ class ApiHouseholdRequestService extends ChangeNotifier
 
   final ApiClient _client;
   final Map<String, Map<String, HouseholdRequestProgress>> _progress = {};
+  String? applianceConnectionStatus;
 
   @override
   Future<List<HouseholdTask>> fetchGuide() async {
@@ -20,6 +21,8 @@ class ApiHouseholdRequestService extends ChangeNotifier
       '/api/v1/household/today',
       throwOnNotFound: true,
     );
+    applianceConnectionStatus = response?['appliance_connection_status']
+        ?.toString();
     final items = response?['items'];
     if (items is! List) return const [];
     return items
@@ -33,6 +36,7 @@ class ApiHouseholdRequestService extends ChangeNotifier
             'appliance' => HouseholdTaskOwner.appliance,
             _ => HouseholdTaskOwner.self,
           };
+          final appliances = payload['appliances'];
           return HouseholdTask(
             id: item['item_id']?.toString() ?? '',
             title: item['title']?.toString() ?? '',
@@ -41,6 +45,13 @@ class ApiHouseholdRequestService extends ChangeNotifier
                 payload['reason']?.toString() ??
                 '',
             owner: owner,
+            applianceNames: appliances is List
+                ? appliances
+                      .whereType<Map>()
+                      .map((device) => device['name']?.toString() ?? '')
+                      .where((name) => name.isNotEmpty)
+                      .toList(growable: false)
+                : const [],
             selected: owner == HouseholdTaskOwner.partner,
             status: item['status'] == 'completed'
                 ? HouseholdTaskStatus.done

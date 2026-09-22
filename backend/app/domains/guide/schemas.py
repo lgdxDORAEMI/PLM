@@ -28,3 +28,4 @@ class GuideResponse(BaseModel):
     date: date
     category: RoutineCategory
     items: list[GuideItem]
+    appliance_connection_status: str | None = None

@@ -52,7 +52,9 @@ class HouseholdTaskCard extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.xs),
                   Text(
-                    task.description,
+                    task.applianceNames.isNotEmpty
+                        ? task.applianceNames.join(' · ')
+                        : task.description,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: AppColors.textSecondary,
                     ),
