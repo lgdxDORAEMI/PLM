@@ -7,6 +7,7 @@ import 'package:plm_frontend/features/condition/data/planned_activity_store.dart
 import 'package:plm_frontend/features/condition/screens/activity_screen.dart';
 import 'package:plm_frontend/features/condition/services/planned_activity_service.dart';
 import 'package:plm_frontend/features/profile/screens/partner_invite_screen.dart';
+import 'package:plm_frontend/features/profile/data/profile_store.dart';
 import 'package:plm_frontend/routing/route_context.dart';
 import 'package:plm_frontend/routing/route_names.dart';
 
@@ -123,6 +124,38 @@ void main() {
     expect(find.text('오늘의 루틴을 만들지 못했어요. 다시 시도해 주세요.'), findsOneWidget);
     expect(tester.widget<AppButton>(submit).onPressed, isNotNull);
   });
+
+  testWidgets('초기화 후 할 일 입력은 초대 화면 없이 루틴을 생성한다', (tester) async {
+    final profile = ProfileStore.instance;
+    profile.requireReentry();
+    profile.completeReentry();
+    addTearDown(profile.completeResetRoutine);
+    final service = _PendingActivityService();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ActivityScreen(service: service),
+        routes: {
+          RouteNames.wifeHome: (_) => const Scaffold(body: Text('홈 도착')),
+        },
+      ),
+    );
+    await tester.pump();
+    final submit = find.byKey(const ValueKey('activity-submit-button'));
+    await tester.scrollUntilVisible(
+      submit,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('AI 루틴 만들기'), findsOneWidget);
+    await tester.tap(submit);
+    await tester.pump();
+    expect(service.generationCalls, 1);
+    expect(profile.awaitsResetRoutine, isTrue);
+    service.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('홈 도착'), findsOneWidget);
+    expect(profile.awaitsResetRoutine, isFalse);
+  });
 }
 
 class _PendingActivityService implements PlannedActivityService {
@@ -134,8 +167,11 @@ class _PendingActivityService implements PlannedActivityService {
   Future<List<String>> fetch(DateTime date) async => const [];
 
   @override
-  Future<void> saveAndGenerate(DateTime date, List<String> activities) =>
-      _generation.future;
+  Future<void> saveAndGenerate(DateTime date, List<String> activities) {
+    savedActivities = true;
+    generationCalls += 1;
+    return _generation.future;
+  }
 
   @override
   Future<void> saveActivities(DateTime date, List<String> activities) async {

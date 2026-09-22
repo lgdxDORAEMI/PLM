@@ -423,6 +423,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   Future<void> _complete() async {
     if (_saving) return;
+    final restartingAfterReset = ProfileStore.instance.requiresReentry;
     if (widget.mode == ProfileMode.edit && !_controller.validateForSave()) {
       return;
     }
@@ -453,7 +454,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     if (!mounted) return;
     _controller.markSaved();
     if (widget.mode == ProfileMode.create) {
-      Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
+      Navigator.pushReplacementNamed(
+        context,
+        restartingAfterReset ? RouteNames.partnerInvite : RouteNames.wifeHome,
+      );
       return;
     }
     if (Navigator.canPop(context)) {

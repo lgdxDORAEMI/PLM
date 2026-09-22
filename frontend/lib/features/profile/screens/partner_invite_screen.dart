@@ -127,6 +127,8 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
           AppButton(
             label: widget.entryContext == InviteEntryContext.dailyFlow
                 ? '오늘 루틴 만들기'
+                : widget.entryContext == InviteEntryContext.onboarding
+                ? '홈으로 이동'
                 : '메뉴로 돌아가기',
             onPressed: _generating ? null : () => unawaited(_finish()),
           ),

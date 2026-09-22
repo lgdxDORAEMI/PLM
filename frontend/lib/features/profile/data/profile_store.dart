@@ -13,6 +13,7 @@ class ProfileStore extends ChangeNotifier {
 
   ProfileDraft? _profile = readStoredProfile();
   final Set<String> _reentryAccounts = {};
+  final Set<String> _pendingResetRoutines = {};
   ProfileDraft? get profile => _profile;
   bool get hasProfile => _profile?.isComplete ?? false;
 
@@ -24,12 +25,21 @@ class ProfileStore extends ChangeNotifier {
   bool requiresReentryFor(String accountId) =>
       _reentryAccounts.contains(accountId) || readProfileReentry(accountId);
 
+  bool get awaitsResetRoutine {
+    final accountId = AuthSessionStore.instance.accountId;
+    return accountId != null &&
+        (_pendingResetRoutines.contains(accountId) ||
+            readResetRoutinePending(accountId));
+  }
+
   /// Require a fresh six-step profile after today's successful reset.
   void requireReentry() {
     final accountId = AuthSessionStore.instance.accountId;
     if (accountId == null) return;
     _reentryAccounts.add(accountId);
     writeProfileReentry(accountId, true);
+    _pendingResetRoutines.add(accountId);
+    writeResetRoutinePending(accountId, true);
     notifyListeners();
   }
 
@@ -39,6 +49,15 @@ class ProfileStore extends ChangeNotifier {
     if (accountId == null) return;
     _reentryAccounts.remove(accountId);
     writeProfileReentry(accountId, false);
+    notifyListeners();
+  }
+
+  /// End the reset replay only after its routine has been generated.
+  void completeResetRoutine() {
+    final accountId = AuthSessionStore.instance.accountId;
+    if (accountId == null) return;
+    _pendingResetRoutines.remove(accountId);
+    writeResetRoutinePending(accountId, false);
     notifyListeners();
   }
 
