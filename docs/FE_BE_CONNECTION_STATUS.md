@@ -39,3 +39,7 @@
 - `flutter analyze`: 아래 실행 결과로 갱신
 - `flutter test`: 아래 실행 결과로 갱신
 - `flutter build web`: 아래 실행 결과로 갱신
+
+## 후속 변경: 챗봇 대화 연결 (2026-09-22)
+
+위 표는 1단계 당시의 기준 상태다. 이후 `/wife/chat`의 일반 대화와 식사 루틴별 대화를 `GET/POST /api/v1/chat/messages`에 연결했다. Backend는 OpenAI로 답변을 생성하고 질문·답변을 `chat_messages`에 저장한다. 식사 재추천 카드와 메뉴 교체는 아직 연결되지 않았으므로 Meal 전체 상태는 PARTIAL이다. API 또는 대화 이력 조회 실패 시 Mock으로 자동 전환하지 않는다.

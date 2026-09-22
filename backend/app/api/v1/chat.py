@@ -1,8 +1,7 @@
-"""챗봇 대화 (FUC-W-CHAT-001, W-CHAT-001). Relationship/Integration 담당(Developer B)
-소유. 2026-09-20부터 대화 이력(conversation history, FUC-W-CHAT-004)은
-Supabase(`chat_messages`)에 실제로 저장된다 — NFR-027(보관·파기 기준)이 아직
-미정이라 삭제 로직은 없다(무기한 보관). 실제 AI 응답은 여전히 없다 — 고정
-안내 문구만 저장·반환한다(BACKEND_ARCHITECTURE.md, STEP 8 참고)."""
+"""Authenticated chat history and contextual LLM replies.
+
+Supabase stores the conversation. The retention policy remains undecided.
+"""
 
 from __future__ import annotations
 
@@ -16,7 +15,10 @@ from app.core.security import CurrentUser, get_current_user
 from app.domains.chat.schemas import ChatMessageInput, ChatMessageResponse
 from app.domains.chat.service import ChatService, ChatServicePort
 from app.domains.chat.supabase_repository import SupabaseChatRepository
+from app.core.config import get_settings
 from app.services.supabase_service import get_supabase_service
+from app.services.routine.generator import OpenAIRoutineGenerator
+from app.services.routine.retriever import KnowledgeRetriever
 from app.utils import dates
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -33,7 +35,15 @@ def get_chat_service() -> ChatServicePort:
         client = get_supabase_service().client
     except ValueError as error:  # Supabase 환경변수 누락
         raise _storage_unavailable() from error
-    return ChatService(SupabaseChatRepository(client))
+    settings = get_settings()
+    if not settings.llm_api_key.get_secret_value():
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "AI 연결 설정이 없습니다.")
+    generator = OpenAIRoutineGenerator(settings)
+    retriever = KnowledgeRetriever(client, generator.client)
+    return ChatService(
+        SupabaseChatRepository(client), client=client,
+        generator=generator, retriever=retriever,
+    )
 
 
 User = Annotated[CurrentUser, Depends(get_current_user)]
@@ -53,12 +63,11 @@ def list_messages(
 
 
 @router.post("/messages", response_model=ChatMessageResponse)
-def send_message(
+async def send_message(
     payload: ChatMessageInput, user: User, service: Service
 ) -> ChatMessageResponse:
-    """MVP는 식사 가이드 재조정 한정(FUC-W-CHAT-001). 실제 AI 응답을 생성하지
-    않고 고정 안내 문구만 저장·반환한다."""
+    """Generate a contextual LLM answer, then persist both sides of the exchange."""
     try:
-        return service.send_message(user.id, dates.today_kst(), payload)
+        return await service.send_message(user.id, dates.today_kst(), payload)
     except Exception as error:
         raise to_http_exception(error) from error

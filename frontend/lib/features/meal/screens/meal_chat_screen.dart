@@ -16,6 +16,8 @@ import '../controllers/meal_chat_controller.dart';
 import '../models/meal_chat_message.dart';
 import '../models/meal_guide.dart';
 import '../services/meal_chat_service.dart';
+import '../services/api_meal_chat_service.dart';
+import '../services/api_meal_service.dart';
 import '../services/mock_meal_service.dart';
 import '../widgets/meal_chat_bubble.dart';
 import '../widgets/meal_recommendation_card.dart';
@@ -41,22 +43,63 @@ class _MealChatScreenState extends State<MealChatScreen> {
   late final MealChatController _controller;
   late final TextEditingController _inputController;
   late final ScrollController _scrollController;
+  ApiMealChatService? _apiService;
+  bool _chatReady = false;
+  bool _loadingChat = false;
+  bool _loadFailed = false;
+
+  bool get _liveChat => widget.service == null && AppConfig.hasSupabaseConfig;
 
   bool get _chatAvailable =>
       widget.service != null ||
+      AppConfig.hasSupabaseConfig ||
       AppConfig.mockPreviewEnabled ||
       AppConfig.previewMode;
 
   @override
   void initState() {
     super.initState();
-    final service = widget.service ?? const MockMealService();
-    _controller = MealChatController(service: service)..addListener(_refresh);
-    if (_chatAvailable) {
-      _controller.initialize(_initialRecommendation());
-    }
+    _apiService = _liveChat ? ApiMealChatService() : null;
+    final service = widget.service ?? _apiService ?? const MockMealService();
+    _controller = MealChatController(service: service, live: _liveChat)
+      ..addListener(_refresh);
     _inputController = TextEditingController();
     _scrollController = ScrollController();
+    if (_liveChat) {
+      unawaited(_prepareLiveChat());
+    } else if (_chatAvailable) {
+      _controller.initialize(_initialRecommendation());
+      _chatReady = true;
+    }
+  }
+
+  /// Load the real meal item before sending, so the backend can keep modes separate.
+  Future<void> _prepareLiveChat() async {
+    if (_loadingChat) return;
+    setState(() {
+      _loadingChat = true;
+      _loadFailed = false;
+    });
+    try {
+      if (widget.mealPeriod case final period?) {
+        final guide = await ApiMealService().fetchGuide();
+        final matches = guide.recommendations.where(
+          (item) => item.period == period,
+        );
+        if (matches.isEmpty) throw const FormatException('해당 끼니의 식사 루틴이 없습니다.');
+        final recommendation = matches.first;
+        _apiService!.routineItemId = recommendation.id;
+        _controller.initialize(recommendation);
+      } else {
+        _controller.initialize(null);
+      }
+      await _controller.loadHistory();
+      if (mounted) setState(() => _chatReady = true);
+    } catch (_) {
+      if (mounted) setState(() => _loadFailed = true);
+    } finally {
+      if (mounted) setState(() => _loadingChat = false);
+    }
   }
 
   @override
@@ -98,8 +141,18 @@ class _MealChatScreenState extends State<MealChatScreen> {
                   children: [
                     if (!_chatAvailable || AppConfig.previewMode)
                       const IntegrationRequiredState(),
-                    _MealChatContext(period: widget.mealPeriod),
+                    _MealChatContext(
+                      period: widget.mealPeriod,
+                      live: _liveChat,
+                    ),
                     const SizedBox(height: AppSpacing.xxl),
+                    if (_loadingChat)
+                      const Center(child: CircularProgressIndicator())
+                    else if (_loadFailed)
+                      _ChatError(
+                        message: '대화를 불러오지 못했어요. 다시 시도해 주세요.',
+                        onRetry: () => unawaited(_prepareLiveChat()),
+                      ),
                     if (_chatAvailable)
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -113,7 +166,8 @@ class _MealChatScreenState extends State<MealChatScreen> {
                             const SizedBox(height: AppSpacing.lg),
                           ],
                           if (_controller.messages.length == 1 &&
-                              !_controller.responding) ...[
+                              !_controller.responding &&
+                              (!_liveChat || widget.mealPeriod != null)) ...[
                             _SuggestedPrompts(onSelected: _send),
                             const SizedBox(height: AppSpacing.lg),
                           ],
@@ -164,14 +218,16 @@ class _MealChatScreenState extends State<MealChatScreen> {
                 child: AppInput(
                   key: const ValueKey('meal-chat-input'),
                   label: '무엇이든 물어보세요',
-                  hintText: '냄새나 식감 등 불편한 점을 알려주세요',
+                  hintText: widget.mealPeriod == null
+                      ? '궁금한 내용을 입력해 주세요'
+                      : '냄새나 식감 등 불편한 점을 알려주세요',
                   controller: _inputController,
                   textInputAction: TextInputAction.send,
-                  enabled: _chatAvailable && !_controller.responding,
+                  enabled: _chatReady && !_controller.responding,
                   onSubmitted: _send,
                   suffixIcon: IconButton(
                     tooltip: '보내기',
-                    onPressed: !_chatAvailable || _controller.responding
+                    onPressed: !_chatReady || _controller.responding
                         ? null
                         : () => _send(_inputController.text),
                     icon: const Icon(Icons.arrow_upward),
@@ -192,7 +248,7 @@ class _MealChatScreenState extends State<MealChatScreen> {
   }
 
   void _send(String value) {
-    if (value.trim().isEmpty) return;
+    if (!_chatReady || value.trim().isEmpty) return;
     FocusManager.instance.primaryFocus?.unfocus();
     _inputController.clear();
     unawaited(_controller.sendMessage(value));
@@ -226,9 +282,10 @@ class _MealChatScreenState extends State<MealChatScreen> {
 }
 
 class _MealChatContext extends StatelessWidget {
-  const _MealChatContext({required this.period});
+  const _MealChatContext({required this.period, required this.live});
 
   final MealPeriod? period;
+  final bool live;
 
   @override
   Widget build(BuildContext context) {
@@ -244,7 +301,7 @@ class _MealChatContext extends StatelessWidget {
           children: [
             Text(
               period == null
-                  ? '오늘 식사 가이드를 조정해요'
+                  ? '오늘 가이드와 임신 생활을 물어보세요'
                   : '${_label(period!)} 메뉴를 다시 고르는 중',
               style: Theme.of(
                 context,
@@ -254,11 +311,15 @@ class _MealChatContext extends StatelessWidget {
             Text(
               period == null
                   ? '임신 주차 · 주의 진단 · 오늘 컨디션 반영'
+                  : live
+                  ? '식사 가이드에서 이어지는 대화예요.'
                   : '식사 가이드에서 이어짐 · 임당 경계 · 입덧 반영',
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              '원하는 메뉴나 피하고 싶은 재료를 말씀해 주세요.',
+              period == null
+                  ? '궁금한 내용을 입력해 주세요.'
+                  : '원하는 메뉴나 피하고 싶은 재료를 말씀해 주세요.',
               style: Theme.of(
                 context,
               ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),

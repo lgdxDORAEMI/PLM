@@ -8,6 +8,7 @@ conversation history 저장). 실제 AI 응답 로직은 없다 — 고정 안�
 import unittest
 from datetime import date, datetime, timezone
 from types import SimpleNamespace
+from unittest.mock import patch
 from uuid import uuid4
 
 from httpx import ASGITransport, AsyncClient
@@ -134,3 +135,40 @@ class ChatApiTest(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(history[0]["role"], "user")
             self.assertEqual(history[0]["content"], "오늘 점심 메뉴 바꿀 수 있어?")
             self.assertEqual(history[1]["role"], "assistant")
+
+    async def test_live_reply_is_generated_and_saved_with_mode_history(self) -> None:
+        class FakeGenerator:
+            async def generate(self, prompt, schema, name, system):
+                assert "첫 질문" in prompt
+                return '{"content":"실제 생성된 답변","suggested_actions":[]}'
+
+        class FakeRetriever:
+            async def search(self, text, week):
+                return []
+
+        self.client.rows.extend([
+            {
+                "id": str(uuid4()), "user_id": USER_ID, "date": TARGET_DATE.isoformat(),
+                "role": "user", "content": "첫 질문", "routine_item_id": None,
+                "suggested_actions": None, "created_at": datetime.now(timezone.utc).isoformat(),
+            },
+            {
+                "id": str(uuid4()), "user_id": USER_ID, "date": TARGET_DATE.isoformat(),
+                "role": "user", "content": "다른 식사 대화", "routine_item_id": "meal-1",
+                "suggested_actions": None, "created_at": datetime.now(timezone.utc).isoformat(),
+            },
+        ])
+        service = ChatService(
+            SupabaseChatRepository(self.client), client=self.client,
+            generator=FakeGenerator(), retriever=FakeRetriever(),
+        )
+        with patch("app.domains.chat.service.collect_context", return_value={
+            "facts": {"week": 18}, "guides": {"meal": [], "household": [], "health": [], "sleep": []},
+        }):
+            reply = await service.send_message(
+                USER_ID, TARGET_DATE, ChatMessageInput(content="새 질문")
+            )
+        self.assertEqual(reply.content, "실제 생성된 답변")
+        self.assertEqual(reply.routine_item_id, None)
+        self.assertEqual(self.client.rows[-2]["content"], "새 질문")
+        self.assertEqual(self.client.rows[-1]["content"], "실제 생성된 답변")
