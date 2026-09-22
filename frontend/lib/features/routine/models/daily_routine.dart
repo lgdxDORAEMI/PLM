@@ -27,11 +27,15 @@ class DailyRoutinePlan {
     required this.date,
     required this.updatedLabel,
     required this.items,
+    this.homeCards = const [],
     this.isBackendFallback = false,
   });
 
   final DateTime date;
   final String updatedLabel;
   final List<RoutineItem> items;
+
+  /// Backend home.summaries에서 만든 카테고리별 홈 카드 네 장.
+  final List<RoutineItem> homeCards;
   final bool isBackendFallback;
 }

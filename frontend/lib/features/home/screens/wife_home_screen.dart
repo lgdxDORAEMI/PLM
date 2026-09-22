@@ -273,7 +273,8 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
         description: '오늘 컨디션을 반영한 맞춤 가이드예요.',
       ),
       const SizedBox(height: AppSpacing.lg),
-      for (final item in plan.items) ...[
+      for (final item
+          in plan.homeCards.isEmpty ? plan.items : plan.homeCards) ...[
         RoutineGuideCard(
           item: item,
           onTap: () => unawaited(_openRoutine(item.type)),
