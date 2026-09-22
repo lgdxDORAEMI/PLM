@@ -22,6 +22,7 @@ from app.domains.care.service import CareService, CareServicePort
 from app.domains.care.stub_repository import StubCareRepository
 from app.domains.care.supabase_repository import SupabaseCareRepository
 from app.services.supabase_service import get_supabase_service
+from app.utils import dates
 
 router = APIRouter(prefix="/care", tags=["care"])
 # Care 도메인은 전부 Supabase 실연결이다. Stub은 SupabaseCareRepository의 fallback
@@ -45,6 +46,17 @@ def get_care_service() -> CareServicePort:
 
 User = Annotated[CurrentUser, Depends(get_current_user)]
 Service = Annotated[CareServicePort, Depends(get_care_service)]
+
+
+@router.post("/today/reset")
+def reset_today(user: User, service: Service) -> dict[str, str | bool]:
+    """Reset only the authenticated wife's current KST day."""
+    today = dates.today_kst()
+    try:
+        service.reset_today(user.id, today)
+    except Exception as error:
+        raise to_http_exception(error) from error
+    return {"target_date": today.isoformat(), "reset": True}
 
 
 @router.get("/conditions/{target_date}", response_model=ConditionResponse)

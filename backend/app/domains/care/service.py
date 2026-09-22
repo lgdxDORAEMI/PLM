@@ -19,6 +19,8 @@ from .schemas import (
 
 
 class CareServicePort(Protocol):
+    def reset_today(self, user_id: str, target_date: date) -> None: ...
+
     def get_condition(self, user_id: str, target_date: date) -> ConditionResponse: ...
 
     def save_condition(
@@ -53,6 +55,10 @@ class CareServicePort(Protocol):
 class CareService(CareServicePort):
     def __init__(self, repository: CareRepository) -> None:
         self.repository = repository
+
+    def reset_today(self, user_id: str, target_date: date) -> None:
+        """Remove today's condition and every dependent daily record atomically."""
+        self.repository.reset_daily_experience(user_id, target_date)
 
     def get_condition(self, user_id: str, target_date: date) -> ConditionResponse:
         condition = self.repository.get_condition(user_id, target_date)

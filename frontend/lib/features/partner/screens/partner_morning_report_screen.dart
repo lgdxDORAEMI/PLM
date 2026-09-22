@@ -12,6 +12,7 @@ import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../core/config/app_config.dart';
 import '../../../routing/route_names.dart';
+import '../../../routing/route_refresh_observer.dart';
 import '../../report/models/daily_record.dart';
 import '../controllers/partner_morning_report_controller.dart';
 import '../models/partner_morning_report.dart';
@@ -37,13 +38,14 @@ class PartnerMorningReportScreen extends StatefulWidget {
       _PartnerMorningReportScreenState();
 }
 
-class _PartnerMorningReportScreenState
-    extends State<PartnerMorningReportScreen> {
+class _PartnerMorningReportScreenState extends State<PartnerMorningReportScreen>
+    with RouteAware, WidgetsBindingObserver {
   late final PartnerMorningReportController _controller;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final date = _parseRouteDate(widget.date);
     _controller = PartnerMorningReportController(
       service:
@@ -57,7 +59,29 @@ class _PartnerMorningReportScreenState
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute<dynamic>) {
+      routeRefreshObserver.subscribe(this, route);
+    }
+  }
+
+  @override
+  void didPopNext() => unawaited(_controller.load());
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        ModalRoute.of(context)?.isCurrent == true) {
+      unawaited(_controller.load());
+    }
+  }
+
+  @override
   void dispose() {
+    routeRefreshObserver.unsubscribe(this);
+    WidgetsBinding.instance.removeObserver(this);
     _controller
       ..removeListener(_refresh)
       ..dispose();
@@ -104,7 +128,9 @@ class _PartnerMorningReportScreenState
       message: '아침 리포트를 불러오고 있어요',
     ),
     PartnerMorningReportState.empty => AppEmptyState(
-      title: '공유된 리포트가 없어요',
+      title: widget.date == recordDateKey(DateTime.now())
+          ? '오늘 컨디션이 아직 등록되지 않았어요.'
+          : '이 날짜의 리포트가 없어요.',
       message: '아내가 컨디션을 입력하면 요약 리포트가 표시돼요.',
       actionLabel: '캘린더로 돌아가기',
       onAction: () =>

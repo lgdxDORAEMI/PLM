@@ -74,6 +74,7 @@ cd ../tools/rag_ingest && ../../backend/.venv/bin/python 02_translate_chunk_embe
 
 ### 당일 컨디션·가이드·실행 기록·리포트 (Care / Guide)
 
+- `POST /api/v1/care/today/reset`: 로그인한 아내의 KST 오늘 기록을 원자적으로 초기화. `reset_daily_experience` RPC migration 적용이 필요하며, 남편 계정은 403. 해당 날짜의 모든 루틴 revision과 항목, 실행/피드백, 가사 요청, 리포트, 연관 남편 알림 및 루틴 항목을 참조하는 채팅만 삭제
 - `GET/PUT /api/v1/care/conditions/{date}`, `PUT .../activities`: 컨디션 7종·예정 활동(`daily_conditions`)
 - `GET /api/v1/meals|household|health|sleep/today`: `routine_items` 읽기 전용 조회(AI 재호출 없음)
 - `PUT /api/v1/care/routine-items/{id}/execution`: 실행 기록(`routine_items.status/completed_by`)
@@ -83,7 +84,7 @@ cd ../tools/rag_ingest && ../../backend/.venv/bin/python 02_translate_chunk_embe
 
 ### 챗봇 대화 (Chat)
 
-- `GET /api/v1/chat/messages`, `POST .../messages`: 식사 가이드 재조정 한정(FUC-W-CHAT-001) 대화 이력. 2026-09-20부터 `chat_messages`에 실제로 저장·조회됩니다(무기한 보관 — NFR-027 보관·파기 기준 미정이라 삭제 로직 없음)
+- `GET /api/v1/chat/messages`, `POST .../messages`: 식사 가이드 재조정 한정(FUC-W-CHAT-001) 대화 이력. 2026-09-20부터 `chat_messages`에 실제로 저장·조회됩니다. NFR-027 일반 보관·파기 기준은 미정이며, 오늘 기록 초기화 시 해당 날짜의 루틴 항목을 참조하는 메시지만 삭제합니다
 - **실제 AI 응답은 아직 없습니다.** 사용자 메시지는 그대로 저장하지만, 어시스턴트 응답은 고정 안내 문구("아직 실제 AI 응답 기능은 준비 중이에요...")를 저장·반환합니다(LLM 공급자·크레딧 대기)
 
 ### 파트너 연동·가사 요청·알림 (Account / Family)

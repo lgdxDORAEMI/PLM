@@ -33,6 +33,11 @@ class StubCareRepository(CareRepository):
         self._executions: dict[tuple[str, str], RoutineExecutionResponse] = {}
         self._routine_item_overrides: dict[tuple[str, str], RoutineItemResponse] = {}
 
+    def reset_daily_experience(self, user_id: str, target_date: date) -> None:
+        """Keep the in-memory care stub aligned with the reset contract."""
+        self._conditions.pop((user_id, target_date), None)
+        self._reports.pop((user_id, target_date), None)
+
     def get_condition(self, user_id: str, target_date: date) -> ConditionResponse | None:
         return self._conditions.get((user_id, target_date))
 

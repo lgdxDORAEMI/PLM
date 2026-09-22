@@ -78,6 +78,10 @@ SDK가 저장소 밖에 있고 제한된 실행 환경에서 `bin/cache/lockfile
 
 백엔드 설치와 환경변수 목록은 [README](README.md)를 참고하세요.
 
+### 오늘 기록 초기화 API 준비
+
+아내 메뉴의 `초기화` 버튼을 사용하기 전에 `supabase/migrations/20260922000000_reset_daily_experience.sql`을 연결된 Supabase 프로젝트에 적용해야 합니다. 마이그레이션 없이 버튼을 누르면 API가 503을 반환하고 기록은 유지됩니다. 초기화는 서버가 계산한 KST 오늘 날짜에만 적용되며, 삭제 후 되돌리려면 백업이 필요합니다. `POST /api/v1/care/today/reset`은 아내 로그인 세션으로만 호출할 수 있습니다. DB에서 `daily_conditions`만 직접 삭제하면 루틴·리포트·남편 알림은 초기화되지 않으므로 이 API를 사용합니다.
+
 ## Backend Skeleton 로컬 확인
 
 `account`, `care`, `family` API는 실제 Supabase adapter가 연결되기 전까지 프로세스 메모리 Stub을 사용합니다. 서버 재시작 시 Stub 데이터는 초기화됩니다. Bearer token 검증은 기존 Supabase Auth 경계를 그대로 사용하므로 `.env`에 Backend용 Supabase 설정이 필요합니다.

@@ -33,7 +33,7 @@ import httpx
 from postgrest.exceptions import APIError
 from supabase import Client
 
-from app.domains.errors import DomainConflictError, DomainNotFoundError, DomainStorageError
+from app.domains.errors import DomainConflictError, DomainForbiddenError, DomainNotFoundError, DomainStorageError
 from app.services.movement.events import EventStorageError, SupabaseEventStore
 from app.services.movement.report import generate_daily_report
 from app.services.supabase_service import SupabaseService
@@ -90,6 +90,24 @@ class SupabaseCareRepository(CareRepository):
     def __init__(self, client: Client, fallback: CareRepository) -> None:
         self.client = client
         self.fallback = fallback
+
+    def reset_daily_experience(self, user_id: str, target_date: date) -> None:
+        """Call the service-role-only RPC so the multi-table reset commits as one unit."""
+        profiles = self._run(
+            lambda: self.client.table("profiles")
+            .select("role")
+            .eq("user_id", user_id)
+            .limit(1)
+            .execute()
+        )
+        if not profiles or profiles[0]["role"] != "wife":
+            raise DomainForbiddenError("아내 계정에서만 오늘 기록을 초기화할 수 있습니다.")
+        self._run(
+            lambda: self.client.rpc(
+                "reset_daily_experience",
+                {"p_user_id": user_id, "p_target_date": target_date.isoformat()},
+            ).execute()
+        )
 
     # --- Condition: 실제 daily_conditions 연결 ---
 
