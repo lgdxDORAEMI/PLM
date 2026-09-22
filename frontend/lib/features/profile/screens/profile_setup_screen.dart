@@ -346,9 +346,20 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   Future<void> _handleBack() async {
     FocusManager.instance.primaryFocus?.unfocus();
+    // 수정 없이 연 프로필 요약에서는 입력 단계들을 거치지 않고 메뉴로 돌아간다.
+    if (widget.mode == ProfileMode.edit &&
+        !_controller.editingFromSummary &&
+        !_controller.isDirty) {
+      _leaveProfile();
+      return;
+    }
     if (_controller.moveBack()) return;
     if (_controller.isDirty && !await _confirmDiscard()) return;
     if (!mounted) return;
+    _leaveProfile();
+  }
+
+  void _leaveProfile() {
     if (Navigator.canPop(context)) {
       Navigator.pop(context);
     } else {

@@ -6,10 +6,41 @@ import 'package:plm_frontend/features/profile/models/profile_draft.dart';
 import 'package:plm_frontend/features/profile/screens/profile_setup_screen.dart';
 import 'package:plm_frontend/features/entry/services/mock_entry_service.dart';
 import 'package:plm_frontend/routing/route_context.dart';
+import 'package:plm_frontend/routing/route_names.dart';
 
 void main() {
   setUp(() {
     ProfileStore.instance.reset();
+  });
+
+  testWidgets('메뉴에서 수정 없이 뒤로 가면 입력 단계를 거치지 않는다', (tester) async {
+    ProfileStore.instance.save(ProfileDraft.mockEdit());
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () =>
+                  Navigator.pushNamed(context, RouteNames.wifeProfile),
+              child: const Text('메뉴'),
+            ),
+          ),
+        ),
+        routes: {
+          RouteNames.wifeProfile: (_) =>
+              const ProfileSetupScreen(mode: ProfileMode.edit, initialStep: 6),
+        },
+      ),
+    );
+
+    await tester.tap(find.text('메뉴'));
+    await tester.pumpAndSettle();
+    expect(find.text('프로필 수정'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('뒤로 가기'));
+    await tester.pumpAndSettle();
+    expect(find.text('메뉴'), findsOneWidget);
+    expect(find.text('병원에서 주의받은 게 있나요?'), findsNothing);
   });
 
   test('필수 Profile 입력을 검증한 뒤 Summary까지 이동한다', () {
