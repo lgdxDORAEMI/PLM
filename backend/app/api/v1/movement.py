@@ -38,7 +38,6 @@ import time
 import uuid
 from collections.abc import Iterator
 from datetime import date as date_type
-from datetime import datetime, timezone
 
 import cv2
 import numpy as np
@@ -59,6 +58,7 @@ from app.services.movement.report import generate_daily_report
 from app.services.movement.session_manager import SessionManager
 from app.services.profile_service import ProfileService
 from app.services.supabase_service import SupabaseService, get_supabase_service
+from app.utils import dates
 
 logger = logging.getLogger(__name__)
 
@@ -263,9 +263,12 @@ def list_events(
     owner_id: DataOwnerUserId,
     event_store: EventStore = Depends(get_event_store),
 ) -> list[PostureEvent]:
-    """B-MOTION-001: 남편은 partner_links로 연동된 아내의 이벤트를 읽기 전용 조회(partner_scope)."""
+    """B-MOTION-001: 오늘(KST) 이벤트만 반환한다(FUC-B-MOTION-001, "실시간 화면의
+    표시 범위는 오늘 발생한 감지 내용으로만 한정"). 남편은 partner_links로
+    연동된 아내의 이벤트를 읽기 전용 조회(partner_scope)."""
+    start, end = dates.day_bounds_kst(dates.today_kst())
     try:
-        return event_store.list_events(uuid.UUID(owner_id))
+        return event_store.list_events(uuid.UUID(owner_id), start=start, end=end)
     except EventStorageError as error:
         raise _storage_unavailable() from error
 
@@ -276,11 +279,11 @@ def get_daily_report(
     target_date: date_type | None = Query(default=None, alias="date"),
     event_store: EventStore = Depends(get_event_store),
 ) -> DailyReportSummary:
-    """일일 리포트 조회 (§5.9). date 쿼리 파라미터가 없으면 오늘(UTC 기준) 리포트.
+    """일일 리포트 조회 (§5.9). date 쿼리 파라미터가 없으면 오늘(KST 기준) 리포트.
     남편은 연동된 아내의 리포트를 본다(partner_scope)."""
     try:
         return generate_daily_report(
-            event_store, uuid.UUID(owner_id), target_date or datetime.now(timezone.utc).date()
+            event_store, uuid.UUID(owner_id), target_date or dates.today_kst()
         )
     except EventStorageError as error:
         raise _storage_unavailable() from error

@@ -1,4 +1,4 @@
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
 
 # 한국은 서머타임이 없어 고정 오프셋을 쓴다. zoneinfo는 Windows에서 tzdata 설치가 필요하다.
 KST = timezone(timedelta(hours=9))
@@ -9,6 +9,12 @@ FULL_TERM_DAYS = 280
 
 def today_kst() -> date:
     return datetime.now(KST).date()
+
+
+def day_bounds_kst(day: date) -> tuple[datetime, datetime]:
+    """KST 기준 그 날짜의 시작(00:00)과 다음날 시작 — [start, end) 절반열린구간."""
+    start = datetime.combine(day, time.min, tzinfo=KST)
+    return start, start + timedelta(days=1)
 
 
 def pregnancy_age(due_date: date, today: date) -> tuple[int, int]:

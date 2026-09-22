@@ -8,15 +8,16 @@ judgement가 이벤트를 얼마나 정확히 만드는지는 SessionManager 쪽
 
 import unittest
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
 from app.schemas.movement import BodyPart, BurdenLabel, EventTrigger, PostureEvent, PostureType
 from app.services.movement.events import InMemoryEventStore
 from app.services.movement.report import generate_daily_report
+from app.utils import dates
 
 _USER_ID = uuid.uuid4()
-_TODAY = datetime.now(timezone.utc).date()
-_BASE = datetime.combine(_TODAY, datetime.min.time(), tzinfo=timezone.utc)
+_TODAY = dates.today_kst()
+_BASE, _ = dates.day_bounds_kst(_TODAY)
 
 
 def _event(hour: int, posture, label, trigger, duration_sec: float) -> PostureEvent:

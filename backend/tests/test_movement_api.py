@@ -51,6 +51,7 @@ from app.services.movement.events import InMemoryEventStore
 from app.services.movement.pose_extractor import PoseResult
 from app.services.movement.session_manager import SessionManager
 from app.services.supabase_service import get_supabase_service
+from app.utils import dates
 
 _TEST_USER_ID = "11111111-1111-1111-1111-111111111111"
 _HUSBAND_ID = "22222222-2222-2222-2222-222222222222"
@@ -80,8 +81,8 @@ class _FakeScopeClient:
         return Q()
 
 
-def _bending_event(user_id: str) -> PostureEvent:
-    started = datetime.now(timezone.utc) - timedelta(minutes=5)
+def _bending_event(user_id: str, started: datetime | None = None) -> PostureEvent:
+    started = started or datetime.now(timezone.utc) - timedelta(minutes=5)
     return PostureEvent(
         event_id=uuid.uuid4(),
         user_id=uuid.UUID(user_id),
@@ -334,6 +335,19 @@ class MovementWebSocketTest(unittest.TestCase):
         response = self.client.get("/api/v1/movement/events")
         self.assertEqual(response.status_code, 200)
         self.assertEqual([e["user_id"] for e in response.json()], [_TEST_USER_ID])
+
+    def test_events_excludes_events_outside_today_kst(self) -> None:
+        today_start, _ = dates.day_bounds_kst(dates.today_kst())
+        outside = _bending_event(_TEST_USER_ID, started=today_start - timedelta(hours=1))
+        inside = _bending_event(_TEST_USER_ID, started=today_start + timedelta(hours=1))
+        self.event_store.record(outside)
+        self.event_store.record(inside)
+
+        response = self.client.get("/api/v1/movement/events")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [e["event_id"] for e in response.json()], [str(inside.event_id)]
+        )
 
     def test_linked_husband_sees_wifes_daily_report(self) -> None:
         self.event_store.record(_bending_event(_TEST_USER_ID))

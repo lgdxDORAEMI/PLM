@@ -18,7 +18,7 @@ rules.yaml이 판정 임계값을 코드 밖에 둔 것과 같은 이유 — 문
 from __future__ import annotations
 
 from collections import Counter, defaultdict
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date
 from pathlib import Path
 from uuid import UUID
 
@@ -34,6 +34,7 @@ from ...schemas.movement import (
     PostureType,
     resolve_body_part,
 )
+from ...utils import dates
 from .events import EventStore
 from .rule_engine import LABEL_LEVEL, REPEATED_LOAD
 
@@ -85,9 +86,8 @@ def generate_daily_report(
     user_id: UUID,
     report_date: date,
 ) -> DailyReportSummary:
-    """report_date(그 날짜, UTC 00:00~다음날 00:00) 하루치 이벤트로 리포트를 만든다."""
-    start = datetime.combine(report_date, time.min, tzinfo=timezone.utc)
-    end = start + timedelta(days=1)
+    """report_date(그 날짜, KST 00:00~다음날 00:00) 하루치 이벤트로 리포트를 만든다."""
+    start, end = dates.day_bounds_kst(report_date)
     events = event_store.list_events(user_id, start=start, end=end)
 
     cumulative_events = [e for e in events if e.trigger_reason == EventTrigger.CUMULATIVE_RESEARCH_THRESHOLD]
