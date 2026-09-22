@@ -1,175 +1,24 @@
 # PLM Frontend
 
-가사 가이드의 `3. 가전이 대신합니다`는 백엔드 `GET /api/v1/household/today`가 실제 ThinQ 보유 기기와 매칭해 반환한 항목만 표시한다. 카드에는 매칭된 기기 이름을 표시한다. 연결 오류 때 가전 섹션은 비고 일반 가사 항목은 유지된다. 미리보기 모드의 로컬 예시는 실제 기기 목록과 분리된다. 화면의 `실행`은 로컬 이력 기록이며 실제 가전을 제어하지 않는다.
+Flutter Web으로 구현한 PLM 사용자 앱입니다. 아내는 프로필, 오늘 컨디션과 할 일, 네 가지 가이드, 실행 기록과 리포트를 사용합니다. 남편은 연결된 아내의 캘린더·오전 리포트·알림·가사 요청을 확인합니다.
 
-초기 일일 흐름은 `오늘 컨디션 입력 → 예정 활동 저장 → 가족 초대 화면 → AI 루틴 생성 → 홈`입니다. 이미 연결된 배우자도 초대 화면에서 `초대하기`를 눌러 연결 결과를 확인한 뒤 진행할 수 있습니다. `나중에`를 선택하면 메뉴의 `가족 초대하기`는 연결 결과를 확인할 때까지 유지됩니다. 기존 루틴의 `오늘 할일 수정하기`는 초대 화면을 거치지 않고 바로 재생성합니다.
+## 사용자 화면
 
-PLM Frontend는 임산부와 배우자의 생활관리 경험을 제공하기 위한 Flutter Web 앱입니다. 화면은 기존 공통 UI를 사용하고, 라우팅은 `docs/development/ROUTE_MAP_V2.md`의 아내·남편 경로를 따릅니다. 실제 데이터가 없는 화면은 연동 상태를 표시하며, 명시적 화면 미리보기 모드에서는 로컬 예시로 구현된 경로를 확인할 수 있습니다.
+- 아내의 초기 흐름: 프로필 설정 → 가족 초대 → 홈 → 오늘 컨디션 → 할 일 → AI 루틴 생성 → 홈
+- 홈과 식사·가사·건강·수면 상세: 백엔드에 저장된 같은 날짜의 `daily_routines`와 `routine_items`를 조회
+- 식사: 끼니별 가이드, 다른 메뉴 요청, 선택한 대체 메뉴 반영
+- 가사: 직접 할 일, 가족 분담 요청, 보유 ThinQ 가전과 매칭된 제안 표시
+- 챗봇: 대화 이력 조회와 LLM 응답; 식사 가이드에서 진입하면 해당 루틴 항목을 문맥으로 전달
+- 리포트·캘린더: 실행 및 가족 참여 결과 조회
+- 남편: 공유된 오전 리포트, 알림, 항목별 가사 요청 처리
+- 실시간: 일반 앱에서는 오늘 저장된 모션 이벤트 조회. 카메라/WebSocket 분석 화면은 별도 `main_movement_debug.dart` 진입점
 
-## 지원 플랫폼
+실제 연동 환경에서 API 실패 시 해당 화면의 빈 상태 또는 오류 상태를 표시합니다. `PLM_PREVIEW=true`로 실행하는 화면 미리보기는 로컬 예시를 사용합니다.
 
-| 플랫폼 | 상태 |
-| --- | --- |
-| Web / Chrome | 현재 지원 |
-| Android | 미지원 — 플랫폼 프로젝트와 Web 전용 구현 분리가 필요 |
-| iOS | 미지원 — 플랫폼 프로젝트와 macOS/Xcode 환경 구성이 필요 |
+## 연결 경계
 
-`lib/app.dart`가 `dart:html` 기반 모션 카메라 구현을 직접 연결하고 있으므로 현재 코드는 Web 전용입니다. 로컬에 생성 산출물 형태의 `android/` 또는 `ios/` 폴더가 보이더라도 저장소에 포함된 정식 플랫폼 프로젝트로 간주하지 않습니다.
+`lib/main.dart`가 앱을 시작하고 `lib/routing/app_router.dart`가 역할별 경로를 관리합니다. 화면별 Controller와 Service가 `BACKEND_URL`의 API를 호출합니다. 서버 인증은 Supabase 세션을 사용하며 사전 설정 계정의 자동 진입·전환은 로컬 백엔드에서만 허용됩니다. 아내 계정의 초기화 성공 후 앱은 프로필 입력 흐름으로 돌아갑니다.
 
-## 현재 구현 상태
+ThinQ 가전 목록은 백엔드에서 읽습니다. 가이드의 실행 버튼은 실제 가전 제어 명령을 보내지 않습니다. Web 이외의 플랫폼 프로젝트는 현재 지원 범위가 아닙니다.
 
-### 구현됨
-
-- `.env` 로딩과 `BACKEND_URL` 설정
-- Supabase URL과 anon key가 모두 존재할 때만 Flutter client 초기화
-- 실제 API 실행 시 아내 계정으로 자동 진입하고 아내·남편 메뉴의 `계정 전환`으로 Supabase 세션을 교체. 계정 비밀번호는 Backend에만 보관
-- DESIGN.md 기반 Theme와 공통 Design Token
-- 밝은 neutral surface 기반의 공통 Shell과 선택 상태 중심의 Pregnancy accent
-- Button, Input, Card, SelectionCard, TopAppBar, BottomNavigation
-- 아내 `/wife/*`, 남편 `/husband/*`, 공통 `/entry`·`/invite/accept` 경로를 구분하는 중앙 Router
-- ThinQ 인증 계정 상태와 `activeRole` 분리, 계정별 역할 복원 및 역할 경로 접근 제한
-- 역할 전환 시 대상 역할 홈으로 이동하고 이전 navigation stack 제거
-- 프로필·배우자 초대의 온보딩/수동 진입 Context 분리
-- 역할별 Header, Wife Mobile 4개 Bottom Navigation·Desktop Navigation Rail, Partner Calendar 중심 Navigation
-- Home·Meal·Health·Household·Sleep·Calendar·Report·Movement의 viewport별 composition
-- `/`와 잘못된 경로를 인증·역할·프로필·연동 상태에 따라 안전한 시작 경로로 보내는 Route guard
-- 최초 직접 접근에서 다른 역할 URL을 현재 역할 Home 주소로 교체하고, 끼니별 식사 상세 URL을 새로고침 후에도 복원
-- 아내 프로필 미완료 시 첫 단계, 연결된 남편은 캘린더, 미연결 남편은 초대 필요 안내로 진입
-- Web Demo Profile의 localStorage 복원
-- Web에서 계정별 `activeRole` 복원. 실제 역할 접근권과 ThinQ 로그인은 향후 호스트 연동이 필요
-- 아내 프로필 생년월일·DB 알레르기 항목, ThinQ 알림 초대, 챗봇 끼니 context 반영
-- 프로필 출산예정일을 수정하면 입력 확인 화면과 메뉴에 계산된 임신 주수·일수가 함께 갱신됨
-- 실시간 화면을 오늘 로그 전용으로 정리하고 확인 상태·과거 로그·개발용 기기 상태 제거
-- 실시간 화면의 오늘 이벤트 기록은 같은 종류끼리 "N회"로 묶어 표시하고, 눌러야 개별 내역이 바텀시트로 뜸(2026-09-23, 반복 노출로 인한 불필요한 불안감 완화). Sit-to-Stand(고부담 동작)는 경고 톤 대신 중립 톤으로 표시
-- Daily 리포트·캘린더의 미확정 관절 수치를 홈캠 주의사항 문구로 교체
-- 남편은 캘린더를 Home으로 사용하고 Bottom Navigation 없이 알림·리포트·요청·오늘 실시간으로 이동
-- 남편 알림 3종과 요청 카드 전체 상태, 완료 결과 전체 화면 구현
-- 아내 가사 가이드 재진입 시 Backend 요청 목록에서 남편의 항목별 확인·완료 상태 복원
-- Home 가이드 카드 4장은 Backend `home.summaries`를 표시하고, 진행률은 같은 날짜의 `routine_items` 실행 상태로 계산하며 상세 화면 복귀 시 갱신
-- 오늘의 컨디션 입력 화면에서는 기분 항목을 표시하지 않음. 기존 컨디션의 기분 값 또는 기본값은 Backend 저장 계약을 위해 유지
-- 챗봇 입력·대화 이력을 `GET/POST /api/v1/chat/messages`에 연결. 일반 탭은 일반 대화, 식사 가이드 진입은 실제 식사 루틴 ID 기준 대화를 표시하며 답변은 Backend LLM에서 생성
-- 메뉴에서 프로필 수정을 열고 값을 바꾸지 않은 채 뒤로 가면 바로 메뉴로 복귀. 변경 후 뒤로 가면 `수정하기`로 저장하거나 `취소`로 변경을 버리고 메뉴로 복귀
-- 아내 메뉴의 `초기화`로 KST 오늘 컨디션·루틴 전체 revision·실행/피드백·가사 요청·리포트를 삭제하고 빈 프로필 1단계부터 다시 시작. 초기화 후에는 프로필 설정 → 가족 초대 → 홈 → 컨디션 입력 → 할 일 입력 → AI 루틴 생성 → 홈 순서로 진행. 실제 배우자 계정 연결은 유지. 남편 캘린더·리포트·알림·가사 요청은 화면 재진입 또는 앱 복귀 시 다시 조회
-- `PLM_PREVIEW=true` 실행 시 인증·프로필·배우자 연결 없이 아내·남편 화면 경로를 로컬 예시로 직접 확인
-- ThinQ 초대 handoff 성공 시 남편 연결 상태와 `activeRole`을 갱신한 뒤 캘린더로 진입
-- 브라우저 카메라 프레임 캡처 및 WebSocket 전송
-- 캘리브레이션 진행률, 실시간 자세·부담 상태와 landmark 오버레이 표시
-- 카메라와 WebSocket을 추상화한 Controller 단위 테스트
-
-기능별 FE–BE 연결 상태와 남은 연동 경계는 [FE–BE 연결 기준 상태](../docs/FE_BE_CONNECTION_STATUS.md)를 참고하세요.
-
-### Skeleton 완료, 상세 UI 구현 전
-
-- 임산부 프로필과 배우자 초대
-- 오늘의 컨디션 및 예정 활동 입력
-- 통합 Home과 식사·가사·건강·수면 가이드. 수면 가이드의 전체 실행 시 실행 완료 팝업 표시
-- 가사 가이드의 직접 할일·가족 공유 카드·가전 추천 숫자는 실제 표시 항목 수를 반영
-- 홈에서 `오늘 할일 수정하기`를 열어 뒤로가기 시 변경사항 저장 여부를 확인하고, 저장하면 오늘 루틴을 다시 표시
-- 식사 가이드 및 재조정 채팅의 화면 구성과 상태 표시. 실제 채팅 API가 없는 화면은 연동 필요 상태를 표시
-- 루틴 완료 기록, Daily 리포트와 캘린더
-- 배우자용 초대 수락, 리포트, 알림, 가사 요청 확인·완료 화면
-- 화면별 실제 콘텐츠·상태·접근성 세부 구현
-- Feature Controller와 테스트용 Mock Service
-
-화면 구현은 [화면 구현 계획](../docs/development/05_ui_implementation_plan.md)의 `UI-001`부터 Placeholder를 한 화면씩 교체합니다. 전체 현황과 공용 파일 경계는 [Frontend 진행 현황](../docs/FRONTEND_PROGRESS.md)을 확인합니다. Mock Service는 테스트와 명시적 화면 미리보기에서 사용합니다.
-
-```text
-Page
-→ Feature Widget
-→ State / Controller
-→ Frontend Service
-→ API Service 또는 테스트용 Mock Service
-```
-
-## 구조
-
-```text
-lib/
-├── core/config/app_config.dart
-├── design_system/            # token, theme, 공통 component
-├── routing/                  # 중앙 route 이름과 생성기
-├── shared/widgets/           # 공통 Skeleton layout
-├── features/*/screens/       # 화면별 독립 Placeholder
-├── features/movement/
-│   ├── models/
-│   ├── browser_camera_frame_source.dart
-│   ├── browser_live_transport.dart
-│   ├── movement_controller.dart
-│   ├── movement_overlay_painter.dart
-│   └── movement_screen.dart
-├── app.dart                  # Theme과 Router 조립
-└── main.dart
-
-test/
-├── features/movement/
-└── routing/app_router_test.dart
-```
-
-향후 Feature 구조는 기존 폴더를 유지하면서 필요한 영역만 추가합니다. 확정된 제안은 [Frontend Architecture](../docs/development/02_frontend_architecture.md)를 참고하세요.
-
-## 실행
-
-요구사항:
-
-- Flutter stable
-- Dart 3.12.2 이상, 4.0 미만
-- Chrome
-- 실행 중인 Backend — 초기 화면에는 선택 사항, 모션 데모에는 필수
-
-```powershell
-flutter pub get
-if (-not (Test-Path .env)) { Copy-Item .env.example .env }
-flutter run -d chrome
-```
-
-`.env` 예시:
-
-```dotenv
-SUPABASE_URL=
-SUPABASE_ANON_KEY=
-BACKEND_URL=http://localhost:8000
-```
-
-`.env`는 `pubspec.yaml`에 asset으로 등록되어 있으므로 파일이 없으면 실행 또는 빌드가 실패합니다. Supabase 값은 둘 다 비워둘 수 있지만 하나만 입력하지 마세요.
-
-SDK 탐색이나 VS Code 실행 문제가 있으면 [개발 환경 및 실행 안내](../guide.md)를 확인하세요.
-
-## 모션 인식 데모
-
-1. Backend를 `localhost:8000`에서 실행합니다.
-2. Frontend를 Chrome에서 실행합니다.
-3. 제품의 실시간 화면은 Backend 데이터가 있으면 오늘 감지 로그를 표시합니다. 데이터 연결이 없으면 연동 필요 상태를 표시합니다.
-4. 브라우저 카메라 권한을 허용하고 캘리브레이션과 실시간 상태를 확인합니다.
-
-현재 데모는 Backend의 `WS /api/v1/movement/live/stream`에 JPEG 프레임을 약 5fps로 전송합니다. WebSocket은 로컬 `localhost` 또는 `127.0.0.1` origin만 허용합니다.
-
-이 기능은 Phase 2 검증용 데모입니다. 세부 제약과 수동 검증 항목은 [Movement README](lib/features/movement/README.md)를 참고하세요.
-
-## 검증
-
-```powershell
-flutter analyze
-flutter test
-flutter build web
-```
-
-일반 테스트는 카메라와 WebSocket fake를 사용하므로 Dart VM에서 실행할 수 있습니다. 실제 `getUserMedia`, 브라우저 미리보기, 카메라 권한, Backend 연결 및 화면 이탈 시 리소스 정리는 `flutter run -d chrome`으로 수동 확인해야 합니다.
-
-## 개발 기준
-
-- 기능과 사용자 흐름은 `docs/requirements/**`, `docs/서비스흐름도/**`를 우선합니다.
-- 화면 정보 구조는 `docs/screens/**`를 참고합니다.
-- 색상, 타이포그래피, 간격과 Component 상태는 `DESIGN.md`를 최우선으로 적용합니다.
-- Widget에 Mock JSON이나 대규모 상태 로직을 직접 넣지 않습니다.
-- Backend endpoint를 임의로 만들거나 확정하지 않습니다.
-- 상세 운영 규칙은 [Frontend 작업 운영 기준](../docs/development/frontend_workflow.md)을 따릅니다.
-
-## 관련 문서
-
-- [전체 프로젝트 README](../README.md)
-- [Frontend 분석](../docs/development/01_frontend_analysis.md)
-- [Frontend Architecture](../docs/development/02_frontend_architecture.md)
-- [Design System](../docs/development/03_design_system.md)
-- [Component System](../docs/development/04_component_system.md)
-- [UI 구현 계획](../docs/development/05_ui_implementation_plan.md)
-- [Frontend 진행 현황](../docs/FRONTEND_PROGRESS.md)
+화면별 실제 연결 여부는 [FE–BE 연결 기록](../docs/FE_BE_CONNECTION_STATUS.md), API 경로는 [API 문서](../docs/api.md)를 참고하세요. 실행 및 환경 설정은 [guide.md](../guide.md)에 있습니다.

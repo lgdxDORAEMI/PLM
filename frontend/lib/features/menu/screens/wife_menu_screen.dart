@@ -165,7 +165,7 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
                     key: const ValueKey('wife-today-reset'),
                     icon: Icons.restart_alt,
                     title: _resettingToday ? '초기화 중…' : '초기화',
-                    description: '오늘 컨디션·루틴·실행·리포트 초기화',
+                    description: '오늘 컨디션·루틴·실행·모션 기록·리포트 초기화',
                     onTap: _resettingToday
                         ? () {}
                         : () => unawaited(_resetToday()),
@@ -224,7 +224,7 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('오늘 기록을 초기화할까요?'),
-        content: const Text('오늘의 컨디션, 루틴, 실행 이력과 리포트가 삭제됩니다.'),
+        content: const Text('오늘의 컨디션, 루틴, 실행 이력, 모션 감지 기록과 리포트가 삭제됩니다.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),

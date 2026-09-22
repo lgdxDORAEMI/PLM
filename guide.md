@@ -46,31 +46,11 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 flutter run -d chrome
 ```
 
-실행하면 `/`이 canonical `/entry`로 정규화되고 Mock Bootstrap이 사용자 상태를 확인합니다. 새 사용자는 실제 Entry 화면에서 `시작하기`를 눌러 Profile Setup으로 이동하고, Profile을 완료한 재방문 사용자는 `/wife/home`으로 바로 이동합니다. 알 수 없는 경로도 안전하게 `/entry`로 복구됩니다. ThinQ Host/실제 Session Adapter는 아직 없으므로 역할별 직접 URL 접근 차단은 보장하지 않습니다. Browser 주소의 `/wife/home`, `/wife/menu`, `/wife/report/2026-09-13`, `/partner/calendar`, `/partner/requests/demo-request`를 직접 열어 Mock UI를 확인할 수 있습니다.
+실제 연동에는 `frontend/.env`의 Backend·Supabase 공개 설정과 `backend/.env`의 Supabase 서버 설정이 필요합니다. 백엔드에 등록된 계정으로 로컬에서 시작하면 아내 계정 세션을 발급하고, 메뉴의 계정 전환으로 남편 세션을 선택할 수 있습니다. 현재 앱의 진입 경로와 화면 연결 상태는 [Frontend README](frontend/README.md)를 참고하세요.
 
-온보딩에서 출산예정일 또는 마지막 생리 시작일을 입력할 수 있습니다. 마지막 생리 시작일을 선택하면 출산예정일 입력칸에 280일 뒤 계산값이 바로 표시됩니다. 출산예정일을 직접 선택하면 마지막 생리 시작일을 지우고 선택한 값을 사용합니다. 예정일, 생년월일, 100~220cm 신장, 30~250kg 임신 전 체중, 초산/경산, 단태/다태가 모두 유효해야 완료 사용자로 판정합니다. Supabase 로그인 환경에서는 단계별 프로필 API가 생년월일을 포함한 값을 서버에 저장합니다. 설정 없는 Mock 실행에서는 완료 Profile을 브라우저 localStorage의 `plm.demo.profile.v1` 키에 저장해 새로고침 후에도 Home/Menu의 임신 주수와 재방문 분기를 유지합니다.
+실제 대화에는 백엔드 `LLM_API_KEY`가 필요합니다. 루틴 생성에는 오늘 컨디션·할 일 저장과 AI 설정이 필요하며, AI 생성 실패 시 백엔드 폴백 루틴이 저장될 수 있습니다. 연결 실패 시 실제 앱은 로컬 예시로 자동 대체하지 않습니다. `PLM_PREVIEW=true`로 명시적으로 실행한 미리보기에서만 로컬 예시를 사용합니다.
 
-새 사용자 상태를 다시 시연하려면 Chrome 개발자 도구의 `Application` → `Local Storage`에서 현재 origin의 `plm.demo.profile.v1` 항목을 삭제하고 `/entry`를 새로고침합니다. Profile Setup을 끝내면 같은 코드에서 완료 사용자 상태로 전환되며, 이후 `/entry` 재진입 시 Home으로 이동합니다. 브라우저 저장소 접근이 차단된 환경에서는 현재 실행 중인 메모리 상태만 유지되고 새로고침 후 Entry로 돌아올 수 있습니다.
-
-`/wife/chat`을 직접 열거나 하단 챗봇 탭으로 이동하면 뒤로가기 버튼이 없습니다. 식사 가이드에서는 `/wife/chat?source=meal&period={mealPeriod}`로 이동하며 이 경우에만 뒤로가기가 활성화됩니다. `household`, `health`, `sleep` source도 동일한 복귀 규칙을 지원하므로 해당 가이드에서 챗봇 진입 UI가 추가될 때 같은 Route helper를 사용합니다.
-
-실제 챗봇 대화를 사용하려면 `backend/.env`의 `LLM_API_KEY`와 Supabase 설정, `frontend/.env`의 Backend·Supabase 설정이 필요합니다. 일반 탭은 오늘의 일반 대화를, 식사 가이드 진입은 해당 끼니의 실제 루틴 항목에 연결된 대화를 조회합니다. 식사 루틴이 없거나 대화 조회에 실패하면 입력창이 비활성화되고 다시 시도할 수 있습니다. OpenAI 응답 생성에 실패하면 Backend가 장애 안내 문구를 반환합니다. `PLM_PREVIEW=true`에서는 기존 로컬 예시 대화를 사용합니다.
-
-`/wife/home`의 AI Routine은 실제 AI API가 없어도 실행됩니다. 당일 컨디션 미입력 시 컨디션 CTA가 표시되고, 입력과 예정 활동 선택을 마치면 `MockRoutineService`가 식사·가사·건강·수면 가이드를 제공합니다. Service 오류 시 화면을 비우지 않고 기본 Routine과 재시도 버튼을 표시합니다.
-
-가이드 상세 화면은 `/wife/meal`, `/wife/household`, `/wife/health`, `/wife/sleep`에서 확인할 수 있습니다. Meal·Health·Sleep 데이터와 Household 공유는 local Mock 상태를 사용합니다. Household에서 공유하면 `PartnerRequestStore`에 실제 request ID가 생성되고 `/partner/requests/{requestId}` 계약으로 조회할 수 있습니다. Household의 가전 항목 `실행`과 Sleep의 수면 환경 전체 실행은 현재 실제 기기에 명령을 보내지 않고 로컬 실행 기록을 남깁니다. 각 요청은 오늘 날짜의 메모리 이력에 1회 기록되며, 새로고침하면 이 이력은 초기화됩니다. 사용자 화면의 팝업에는 기기 연동 상태나 개발 단계 안내를 표시하지 않습니다.
-
-Calendar는 `/wife/calendar`과 `/partner/calendar`에서 날짜를 화면 선택 상태로 관리합니다. 선택한 기록의 상세 버튼은 같은 날짜를 `YYYY-MM-DD` 형식으로 `/wife/report/{date}` 또는 `/partner/report/{date}`에 전달합니다. 존재하지 않거나 `2026-02-31`처럼 유효하지 않은 날짜는 오늘 기록으로 대체하지 않고 빈 상태를 표시합니다. Desktop에서는 Calendar와 상세가 나란히 보이고 Mobile에서는 상세가 달력 아래에 이어집니다.
-
-Wife Report에서 `저장하고 마치기`를 누르면 Calendar로 이동하며 같은 날짜가 선택됩니다. 오늘 날짜의 Mock 리포트라면 Home의 컨디션 입력 상태도 초기화됩니다. 리포트 내용은 아직 당일 입력/완료 내역으로 생성되지 않는 샘플 기록이고 영구 저장되지 않습니다. 가전 자동 실행 수치는 가사·수면 가이드의 시연 요청 합계이며, 실제 기기 실행 횟수가 아닙니다. 모션 감지 횟수는 연동 전이므로 0으로 표시합니다.
-
-Partner는 `/partner/calendar`를 시작 화면으로 사용하며 Header의 알림 버튼만 `/partner/notifications`로 연결됩니다. 알림 항목은 `/partner/report/{date}` 또는 `/partner/requests/{requestId}`로 이동합니다. Request 완료 결과의 `캘린더로 돌아가기`를 누르면 `/partner/calendar`에서 요청·확인·완료 집계가 갱신됩니다. Partner 화면에는 Bottom Navigation이나 Profile 버튼이 없으며, Phase 2 실시간 화면은 Calendar의 명시적 CTA로만 진입합니다.
-
-`/wife/movement`와 `/partner/movement`는 Phase 2 화면 구성 확인용 Local Mock입니다. 일반 `flutter run`에서는 카메라 권한 요청, MediaPipe 분석, WebSocket 또는 실시간 센서 연결이 발생하지 않습니다. 별도 기술 데모가 필요한 경우에만 `flutter run -d chrome -t lib/main_movement_debug.dart`를 사용하며, 이 진입점은 제품 Router와 연결되지 않습니다.
-
-남편 초대 화면은 연결 설정 여부와 관계없이 초대 카드와 `초대장 보내기`·`나중에` 버튼을 표시합니다. `초대장 보내기`를 누르면 ThinQ 전달 연동이 필요하다는 안내가 나타나며, 전송 성공으로 처리하거나 링크를 생성하지 않습니다. `나중에`는 기존 화면 이동을 유지합니다. 개발용 로그나 화면 문구에 실제 Token을 출력하지 않습니다.
-
-연동 환경 값이 없는 화면 미리보기에서는 각 기능의 기본 레이아웃과 로컬 예시 콘텐츠를 볼 수 있습니다. 화면 상단의 `연동이 필요합니다` 안내로 예시 상태를 구분합니다. 로그인과 Backend 연결이 설정된 실행에서는 API 오류 시 로컬 예시로 대체하지 않고 해당 화면의 오류 또는 빈 상태를 표시합니다.
+일반 앱의 `/wife/live`와 `/husband/live`는 오늘 감지 기록과 집계를 API로 조회하며 카메라를 열지 않습니다. 카메라 분석 기술 데모는 `frontend` 폴더에서 `flutter run -d chrome -t lib/main_movement_debug.dart`로 별도 실행합니다.
 
 편집기의 SDK 경로 설정은 Windows PATH 자체를 변경하지 않습니다. PATH 설정 전에는 `& '본인의 SDK 경로/bin/flutter.bat' pub get`처럼 전체 경로로 실행할 수 있습니다.
 
@@ -89,21 +69,21 @@ SDK가 저장소 밖에 있고 제한된 실행 환경에서 `bin/cache/lockfile
 
 ### 오늘 기록 초기화 API 준비
 
-아내 메뉴의 `초기화` 버튼을 사용하기 전에 `supabase/migrations/20260922000000_reset_daily_experience.sql`을 연결된 Supabase 프로젝트에 적용해야 합니다. 마이그레이션 없이 버튼을 누르면 API가 503을 반환하고 기록은 유지됩니다. 초기화는 서버가 계산한 KST 오늘 날짜에만 적용되며, 삭제 후 되돌리려면 백업이 필요합니다. `POST /api/v1/care/today/reset`은 아내 로그인 세션으로만 호출할 수 있습니다. DB에서 `daily_conditions`만 직접 삭제하면 루틴·리포트·남편 알림은 초기화되지 않으므로 이 API를 사용합니다.
+아내 메뉴의 `초기화` 버튼을 사용하기 전에 `supabase/migrations/20260922000000_reset_daily_experience.sql`과 `20260922010000_reset_today_posture_events.sql`을 연결된 Supabase 프로젝트에 순서대로 적용해야 합니다. 첫 마이그레이션이 이미 적용됐다면 두 번째만 적용합니다. 마이그레이션 없이 버튼을 누르면 API가 503을 반환하거나 기존 함수가 모션 기록을 남깁니다. 초기화는 서버가 계산한 KST 오늘 날짜에만 적용되며, 삭제 후 되돌리려면 백업이 필요합니다. `POST /api/v1/care/today/reset`은 아내 로그인 세션으로만 호출할 수 있습니다. DB에서 `daily_conditions`만 직접 삭제하면 루틴·리포트·남편 알림·오늘 모션 감지 기록은 초기화되지 않으므로 이 API를 사용합니다. 모션 감지 기록은 `posture_events.started_at`의 KST 오늘 범위로 삭제하고, 캘리브레이션 기준선(`posture_calibration_profiles`)과 모션 동의 설정(`motion_consents`)은 유지합니다. 카메라 스트리밍 중에는 새 감지 기록이 다시 저장될 수 있으므로 스트리밍을 종료한 뒤 초기화합니다.
 
-## Backend Skeleton 로컬 확인
+## Backend 로컬 실행
 
-`account`, `care`, `family` API는 실제 Supabase adapter가 연결되기 전까지 프로세스 메모리 Stub을 사용합니다. 서버 재시작 시 Stub 데이터는 초기화됩니다. Bearer token 검증은 기존 Supabase Auth 경계를 그대로 사용하므로 `.env`에 Backend용 Supabase 설정이 필요합니다.
+현재 계정·일일 기록·가족 공유 API는 Supabase 저장소에 연결됩니다. Bearer 토큰 검증과 데이터 접근에 백엔드 Supabase 설정이 필요합니다.
 
 ```powershell
 cd backend
 python -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements.txt
-Copy-Item .env.example .env
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 .venv\Scripts\python.exe -m uvicorn app.main:app --reload
 ```
 
-OpenAPI 문서는 `http://localhost:8000/docs`에서 확인합니다. 도메인 소유권과 Stub 교체 순서는 [Backend Domain Ownership](backend/DOMAIN_OWNERSHIP.md)을 따릅니다. Routine·Movement 보호 영역과 기존 migration은 이번 Skeleton에서 변경하지 않습니다.
+OpenAPI 문서는 `http://localhost:8000/docs`에서 확인합니다. 엔드포인트 목록은 [API 문서](docs/api.md)를 참고하세요.
 
 참고: [Flutter 편집기 실행 안내](https://docs.flutter.dev/tools/vs-code), [Dart 확장 설정](https://dartcode.org/docs/settings/).
 
@@ -137,3 +117,23 @@ flutter run -d chrome --dart-define=PLM_PREVIEW=true
 연결 결과를 확인했는지는 계정별 브라우저 localStorage에 저장하는 화면 표시 상태입니다. 실제 연결 권한은 백엔드의 배우자 연결 API 응답을 기준으로 합니다. 브라우저 저장소를 지우면 연결된 계정도 메뉴에서 가족 초대 화면에 다시 들어갈 수 있습니다. 루틴 생성이 실패하면 초대 화면에 머물러 다시 시도할 수 있습니다.
 
 아내 메뉴의 `초기화` API가 성공하면 해당 계정의 프로필 재입력 필요 상태와 가족 초대 결과 확인 표시를 저장하고, 빈 프로필 1단계로 이동합니다. 이후 프로필 설정 → 가족 초대 → 홈 → 컨디션 입력 → 할 일 입력 → AI 루틴 생성 → 홈 순서로 다시 진행합니다. 할 일 화면에서 루틴 생성에 실패하면 같은 화면에서 다시 시도할 수 있습니다. 프로필 저장 전 새로고침하거나 계정을 전환했다 돌아와도 프로필 단계가 유지됩니다. 기존 DB 프로필과 배우자 계정 연결은 삭제하지 않으며, 새 프로필을 완료하면 기존 프로필 값을 갱신합니다. API가 실패하면 프로필과 초대 표시 상태는 유지됩니다.
+
+## 개발 도구 실행
+
+PC 웹캠 분석 도구는 저장소 루트에서 실행합니다. `--check`는 카메라를 열지 않고 모델과 의존성을 확인합니다.
+
+```powershell
+.\tools\motion_demo\.venv\Scripts\python.exe -m tools.motion_demo --check
+.\tools\motion_demo\.venv\Scripts\python.exe -m tools.motion_demo
+```
+
+생활루틴 지식 적재 도구는 `tools/rag_ingest`에서 별도 의존성을 설치하고 `.env.example`을 복사해 로컬 설정을 채웁니다. SQL을 연결된 Supabase에 적용한 뒤 필요한 단계만 실행합니다. 서버 비밀 키는 Flutter 환경에 넣지 않습니다.
+
+```powershell
+cd tools/rag_ingest
+python -m pip install -r requirements.txt
+if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+python 02_translate_chunk_embed_upload.py --step all
+```
+
+개별 단계는 `--step translate`, `--step embed`, `--step upload`로 실행할 수 있습니다.

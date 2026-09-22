@@ -1,12 +1,5 @@
-# PC 웹캠 모션 테스트
+# PC 웹캠 모션 도구
 
-모델과 분석 모듈을 사용하는 독립 개발 도구입니다. PLM 루트에서 실행합니다.
-전체 파일 이동 목록, 의존성 설치와 실행 방법은 [모션 통합 문서](../../docs/movement/README.md)에 있습니다.
+이 폴더의 도구는 백엔드 모션 모델과 분석 모듈을 PC 웹캠으로 확인하는 독립 개발 도구입니다. 일반 Flutter 앱의 실시간 화면이나 사용자 세션과 연결되지 않습니다.
 
-```powershell
-.\tools\motion_demo\.venv\Scripts\python.exe -m tools.motion_demo --check
-.\tools\motion_demo\.venv\Scripts\python.exe -m tools.motion_demo
-```
-
-`--check`는 카메라를 열지 않습니다. 기본 실행은 이 Python 프로세스가 실행되는 PC의 웹캠을 엽니다.
-모바일 카메라와 Flutter 화면에는 연결되어 있지 않습니다.
+`--check`는 카메라를 열지 않고 모델과 의존성을 확인합니다. 기본 실행은 이 Python 프로세스가 실행되는 PC의 웹캠을 사용합니다. 준비·실행 방법은 [guide.md](../../guide.md), 서비스 모션 구성은 [모션 문서](../../docs/movement/README.md)를 참고하세요.
