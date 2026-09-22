@@ -71,15 +71,17 @@ class ProfileDraft {
     return age;
   }
 
-  /// 저장된 예정일을 기준으로 현재 임신 주수를 계산한다.
-  int? pregnancyWeekAt(DateTime date) {
+  /// 저장된 예정일을 기준으로 현재 임신 주수와 일수를 계산한다.
+  ({int weeks, int days})? pregnancyAgeAt(DateTime date) {
     final due = effectiveDueDate;
     if (due == null) return null;
     final dueDay = DateTime.utc(due.year, due.month, due.day);
     final today = DateTime.utc(date.year, date.month, date.day);
-    final daysSinceLmp = 280 - dueDay.difference(today).inDays;
-    return (daysSinceLmp ~/ 7).clamp(0, 42);
+    final daysSinceLmp = (280 - dueDay.difference(today).inDays).clamp(0, 294);
+    return (weeks: daysSinceLmp ~/ 7, days: daysSinceLmp % 7);
   }
+
+  int? pregnancyWeekAt(DateTime date) => pregnancyAgeAt(date)?.weeks;
 
   ProfileDraft copyWith({
     DateTime? dueDate,
