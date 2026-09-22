@@ -90,7 +90,7 @@ cd ../tools/rag_ingest && ../../backend/.venv/bin/python 02_translate_chunk_embe
 
 ### 파트너 연동·가사 요청·알림 (Account / Family)
 
-- `GET /api/v1/account/bootstrap`, `GET .../partner-link`, `POST .../partner-invitations`, `POST .../{token}/accept`: 초대 72시간·1회성, `partner_links`가 유일한 관계 SOURCE. 화면·인증 복귀 흐름(H-INVITE-001)은 여전히 미확정이며, 2026-09-20 팀 결정으로 실사용 연동은 이 경로 대신 `partner_links`를 운영자가 수동으로 삽입하는 방식으로 진행합니다
+- `GET /api/v1/account/bootstrap`, `GET .../partner-link`, `POST .../partner-invitations`, `POST .../{token}/accept`: 초대 72시간·1회성, `partner_links`가 유일한 관계 SOURCE. 화면·인증 복귀 흐름(H-INVITE-001)은 여전히 미확정이며, 2026-09-20 팀 결정으로 실사용 연동은 이 경로 대신 `partner_links`를 운영자가 수동으로 삽입하는 방식으로 진행합니다. `GET .../partner-link`는 2026-09-23부터 배우자 표시명(`partner_display_name`)뿐 아니라 본인 표시명(`my_display_name`, `profiles.display_name`)도 같이 반환합니다(아내·남편 메뉴 화면 이름 표시용)
 - `POST/GET /api/v1/family/household-requests`, `GET .../{id}`: 가사 요청 생성·조회(2026-09-18 Supabase 실연결)
 - `POST .../{request_id}/items/{item_id}/confirm|complete`: 가사 요청 **항목(카드) 단위** 확인·완료(2026-09-21). 요청 전체가 아니라 항목마다 개별 상태를 가지며, 요청 전체 status는 항목 상태로부터 재계산됩니다. 응답의 `daily_summary` 필드는 요청일 기준 항목 개수 합산(H-REQUEST-002)입니다
 - `GET /api/v1/family/notifications`, `POST .../{id}/read`: 남편 알림 3종 — 가사 요청 도착, 오전 리포트 도착, 루틴 변경(2026-09-18 실연결·발송 전부 구현)
@@ -108,6 +108,9 @@ cd ../tools/rag_ingest && ../../backend/.venv/bin/python 02_translate_chunk_embe
 - **동의 게이트(2026-09-18)**: `/live/stream`은 토큰 검증 뒤 `motion_consents`를 확인해 동의 없음·수집 OFF면 close code **4003**으로 거부합니다(origin/토큰 실패는 1008, 동의 조회 실패는 1011). 연결 시점 검사이므로 스트림 중 철회는 클라이언트가 WS를 끊습니다(NFR-012)
 - **남편 조회(2026-09-18)**: `/events`, `/report/daily`는 호출자가 `partner_links`에 남편으로 있으면 아내 데이터를 읽기 전용 반환합니다(캘린더와 같은 `partner_scope` 규칙). `/live`는 제외
 - 판정 임계값은 `services/movement/rules.yaml`의 데모값으로 **MVP 확정**(2026-09-18). 실서비스 값 재산정은 Phase 2
+- Bending 판정 각도는 세션 시작 시, 사용자 프로필에 임신 주수·임신 전 체중이 모두 있으면 20도 fallback 대신 개인화된 값으로 대체됩니다(2026-09-22, `rule_engine.compute_bending_threshold_deg`). 프로필이 없거나 조회 실패 시 fallback으로 계속 진행(근거는 `docs/movement/구현계획서_v3.md` §2.2·§2.4)
+- **날짜 기준 KST 통일(2026-09-23)**: `GET /events`가 그동안 전체 이력을 반환하던 것을 오늘(KST) 것만 반환하도록 수정(FUC-B-MOTION-001). `GET /report/daily`의 기본 날짜도 UTC에서 KST로 변경
+- **일일 리포트 대표 문구 선정 기준 변경(2026-09-23)**: `narratives[0]`이 실시간 탭 "현재 상태" 카드에 그대로 노출되므로, 발생 순서가 아니라 **그룹 발생 횟수 내림차순**(동률 시 먼저 발생한 순)으로 정렬하도록 변경 — 가장 빈번한 행동을 대표로 보여줌(`services/movement/report.py::_build_narratives`)
 
 `/live`는 시연용 단일 세션 구조(`_current_session_id` 전역)라 다중 사용자 격리를 제공하지 않습니다.
 

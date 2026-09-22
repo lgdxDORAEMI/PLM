@@ -10,7 +10,7 @@
 |---|---|---|---|
 | GET | `/api/v1/account/bootstrap` | 역할, Profile 완료 상태, Partner 연동 상태, 진입 목적지 | FUC-B-ENTRY-001 |
 | GET/PUT | `/api/v1/account/profile` | 6단계 Profile 최종본 조회·원자적 저장 | FUC-W-PROFILE-001~009 |
-| GET | `/api/v1/account/partner-link` | 연동 여부와 표시명 | FUC-W-MENU-001 |
+| GET | `/api/v1/account/partner-link` | 연동 여부, 배우자 표시명(`partner_display_name`), 본인 표시명(`my_display_name`, 2026-09-23 추가) | FUC-W-MENU-001 |
 | POST | `/api/v1/account/partner-invitations` | 72시간 이내 만료되는 초대 URL | FUC-W-INVITE-001, NFR-026 |
 
 `destination`은 `wife_profile`, `wife_home`, `husband_invitation_required`, `husband_calendar` 중 하나다. 초대 수락 API는 화면과 인증 복귀 계약이 미확정이므로 TBD다.
@@ -51,6 +51,8 @@
 ## 최근 변경사항 (프론트 영향)
 
 - 2026-09-16: `GET /api/v1/movement/report/daily` 응답에 `bending_burden_event_count`(int) 필드 추가 — Bending의 Repeated Load/Prolonged Load와 High-load Action(Sit-to-Stand) 포착 횟수를 합친 값. 상세는 아래 `/report/daily` 집계 방식 참고.
+- 2026-09-23: `GET /account/partner-link` 응답에 `my_display_name`(본인 표시명, `profiles.display_name`) 필드 추가.
+- 2026-09-23: 모션 인식 날짜 기준을 UTC에서 KST로 통일. `GET /movement/events`가 그동안 사용자의 전체 이력을 반환하던 것을 **오늘(KST) 이벤트만** 반환하도록 수정(FUC-B-MOTION-001 준수). `GET /movement/report/daily`의 `date` 기본값도 UTC에서 KST로 변경.
 
 | Method | Path | 200 응답 | 설명 |
 | --- | --- | --- | --- |
@@ -58,8 +60,8 @@
 | GET | /health | `{"status":"healthy"}` | 프로세스 상태 |
 | WS | /api/v1/movement/live/stream | JSON 메시지 스트림 | 카메라 프레임을 받아 캘리브레이션→실시간 판정을 수행 (B-1/B-3, 실제 동작). 프로토콜은 아래 참고 |
 | GET | /api/v1/movement/live | `LiveAccumulatedState` (없으면 404) | 실시간 탭 조회 — 호출 시점까지 누적된 상태를 반환하는 풀(pull) 방식, 푸시 알림 아님 (W-MOTION-001). **실제 동작**, 활성 세션 없으면 404 |
-| GET | /api/v1/movement/events | `PostureEvent[]` | 이벤트 로그 조회. **실제 동작** (`EventStore`에 쌓인 값) |
-| GET | /api/v1/movement/report/daily | `DailyReportSummary` | 일일 리포트 조회, 부위별 최다 부담 포함 (W-REPORT-002). **실제 동작**. `?date=YYYY-MM-DD` 쿼리 파라미터로 날짜 지정(기본값 오늘, UTC) |
+| GET | /api/v1/movement/events | `PostureEvent[]` | 이벤트 로그 조회. **실제 동작** (`EventStore`에 쌓인 값). **오늘(KST) 이벤트만 반환**(2026-09-23부터, FUC-B-MOTION-001) |
+| GET | /api/v1/movement/report/daily | `DailyReportSummary` | 일일 리포트 조회, 부위별 최다 부담 포함 (W-REPORT-002). **실제 동작**. `?date=YYYY-MM-DD` 쿼리 파라미터로 날짜 지정(기본값 오늘, KST) |
 
 `/health`는 외부 서비스나 DB 연결 상태를 확인하지 않습니다.
 Swagger UI: `/docs`, OpenAPI schema: `/openapi.json`.
