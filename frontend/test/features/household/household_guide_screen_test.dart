@@ -29,7 +29,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('가전 실행을 기록했어요'), findsOneWidget);
-    expect(find.textContaining('실제 기기는 작동하지 않아요'), findsNothing);
+    expect(find.textContaining('실제 기기는 작동하지 않았어요'), findsOneWidget);
     expect(ApplianceExecutionStore.instance.forDate(DateTime.now()).length, 1);
   });
 

@@ -1,5 +1,12 @@
 # 개발 환경 및 실행 안내
 
+## ThinQ Connect 설정과 확인
+
+Backend의 `backend/.env`에 `THINQ_PAT=<Personal Access Token>`, `THINQ_COUNTRY_CODE=KR`, `THINQ_CLIENT_ID=<고정 UUID>`를 설정한다. `THINQ_CLIENT_ID`는 한 번 생성해 유지하고 요청마다 새로 만들지 않는다. 실제 PAT는 코드·문서·Frontend `.env`·GitHub Actions에 저장하지 않는다. Render 배포 시 Environment Secret을 사용한다. ThinQ 설정 변경 후 Backend를 재시작한다.
+
+실제 확인 순서: ① Backend 재시작 ② `PLM_WIFE_EMAIL`과 일치하는 아내 계정의 Supabase 로그인 토큰으로 `GET /api/v1/thinq/devices` 조회 ③ `status=connected`와 등록 가전 확인 ④ 오늘 컨디션 입력 및 AI 루틴 생성 ⑤ 가사 가이드 진입 ⑥ `3. 가전이 대신합니다`에서 보유 가전으로 가능한 일만 표시되는지 확인. `connected`에 빈 목록이면 등록 기기가 없거나 해당 PAT의 계정이 다르다. `not_configured`면 PAT·UUID 또는 로그인 계정 설정을, `auth_error`면 PAT 유효성을, `timeout`·`error`면 ThinQ 접속 상태를 확인한다. 오류 시 가전 추천은 비고 일반 가사는 계속 표시된다. 단일 PAT의 목록은 설정된 아내 계정에만 제공한다. 실제 기기 제어는 구현하지 않았다.
+
+
 ## 팀 공통 설정과 개인 SDK 경로
 
 저장소의 `.vscode/settings.json`, `extensions.json`, `launch.json`에는 공통 편집기 설정, 권장 확장, 실행 항목을 공유합니다. SDK 설치 경로는 각자의 편집기 사용자 설정에 저장합니다. 작업 영역 설정에 개인 경로를 넣으면 다른 팀원의 사용자 설정보다 우선하므로 저장소에는 `dart.flutterSdkPath`를 추가하지 않습니다.

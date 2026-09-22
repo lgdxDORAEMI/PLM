@@ -7,6 +7,7 @@ Routine AI가 만든 routine_items를 읽기만 하는 Query Layer다 — 카테
 
 from __future__ import annotations
 
+import asyncio
 from datetime import date
 from typing import Annotated
 
@@ -17,6 +18,9 @@ from app.core.security import CurrentUser, get_current_user
 from app.domains.guide.query_service import GuideQueryService
 from app.domains.guide.schemas import GuideResponse, RoutineCategory
 from app.services.supabase_service import get_supabase_service
+from app.services.thinq.access import inventory_for_user
+from app.services.thinq.appliance_mapper import apply_inventory
+from app.services.thinq.client import ThinQClient, get_thinq_client
 from app.utils import dates
 
 router = APIRouter(tags=["guide"])
@@ -37,6 +41,7 @@ def get_guide_service() -> GuideQueryService:
 
 User = Annotated[CurrentUser, Depends(get_current_user)]
 Service = Annotated[GuideQueryService, Depends(get_guide_service)]
+ThinQService = Annotated[ThinQClient, Depends(get_thinq_client)]
 TargetDate = Annotated[date | None, Query(alias="date")]
 
 
@@ -56,11 +61,12 @@ def read_meal_guide(user: User, service: Service, target_date: TargetDate = None
 
 
 @router.get("/household/today", response_model=GuideResponse)
-def read_household_guide(
-    user: User, service: Service, target_date: TargetDate = None
+async def read_household_guide(
+    user: User, service: Service, thinq: ThinQService, target_date: TargetDate = None
 ) -> GuideResponse:
-    """FUC-W-HOUSE-001: 가사 3분류 조회."""
-    return _read(RoutineCategory.HOUSEHOLD, user, service, target_date)
+    """FUC-W-HOUSE-001: stored items plus a read-only owned-device gate."""
+    guide = await asyncio.to_thread(_read, RoutineCategory.HOUSEHOLD, user, service, target_date)
+    return apply_inventory(guide, await inventory_for_user(user, thinq))
 
 
 @router.get("/health/today", response_model=GuideResponse)

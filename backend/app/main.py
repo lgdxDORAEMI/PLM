@@ -12,6 +12,7 @@ from app.api.v1.movement import router as movement_router
 from app.api.v1.profile import router as profile_router
 from app.api.v1.routine import router as routine_router
 from app.api.v1.routine import warmup_routine
+from app.api.v1.thinq import router as thinq_router
 from app.core.config import ALLOWED_ORIGIN_REGEX
 
 @asynccontextmanager
@@ -38,6 +39,7 @@ app.include_router(care_router, prefix="/api/v1")
 app.include_router(family_router, prefix="/api/v1")
 app.include_router(chat_router, prefix="/api/v1")
 app.include_router(guide_router, prefix="/api/v1")
+app.include_router(thinq_router, prefix="/api/v1")
 
 
 @app.get("/")

@@ -1,5 +1,11 @@
 # PLM Backend
 
+## ThinQ 보유 가전 기반 가사 가이드
+
+서버 환경변수 `THINQ_PAT`, `THINQ_COUNTRY_CODE`(기본 `KR`), 고정 UUID인 `THINQ_CLIENT_ID`를 설정하면 공식 `thinqconnect` SDK가 보유 기기 목록을 읽는다. `GET /api/v1/thinq/devices`는 정규화한 최소 기기 정보와 연결 상태만 반환한다. `GET /api/v1/household/today`는 저장된 household `routine_items`를 ThinQ 보유 기기와 명시적 규칙으로 매칭한 뒤 가전 수행 항목을 표시한다. 세탁기/건조기는 빨래, 로봇청소기는 청소, 식기세척기는 설거지에 대응한다. 기기 목록은 서버 메모리에 5분간 캐시한다. PAT 오류나 타임아웃이어도 일반 가사 항목은 표시된다. 보유 가전 기반 추천 표시만 수행하며 실제 가전 제어는 포함하지 않는다.
+
+PAT는 서버에서만 사용한다. 배포 시 Render Environment Secret에 넣고 Frontend `.env`나 GitHub Actions에 넣지 않는다. 단일 PAT의 기기 목록은 `PLM_WIFE_EMAIL`과 일치하는 로그인 계정에만 제공한다. 다른 사용자별 ThinQ 계정 연결은 이 구성만으로 지원하지 않는다. 상세 설정·검증 절차는 [guide.md](../guide.md)를 참고한다.
+
 ## 병렬 개발용 도메인 Skeleton
 
 Backend는 세 명이 독립적으로 작업할 수 있도록 `account`, `care`, `family` 경계로 나뉩니다. 각 도메인은 Pydantic Schema, FastAPI Router, Service Protocol, Repository Protocol, 메모리 Stub을 갖습니다. URL과 응답 Schema를 유지한 채 Stub Repository를 Supabase adapter로 교체할 수 있습니다.
@@ -116,7 +122,7 @@ cd ../tools/rag_ingest && ../../backend/.venv/bin/python 02_translate_chunk_embe
 - 챗봇 식사 재추천 카드·선택에 따른 메뉴 교체 — 대화와 AI 텍스트 응답은 연결됨. NFR-027 보관 정책은 TBD
 - H-INVITE-001 화면·인증 복귀 계약 — 여전히 미확정. 실사용은 `partner_links` 수동 삽입으로 대체해 블로커는 아님
 - 컨디션 저장 → 루틴 재생성 자동화(현재는 프론트가 `PUT conditions` 뒤 `POST routine/today`를 따로 호출)
-- ThinQ 가전 연동(Phase 2)
+- ThinQ 가전 원격 제어(Phase 2). 보유 가전 조회와 가사 가이드 매칭은 구현됨
 - NFR: 민감정보 컬럼 암호화(NFR-008), 백업·가용성·부하 측정, 운영 인증·권한·배포 정책
 
 `LLMService`의 공급자 구현은 `services/routine/generator.py`의 `OpenAIRoutineGenerator`입니다. `MediaPipeService`는 확장 경계만 제공하며, 범용 `MediaPipeService.analyze_pose()`는 호출 시 `NotImplementedError`를 발생시킵니다. 실제 모션 데모는 별도 `services/movement/` 파이프라인을 사용합니다.

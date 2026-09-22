@@ -10,6 +10,7 @@ class HouseholdTask {
     required this.owner,
     this.status = HouseholdTaskStatus.planned,
     this.selected = false,
+    this.applianceNames = const [],
   });
 
   final String id;
@@ -18,6 +19,7 @@ class HouseholdTask {
   final HouseholdTaskOwner owner;
   final HouseholdTaskStatus status;
   final bool selected;
+  final List<String> applianceNames;
 
   HouseholdTask copyWith({HouseholdTaskStatus? status, bool? selected}) {
     return HouseholdTask(
@@ -27,6 +29,7 @@ class HouseholdTask {
       owner: owner,
       status: status ?? this.status,
       selected: selected ?? this.selected,
+      applianceNames: applianceNames,
     );
   }
 }
