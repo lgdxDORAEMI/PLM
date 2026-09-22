@@ -166,11 +166,11 @@ class RoutineItemResponse(BaseModel):
 
 
 def condition_index_from_scores(scores: dict[str, int]) -> ConditionIndex:
-    """B-CAL-001의 4단계 컨디션 지수 계산 — 계산식이 문서상 미확정(04_3 개발순서 #2,
-    DB_ERD_스키마.md)이라 팀 확정 전까지 쓰는 임시 규칙이다: 통증·구역감·피로감
-    6종(mood 제외 — 방향이 반대라 단순 평균에 섞으면 왜곡됨)의 평균을 4구간으로
-    나눈다. 실제 계산식이 정해지면 이 함수만 바꾸면 된다(Stub/Supabase 양쪽이
-    공유하므로 한 곳만 고치면 된다)."""
+    """B-CAL-001의 4단계 컨디션 지수 계산. 통증·구역감·피로감 6종(mood 제외 —
+    방향이 반대라 단순 평균에 섞으면 왜곡됨)의 단순 평균을 4구간으로 나눈다.
+
+    2026-09-22 팀 결정으로 최종 확정: mood 계속 제외, 구간 경계값(2/3/4)
+    현행 유지, 가중치 미도입. Stub/Supabase 양쪽이 이 함수 하나를 공유한다."""
 
     burden_fields = ("nausea", "waist_pain", "pelvis_pain", "leg_pain", "wrist_pain", "fatigue")
     values = [scores[field] for field in burden_fields if field in scores]

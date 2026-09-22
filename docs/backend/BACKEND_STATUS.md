@@ -154,6 +154,6 @@
 - ~~`FUC-W-COND-003` vs 유스케이스 UC2 A1 설명 불일치~~ — 2026-09-21 재확인 결과 해소됨. `03_유스케이스명세서.md:79`(UC2 A1)에 이미 "남편에게 ... 루틴 변경 알림을 전송한다"가 명시돼 있어 FUC와 더 이상 충돌하지 않는다(과거 구판 기준 TBD였던 것으로 보임). 코드도 이미 발송하는 쪽으로 구현됨(STEP 17, `condition_changed` 알림). `DOMAIN_OWNERSHIP.md`의 관련 TBD 항목은 삭제함
 - `H-REPORT-001`(남편 화면 DB스키마 PDF): 오전 리포트에 4대 AI 가이드 요약 포함 여부가 같은 화면 ID 내 두 버전에서 서로 다르게 서술됨. 코드는 이미 포함하는 쪽으로 구현됨(`MorningReportResponse.guide_summaries`) — 문서 정합만 남음
 - ~~`H-REQUEST-002`(가사 요청 완료 결과): 별도 API 필요 여부~~ — 2026-09-21 해결. 별도 API 없이 기존 `GET`/`confirm`/`complete` 응답에 `daily_summary` 필드(요청일 기준 항목 개수 합산)를 추가해 반영
-- Calendar 4단계 컨디션 지수 계산식 — 문서상 수치 미확정 (`DOMAIN_OWNERSHIP.md` 기존 TBD). ~~Motion 감지 임계값~~ — STEP 18: MVP 임계값은 `rules.yaml` 데모값으로 확정(소유자 결정). 실서비스 값 재산정은 Phase 2
+- ~~Calendar 4단계 컨디션 지수 계산식~~ — 2026-09-22 팀 결정으로 해결. mood 계속 제외, 구간 경계값(2/3/4) 현행 유지, 가중치 미도입으로 최종 확정(`condition_index_from_scores()`). ~~Motion 감지 임계값~~ — STEP 18: MVP 임계값은 `rules.yaml` 데모값으로 확정(소유자 결정). 실서비스 값 재산정은 Phase 2
 - ~~Account Stub의 기본 역할이 Wife로 고정~~ — STEP 13의 `SupabaseAccountRepository._role()`이 이미 `profiles.role`을 조회한다(행이 없으면 Wife 기본값, 남편은 초대 수락 시 `profiles`에 기록). STEP 17 재확인으로 종료
 - `posture_calibration_profiles`/`posture_events`의 `motion_sessions` 연동(§5 가정 1, `/live` 조회를 DB 기반으로 전환할지) — `TARGET_DB_SCHEMA.md`에서 NOT_REQUIRED(이번 MVP)

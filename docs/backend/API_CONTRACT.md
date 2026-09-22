@@ -351,7 +351,7 @@
 - Source Data: `daily_conditions`+`daily_reports`(조회 조합, VIEW — 별도 저장 테이블 없음)
 - Authorization: 기본값
 - Error: 422(month 형식 오류)
-- Status: **implemented**(STEP 12) — `condition_index` 계산식은 04_3 개발순서 #2 기준 문서상 미확정이라 임시 규칙(통증·피로 6종 평균 4구간)을 쓴다(`condition_index_from_scores()`). 남편 role별 응답 필터링(수정 권한 제거)은 여전히 미구현
+- Status: **implemented**(STEP 12) — `condition_index` 계산식은 통증·피로 6종 평균 4구간(`condition_index_from_scores()`)으로 2026-09-22 팀 결정으로 최종 확정(mood 제외, 경계값 2/3/4 유지, 가중치 미도입). 남편 role별 응답 필터링(수정 권한 제거)은 여전히 미구현
 
 ---
 

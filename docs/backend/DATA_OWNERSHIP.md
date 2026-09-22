@@ -24,7 +24,7 @@
 | 임신 주수·일수 | Profile | — | W-HOME-001, H-REPORT-001, W-MENU-001 | DERIVED | `due_date - 280일` 기준 조회 시점 계산, 저장 안 함 |
 | 역할(role)·표시 이름 | Profile | `profiles`(MISSING) | B-ENTRY-001, W-MENU-001, 알림 발신자 표시 | SOURCE | 신규 테이블 필요 |
 | 당일 컨디션 7종 + 예정 활동 | Condition | `daily_conditions` | W-COND-001, W-TASK-001, 루틴 생성 입력 | SOURCE | 원문은 남편에게 비노출(NFR-013) |
-| 컨디션 4단계 지수(좋음/보통/나쁨/힘듦) | Condition | — | B-CAL-001, H-REPORT-001 | DERIVED | `daily_conditions` 점수 기준 계산, 계산식 자체는 미확정(TBD) |
+| 컨디션 4단계 지수(좋음/보통/나쁨/힘듦) | Condition | — | B-CAL-001, H-REPORT-001 | DERIVED | `daily_conditions` 점수 기준 계산, 계산식 2026-09-22 팀 결정으로 확정(`condition_index_from_scores()`) |
 | 하루 루틴 생성 원본(source/model/request_payload/response) | Routine | `daily_routines` | W-HOME-001, W-CALLBACK-001 | SOURCE | Routine AI 소유, 실동작 |
 | 루틴 항목(카테고리별 payload/status/completed_by) | Routine Item | `routine_items` | Meal/Household/Health/Sleep/Record 전 도메인의 공통 원본 | SOURCE | Routine AI 소유. 다른 도메인은 `category`로 필터링해서 소비하며 복제 저장 금지 |
 | 식사 가이드 표시(끼니·메뉴·영양태그) | Meal | `routine_items`(category=meal) | W-MEAL-001, W-MEAL-002 | DERIVED | 자체 테이블 불필요 |
@@ -69,7 +69,7 @@
 저장하지 않고 조회 시점에 계산하는 데이터 목록:
 
 - 임신 주수·일수 (`pregnancy_profiles.due_date` 기준)
-- 컨디션 4단계 지수 (`daily_conditions` 점수 기준, 계산식 TBD)
+- 컨디션 4단계 지수 (`daily_conditions` 점수 기준, 계산식 2026-09-22 확정)
 - 식사/가사/건강/수면 가이드 화면 표시값 (`routine_items` category 필터)
 - 오전 리포트 요약 (실시간 파생 버전을 택할 경우 `daily_conditions`+`routine_items`)
 - 캘린더 월간 뷰 (`daily_conditions`+`routine_items`+`daily_reports` 조합)

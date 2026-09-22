@@ -60,5 +60,5 @@ Schema contract
 
 - `FUC-H-INVITE-001`: 화면·인증 복귀 계약은 여전히 미확정이지만, 수락 Router(`POST /account/partner-invitations/{token}/accept`)는 STEP 13에서 이미 추가됐다(API 계약만 구현, 화면 연동은 보류). 2026-09-20 팀 결정: 실사용 연동은 이 Router 경로 대신 `partner_links`를 운영자가 수동으로 미리 삽입하는 방식으로 진행한다.
 - Account Stub의 기본 역할은 로컬 계약 확인을 위해 Wife다. 실제 adapter에서는 인증 사용자 역할과 서비스 가입 상태를 조회해야 한다.
-- Calendar의 4단계 컨디션 지수 계산식과 Motion 감지 임계값은 최신 문서에서 수치가 확정되지 않았다. Stub은 계산 알고리즘을 확정하지 않는다.
+- ~~Calendar의 4단계 컨디션 지수 계산식~~ — 2026-09-22 팀 결정으로 확정(mood 제외, 경계값 2/3/4 유지, 가중치 미도입). Motion 감지 임계값은 최신 문서에서 수치가 확정되지 않았다. Stub은 계산 알고리즘을 확정하지 않는다.
 - Motion WebSocket 연결 전에 동의·수집 설정을 검사하는 adapter 연결은 보호된 `movement.py` 변경이 필요하므로 별도 합의 후 진행한다.

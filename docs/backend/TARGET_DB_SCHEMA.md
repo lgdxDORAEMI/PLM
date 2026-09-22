@@ -420,7 +420,7 @@
 | 데이터 | 계산 근거 | 관련 Screen |
 |---|---|---|
 | 임신 주수·일수 | `pregnancy_profiles.due_date - 280일` 기준 | W-HOME-001, H-REPORT-001, W-MENU-001 |
-| 컨디션 4단계 지수(좋음/보통/나쁨/힘듦) | `daily_conditions` 점수 기준(계산식 TBD) | B-CAL-001 |
+| 컨디션 4단계 지수(좋음/보통/나쁨/힘듦) | `daily_conditions` 점수 기준(계산식 2026-09-22 확정) | B-CAL-001 |
 | 캘린더 월간 조회 | `daily_conditions`+`routine_items`+`daily_reports` 조회 조합 | B-CAL-001 |
 | 오전 리포트(자동 트리거 구현 전) | `daily_conditions`+`routine_items` 실시간 파생 | H-REPORT-001 |
 
