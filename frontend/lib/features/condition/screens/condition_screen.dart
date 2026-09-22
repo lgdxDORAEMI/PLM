@@ -112,13 +112,6 @@ class _ConditionScreenState extends State<ConditionScreen> {
                     valueLabels: discomfortLabels,
                     onChanged: _controller.updateFatigue,
                   ),
-                  const SizedBox(height: AppSpacing.xxl),
-                  ConditionMetric(
-                    label: '기분',
-                    value: draft.mood,
-                    valueLabels: moodLabels,
-                    onChanged: _controller.updateMood,
-                  ),
                   const SizedBox(height: AppSpacing.xxxl),
                   AppButton(
                     key: const ValueKey('today-care-submit-button'),
