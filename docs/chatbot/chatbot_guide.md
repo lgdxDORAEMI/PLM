@@ -1,6 +1,6 @@
 # 챗봇 메이킹 가이드
 
-> 세션 규칙: `docs/chatbot/development_rules.md`
+> 세션 규칙: `docs/chatbot/chatbot_development_rules.md`
 > 근거 요구사항: FUC-W-CHAT-001·003·004, FUC-W-MEAL-003 (`docs/requirements/04_1_기능요구사항명세서.md`)
 > 근거 화면: 첨부 1(식사 가이드 → 챗봇), 첨부 2(하단 탭 → 챗봇)
 
@@ -56,7 +56,7 @@
 ## 2. 설계 (S 순서)
 
 ### ~~S1 공통 컨텍스트 빌더~~
-- 구현(09-22, 커밋 전): `backend/app/domains/chat/context.py` (`collect_context`, `today_guides`, `banner_text`), 테스트 `backend/tests/test_chat_context.py` 5개. 웬즈데이 쪽은 `collect_facts(require_condition=False)`, `KnowledgeRetriever.search(질문, 주차)` 옵션만 추가.
+- 구현(09-22, push `967b7fb`): `backend/app/domains/chat/context.py` (`collect_context`, `today_guides`, `banner_text`), 테스트 `backend/tests/test_chat_context.py` 5개. 웬즈데이 쪽은 `collect_facts(require_condition=False)`, `KnowledgeRetriever.search(질문, 주차)` 옵션만 추가.
 - 하는 일: 두 모드가 모두 쓰는 "이 사람 기준 정보"를 한 dict로 모은다.
 - 내용: 임신 주차, 알레르기·주의 진단, 오늘 컨디션(입덧·통증·피로), 오늘 4종 가이드 제목 목록, RAG 조각 상위 N개.
 - 기분(`mood`)은 넣지 않는다. 기분은 수치화해서 케어할 대상이 아니라고 회의에서 결정했다 (2026-09-22, 원격 `4d94b39`에서 입력 화면 제거). DB에는 기본값이 남아 있으므로 읽더라도 버린다.
@@ -65,14 +65,15 @@
 - 배너 문구("임신 18주차 · 입덧 심함 · 갑각류 알레르기")도 이 dict에서 만든다.
 
 ### ~~S2 응답 생성 + 폴백~~
-- 구현(09-22, 커밋 전): `backend/app/domains/chat/responder.py` (`generate_reply`, `build_prompt`), 테스트 `backend/tests/test_chat_responder.py` 6개. LLM 호출은 웬즈데이 `OpenAIRoutineGenerator.generate` 재사용, 전체 상한 9.5초, 검색 실패는 참고 자료 없이 진행. 모드별 지시는 `extra_rules`로 S3·S5에서 덧붙인다.
+- 구현(09-22, push `967b7fb`): `backend/app/domains/chat/responder.py` (`generate_reply`, `build_prompt`), 테스트 `backend/tests/test_chat_responder.py` 6개. LLM 호출은 웬즈데이 `OpenAIRoutineGenerator.generate` 재사용, 전체 상한 9.5초, 검색 실패는 참고 자료 없이 진행. 모드별 지시는 `extra_rules`로 S3·S5에서 덧붙인다.
 - 변경: DB 저장은 엔드포인트 연결과 함께 S3에서 한다. 위험 신호는 고정 문구 대신 지시문 규칙 3으로 처리한다("지금 바로 병원에 문의해 주세요"를 먼저 말함).
 - 하는 일: 컨텍스트 + 최근 대화 + 질문 → OpenAI → 스키마 검증 → 저장.
 - 응답 스키마(공통): `content`(답변), `suggested_actions`(버튼 라벨 목록, 최대 2개).
 - 폴백: 타임아웃·오류 시 고정 안내 문구 반환 + 로그 (FUC-W-CALLBACK-001 ②). 재시도 없음(10초 제한).
 - 최근 대화: 같은 날짜·같은 모드(`routine_item_id` 동일)의 `chat_messages` 최근 6개만 넣는다.
 
-### S3 일반 모드 (하단 탭)
+### ~~S3 일반 모드 (하단 탭)~~
+- 구현(09-22, 팀원 `ea80650`, 원격 기준): `POST /chat/messages`가 AI 답 생성·저장, 끼니 항목 확인(`validate_meal_item`), 모드별 이력, 일반 모드 규칙. 프론트도 실제 API에 연결(비식사 단어 필터는 실서버 모드에서 끔). 로컬에서 따로 만든 S3·S4 코드(`GET /chat/context` 등)는 원격과 겹쳐 버렸다(규칙 14).
 - 하는 일: 기존 `POST /chat/messages`의 고정 문구를 S1+S2 결과로 바꾼다.
 - 대상 질의: 4종 가이드 내용 설명, 앱 기능 사용법, 음식·생활 질의 (첨부 2 "마라탕 먹어도 될까요?").
 - 금지: 루틴 변경. 메뉴를 바꿔 달라고 하면 "식사 가이드의 AI 재조정에서 바꿀 수 있어요" + `식사 가이드 보기` 버튼 (FUC-W-CHAT-003 ①).
@@ -80,11 +81,15 @@
 - 첫 인사: 현재 임신 주차를 안내하는 고정 템플릿. LLM 호출 안 함.
 
 ### S4 식사 모드 시작 (챗봇이 먼저 말하기)
+- 상태(09-22): 일부. 끼니 항목 확인은 팀원 `ea80650`에 있고, 첫 질문은 프론트 고정 문구(`meal_chat_controller.dart`). 서버 배너·빠른 답 API는 없다(필요하면 다시 결정).
 - 하는 일: 식사 가이드 배너 탭 시 배너("아침 메뉴를 다시 고르는 중")와 챗봇 첫 질문을 돌려준다.
 - 첫 질문은 고정 템플릿("아침 메뉴, 어떤 점이 고민이세요?") + 빠른 답 버튼(`속이 좀 메슥거려요` 등). LLM 호출 안 함.
 - 엔드포인트: `POST /chat/sessions/meal` 입력 `routine_item_id` → 출력 `banner`, `opening_message`. (신규 1개)
 
-### S5 식사 메모리 + 재추천 카드
+### ~~S5 식사 메모리 + 재추천 카드~~
+- 구현(09-22, 커밋 전): `backend/app/domains/chat/meal_memory.py`(메모리 1~3 읽기·지시문·금지어 검사), `service.py` 식사 모드 분기, `responder.py` `MEAL_REPLY_SCHEMA`(카드 없으면 null). 카드 저장은 **B안: `chat_messages.recommendation jsonb` 칸 신설**(migration `20260922000000`, 실DB 적용은 사용자가 SQL Editor에서). 금지 재료 카드는 버리고 문장도 고정 문구. 테스트 `backend/tests/test_chat_meal.py` 6개.
+- 09-22 실호출 후 수정: 추천이 오늘 점심·저녁 메뉴를 그대로 가져와서, 지시문에 "[오늘 4종 가이드]의 meal은 선택지가 아니다, 겹치지 않는 새 메뉴"를 추가. 재확인 1회: "바나나 감자 찜"(새 메뉴), $0.0018, 4.54초.
+- 09-22 결정(대화 기억): LLM 이력 = **같은 날짜 대화 전체(모드 무관) 최근 20개**, 이전 추천 카드는 `[추천: 메뉴명]`으로 붙여 반복 추천 방지. 화면 목록은 모드별 유지.
 - 하는 일: 식사 모드에서만 아래 메모리를 컨텍스트에 추가하고, 답에 **새 추천 카드**를 붙인다.
 - 식사 메모리 4종:
 
@@ -97,9 +102,10 @@
 
 - 식사 모드 응답 스키마 = 공통 + `recommendation`(`title`, `reason`, `nutritionTags`, `cautions`). 모양은 웬즈데이 `_MEAL_ITEM.payload`와 같게 맞춘다 → 사용자가 선택할 때 프론트가 변환 없이 기존 Care API로 보낼 수 있다.
 - 검증: 추천에 금지 재료가 들어가면 버린다. 웬즈데이 `service._banned_words` 재사용.
-- 저장: `recommendation`은 assistant 메시지의 `suggested_actions` jsonb에 같이 넣는다 → **스키마 변경 없음**.
+- 저장: ~~`suggested_actions` jsonb에 같이 넣는다~~ → 09-22 B안으로 변경. 전용 칸 `chat_messages.recommendation`에 저장한다.
 
-### S6 이걸로 할게요 / 다른 메뉴 보기
+### ~~S6 이걸로 할게요 / 다른 메뉴 보기~~
+- 구현(09-22, 커밋 전): 백엔드는 카드가 있으면 버튼 2개를 고정으로 붙이는 것까지. 버튼 동작은 프론트 몫이라 `docs/api.md` '챗봇' 절에 계약으로 적었다. 카드가 Care API 입력(`RoutineItemUpdateInput`)에 그대로 들어가는지 테스트로 확인.
 - 챗봇은 추천까지만 한다. 두 버튼 모두 **챗봇 API가 루틴·피드백을 쓰지 않는다**.
 - `이걸로 할게요`: 사용자가 직접 식단을 바꾸는 동작이다. 프론트가 기존 Care API `PUT /care/routine-items/{id}`(`feedback_kind=meal_replace`, `payload`=추천 카드)를 호출한다 (`backend/app/api/v1/care.py`, Care 소유). 챗봇 쪽 신규 엔드포인트 없음.
 - `다른 메뉴 보기`: 같은 조건으로 S5를 다시 호출한다 = `POST /chat/messages`를 한 번 더 보낸다. 신규 엔드포인트 없음. 이미 보여준 추천은 이 끼니 대화 이력(식사 메모리 4)에 있으므로 반복하지 않는다.
@@ -127,15 +133,16 @@
 | S | 바뀌는 곳 | 되돌리는 법 |
 |---|---|---|
 | S1~S3 | `backend/app/domains/chat/**`, `api/v1/chat.py` | 해당 파일 `git checkout` → 고정 문구 응답으로 복귀 |
-| S4 | `api/v1/chat.py`에 엔드포인트 1개 추가 | 추가한 라우트 삭제 |
+| S4 | `GET /chat/context`·`GET /chat/messages`에 `routine_item_id` 쿼리 추가 (신규 엔드포인트 없음) | `git checkout`으로 S3 상태 복귀 |
 | S6 | 백엔드 변경 없음 (기존 Care API 사용) | 해당 없음 |
-| DB | migration 없음 | 해당 없음 |
+| DB | migration `20260922000000_chat_messages_recommendation.sql` (칸 1개 추가, S5) | `alter table public.chat_messages drop column if exists recommendation;` |
 
 ## 5. 비용
 | 구분 | 값 | 비고 |
 |---|---|---|
 | 추정 | 메시지 1건 약 $0.0015 (입력 ~2,500토큰 + 출력 ~300토큰, gpt-4.1-mini) | 식사 모드는 메모리로 입력 +500토큰 정도 |
-| 실측 | 없음 | S3 연결 후 OpenAI 사용량 화면으로 측정 |
+| 실측 | 09-22 S3 일반 모드 2회 합계 $0.0026 (입력 5,857 / 출력 157 / 임베딩 30토큰) = 1건 약 $0.0013. 응답 3.64초·2.62초 | testwife 오늘 날짜(팀원 합의), 만든 `chat_messages` 4행 삭제·0행 복구 확인 |
+| 실측 (S5) | 09-22 식사 모드 2회 합계 $0.0033 (입력 7,034 / 출력 322 / 임베딩 22토큰) = 1건 약 $0.0017. 응답 3.77초·2.91초. 카드·버튼 정상, 알레르기(우유·계란) 반영, 두 번째 추천이 첫 번째와 다름 | testwife 오늘, 팀원이 만든 아침 항목을 읽기만 함. 만든 `chat_messages` 4행 삭제·12행 복구 확인 |
 
 ## 6. 가정 (아니면 말해달라)
 1. 챗봇 도메인(`domains/chat/**`)을 이번에 우리가 맡는다. 파일 머리 주석상 원래 소유는 Developer B.

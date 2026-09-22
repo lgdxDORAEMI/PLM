@@ -79,12 +79,12 @@ class GenerateReplyTest(unittest.TestCase):
 
 class BuildPromptTest(unittest.TestCase):
     def test_sections_history_limit_and_extra_rules(self) -> None:
-        history = [{"role": "user", "content": f"q{i}"} for i in range(8)]
+        history = [{"role": "user", "content": f"q{i}"} for i in range(22)]
         prompt = build_prompt(CONTEXT, "질문", history, CHUNKS, extra_rules="메뉴 변경은 안내만")
         self.assertIn('"allergies": ["갑각류"]', prompt)
         self.assertIn("- 임신 중 매운 음식은", prompt)
-        self.assertNotIn("q1\n", prompt)   # 최근 6개만(q2~q7)
-        self.assertIn("user: q7", prompt)
+        self.assertNotIn("user: q1\n", prompt)   # 최근 20개만(q2~q21, 09-22 결정)
+        self.assertIn("user: q2\n", prompt)
         self.assertIn("[이 대화 추가 규칙]\n메뉴 변경은 안내만", prompt)
         self.assertTrue(prompt.endswith("[질문]\n질문"))
 

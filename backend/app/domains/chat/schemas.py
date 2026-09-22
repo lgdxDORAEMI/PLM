@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -24,4 +25,6 @@ class ChatMessageResponse(BaseModel):
     content: str
     routine_item_id: str | None = None
     suggested_actions: list[str] | None = None
+    # S5 식사 모드 추천 카드 {title, reason, nutritionTags, cautions}. 선택은 사용자가 Care API로 직접 한다(S6).
+    recommendation: dict[str, Any] | None = None
     created_at: datetime
