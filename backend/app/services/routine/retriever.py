@@ -48,16 +48,21 @@ class KnowledgeRetriever:
         response = await self.openai.embeddings.create(model=EMBEDDING_MODEL, input=texts)
         return [item.embedding for item in response.data]
 
-    def _match(self, embedding: list[float], week: int | None, category: str) -> list[dict[str, Any]]:
+    def _match(self, embedding: list[float], week: int | None, category: str | None) -> list[dict[str, Any]]:
         return self.supabase.rpc(
             "match_pregnancy_knowledge",
             {
                 "query_embedding": embedding,
                 "match_count": MATCH_COUNT,
                 "filter_week": week,
-                "filter_category": CATEGORY_FILTERS[category],
+                "filter_category": CATEGORY_FILTERS[category] if category else None,
             },
         ).execute().data
+
+    async def search(self, text: str, week: int | None) -> list[dict[str, Any]]:
+        """챗봇: 질문 1개 → 카테고리 필터 없이 상위 MATCH_COUNT개. chunk 모양은 retrieve와 같다."""
+        [embedding] = await self.embed([text])
+        return await asyncio.to_thread(self._match, embedding, week, None)
 
     async def retrieve(
         self, facts: dict[str, Any], categories: list[str] | None = None

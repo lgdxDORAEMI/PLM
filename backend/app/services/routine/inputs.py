@@ -133,7 +133,8 @@ class ConditionMissingError(Exception):
     """오늘 컨디션이 아직 입력되지 않았다."""
 
 
-def collect_facts(client: Client, user_id: str, today: date) -> dict[str, Any]:
+def collect_facts(client: Client, user_id: str, today: date, require_condition: bool = True) -> dict[str, Any]:
+    """require_condition=False(챗봇): 오늘 컨디션이 없으면 컨디션 값을 None으로 두고 프로필·주차만 채운다(FUC-W-CHAT-001 비고)."""
     profile_rows = (
         client.table("pregnancy_profiles").select(*PROFILE_COLUMNS).eq("user_id", user_id).limit(1).execute().data
     )
@@ -150,9 +151,9 @@ def collect_facts(client: Client, user_id: str, today: date) -> dict[str, Any]:
         .execute()
         .data
     )
-    if not condition_rows:
+    if not condition_rows and require_condition:
         raise ConditionMissingError
-    condition = condition_rows[0]
+    condition = condition_rows[0] if condition_rows else {}
 
     week, _ = dates.pregnancy_age(date.fromisoformat(str(profile["due_date"])), today)
     facts: dict[str, Any] = {"week": week, "date": today.isoformat()}
