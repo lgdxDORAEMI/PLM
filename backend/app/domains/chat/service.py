@@ -42,7 +42,9 @@ logger = logging.getLogger(__name__)
 
 
 class ChatServicePort(Protocol):
-    def list_messages(self, user_id: str, target_date: date) -> list[ChatMessageResponse]: ...
+    def list_messages(
+        self, user_id: str, target_date: date | None
+    ) -> list[ChatMessageResponse]: ...
 
     async def send_message(
         self, user_id: str, target_date: date, payload: ChatMessageInput
@@ -77,7 +79,9 @@ class ChatService(ChatServicePort):
         self.generator = generator
         self.retriever = retriever
 
-    def list_messages(self, user_id: str, target_date: date) -> list[ChatMessageResponse]:
+    def list_messages(
+        self, user_id: str, target_date: date | None
+    ) -> list[ChatMessageResponse]:
         return self.repository.list_messages(user_id, target_date)
 
     async def meal_alternative(

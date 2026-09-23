@@ -32,6 +32,7 @@ from .schemas import (
 
 TABLE = "chat_messages"
 COLUMNS = "id,role,content,routine_item_id,suggested_actions,recommendation,routine_update,created_at"
+HISTORY_PAGE_LIMIT = 200
 
 # Legacy Stub response retained for isolated contract tests; product requests use add_ai_message.
 PLACEHOLDER_REPLY = "아직 실제 AI 응답 기능은 준비 중이에요. 곧 연결할게요."
@@ -41,15 +42,19 @@ class SupabaseChatRepository(ChatRepository):
     def __init__(self, client: Client) -> None:
         self.client = client
 
-    def list_messages(self, user_id: str, target_date: date) -> list[ChatMessageResponse]:
-        rows = self._run(
-            lambda: self.client.table(TABLE)
-            .select(COLUMNS)
-            .eq("user_id", user_id)
-            .eq("date", target_date.isoformat())
-            .order("created_at")
-            .execute()
-        )
+    def list_messages(
+        self, user_id: str, target_date: date | None
+    ) -> list[ChatMessageResponse]:
+        """Return one day when requested, otherwise the latest saved history."""
+        def request():
+            query = self.client.table(TABLE).select(COLUMNS).eq("user_id", user_id)
+            if target_date is not None:
+                return query.eq("date", target_date.isoformat()).order("created_at").execute()
+            return query.order("created_at", desc=True).limit(HISTORY_PAGE_LIMIT).execute()
+
+        rows = self._run(request)
+        if target_date is None:
+            rows.reverse()
         return [_to_response(row) for row in rows]
 
     def history_for_day(self, user_id: str, target_date: date) -> list[dict[str, str]]:

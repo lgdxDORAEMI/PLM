@@ -73,7 +73,7 @@ def list_messages(
     target_date: date | None = Query(default=None, alias="date"),
 ) -> list[ChatMessageResponse]:
     try:
-        return service.list_messages(user.id, target_date or dates.today_kst())
+        return service.list_messages(user.id, target_date)
     except Exception as error:
         raise to_http_exception(error) from error
 

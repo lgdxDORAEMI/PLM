@@ -110,6 +110,8 @@ flutter run -d chrome --dart-define=PLM_PREVIEW=true
 
 홈의 주차별 안내는 `GET /api/v1/routine/home`에서 조회합니다. 오늘 컨디션이나 루틴이 아직 없어도 프로필의 출산예정일이 저장되어 있으면 주차와 안내 문구를 반환합니다. 이 API가 503이면 Supabase의 `pregnancy_profiles` 연결을 확인합니다.
 
+챗봇의 `GET /api/v1/chat/messages`는 날짜를 생략하면 최근 대화 200건을 날짜 경계 없이 반환합니다. 특정 날짜만 점검할 때는 `?date=YYYY-MM-DD`를 사용합니다.
+
 `SUPABASE_URL`과 `SUPABASE_ANON_KEY`가 모두 비어 있으면 기존 로컬 화면 흐름을 사용합니다. 한쪽만 입력한 상태는 연결 설정이 완료된 것으로 취급하지 않습니다. API 요청에서 401이 나오면 Supabase 로그인 세션을, 403이 나오면 요청 Origin과 Backend의 `FRONTEND_ORIGIN`을, 503이 나오면 백엔드와 Supabase 연결을 확인합니다. 자동 계정 진입 API는 localhost 또는 `FRONTEND_ORIGIN`과 정확히 일치하는 Web 앱에서 사용할 수 있습니다. Flutter Web의 `.env`는 빌드에 포함되므로 계정 비밀번호를 넣지 마세요.
 
 백엔드 프로필 API는 생년월일을 저장하고 반환합니다. Frontend는 마지막 생리 시작일만 선택한 경우 계산값을 화면에 표시하되, 저장 요청에는 마지막 생리 시작일만 보내 Backend가 출산예정일을 계산하도록 합니다. 가이드 응답의 `item_id`로 건강 활동 완료와 수면 환경 변경을 저장합니다. 루틴 생성 시 컨디션 저장 → 예정 활동 저장 → 루틴 생성 순서를 유지합니다. 401은 로그인 세션, 404는 오늘 루틴 또는 기록의 존재 여부, 409는 선행 입력, 422는 입력값, 503은 서버 연결 상태를 확인하세요.

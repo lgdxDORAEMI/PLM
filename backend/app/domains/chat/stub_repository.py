@@ -16,8 +16,18 @@ class StubChatRepository(ChatRepository):
     def __init__(self) -> None:
         self._messages: dict[tuple[str, date], list[ChatMessageResponse]] = {}
 
-    def list_messages(self, user_id: str, target_date: date) -> list[ChatMessageResponse]:
-        return list(self._messages.get((user_id, target_date), []))
+    def list_messages(
+        self, user_id: str, target_date: date | None
+    ) -> list[ChatMessageResponse]:
+        if target_date is not None:
+            return list(self._messages.get((user_id, target_date), []))
+        messages = [
+            message
+            for (owner_id, _), rows in self._messages.items()
+            if owner_id == user_id
+            for message in rows
+        ]
+        return sorted(messages, key=lambda message: message.created_at)
 
     def add_message(
         self, user_id: str, target_date: date, payload: ChatMessageInput

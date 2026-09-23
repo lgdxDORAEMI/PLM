@@ -71,7 +71,7 @@
 
 | 메서드 | 경로 | 요청·결과 |
 | --- | --- | --- |
-| GET | `/chat/messages?date=YYYY-MM-DD` | 해당 날짜의 대화 이력; 날짜 생략 시 KST 오늘 |
+| GET | `/chat/messages?date=YYYY-MM-DD` | 날짜 생략 시 저장된 최근 대화 200건, 지정 시 해당 날짜의 이력 |
 | POST | `/chat/messages` | `{"content":"...", "routine_item_id":null}`; LLM 답변과 대화 저장 |
 | GET | `/chat/messages/{message_id}/routine-update` | 챗봇 컨디션 수정·루틴 재생성 상태 조회 |
 | POST | `/chat/messages/{message_id}/routine-update` | `{"action":"confirm"}` 또는 `{"action":"cancel"}`; 확인은 202로 즉시 반환하고 재생성은 백그라운드 실행 |

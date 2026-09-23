@@ -42,8 +42,9 @@ class FakeTable:
         self._filters[column] = value
         return self
 
-    def order(self, column: str) -> "FakeTable":
+    def order(self, column: str, *, desc: bool = False) -> "FakeTable":
         self._order = column
+        self._descending = desc
         return self
 
     def limit(self, value: int) -> "FakeTable":
@@ -80,7 +81,11 @@ class FakeTable:
             row for row in self._rows if all(row.get(k) == v for k, v in self._filters.items())
         ]
         if self._order:
-            rows = sorted(rows, key=lambda row: row[self._order])
+            rows = sorted(
+                rows,
+                key=lambda row: row[self._order],
+                reverse=getattr(self, "_descending", False),
+            )
         return SimpleNamespace(data=rows[: self._limit] if self._limit else rows)
 
 
@@ -120,6 +125,21 @@ class SupabaseChatRepositoryTest(unittest.TestCase):
             [message.content for message in history],
             ["첫 질문", PLACEHOLDER_REPLY, "두 번째 질문", PLACEHOLDER_REPLY],
         )
+
+    def test_list_messages_without_date_restores_previous_days(self) -> None:
+        client = FakeSupabaseClient()
+        repo = SupabaseChatRepository(client)
+        repo.add_message(
+            USER_ID, date(2026, 9, 19), ChatMessageInput(content="어제 질문")
+        )
+        repo.add_message(
+            USER_ID, TARGET_DATE, ChatMessageInput(content="오늘 질문")
+        )
+
+        history = repo.list_messages(USER_ID, None)
+
+        self.assertEqual(history[0].content, "어제 질문")
+        self.assertEqual(history[2].content, "오늘 질문")
 
     def test_routine_update_is_saved_and_status_can_change(self) -> None:
         client = FakeSupabaseClient()
