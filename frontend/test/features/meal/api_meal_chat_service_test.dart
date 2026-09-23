@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:plm_frontend/core/network/api_client.dart';
+import 'package:plm_frontend/features/meal/models/meal_guide.dart';
 import 'package:plm_frontend/features/meal/services/api_meal_chat_service.dart';
 
 void main() {
@@ -111,5 +112,53 @@ void main() {
       requests.last.url.path,
       '/api/v1/chat/messages/message-1/routine-update',
     );
+  });
+  test('저장된 식사 추천 카드를 대화 이력에서 복원한다', () async {
+    const context = MealRecommendation(
+      id: 'meal-1',
+      period: MealPeriod.breakfast,
+      title: '기존 메뉴',
+      description: '',
+      reasonTitle: '추천 이유',
+      reason: '',
+      evidence: '',
+      nutritionTags: [],
+      cautions: [],
+    );
+    final service =
+        ApiMealChatService(
+            client: ApiClient(
+              baseUrl: 'http://localhost:8000',
+              httpClient: MockClient(
+                (_) async => http.Response.bytes(
+                  utf8.encode(
+                    jsonEncode([
+                      {
+                        'message_id': 'assistant-1',
+                        'role': 'assistant',
+                        'content': '이 메뉴를 추천해요.',
+                        'routine_item_id': 'meal-1',
+                        'recommendation': {
+                          'title': '두부 샐러드',
+                          'reason': '담백하고 단백질을 보충할 수 있어요.',
+                          'nutritionTags': ['단백질'],
+                          'cautions': [],
+                        },
+                      },
+                    ]),
+                  ),
+                  200,
+                  headers: {'content-type': 'application/json; charset=utf-8'},
+                ),
+              ),
+            ),
+          )
+          ..routineItemId = 'meal-1'
+          ..recommendationContext = context;
+
+    final history = await service.fetchHistory();
+
+    expect(history.single.recommendation?.title, '두부 샐러드');
+    expect(history.single.recommendation?.period, MealPeriod.breakfast);
   });
 }

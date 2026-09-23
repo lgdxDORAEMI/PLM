@@ -33,11 +33,15 @@ import '../../../shared/widgets/integration_required_state.dart';
 import '../widgets/pregnancy_week_hero.dart';
 import '../widgets/pregnancy_week_tip_card.dart';
 import '../widgets/today_condition_summary.dart';
+import '../models/home_week_context.dart';
+import '../services/api_home_week_service.dart';
+import '../services/home_week_service.dart';
 
 class WifeHomeScreen extends StatefulWidget {
-  const WifeHomeScreen({super.key, this.routineService});
+  const WifeHomeScreen({super.key, this.routineService, this.homeWeekService});
 
   final RoutineService? routineService;
+  final HomeWeekService? homeWeekService;
 
   @override
   State<WifeHomeScreen> createState() => _WifeHomeScreenState();
@@ -48,6 +52,10 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
   final _profileStore = ProfileStore.instance;
   final _activityStore = PlannedActivityStore.instance;
   late final DailyRoutineController _routineController;
+  late final HomeWeekService? _homeWeekService;
+  HomeWeekContext? _homeWeekContext;
+  bool _homeWeekLoading = false;
+  bool _homeWeekLoadFailed = false;
 
   @override
   void initState() {
@@ -62,12 +70,16 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
           ? null
           : MockRoutineService.fallbackPlan,
     )..addListener(_refresh);
+    _homeWeekService =
+        widget.homeWeekService ??
+        (AppConfig.hasSupabaseConfig ? ApiHomeWeekService() : null);
     _todayCareStore.addListener(_onTodayCareChanged);
     _profileStore.addListener(_refresh);
     _activityStore.addListener(_refresh);
     // 할 일도 같은 GET /care/conditions를 쓰므로 컨디션 조회 뒤에 보낸다.
     // 동시에 보내면 BE 공유 Supabase 연결이 끊겨 503이 날 수 있다.
     unawaited(_restoreTodayCare().then((_) => _restoreActivities()));
+    if (_homeWeekService != null) unawaited(_restoreHomeWeekContext());
     if (_todayCareStore.hasTodayCare || AppConfig.previewMode) {
       unawaited(_routineController.loadToday());
     }
@@ -89,6 +101,24 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
       await PlannedActivityController().loadActivities();
     } catch (_) {
       // 할 일 요약만 비어 보일 뿐 홈 사용에는 지장이 없다.
+    }
+  }
+
+  /// 루틴 생성 전에도 프로필 주차 기반 안내를 독립적으로 복원한다.
+  Future<void> _restoreHomeWeekContext() async {
+    final service = _homeWeekService;
+    if (service == null || _homeWeekLoading) return;
+    _homeWeekLoading = true;
+    _homeWeekLoadFailed = false;
+    try {
+      final context = await service.fetch();
+      if (!mounted) return;
+      setState(() => _homeWeekContext = context);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _homeWeekLoadFailed = true);
+    } finally {
+      _homeWeekLoading = false;
     }
   }
 
@@ -116,10 +146,11 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final hasTodayCare = _todayCareStore.hasTodayCare || AppConfig.previewMode;
-    final pregnancyWeek =
+    final profileWeek =
         (_profileStore.profile ??
                 (AppConfig.previewMode ? ProfileDraft.mockEdit() : null))
             ?.pregnancyWeekAt(DateTime.now());
+    final pregnancyWeek = profileWeek ?? _homeWeekContext?.week;
     return WifeNavigationScaffold(
       currentIndex: 0,
       appBar: TopAppBar(
@@ -212,10 +243,13 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
       ? [const IntegrationRequiredState(), ..._routineContent()]
       : _routineContent();
 
-  /// 주차 안내는 Backend `home.week_notes`·`home.caution`(09-22). 루틴을 받기 전이면 안내 상태를 보여준다.
+  /// 주차 안내는 루틴과 독립된 Backend `/routine/home`을 우선 사용한다.
   Widget _weekContext(int? pregnancyWeek, bool hasTodayCare) {
     final plan = _routineController.plan;
-    final notes = plan?.weekNotes ?? const <String>[];
+    final notes = plan?.weekNotes.isNotEmpty == true
+        ? plan!.weekNotes
+        : (_homeWeekContext?.notes ?? const <String>[]);
+    final caution = plan?.caution ?? _homeWeekContext?.caution ?? '';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -225,14 +259,21 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
           beforeCare: !hasTodayCare,
         ),
         SizedBox(height: hasTodayCare ? 10 : AppSpacing.lg),
-        if (pregnancyWeek == null || notes.isEmpty)
+        if (_homeWeekLoading && notes.isEmpty)
+          const AppLoadingState(message: '주차별 안내를 불러오고 있어요', compact: true)
+        else if (_homeWeekLoadFailed && notes.isEmpty)
+          AppErrorState(
+            title: '주차별 안내를 불러오지 못했어요',
+            onRetry: _restoreHomeWeekContext,
+          )
+        else if (pregnancyWeek == null || notes.isEmpty)
           const IntegrationRequiredState(message: '주차별 안내 데이터가 없습니다.')
         else
           PregnancyWeekTipCard(
             key: const ValueKey('home-week-tip'),
             week: pregnancyWeek,
             tips: notes,
-            caution: plan?.caution ?? '',
+            caution: caution,
           ),
       ],
     );

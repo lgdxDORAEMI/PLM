@@ -29,6 +29,7 @@
 | Account | POST | `/api/v1/account/partner-invitations` | Wife | W-INVITE-001 | FUC-W-INVITE-001 | implemented |
 | Account | POST | `/api/v1/account/partner-invitations/{token}/accept` | Husband | B-ENTRY-001(남편) | FUC-H-INVITE-001 | implemented |
 | Routine | GET | `/api/v1/routine/today` | Wife | W-HOME-001, W-MEAL-001/002, W-HOUSE-001, W-HEALTH-001, W-SLEEP-001 | FUC-W-HOME-001 외 다수 | implemented |
+| Routine | GET | `/api/v1/routine/home` | Wife | W-HOME-001 | FUC-W-HOME-001 | implemented |
 | Routine | POST | `/api/v1/routine/today` | Wife | W-TASK-001, W-CALLBACK-001 | FUC-W-ROUTINE-001/003 | implemented |
 | Care | GET | `/api/v1/care/conditions/{target_date}` | Wife | W-COND-001 | FUC-W-COND-001 | implemented |
 | Care | PUT | `/api/v1/care/conditions/{target_date}` | Wife | W-COND-001 | FUC-W-COND-001 | implemented |
@@ -48,8 +49,11 @@
 | Report | GET | `/api/v1/family/morning-reports/{target_date}` | Husband | H-REPORT-001 | FUC-H-REPORT-001 | implemented |
 | Notification | GET | `/api/v1/family/notifications` | Husband | H-NOTI-001 | FUC-H-NOTI-001 | implemented |
 | Notification | POST | `/api/v1/family/notifications/{notification_id}/read` | Husband | H-NOTI-001 | FUC-H-NOTI-001 | implemented |
-| Chat | GET | `/api/v1/chat/messages` | Wife | W-CHAT-001 | FUC-W-CHAT-001 | partial |
-| Chat | POST | `/api/v1/chat/messages` | Wife | W-CHAT-001 | FUC-W-CHAT-001 | partial |
+| Chat | GET | `/api/v1/chat/messages` | Wife | W-CHAT-001 | FUC-W-CHAT-001 | implemented |
+| Chat | POST | `/api/v1/chat/messages` | Wife | W-CHAT-001 | FUC-W-CHAT-001 | implemented |
+| Chat | GET | `/api/v1/chat/messages/{message_id}/routine-update` | Wife | W-CHAT-001 | FUC-W-CHAT-002 | implemented |
+| Chat | POST | `/api/v1/chat/messages/{message_id}/routine-update` | Wife | W-CHAT-001 | FUC-W-CHAT-002 | implemented |
+| Chat | POST | `/api/v1/chat/meal-alternative` | Wife | W-MEAL-002, W-CHAT-001 | FUC-W-MEAL-003 | implemented |
 | Movement | WS | `/api/v1/movement/live/stream` | Wife | B-MOTION-001 | FUC-B-MOTION-001 | implemented |
 | Movement | GET | `/api/v1/movement/live` | Wife | B-MOTION-001 | FUC-B-MOTION-001 | implemented |
 | Movement | GET | `/api/v1/movement/events` | Wife, Husband | B-MOTION-001 | FUC-B-MOTION-001 | implemented |
@@ -67,11 +71,11 @@
 
 | Status | 개수 | 비율 |
 |---|---|---|
-| implemented | 43 | 96% |
-| partial | 2 | 4% |
+| implemented | 49 | 100% |
+| partial | 0 | 0% |
 | stub | 0 | 0% |
 | planned | 0 | 0% |
-| **합계** | **45** | 100% |
+| **합계** | **49** | 100% |
 
 ## 도메인별 집계
 
@@ -79,15 +83,15 @@
 |---|---|---|---|---|
 | Profile | 7 | 0 | 0 | 7 |
 | Account(bootstrap/invite/link) | 4 | 0 | 0 | 4 |
-| Routine(Routine AI 소유) | 2 | 0 | 0 | 2 |
+| Routine(Routine AI 소유) | 3 | 0 | 0 | 3 |
 | Care/Condition/Record/Report/Calendar | 10 | 0 | 0 | 10 |
 | Guide(Meal/Household/Health/Sleep 조회, STEP 11) | 4 | 0 | 0 | 4 |
 | Household | 5 | 0 | 0 | 5 |
 | Report(남편 공유, STEP 12) | 1 | 0 | 0 | 1 |
 | Notification | 2 | 0 | 0 | 2 |
-| Chat | 0 | 2(대화 이력 저장은 실연결, 실제 AI 응답은 placeholder) | 0 | 2 |
+| Chat | 5 | 0 | 0 | 5 |
 | Movement(`movement.py` Protected 4 + `family.motion.*` STEP 14 실연결 4) | 8 | 0 | 0 | 8 |
-| **합계** | **43** | **2** | **0** | **45** |
+| **합계** | **49** | **0** | **0** | **49** |
 
 ## Protected 모듈 표시
 

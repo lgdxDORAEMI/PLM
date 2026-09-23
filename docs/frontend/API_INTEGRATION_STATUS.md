@@ -1,6 +1,6 @@
 # Frontend API Integration Status
 
-- 갱신일: 2026-09-20
+- 갱신일: 2026-09-23
 - 기준: Supabase 설정이 있으면 API 구현을 사용한다. 설정이 없는 실행 화면은 Mock 값 대신 `연동이필요합니다` 빈 상태를 표시한다. 테스트에서 명시한 경우에만 Mock 화면 값을 표시한다.
 - 공통 경로: `Screen → Controller/Store → Repository/Service → ApiClient → Backend`
 - Frontend Feature 코드는 Supabase Table 또는 RPC를 직접 호출하지 않는다.
@@ -15,8 +15,11 @@
 | 배우자 연결 상태 | CONNECTED | `GET /api/v1/account/partner-link` |
 | 오늘 컨디션·예정 활동 | CONNECTED | `GET/PUT /api/v1/care/conditions/{date}`, `PUT .../activities` |
 | 오늘 루틴·재생성 | CONNECTED | `GET/POST /api/v1/routine/today` |
+| 홈 주차별 안내 | CONNECTED | `GET /api/v1/routine/home` (컨디션·오늘 루틴 생성 전에도 조회) |
 | 식사 가이드 조회 | CONNECTED | `GET /api/v1/meals/today` |
 | 식사 메뉴 수락·거절 피드백 | CONNECTED | `PUT /api/v1/care/routine-items/{item_id}` (Guide `item_id` 사용) |
+| Chat 대화·이력·루틴 수정 | CONNECTED | `GET/POST /api/v1/chat/messages`, `GET/POST .../{message_id}/routine-update` |
+| 식사 대체 메뉴 생성 | CONNECTED | `POST /api/v1/chat/meal-alternative`; Chat 응답의 저장된 `recommendation` 카드도 복원 |
 | 가사 가이드 조회 | CONNECTED | `GET /api/v1/household/today` |
 | 가사 요청 생성·목록·상세·확인·완료 | CONNECTED | `/api/v1/family/household-requests/**` |
 | 건강 가이드 조회 | CONNECTED | `GET /api/v1/health/today` |
@@ -36,12 +39,11 @@ Mock Service와 Store는 Widget 테스트용으로 유지한다. API 미설정 �
 
 | Feature | 상태 | 사유 |
 |---|---|---|
-| Chat | MOCK | Backend Chat API는 대화 이력 저장(`chat_messages`)만 실연결됐고, 실제 AI 응답은 여전히 고정 안내 문구다(NFR-027 확정 전). |
-| 식사 대체 메뉴 생성 | MOCK | 실제 대체 메뉴를 생성하는 Backend API가 없고 Chat도 stub이다. |
+| 별도 Mock 제품 기능 | 없음 | 제품 경로는 위 API를 사용하며 Mock은 Widget 테스트와 명시적 preview에만 사용한다. |
 
 ## 루틴 항목 연결 상태
 
-Guide 응답(`GET /meals|household|health|sleep/today`)의 각 항목에 `item_id`(routine_items.id)가 포함된다. 아래 API는 기존 화면 액션에서 이 값을 사용한다. 대체 메뉴 생성·교체는 Backend AI 응답 미완성으로 제외한다.
+Guide 응답(`GET /meals|household|health|sleep/today`)의 각 항목에 `item_id`(routine_items.id)가 포함된다. 아래 API는 기존 화면 액션에서 이 값을 사용한다.
 
 | Feature | 계약 |
 |---|---|

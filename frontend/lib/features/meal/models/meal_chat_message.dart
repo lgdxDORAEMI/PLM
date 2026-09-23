@@ -55,12 +55,14 @@ class MealChatMessage {
     required this.id,
     required this.author,
     required this.text,
+    this.recommendation,
     this.routineUpdate,
   });
 
   final String id;
   final MealChatAuthor author;
   final String text;
+  final MealRecommendation? recommendation;
   final RoutineUpdateState? routineUpdate;
 }
 

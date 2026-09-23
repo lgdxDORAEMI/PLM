@@ -9,6 +9,7 @@ class ApiMealChatService implements MealChatService, RoutineUpdateService {
 
   final ApiClient _client;
   String? routineItemId;
+  MealRecommendation? recommendationContext;
 
   @override
   Future<List<MealChatMessage>> fetchHistory() async {
@@ -34,6 +35,10 @@ class ApiMealChatService implements MealChatService, RoutineUpdateService {
                 ? MealChatAuthor.user
                 : MealChatAuthor.assistant,
             text: content,
+            recommendation: _recommendation(
+              row['recommendation'],
+              recommendationContext,
+            ),
             routineUpdate: _routineUpdate(row['routine_update']),
           );
         })
@@ -57,7 +62,52 @@ class ApiMealChatService implements MealChatService, RoutineUpdateService {
     }
     return MealChatReply(
       message: content,
+      recommendation: _recommendation(
+        response?['recommendation'],
+        current ?? recommendationContext,
+      ),
       routineUpdate: _routineUpdate(response?['routine_update']),
+    );
+  }
+
+  /// Converts the backend's persisted meal card into the shared UI model.
+  MealRecommendation? _recommendation(
+    Object? value,
+    MealRecommendation? context,
+  ) {
+    if (value == null) return null;
+    if (value is! Map || context == null) {
+      throw const FormatException('추천 메뉴 형식이 올바르지 않습니다.');
+    }
+    final title = value['title']?.toString();
+    final reason = value['reason']?.toString();
+    if (title == null || title.isEmpty || reason == null) {
+      throw const FormatException('추천 메뉴 형식이 올바르지 않습니다.');
+    }
+    final cautions = value['cautions'];
+    return MealRecommendation(
+      id: context.id,
+      period: context.period,
+      title: title,
+      description: reason,
+      reasonTitle: context.reasonTitle,
+      reason: reason,
+      evidence: context.evidence,
+      nutritionTags:
+          (value['nutritionTags'] as List?)?.whereType<String>().toList() ??
+          const [],
+      cautions: cautions is List
+          ? cautions
+                .whereType<Map>()
+                .map(
+                  (item) => MealCaution(
+                    title: item['title']?.toString() ?? '',
+                    description: item['description']?.toString() ?? '',
+                    badge: item['badge']?.toString(),
+                  ),
+                )
+                .toList(growable: false)
+          : const [],
     );
   }
 

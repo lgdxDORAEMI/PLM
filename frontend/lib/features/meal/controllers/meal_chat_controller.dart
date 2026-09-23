@@ -63,6 +63,9 @@ class MealChatController extends ChangeNotifier {
         ..clear()
         ..addAll(history);
       for (final message in history) {
+        if (message.recommendation case final recommendation?) {
+          _proposal = recommendation;
+        }
         if (message.routineUpdate case final update?) _routineUpdate = update;
       }
       if (_routineUpdate?.isPending ?? false) _startRoutineUpdatePolling();
@@ -153,6 +156,7 @@ class MealChatController extends ChangeNotifier {
           id: 'assistant-${_messages.length}',
           author: MealChatAuthor.assistant,
           text: reply.message,
+          recommendation: reply.recommendation,
           routineUpdate: reply.routineUpdate,
         ),
       );

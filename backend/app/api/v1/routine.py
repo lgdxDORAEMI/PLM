@@ -71,6 +71,20 @@ def _with_regeneration_flag(routine: dict[str, Any]) -> dict[str, Any]:
     return {**routine, "is_regeneration": int(routine.get("revision") or 1) > 1}
 
 
+@router.get("/home")
+def read_home_context(user: User, service: Service) -> dict[str, Any]:
+    """루틴·컨디션 생성 여부와 무관하게 프로필 기반 주차 안내를 반환한다."""
+    today = dates.today_kst()
+    try:
+        week = home.current_week(service.supabase, user.id, today)
+        routine = repository.get_routine(service.supabase, user.id, today)
+    except (APIError, httpx.HTTPError) as error:
+        logger.exception("홈 주차 안내 조회 실패")
+        raise _storage_unavailable() from error
+    response = routine.get("response") if routine is not None else None
+    return home.home_block(week, response)
+
+
 async def generate_today_and_notify(
     user_id: str, today: date, service: RoutineService, family: FamilyServicePort
 ) -> dict[str, Any]:

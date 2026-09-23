@@ -108,6 +108,8 @@ flutter run -d chrome --dart-define=PLM_PREVIEW=true
 3. Backend의 비공개 `backend/.env`에 `PLM_WIFE_EMAIL`, `PLM_WIFE_PASSWORD`, `PLM_HUSBAND_EMAIL`, `PLM_HUSBAND_PASSWORD`를 설정하고 Backend를 재시작합니다. 두 계정은 Supabase Auth에 등록되어 있어야 합니다. 계정 비밀번호를 `frontend/.env`에 넣지 않습니다.
 4. 앱을 열면 아내 계정으로 자동 로그인합니다. 아내·남편 메뉴의 `계정 전환` 버튼은 실제 Supabase 세션을 교체합니다. 새로고침하면 다시 아내 계정으로 시작합니다. 계정 상태 조회 API가 역할과 프로필 완료 여부를 결정합니다.
 
+홈의 주차별 안내는 `GET /api/v1/routine/home`에서 조회합니다. 오늘 컨디션이나 루틴이 아직 없어도 프로필의 출산예정일이 저장되어 있으면 주차와 안내 문구를 반환합니다. 이 API가 503이면 Supabase의 `pregnancy_profiles` 연결을 확인합니다.
+
 `SUPABASE_URL`과 `SUPABASE_ANON_KEY`가 모두 비어 있으면 기존 로컬 화면 흐름을 사용합니다. 한쪽만 입력한 상태는 연결 설정이 완료된 것으로 취급하지 않습니다. API 요청에서 401이 나오면 Supabase 로그인 세션을, 403이 나오면 요청 Origin과 Backend의 `FRONTEND_ORIGIN`을, 503이 나오면 백엔드와 Supabase 연결을 확인합니다. 자동 계정 진입 API는 localhost 또는 `FRONTEND_ORIGIN`과 정확히 일치하는 Web 앱에서 사용할 수 있습니다. Flutter Web의 `.env`는 빌드에 포함되므로 계정 비밀번호를 넣지 마세요.
 
 백엔드 프로필 API는 생년월일을 저장하고 반환합니다. Frontend는 마지막 생리 시작일만 선택한 경우 계산값을 화면에 표시하되, 저장 요청에는 마지막 생리 시작일만 보내 Backend가 출산예정일을 계산하도록 합니다. 가이드 응답의 `item_id`로 건강 활동 완료와 수면 환경 변경을 저장합니다. 루틴 생성 시 컨디션 저장 → 예정 활동 저장 → 루틴 생성 순서를 유지합니다. 401은 로그인 세션, 404는 오늘 루틴 또는 기록의 존재 여부, 409는 선행 입력, 422는 입력값, 503은 서버 연결 상태를 확인하세요.

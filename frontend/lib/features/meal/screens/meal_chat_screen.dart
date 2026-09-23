@@ -90,6 +90,7 @@ class _MealChatScreenState extends State<MealChatScreen> {
         if (matches.isEmpty) throw const FormatException('해당 끼니의 식사 루틴이 없습니다.');
         final recommendation = matches.first;
         _apiService!.routineItemId = recommendation.id;
+        _apiService!.recommendationContext = recommendation;
         _controller.initialize(recommendation);
       } else {
         _controller.initialize(null);

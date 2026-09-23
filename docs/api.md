@@ -17,6 +17,7 @@
 | --- | --- | --- |
 | POST | `/account/session/default` | 로컬 또는 허용된 운영 Web Origin에서 사전 설정된 아내 계정 세션 발급. Bearer 토큰 예외 |
 | POST | `/account/session/switch` | 로컬 또는 허용된 운영 Web Origin의 설정된 계정만 `target`이 `wife` 또는 `husband`인 본문으로 전환 |
+| GET | `/routine/home` | 오늘 루틴 생성 여부와 무관한 프로필 주차 기반 홈 안내 |
 | GET | `/account/bootstrap` | 역할, 프로필 완료 상태, 배우자 연결 상태와 시작 목적지 |
 | GET | `/account/partner-link` | 연결 상태와 본인·배우자 표시 이름 |
 | POST | `/account/partner-invitations` | 만료 시각이 있는 초대 링크 발급; 201 |

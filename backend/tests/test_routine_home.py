@@ -4,6 +4,9 @@ import unittest
 from datetime import date
 from types import SimpleNamespace
 
+from unittest.mock import patch
+
+from app.api.v1.routine import read_home_context
 from app.services.routine.home import current_week, home_block, load_bands, week_band
 
 
@@ -42,6 +45,18 @@ class WeekNotesTest(unittest.TestCase):
         self.assertEqual(current_week(client, "u", date(2026, 9, 22)), 28)
         rows.clear()
         self.assertIsNone(current_week(client, "u", date(2026, 9, 22)))
+
+    def test_home_context_does_not_require_a_daily_routine(self) -> None:
+        service = SimpleNamespace(supabase=object())
+        user = SimpleNamespace(id="wife-1")
+        with (
+            patch("app.api.v1.routine.home.current_week", return_value=28),
+            patch("app.api.v1.routine.repository.get_routine", return_value=None),
+        ):
+            result = read_home_context(user, service)
+        self.assertEqual(result["week"], 28)
+        self.assertEqual(len(result["week_notes"]), 2)
+        self.assertTrue(result["caution"])
 
 
 if __name__ == "__main__":

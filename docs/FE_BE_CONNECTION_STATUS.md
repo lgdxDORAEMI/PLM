@@ -1,6 +1,6 @@
 # FE–BE 연결 기준 상태
 
-확인일: 2026-09-22. 기준: `frontend/lib/**`, `backend/app/**`, `docs/backend/**`, `frontend/README.md`의 현재 코드. 문서의 구현 상태가 코드와 다르면 코드를 우선했다. `frontend/pubspec.lock`의 기존 사용자 변경은 건드리지 않았다.
+확인일: 2026-09-23. 기준: `frontend/lib/**`, `backend/app/**`, `docs/backend/**`, `frontend/README.md`의 현재 코드. 문서의 구현 상태가 코드와 다르면 코드를 우선한다.
 
 ## 판정 기준
 
@@ -17,7 +17,8 @@
 | Today Condition | REAL | REAL | `GET/PUT /care/conditions/{date}` | — |
 | Activity | REAL | REAL | `GET /care/conditions/{date}`, `PUT /care/conditions/{date}/activities`, `POST /routine/today` | — |
 | Daily Routine | REAL | REAL | `GET/POST /routine/today` | — |
-| Meal | PARTIAL | PARTIAL | `GET /meals/today`, `PUT /care/routine-items/{id}` 연결. 식사 채팅의 `GET/POST /chat/messages`는 Backend의 실제 AI 응답이 없어 제품 화면에서 사용하지 않음 | — |
+| Home Weekly Guide | 미연결 | REAL | `GET /routine/home`; 컨디션·오늘 루틴 유무와 무관하게 주차별 안내 조회 | `frontend/lib/features/home/**` |
+| Meal | PARTIAL | REAL | `GET /meals/today`, `PUT /care/routine-items/{id}`, `POST /chat/meal-alternative`, `GET/POST /chat/messages` 연결. 저장된 추천 카드도 대화 이력에서 복원 | `frontend/lib/features/meal/**` |
 | Household | PARTIAL | PARTIAL | `GET /household/today`, `POST/GET /family/household-requests` 연결. 요청 목록 조회로 아내 화면의 남편 확인·완료 상태 복원. ThinQ 가전 실행 API는 없음 | `frontend/lib/features/household/controllers/household_guide_controller.dart` |
 | Health | REAL | REAL | `GET /health/today`, `PUT /care/routine-items/{id}/execution` | — |
 | Sleep | PARTIAL | PARTIAL | `GET /sleep/today`, `PUT /care/routine-items/{id}/sleep-environment` 연결. ThinQ 실행 API는 없음 | — |
@@ -29,7 +30,7 @@
 
 ## 남은 경계
 
-- 식사 채팅의 Backend는 대화 이력을 저장하지만 응답은 고정 문구다. Chat AI 구현은 이번 범위에서 제외했다.
+- Chat은 실제 AI 응답, 대화 이력, 추천 카드, 컨디션 기반 루틴 수정 상태를 Backend와 `chat_messages`에 연결한다.
 - Household/Sleep의 가전 버튼은 local 실행 이력만 기록한다. ThinQ 제어 API가 없으며 이번 범위에서 제외했다.
 - 가사 요청의 기존 전송 계약은 항목 제목을 보낸다. 아내 화면은 오늘 요청의 제목으로 진행 상태를 대응시킨다. 동일한 제목이 여러 루틴 항목에 쓰일 경우 항목별 식별은 이 계약만으로 불가능하다. 요청 데이터 구조 변경은 이번 범위에서 제외했다.
 - `docs/backend/SCREEN_DATA_API_MAPPING.md` 등의 오래된 Stub 표기 대신 실제 `backend/app/api/v1/**` 라우트와 서비스 구현으로 판정했다.
@@ -42,4 +43,4 @@
 
 ## 후속 변경: 챗봇 대화 연결 (2026-09-22)
 
-위 표는 1단계 당시의 기준 상태다. 이후 `/wife/chat`의 일반 대화와 식사 루틴별 대화를 `GET/POST /api/v1/chat/messages`에 연결했다. Backend는 OpenAI로 답변을 생성하고 질문·답변을 `chat_messages`에 저장한다. 식사 재추천 카드와 메뉴 교체는 아직 연결되지 않았으므로 Meal 전체 상태는 PARTIAL이다. API 또는 대화 이력 조회 실패 시 Mock으로 자동 전환하지 않는다.
+`/wife/chat`의 일반 대화와 식사 루틴별 대화는 `GET/POST /api/v1/chat/messages`에 연결된다. Backend는 OpenAI로 답변을 생성하고 질문·답변·추천 카드·루틴 수정 상태를 `chat_messages`에 저장한다. 식사 재추천과 교체도 연결되어 있으며, API 또는 대화 이력 조회 실패 시 Mock으로 자동 전환하지 않는다.
