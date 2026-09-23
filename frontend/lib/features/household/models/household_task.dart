@@ -11,6 +11,7 @@ class HouseholdTask {
     this.status = HouseholdTaskStatus.planned,
     this.selected = false,
     this.applianceNames = const [],
+    this.airPurifierDeviceId,
   });
 
   final String id;
@@ -21,6 +22,10 @@ class HouseholdTask {
   final bool selected;
   final List<String> applianceNames;
 
+  /// 실제 ThinQ 제어가 가능한 공기청정기 항목일 때만 채워진다. 그 외 가전(세탁기 등)은
+  /// 계속 로컬 시연으로 남는다.
+  final String? airPurifierDeviceId;
+
   HouseholdTask copyWith({HouseholdTaskStatus? status, bool? selected}) {
     return HouseholdTask(
       id: id,
@@ -30,6 +35,7 @@ class HouseholdTask {
       status: status ?? this.status,
       selected: selected ?? this.selected,
       applianceNames: applianceNames,
+      airPurifierDeviceId: airPurifierDeviceId,
     );
   }
 }

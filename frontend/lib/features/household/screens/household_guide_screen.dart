@@ -270,8 +270,27 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
     ];
   }
 
-  /// 실제 기기 제어 없이 오늘의 로컬 실행 이력만 기록한다.
+  /// 공기청정기는 ThinQ 실기기를 켜고, 그 외 가전은 로컬 실행 이력만 기록한다.
   Future<void> _runAppliance(HouseholdTask task) async {
+    if (task.airPurifierDeviceId case final deviceId?) {
+      final ok = await _controller.runAirPurifier(deviceId);
+      if (!mounted) return;
+      await showAppDialog<void>(
+        context: context,
+        builder: (context) => AppDialog(
+          icon: ok ? Icons.check_circle_outline : Icons.error_outline,
+          iconColor: ok ? AppColors.success : AppColors.danger,
+          title: ok ? '공기청정기를 켰어요' : '공기청정기를 켜지 못했어요',
+          content: ok
+              ? const SizedBox.shrink()
+              : const Text('연결 상태를 확인하고 다시 시도해 주세요.'),
+          actions: [
+            AppDialogAction(label: '확인', onPressed: () => Navigator.pop(context)),
+          ],
+        ),
+      );
+      return;
+    }
     ApplianceExecutionStore.instance.record(
       source: ApplianceExecutionSource.household,
       label: task.title,

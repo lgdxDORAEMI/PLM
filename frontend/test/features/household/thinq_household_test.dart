@@ -60,6 +60,90 @@ void main() {
     expect(tasks.last.selected, isTrue);
   });
 
+  test('공기청정기 항목은 실기기 제어용 device_id를 채운다', () async {
+    final client = ApiClient(
+      baseUrl: 'http://localhost:8000',
+      httpClient: MockClient((request) async {
+        return http.Response(
+          jsonEncode({
+            'appliance_connection_status': 'connected',
+            'items': [
+              {
+                'item_id': 'air-purifier',
+                'title': '공기청정기 가동',
+                'status': 'scheduled',
+                'payload': {
+                  'owner': 'appliance',
+                  'appliances': [
+                    {
+                      'name': '공청이',
+                      'device_type': 'air_purifier',
+                      'device_id': 'purifier-1',
+                    },
+                  ],
+                },
+              },
+              {
+                'item_id': 'laundry',
+                'title': '빨래',
+                'status': 'scheduled',
+                'payload': {
+                  'owner': 'appliance',
+                  'appliances': [
+                    {'name': '세탁기', 'device_type': 'washer', 'device_id': 'w'},
+                  ],
+                },
+              },
+            ],
+          }),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      }),
+    );
+    final tasks = await ApiHouseholdRequestService(
+      client: client,
+    ).fetchGuide();
+    expect(tasks.first.airPurifierDeviceId, 'purifier-1');
+    expect(tasks.last.airPurifierDeviceId, isNull);
+  });
+
+  test('공기청정기 전원 제어는 control 엔드포인트를 호출한다', () async {
+    var calledPath = '';
+    var calledBody = '';
+    final client = ApiClient(
+      baseUrl: 'http://localhost:8000',
+      httpClient: MockClient((request) async {
+        calledPath = request.url.path;
+        calledBody = request.body;
+        return http.Response('{"status":"ok"}', 200);
+      }),
+    );
+    final ok = await ApiHouseholdRequestService(
+      client: client,
+    ).runAirPurifier('purifier-1');
+    expect(ok, isTrue);
+    expect(calledPath, '/api/v1/thinq/devices/purifier-1/control');
+    expect(jsonDecode(calledBody), {'power': 'on'});
+  });
+
+  test('공기청정기 제어 실패는 예외를 던지지 않고 false를 돌려준다', () async {
+    final client = ApiClient(
+      baseUrl: 'http://localhost:8000',
+      httpClient: MockClient(
+        (_) async => http.Response(
+          jsonEncode({'detail': '실패'}),
+          502,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        ),
+      ),
+    );
+    final ok = await ApiHouseholdRequestService(
+      client: client,
+    ).runAirPurifier('purifier-1');
+    expect(ok, isFalse);
+  });
+
   test('가전 0개인 정상 응답은 빈 목록을 유지한다', () async {
     final service = ApiHouseholdRequestService(
       client: ApiClient(
