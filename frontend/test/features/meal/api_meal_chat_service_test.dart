@@ -70,4 +70,46 @@ void main() {
     await service.sendMessage(current: null, message: '식사가 부담돼요');
     expect(jsonDecode(sent!.body)['routine_item_id'], 'meal-1');
   });
+
+  test('컨디션 수정 확인과 상태 조회를 별도 API로 처리한다', () async {
+    final requests = <http.Request>[];
+    final service = ApiMealChatService(
+      client: ApiClient(
+        baseUrl: 'http://localhost:8000',
+        httpClient: MockClient((request) async {
+          requests.add(request);
+          final status = request.method == 'GET' ? 'succeeded' : 'queued';
+          return http.Response.bytes(
+            utf8.encode(
+              jsonEncode({
+                'job_id': 'message-1',
+                'status': status,
+                'summary': '피로도를 5단계로 수정합니다.',
+                'changes': [
+                  {'field': 'fatigue', 'value': 5},
+                ],
+                if (status == 'succeeded') 'routine_revision': 2,
+              }),
+            ),
+            request.method == 'POST' ? 202 : 200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }),
+      ),
+    );
+
+    final queued = await service.decideRoutineUpdate(
+      jobId: 'message-1',
+      confirm: true,
+    );
+    final completed = await service.fetchRoutineUpdate('message-1');
+
+    expect(queued.status.name, 'queued');
+    expect(completed.routineRevision, 2);
+    expect(jsonDecode(requests.first.body), {'action': 'confirm'});
+    expect(
+      requests.last.url.path,
+      '/api/v1/chat/messages/message-1/routine-update',
+    );
+  });
 }

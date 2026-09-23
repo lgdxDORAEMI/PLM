@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../data/meal_selection_store.dart';
@@ -20,14 +22,21 @@ class MealChatController extends ChangeNotifier {
   MealRecommendation? _current;
   MealRecommendation? _proposal;
   bool _responding = false;
+  bool _routineUpdateBusy = false;
   String? _errorMessage;
+  String? _routineUpdateError;
   String? _lastRequest;
+  RoutineUpdateState? _routineUpdate;
+  Timer? _routineUpdateTimer;
 
   List<MealChatMessage> get messages => List.unmodifiable(_messages);
   MealRecommendation? get current => _current;
   MealRecommendation? get proposal => _proposal;
   bool get responding => _responding;
   String? get errorMessage => _errorMessage;
+  RoutineUpdateState? get routineUpdate => _routineUpdate;
+  bool get routineUpdateBusy => _routineUpdateBusy;
+  String? get routineUpdateError => _routineUpdateError;
 
   static const suggestedPrompts = ['속이 좀 메스꺼워요', '냄새가 부담스러워요', '부드러운 음식이 좋아요'];
 
@@ -53,6 +62,10 @@ class MealChatController extends ChangeNotifier {
       _messages
         ..clear()
         ..addAll(history);
+      for (final message in history) {
+        if (message.routineUpdate case final update?) _routineUpdate = update;
+      }
+      if (_routineUpdate?.isPending ?? false) _startRoutineUpdatePolling();
       notifyListeners();
     }
   }
@@ -140,9 +153,13 @@ class MealChatController extends ChangeNotifier {
           id: 'assistant-${_messages.length}',
           author: MealChatAuthor.assistant,
           text: reply.message,
+          routineUpdate: reply.routineUpdate,
         ),
       );
       _proposal = reply.recommendation;
+      if (reply.routineUpdate case final update?) {
+        _routineUpdate = update;
+      }
     } catch (_) {
       _errorMessage = '답변을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
     } finally {
@@ -155,5 +172,66 @@ class MealChatController extends ChangeNotifier {
     final value = _proposal;
     if (value == null) return;
     store.applyRecommendation(value);
+  }
+
+  Future<void> confirmRoutineUpdate() => _decideRoutineUpdate(confirm: true);
+
+  Future<void> cancelRoutineUpdate() => _decideRoutineUpdate(confirm: false);
+
+  Future<void> _decideRoutineUpdate({required bool confirm}) async {
+    final update = _routineUpdate;
+    final updateService = service is RoutineUpdateService
+        ? service as RoutineUpdateService
+        : null;
+    if (update == null || updateService == null || _routineUpdateBusy) return;
+    _routineUpdateBusy = true;
+    _routineUpdateError = null;
+    notifyListeners();
+    try {
+      _routineUpdate = await updateService.decideRoutineUpdate(
+        jobId: update.jobId,
+        confirm: confirm,
+      );
+      if (_routineUpdate?.isPending ?? false) _startRoutineUpdatePolling();
+    } catch (_) {
+      _routineUpdateError = '루틴 수정 요청을 처리하지 못했어요. 다시 시도해 주세요.';
+    } finally {
+      _routineUpdateBusy = false;
+      notifyListeners();
+    }
+  }
+
+  void _startRoutineUpdatePolling() {
+    _routineUpdateTimer?.cancel();
+    _routineUpdateTimer = Timer.periodic(
+      const Duration(seconds: 2),
+      (_) => unawaited(_pollRoutineUpdate()),
+    );
+  }
+
+  Future<void> _pollRoutineUpdate() async {
+    final update = _routineUpdate;
+    final updateService = service is RoutineUpdateService
+        ? service as RoutineUpdateService
+        : null;
+    if (update == null || updateService == null || _routineUpdateBusy) return;
+    _routineUpdateBusy = true;
+    try {
+      _routineUpdate = await updateService.fetchRoutineUpdate(update.jobId);
+      _routineUpdateError = null;
+      if (!(_routineUpdate?.isPending ?? false)) _routineUpdateTimer?.cancel();
+    } catch (_) {
+      _routineUpdateTimer?.cancel();
+      _routineUpdateError = '루틴 수정 상태를 확인하지 못했어요.';
+    } finally {
+      _routineUpdateBusy = false;
+      notifyListeners();
+    }
+  }
+
+  @override
+  void dispose() {
+    _routineUpdateTimer?.cancel();
+    super.dispose();
   }
 }

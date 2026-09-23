@@ -10,3 +10,13 @@ abstract interface class MealChatService {
     required String message,
   });
 }
+
+/// 실제 API 챗봇만 제공하는 S8 컨디션 수정 작업 계약. Mock 식사 서비스와 분리한다.
+abstract interface class RoutineUpdateService {
+  Future<RoutineUpdateState> decideRoutineUpdate({
+    required String jobId,
+    required bool confirm,
+  });
+
+  Future<RoutineUpdateState> fetchRoutineUpdate(String jobId);
+}

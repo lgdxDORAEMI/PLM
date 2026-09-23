@@ -15,7 +15,7 @@ from httpx import ASGITransport, AsyncClient
 
 from app.api.v1.chat import get_chat_service
 from app.core.security import CurrentUser, get_current_user
-from app.domains.chat.schemas import ChatMessageInput, ChatRole
+from app.domains.chat.schemas import ChatMessageInput, ChatRole, RoutineUpdateStatus
 from app.domains.chat.service import ChatService
 from app.domains.chat.supabase_repository import PLACEHOLDER_REPLY, SupabaseChatRepository
 from app.main import app
@@ -31,6 +31,7 @@ class FakeTable:
         self._rows = rows
         self._filters: dict[str, object] = {}
         self._order: str | None = None
+        self._limit: int | None = None
         self._op: str | None = None
         self._payload: dict | None = None
 
@@ -45,8 +46,16 @@ class FakeTable:
         self._order = column
         return self
 
+    def limit(self, value: int) -> "FakeTable":
+        self._limit = value
+        return self
+
     def insert(self, row: dict) -> "FakeTable":
         self._op, self._payload = "insert", row
+        return self
+
+    def update(self, row: dict) -> "FakeTable":
+        self._op, self._payload = "update", row
         return self
 
     def execute(self) -> SimpleNamespace:
@@ -59,12 +68,20 @@ class FakeTable:
             }
             self._rows.append(new_row)
             return SimpleNamespace(data=[new_row])
+        if self._op == "update":
+            rows = [
+                row for row in self._rows
+                if all(row.get(k) == v for k, v in self._filters.items())
+            ]
+            for row in rows:
+                row.update(self._payload)
+            return SimpleNamespace(data=rows)
         rows = [
             row for row in self._rows if all(row.get(k) == v for k, v in self._filters.items())
         ]
         if self._order:
             rows = sorted(rows, key=lambda row: row[self._order])
-        return SimpleNamespace(data=rows)
+        return SimpleNamespace(data=rows[: self._limit] if self._limit else rows)
 
 
 class FakeSupabaseClient:
@@ -103,6 +120,32 @@ class SupabaseChatRepositoryTest(unittest.TestCase):
             [message.content for message in history],
             ["첫 질문", PLACEHOLDER_REPLY, "두 번째 질문", PLACEHOLDER_REPLY],
         )
+
+    def test_routine_update_is_saved_and_status_can_change(self) -> None:
+        client = FakeSupabaseClient()
+        repo = SupabaseChatRepository(client)
+        reply = repo.add_ai_message(
+            USER_ID,
+            TARGET_DATE,
+            ChatMessageInput(content="피로도를 5로 바꿔줘"),
+            "피로도를 5단계로 수정할까요?",
+            [],
+            routine_update={
+                "summary": "피로도를 5단계로 수정합니다.",
+                "changes": [{"field": "fatigue", "value": 5}],
+            },
+        )
+        self.assertEqual(
+            reply.routine_update.status,
+            RoutineUpdateStatus.AWAITING_CONFIRMATION,
+        )
+        queued = repo.set_routine_update_status(
+            USER_ID,
+            TARGET_DATE,
+            reply.message_id,
+            RoutineUpdateStatus.QUEUED,
+        )
+        self.assertEqual(queued.status, RoutineUpdateStatus.QUEUED)
 
 
 class ChatApiTest(unittest.IsolatedAsyncioTestCase):
