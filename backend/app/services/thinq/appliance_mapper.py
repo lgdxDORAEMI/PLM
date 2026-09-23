@@ -1,5 +1,6 @@
 """Deterministic household activity to owned-appliance matching."""
 
+from app.domains.care.schemas import ExecutionStatus
 from app.domains.guide.schemas import GuideItem, GuideResponse
 
 from .client import DeviceInventory, InventoryStatus
@@ -11,6 +12,7 @@ ACTIVITY_APPLIANCES: dict[str, tuple[ApplianceType, ...]] = {
     "cleaning": (ApplianceType.ROBOT_VACUUM,),
     "dishes": (ApplianceType.DISHWASHER,),
 }
+AIR_PURIFIER_ITEM_KEY = "household:air_purifier"
 TITLE_ACTIVITIES = {
     "빨래": "laundry",
     "세탁": "laundry",
@@ -64,4 +66,20 @@ def apply_inventory(guide: GuideResponse, inventory: DeviceInventory) -> GuideRe
             items.append(item.model_copy(update={"payload": payload, "description": reason}))
         else:
             items.append(item.model_copy(update={"payload": payload}))
+    if inventory.status == InventoryStatus.CONNECTED and not any(
+        item.item_key == AIR_PURIFIER_ITEM_KEY for item in items
+    ):
+        purifier = next(
+            (device for device in inventory.devices if device.device_type == ApplianceType.AIR_PURIFIER), None
+        )
+        if purifier is not None:
+            items.append(
+                GuideItem(
+                    item_id="air-purifier",
+                    item_key=AIR_PURIFIER_ITEM_KEY,
+                    title="공기청정기 가동",
+                    payload={"owner": "appliance", "appliances": [purifier.public_dict()]},
+                    status=ExecutionStatus.SCHEDULED,
+                )
+            )
     return guide.model_copy(update={"items": items, "appliance_connection_status": inventory.status.value})
