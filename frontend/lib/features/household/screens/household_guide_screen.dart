@@ -87,11 +87,7 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
                     ),
                     children: [
                       // 시안: 상단 요약 카드(식사 가이드 인사 카드와 같은 구성, 가사 색).
-                      _GuideSummaryCard(
-                        message: _controller.shared
-                            ? '허리 통증이 있어요. 무리한 일은 가족과 나눠요.'
-                            : '허리 통증이 있는 날이에요. 가전 실행 대신 부담을 줄이는 방법을 추천해요.',
-                      ),
+                      const _GuideSummaryCard(),
                       const SizedBox(height: AppSpacing.xxl),
                       LayoutBuilder(
                         builder: (context, constraints) {
@@ -285,8 +281,8 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
       builder: (context) => AppDialog(
         icon: Icons.check_circle_outline,
         iconColor: AppColors.success,
-        title: '가전 실행을 기록했어요',
-        message: '${task.title}\n오늘의 가전 실행 내역에 반영했어요. 실제 기기는 작동하지 않았어요.',
+        title: '가전 실행했어요',
+        content: const SizedBox.shrink(),
         actions: [
           AppDialogAction(label: '확인', onPressed: () => Navigator.pop(context)),
         ],
@@ -424,9 +420,7 @@ class _SectionTitle extends StatelessWidget {
 }
 
 class _GuideSummaryCard extends StatelessWidget {
-  const _GuideSummaryCard({required this.message});
-
-  final String message;
+  const _GuideSummaryCard();
 
   @override
   Widget build(BuildContext context) => Container(
@@ -436,28 +430,14 @@ class _GuideSummaryCard extends StatelessWidget {
       border: Border.all(color: AppColors.borderSubtle),
       borderRadius: BorderRadius.circular(AppRadius.hero),
     ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: 6,
-      children: [
-        const Text(
-          '오늘의 가사 가이드',
-          style: TextStyle(
-            color: AppColors.primary900,
-            fontSize: 22,
-            fontWeight: FontWeight.w700,
-            height: 1.41,
-          ),
-        ),
-        Text(
-          message,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 15,
-            height: 1.6,
-          ),
-        ),
-      ],
+    child: const Text(
+      '오늘의 가사 가이드',
+      style: TextStyle(
+        color: AppColors.primary900,
+        fontSize: 22,
+        fontWeight: FontWeight.w700,
+        height: 1.41,
+      ),
     ),
   );
 }

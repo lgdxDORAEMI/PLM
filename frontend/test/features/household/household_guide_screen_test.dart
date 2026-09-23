@@ -28,8 +28,8 @@ void main() {
     await tester.tap(runButton);
     await tester.pumpAndSettle();
 
-    expect(find.text('가전 실행을 기록했어요'), findsOneWidget);
-    expect(find.textContaining('실제 기기는 작동하지 않았어요'), findsOneWidget);
+    expect(find.text('수면 모드 실행'), findsOneWidget);
+    expect(find.textContaining('설정한 모든 항목을 실행했어요'), findsOneWidget);
     expect(ApplianceExecutionStore.instance.forDate(DateTime.now()).length, 1);
   });
 
