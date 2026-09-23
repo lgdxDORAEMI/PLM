@@ -148,13 +148,13 @@ Railway에서 GitHub 저장소를 연결하고 Backend 서비스를 생성한 �
 
 ```text
 Root Directory: backend
-Dockerfile Path: /Dockerfile
+Dockerfile Path: /backend/Dockerfile
 Start Command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
 Healthcheck Path: /health
 Watch Path: /backend/**
 ```
 
-Backend는 `backend/Dockerfile`로 빌드합니다. Dockerfile에는 MediaPipe/OpenCV가 Railway의 headless Linux 환경에서 요구하는 `libxcb`, OpenGL 및 GLib 런타임 패키지가 포함되어 있습니다. `ImportError: libxcb.so.1`이 발생하면 Railpack 빌드가 아니라 `/Dockerfile`을 사용하는지 먼저 확인합니다.
+Backend는 `backend/Dockerfile`로 빌드합니다. Dockerfile에는 MediaPipe/OpenCV가 Railway의 headless Linux 환경에서 요구하는 `libxcb`, OpenGL 및 GLib 런타임 패키지가 포함되어 있습니다. `ImportError: libxcb.so.1`이 발생하면 Railpack 빌드가 아니라 저장소 루트 기준 `/backend/Dockerfile`을 사용하는지 먼저 확인합니다.
 
 Root Directory로 `backend/`만 배포 범위에 포함하고, Watch Path로 Backend 변경이 있을 때만 새 배포를 생성합니다. `tests/`와 문서는 실행 시 import되지 않으며 크기가 작으므로, GitHub 연동 배포에서 보장되지 않는 별도 ignore 설정은 추가하지 않습니다. `models/pose_landmarker_full.task`는 모션 API가 런타임에 직접 사용하므로 제외하지 않습니다.
 
