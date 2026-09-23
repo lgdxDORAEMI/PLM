@@ -103,6 +103,28 @@ class ControlEndpointTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status_code, 502)
         control.assert_awaited_once_with("purifier-1", {"operation": {"airPurifierOperationMode": "POWER_ON"}})
 
+    async def test_wind_strength_still_sent_when_device_already_in_power_state(self) -> None:
+        """이미 켜진 기기에 "켜기"를 다시 보내면 LG가 2302로 거부한다 — 치명적 실패로 취급하지 않는다."""
+        client = ThinQClient()
+        inventory = DeviceInventory((purifier(),), InventoryStatus.CONNECTED)
+        with (
+            patch.object(client, "get_inventory", return_value=inventory),
+            patch.object(
+                client,
+                "control",
+                side_effect=[
+                    ControlResult(ControlStatus.ERROR, "2302"),
+                    ControlResult(ControlStatus.OK),
+                ],
+            ) as control,
+        ):
+            response = await self._call(client, "purifier-1", {"power": "on", "wind_strength": "high"})
+        self.assertEqual(response.status_code, 200)
+        control.assert_has_awaits([
+            call("purifier-1", {"operation": {"airPurifierOperationMode": "POWER_ON"}}),
+            call("purifier-1", {"airFlow": {"windStrength": "HIGH"}}),
+        ])
+
     async def test_unowned_device_id_is_rejected(self) -> None:
         client = ThinQClient()
         inventory = DeviceInventory((purifier(),), InventoryStatus.CONNECTED)

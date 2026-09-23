@@ -12,6 +12,9 @@ from app.services.thinq.client import ControlResult, ControlStatus, InventorySta
 router = APIRouter(prefix="/thinq", tags=["thinq"])
 
 _WIND_STRENGTH = {"low": "LOW", "mid": "MID", "high": "HIGH", "auto": "AUTO"}
+# LG COMMAND_NOT_SUPPORTED_IN_STATE. 기기가 이미 요청한 전원 상태면 LG가 이 코드로 거부한다
+# (예: 이미 켜진 기기에 "켜기"를 다시 보냄) — 실패로 취급하면 뒤이은 바람세기 명령까지 막힌다.
+_ALREADY_IN_STATE = "2302"
 # ControlStatus별로 다른 문구를 줘야 프론트/네트워크 탭만 보고도 원인을 구분할 수 있다.
 # SDK 예외 원문은 절대 넣지 않는다(PAT 등 요청 정보가 섞여 나올 수 있어 client.py가 이미 거른다).
 _CONTROL_ERROR_DETAIL = {
@@ -70,6 +73,9 @@ async def control_device(
     if body.power is not None:
         power_payload = {"operation": {"airPurifierOperationMode": "POWER_ON" if body.power == "on" else "POWER_OFF"}}
         result = await client.control(device_id, power_payload)
+        if result.status == ControlStatus.ERROR and result.error_code == _ALREADY_IN_STATE:
+            # 이미 그 전원 상태라 거부된 것뿐이니 바람세기 명령은 계속 진행한다.
+            result = ControlResult(ControlStatus.OK)
     if result.status == ControlStatus.OK and body.wind_strength is not None:
         wind_payload = {"airFlow": {"windStrength": _WIND_STRENGTH[body.wind_strength]}}
         result = await client.control(device_id, wind_payload)
