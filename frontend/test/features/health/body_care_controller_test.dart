@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plm_frontend/design_system/tokens/app_colors.dart';
 import 'package:plm_frontend/features/condition/data/condition_repository.dart';
 import 'package:plm_frontend/features/condition/data/today_care_store.dart';
 import 'package:plm_frontend/features/condition/models/condition_draft.dart';
@@ -98,6 +99,18 @@ void main() {
 
     expect(find.text('임신 중 골반 통증 완화 운동'), findsOneWidget);
     expect(find.byType(YouTubeEmbed), findsOneWidget);
+    final completeButton = tester.widget<FilledButton>(
+      find.byKey(const ValueKey('health-video-complete-pelvic-release')),
+    );
+    expect(find.byIcon(Icons.check), findsNothing);
+    expect(
+      completeButton.style?.backgroundColor?.resolve({}),
+      AppColors.primary700,
+    );
+    expect(
+      completeButton.style?.foregroundColor?.resolve({}),
+      AppColors.textInverse,
+    );
   });
 
   testWidgets('전신 운동 영상은 재생 시간과 대상 임신 분기를 표시한다', (tester) async {
@@ -122,6 +135,10 @@ void main() {
     );
     await tester.ensureVisible(wholeActivity);
     await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('body-complete-whole-body')),
+      findsNothing,
+    );
     await tester.tap(
       find.descendant(
         of: wholeActivity,
@@ -133,6 +150,10 @@ void main() {
     expect(find.text('임산부 전신 저강도 운동'), findsOneWidget);
     expect(find.text('25분 · 임신 1·2·3분기'), findsOneWidget);
     expect(find.byType(YouTubeEmbed), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('health-video-complete-whole-body')),
+      findsNothing,
+    );
   });
 }
 

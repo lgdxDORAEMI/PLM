@@ -12,12 +12,14 @@ class MovementGuideCard extends StatelessWidget {
     required this.activity,
     required this.completed,
     this.featured = false,
+    this.showCompletion = true,
     required this.onOpen,
     required this.onComplete,
   });
   final BodyCareActivity activity;
   final bool completed;
   final bool featured;
+  final bool showCompletion;
   final VoidCallback onOpen;
   final VoidCallback onComplete;
   @override
@@ -62,16 +64,18 @@ class MovementGuideCard extends StatelessWidget {
           context,
         ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
       ),
-      const SizedBox(height: AppSpacing.md),
-      Align(
-        alignment: Alignment.centerRight,
-        child: TextButton.icon(
-          key: ValueKey('body-complete-${activity.id}'),
-          onPressed: onComplete,
-          icon: Icon(completed ? Icons.check_circle : Icons.circle_outlined),
-          label: Text(completed ? '활동 완료됨' : '활동 완료'),
+      if (showCompletion) ...[
+        const SizedBox(height: AppSpacing.md),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            key: ValueKey('body-complete-${activity.id}'),
+            onPressed: onComplete,
+            icon: Icon(completed ? Icons.check_circle : Icons.circle_outlined),
+            label: Text(completed ? '활동 완료됨' : '활동 완료'),
+          ),
         ),
-      ),
+      ],
     ],
   );
 
@@ -112,15 +116,16 @@ class MovementGuideCard extends StatelessWidget {
           color: AppColors.categoryBody,
         ),
       ),
-      IconButton(
-        key: ValueKey('body-complete-${activity.id}'),
-        tooltip: completed ? '완료 취소' : '완료',
-        onPressed: onComplete,
-        icon: Icon(
-          completed ? Icons.check_circle : Icons.radio_button_unchecked,
-          color: completed ? AppColors.success : AppColors.textTertiary,
+      if (showCompletion)
+        IconButton(
+          key: ValueKey('body-complete-${activity.id}'),
+          tooltip: completed ? '완료 취소' : '완료',
+          onPressed: onComplete,
+          icon: Icon(
+            completed ? Icons.check_circle : Icons.radio_button_unchecked,
+            color: completed ? AppColors.success : AppColors.textTertiary,
+          ),
         ),
-      ),
     ],
   );
 }

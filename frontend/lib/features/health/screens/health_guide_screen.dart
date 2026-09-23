@@ -33,6 +33,7 @@ class HealthGuideScreen extends StatefulWidget {
 class _HealthGuideScreenState extends State<HealthGuideScreen> {
   late final BodyCareController _controller;
   bool _showFocusHelp = false;
+  bool _allowActivityCompletion = true;
   @override
   void initState() {
     super.initState();
@@ -117,8 +118,12 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
                           MovementGuideCard(
                             activity: activity.$2,
                             featured: activity.$1 == 0,
+                            showCompletion: _allowActivityCompletion,
                             completed: _controller.isCompleted(activity.$2.id),
-                            onOpen: () => _showGuide(activity.$2),
+                            onOpen: () => _showGuide(
+                              activity.$2,
+                              allowCompletion: _allowActivityCompletion,
+                            ),
                             onComplete: () =>
                                 _controller.toggleCompleted(activity.$2.id),
                           ),
@@ -128,7 +133,7 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
                         _BodyAreaSelector(
                           areas: _controller.availableAreas,
                           selectedArea: _controller.selectedArea,
-                          onSelected: _controller.selectArea,
+                          onSelected: _selectOtherArea,
                         ),
                       ],
                     ),
@@ -248,19 +253,28 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
 
   /// 집중 부위 카드에서도 부위 선택과 대표 운동 재생을 한 번에 수행한다.
   void _openAreaGuide(String area) {
+    _allowActivityCompletion = true;
     _controller.selectArea(area);
     final activities = _controller.activities.where(
       (activity) => activity.area == area,
     );
     if (activities.isNotEmpty) {
-      unawaited(_showGuide(activities.first));
+      unawaited(_showGuide(activities.first, allowCompletion: true));
     }
   }
 
-  Future<void> _showGuide(BodyCareActivity activity) {
+  void _selectOtherArea(String area) {
+    _allowActivityCompletion = false;
+    _controller.selectArea(area);
+  }
+
+  Future<void> _showGuide(
+    BodyCareActivity activity, {
+    required bool allowCompletion,
+  }) {
     final video = activity.video;
     if (video != null && video.canEmbed) {
-      return _showVideo(activity, video);
+      return _showVideo(activity, video, allowCompletion: allowCompletion);
     }
     return showModalBottomSheet<void>(
       context: context,
@@ -278,14 +292,16 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
               ),
               const SizedBox(height: AppSpacing.md),
               Text(activity.guide),
-              const SizedBox(height: AppSpacing.lg),
-              FilledButton(
-                onPressed: () {
-                  _controller.toggleCompleted(activity.id);
-                  Navigator.pop(context);
-                },
-                child: const Text('활동 완료'),
-              ),
+              if (allowCompletion) ...[
+                const SizedBox(height: AppSpacing.lg),
+                FilledButton(
+                  onPressed: () {
+                    _controller.toggleCompleted(activity.id);
+                    Navigator.pop(context);
+                  },
+                  child: const Text('활동 완료'),
+                ),
+              ],
             ],
           ),
         ),
@@ -295,8 +311,9 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
 
   Future<void> _showVideo(
     BodyCareActivity activity,
-    HealthExerciseVideo video,
-  ) => showDialog<void>(
+    HealthExerciseVideo video, {
+    required bool allowCompletion,
+  }) => showDialog<void>(
     context: context,
     builder: (dialogContext) => Dialog(
       child: ConstrainedBox(
@@ -347,16 +364,27 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
                 aspectRatio: 16 / 9,
                 child: YouTubeEmbed(youtubeId: video.youtubeId),
               ),
-              const SizedBox(height: AppSpacing.md),
-              FilledButton.icon(
-                key: ValueKey('health-video-complete-${activity.id}'),
-                onPressed: () {
-                  _controller.toggleCompleted(activity.id);
-                  Navigator.pop(dialogContext);
-                },
-                icon: const Icon(Icons.check),
-                label: const Text('활동 완료'),
-              ),
+              if (allowCompletion) ...[
+                const SizedBox(height: AppSpacing.md),
+                FilledButton(
+                  key: ValueKey('health-video-complete-${activity.id}'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary700,
+                    foregroundColor: AppColors.textInverse,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.button),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: AppSpacing.md,
+                    ),
+                  ),
+                  onPressed: () {
+                    _controller.toggleCompleted(activity.id);
+                    Navigator.pop(dialogContext);
+                  },
+                  child: const Text('활동 완료'),
+                ),
+              ],
             ],
           ),
         ),
