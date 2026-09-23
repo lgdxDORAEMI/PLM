@@ -36,7 +36,7 @@ void main() {
     expect(find.text('초대장을 보냈어요'), findsNothing);
   });
 
-  testWidgets('이미 연동된 계정은 초대 링크를 만들지 않고 버튼 후 연결 결과를 보여준다', (tester) async {
+  testWidgets('메뉴에서 이미 연동된 가족을 확인하면 결과 화면 없이 메뉴로 돌아간다', (tester) async {
     final invitation = _CountingInvitationService();
     await tester.pumpWidget(
       MaterialApp(
@@ -45,6 +45,9 @@ void main() {
           service: invitation,
           partnerLinkService: _LinkedPartnerService(),
         ),
+        routes: {
+          RouteNames.wifeMenu: (_) => const Scaffold(body: Text('메뉴 도착')),
+        },
       ),
     );
     await tester.pump();
@@ -62,7 +65,8 @@ void main() {
     await tester.tap(send);
     await tester.pumpAndSettle();
 
-    expect(find.text('최준서님과 연결됐어요'), findsOneWidget);
+    expect(find.text('최준서님과 연결됐어요'), findsNothing);
+    expect(find.text('메뉴 도착'), findsOneWidget);
     expect(invitation.createCalls, 0);
   });
 

@@ -301,11 +301,7 @@ class _RecommendationActions extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (decision == MealDecision.accepted) ...[
-          const InfoBanner(
-            title: '오늘 메뉴로 선택했어요',
-            message: '선택 결과는 다음 추천을 위한 Mock 이력에 반영돼요.',
-            tone: InfoBannerTone.success,
-          ),
+          const InfoBanner(title: '오늘 메뉴로 선택했어요', tone: InfoBannerTone.success),
           const SizedBox(height: AppSpacing.md),
         ],
         Row(

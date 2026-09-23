@@ -50,7 +50,6 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
   PartnerLink? _partnerLink;
   bool _checkingLink = false;
   bool _linkError = false;
-  bool _showConnection = false;
   bool _generating = false;
 
   bool get _linked => _partnerLink?.linked ?? false;
@@ -118,21 +117,6 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
     _ when _linkError => AppErrorState(
       title: '배우자 연결 상태를 불러오지 못했어요',
       onRetry: _loadPartnerLink,
-    ),
-    _ when _showConnection && _linked => Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('${_partnerLink?.partnerDisplayName ?? '배우자'}님과 연결됐어요'),
-          const SizedBox(height: AppSpacing.lg),
-          AppButton(
-            label: widget.entryContext == InviteEntryContext.onboarding
-                ? '홈으로 이동'
-                : '메뉴로 돌아가기',
-            onPressed: _generating ? null : () => unawaited(_finish()),
-          ),
-        ],
-      ),
     ),
     InvitationActionState.error
         when widget.service != null || AppConfig.hasSupabaseConfig =>
@@ -233,7 +217,7 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
         await _finish(showLinkedConfirmation: true);
         return;
       }
-      setState(() => _showConnection = true);
+      await _finish();
       return;
     }
     if (widget.service == null && !AppConfig.hasSupabaseConfig) {
