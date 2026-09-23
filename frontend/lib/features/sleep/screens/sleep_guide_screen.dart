@@ -110,54 +110,41 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
     };
   }
 
+  /// 공기청정기 옵션은 팀이 확정한 4개 라벨만 고른다 — "적용하기"는 값 선택만 저장하고,
+  /// 실기기 제어는 "수면 환경 전체 실행"에서 그 값으로 한 번에 보낸다.
   Future<void> _showEnvironmentSheet(SleepEnvironmentSetting setting) {
-    if (setting.type == SleepEnvironmentType.purifier &&
-        _controller.airPurifierConnected) {
-      return showAppBottomSheet<void>(
-        context: context,
-        builder: (context) => SleepEnvironmentSheet(
-          setting: SleepEnvironmentSetting(
+    final effectiveSetting =
+        setting.type == SleepEnvironmentType.purifier &&
+            _controller.airPurifierConnected
+        ? SleepEnvironmentSetting(
             type: setting.type,
             label: setting.label,
             value: setting.value,
             options: purifierCommands.keys.toList(growable: false),
-          ),
-          onApply: _runAirPurifier,
-        ),
-      );
-    }
+          )
+        : setting;
     return showAppBottomSheet<void>(
       context: context,
       builder: (context) => SleepEnvironmentSheet(
-        setting: setting,
+        setting: effectiveSetting,
         onApply: (value) => _controller.updateValue(setting.type, value),
       ),
     );
   }
 
-  /// 공기청정기만 팀이 확정한 4개 라벨로 실기기를 켜고 끈다.
-  Future<void> _runAirPurifier(String label) async {
-    final ok = await _controller.runAirPurifier(label);
-    if (!mounted) return;
-    await showAppDialog<void>(
-      context: context,
-      builder: (context) => AppDialog(
-        icon: ok ? Icons.check_circle_outline : Icons.error_outline,
-        iconColor: ok ? AppColors.success : AppColors.danger,
-        title: ok ? '공기청정기를 $label(으)로 설정했어요' : '공기청정기를 제어하지 못했어요',
-        content: ok
-            ? const SizedBox.shrink()
-            : const Text('연결 상태를 확인하고 다시 시도해 주세요.'),
-        actions: [
-          AppDialogAction(label: '확인', onPressed: () => Navigator.pop(context)),
-        ],
-      ),
-    );
-  }
-
-  /// 수면 환경 전체 실행을 한 번의 이력으로 남기고 팝업으로 안내한다.
+  /// 수면 환경 전체 실행 — 공기청정기는 현재 선택된 라벨로 실기기까지 켠다.
   Future<void> _runAll() async {
     if (_controller.state != SleepGuideViewState.ready) return;
+    bool? purifierOk;
+    if (_controller.airPurifierConnected) {
+      final purifier = _controller.guide!.environments
+          .where((item) => item.type == SleepEnvironmentType.purifier)
+          .firstOrNull;
+      if (purifier != null) {
+        purifierOk = await _controller.runAirPurifier(purifier.value);
+      }
+    }
+    if (!mounted) return;
     ApplianceExecutionStore.instance.record(
       source: ApplianceExecutionSource.sleep,
       label: '수면 환경 전체 실행',
@@ -165,10 +152,18 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
     await showAppDialog<void>(
       context: context,
       builder: (context) => AppDialog(
-        icon: Icons.nightlight_round,
-        iconColor: AppColors.categorySleep,
-        title: '수면 루틴을 실행했습니다',
-        message: '수면 환경 전체 실행 1회를 오늘의 가전 실행 내역에 반영했어요.',
+        icon: purifierOk == false
+            ? Icons.error_outline
+            : Icons.nightlight_round,
+        iconColor: purifierOk == false
+            ? AppColors.danger
+            : AppColors.categorySleep,
+        title: purifierOk == false
+            ? '공기청정기를 제어하지 못했어요'
+            : '수면 루틴을 실행했습니다',
+        message: purifierOk == false
+            ? '연결 상태를 확인하고 다시 시도해 주세요. 나머지 환경은 이력에 반영했어요.'
+            : '수면 환경 전체 실행 1회를 오늘의 가전 실행 내역에 반영했어요.',
         actions: [
           AppDialogAction(label: '확인', onPressed: () => Navigator.pop(context)),
         ],

@@ -51,7 +51,7 @@ void main() {
     expect(ApplianceExecutionStore.instance.forDate(DateTime.now()).length, 1);
   });
 
-  testWidgets('공기청정기 카드는 팀이 확정한 4개 라벨만 보여주고 실제 제어를 호출한다', (tester) async {
+  testWidgets('공기청정기는 팀이 확정한 4개 라벨만 보여주고, 실제 제어는 전체 실행에서 한다', (tester) async {
     await tester.pumpWidget(const MaterialApp(home: SleepGuideScreen()));
     await tester.pumpAndSettle();
 
@@ -72,6 +72,23 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('sleep-apply-purifier')));
     await tester.pumpAndSettle();
 
-    expect(find.text('공기청정기를 강풍(으)로 설정했어요'), findsOneWidget);
+    // 적용하기는 선택만 저장한다 — 이 시점엔 아직 실기기를 제어하지 않는다.
+    expect(find.text('강풍'), findsOneWidget);
+    expect(find.text('공기청정기를 강풍(으)로 설정했어요'), findsNothing);
+
+    // 목록이 가상화돼 있어 purifier까지 내려온 뒤엔 run-all 버튼이 트리에서 아예 빠진다 —
+    // ensureVisible은 이미 트리에 있어야 동작하므로, 위로 드래그해서 다시 빌드시킨다.
+    final runAllButton = find.byKey(const ValueKey('sleep-run-all-button'));
+    await tester.dragUntilVisible(
+      runAllButton,
+      find.byKey(const ValueKey('sleep-guide-content')),
+      const Offset(0, 300),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(runAllButton);
+    await tester.pumpAndSettle();
+
+    // 전체 실행에서 방금 고른 값(강풍)으로 실기기를 켠다.
+    expect(find.text('수면 루틴을 실행했습니다'), findsOneWidget);
   });
 }
