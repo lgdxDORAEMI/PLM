@@ -12,6 +12,7 @@ class BodyCareActivity {
     required this.title,
     required this.description,
     required this.guide,
+    this.video,
     this.completed = false,
   });
   final String id;
@@ -19,7 +20,29 @@ class BodyCareActivity {
   final String title;
   final String description;
   final String guide;
+  final HealthExerciseVideo? video;
   final bool completed;
+}
+
+class HealthExerciseVideo {
+  const HealthExerciseVideo({
+    required this.title,
+    required this.provider,
+    required this.youtubeId,
+  });
+
+  factory HealthExerciseVideo.fromJson(Map<String, dynamic> json) =>
+      HealthExerciseVideo(
+        title: json['title']?.toString() ?? '',
+        provider: json['provider']?.toString() ?? '',
+        youtubeId: json['youtube_id']?.toString() ?? '',
+      );
+
+  final String title;
+  final String provider;
+  final String youtubeId;
+
+  bool get canEmbed => RegExp(r'^[A-Za-z0-9_-]{11}$').hasMatch(youtubeId);
 }
 
 class BodyCareGuideData {
@@ -35,6 +58,7 @@ class BodyCareGuideData {
           : const <String, dynamic>{};
       final itemKey = item['item_id']?.toString() ?? '';
       final area = payload['bodyArea']?.toString() ?? '';
+      final video = payload['video'];
       if (itemKey.isEmpty || area.isEmpty) continue;
       activities.add(
         BodyCareActivity(
@@ -46,6 +70,9 @@ class BodyCareGuideData {
               payload['reason']?.toString() ??
               '',
           guide: payload['guide']?.toString() ?? '',
+          video: video is Map
+              ? HealthExerciseVideo.fromJson(video.cast<String, dynamic>())
+              : null,
           completed: item['status'] == 'completed',
         ),
       );
@@ -74,9 +101,9 @@ class BodyCareGuideData {
 
 abstract final class BodyCareMockData {
   static const loads = [
-    BodyLoad('허리', '부담 높음', .86),
-    BodyLoad('골반', '부담 보통', .58),
-    BodyLoad('다리', '여유 있음', .28),
+    BodyLoad('허리', '매우 심해요', 1),
+    BodyLoad('골반', '보통이에요', .6),
+    BodyLoad('다리', '조금 있어요', .4),
   ];
   static const activities = [
     BodyCareActivity(
@@ -85,6 +112,11 @@ abstract final class BodyCareMockData {
       title: '골반 흔들기 스트레칭 · 5분',
       description: '앉아서 할 수 있어요 · 28주차 안전 동작',
       guide: '등받이가 있는 의자에 편안히 앉고, 통증이 없는 범위에서 골반을 천천히 좌우로 움직여요.',
+      video: HealthExerciseVideo(
+        title: '임신 중 허리 통증 완화 스트레칭',
+        provider: 'Pregnancy and Postpartum TV',
+        youtubeId: '33LLeqyVbG0',
+      ),
     ),
     BodyCareActivity(
       id: 'back-breathing',
@@ -99,6 +131,11 @@ abstract final class BodyCareMockData {
       title: '골반 이완 호흡 · 4분',
       description: '누르지 않고 편안하게 이완해요',
       guide: '무릎 사이에 쿠션을 두고 옆으로 누워 골반 주변의 힘을 천천히 풀어요.',
+      video: HealthExerciseVideo(
+        title: '임신 중 골반 통증 완화 운동',
+        provider: 'Pregnancy and Postpartum TV',
+        youtubeId: 'wqiDZZbaas8',
+      ),
     ),
     BodyCareActivity(
       id: 'calf',
@@ -106,6 +143,11 @@ abstract final class BodyCareMockData {
       title: '종아리 마사지',
       description: '다리 경련 예방 · 3분',
       guide: '앉은 자세에서 종아리를 아래에서 위로 가볍게 쓸어 올려요.',
+      video: HealthExerciseVideo(
+        title: '임신 중 좌골신경·다리 통증 완화 요가',
+        provider: 'Pregnancy and Postpartum TV',
+        youtubeId: 'SFMoku8trIA',
+      ),
     ),
     BodyCareActivity(
       id: 'posture',
@@ -113,6 +155,18 @@ abstract final class BodyCareMockData {
       title: '앉은 자세 교정',
       description: '허리 뒤 쿠션 위치 안내',
       guide: '허리 곡선 뒤에 작은 쿠션을 두고 양발을 바닥에 편안히 놓아요.',
+    ),
+    BodyCareActivity(
+      id: 'wrist-release',
+      area: '손목',
+      title: '손목과 손 저림 이완',
+      description: '무리 없이 손목을 천천히 움직여요',
+      guide: '팔을 편안히 두고 손목을 통증 없는 범위에서 천천히 움직여요.',
+      video: HealthExerciseVideo(
+        title: '임신 중 손목·손 저림 완화 운동',
+        provider: 'Pregnancy and Postpartum TV',
+        youtubeId: '29OhkciWEMY',
+      ),
     ),
   ];
 

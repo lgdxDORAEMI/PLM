@@ -20,6 +20,7 @@ import '../services/health_guide_service.dart';
 import '../services/mock_health_guide_service.dart';
 import '../../../shared/widgets/integration_required_state.dart';
 import '../widgets/movement_guide_card.dart';
+import '../widgets/youtube_embed.dart';
 
 class HealthGuideScreen extends StatefulWidget {
   const HealthGuideScreen({super.key, this.service});
@@ -31,6 +32,7 @@ class HealthGuideScreen extends StatefulWidget {
 
 class _HealthGuideScreenState extends State<HealthGuideScreen> {
   late final BodyCareController _controller;
+  bool _showFocusHelp = false;
   @override
   void initState() {
     super.initState();
@@ -124,7 +126,7 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
                         ],
                         const SizedBox(height: AppSpacing.sm),
                         _BodyAreaSelector(
-                          loads: _controller.loads,
+                          areas: _controller.availableAreas,
                           selectedArea: _controller.selectedArea,
                           onSelected: _controller.selectArea,
                         ),
@@ -135,29 +137,96 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
                 secondary: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      '오늘의 집중 부위',
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Column(
+                    Row(
                       children: [
-                        for (final load in _controller.loads) ...[
-                          _BodyLoadCard(
-                            load: load,
-                            selected: load.area == _controller.selectedArea,
-                            onTap: () => _controller.selectArea(load.area),
+                        Text(
+                          '오늘의 집중 부위',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Semantics(
+                          button: true,
+                          label: '오늘의 집중 부위 도움말',
+                          child: AppInkWell(
+                            key: const ValueKey('health-focus-help-button'),
+                            onTap: () => setState(
+                              () => _showFocusHelp = !_showFocusHelp,
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            child: const Padding(
+                              padding: EdgeInsets.all(AppSpacing.xs),
+                              child: CircleAvatar(
+                                radius: 12,
+                                backgroundColor:
+                                    AppColors.categoryHealthBackground,
+                                foregroundColor: AppColors.categoryHealth,
+                                child: Icon(Icons.question_mark, size: 15),
+                              ),
+                            ),
                           ),
-                          const SizedBox(height: AppSpacing.md),
-                        ],
+                        ),
                       ],
                     ),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      child: _showFocusHelp
+                          ? Padding(
+                              key: const ValueKey('health-focus-help-bubble'),
+                              padding: const EdgeInsets.only(
+                                top: AppSpacing.sm,
+                              ),
+                              child: AppInkWell(
+                                onTap: () =>
+                                    setState(() => _showFocusHelp = false),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.input,
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.md,
+                                    vertical: AppSpacing.sm,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary50,
+                                    border: Border.all(
+                                      color: AppColors.primary200,
+                                    ),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.input,
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    '컨디션 정보를 반영하여 통증이 보통 이상인 항목을 보여줍니다.',
+                                  ),
+                                ),
+                              ),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    if (_controller.loads.isEmpty)
+                      const Text('오늘 입력한 통증 중 보통 이상인 부위가 없어요.')
+                    else
+                      Column(
+                        children: [
+                          for (final load in _controller.loads) ...[
+                            _BodyLoadCard(
+                              load: load,
+                              selected: load.area == _controller.selectedArea,
+                              onTap: () => _controller.selectArea(load.area),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                          ],
+                        ],
+                      ),
                   ],
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),
               Text(
-                '오늘은 ${_controller.loads.map((load) => load.area).join('·')} 부위를 살펴보세요. 불편하거나 통증이 심해지면 동작을 멈추고 의료진과 상담해 주세요.',
+                _controller.loads.isEmpty
+                    ? '불편하거나 통증이 생기면 동작을 멈추고 의료진과 상담해 주세요.'
+                    : '오늘은 ${_controller.loads.map((load) => load.area).join('·')} 부위를 살펴보세요. 불편하거나 통증이 심해지면 동작을 멈추고 의료진과 상담해 주세요.',
                 style: Theme.of(
                   context,
                 ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
@@ -177,36 +246,104 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
     }
   }
 
-  Future<void> _showGuide(BodyCareActivity activity) =>
-      showModalBottomSheet<void>(
-        context: context,
-        showDragHandle: true,
-        builder: (context) => SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xl),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  activity.title,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Text(activity.guide),
-                const SizedBox(height: AppSpacing.lg),
-                FilledButton(
-                  onPressed: () {
-                    _controller.toggleCompleted(activity.id);
-                    Navigator.pop(context);
-                  },
-                  child: const Text('활동 완료'),
-                ),
-              ],
-            ),
+  Future<void> _showGuide(BodyCareActivity activity) {
+    final video = activity.video;
+    if (video != null && video.canEmbed) {
+      return _showVideo(activity, video);
+    }
+    return showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                activity.title,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Text(activity.guide),
+              const SizedBox(height: AppSpacing.lg),
+              FilledButton(
+                onPressed: () {
+                  _controller.toggleCompleted(activity.id);
+                  Navigator.pop(context);
+                },
+                child: const Text('활동 완료'),
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    );
+  }
+
+  Future<void> _showVideo(
+    BodyCareActivity activity,
+    HealthExerciseVideo video,
+  ) => showDialog<void>(
+    context: context,
+    builder: (dialogContext) => Dialog(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 820),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          video.title,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          video.provider,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: '닫기',
+                    onPressed: () => Navigator.pop(dialogContext),
+                    icon: const Icon(Icons.close),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AspectRatio(
+                aspectRatio: 16 / 9,
+                child: YouTubeEmbed(youtubeId: video.youtubeId),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              FilledButton.icon(
+                key: ValueKey('health-video-complete-${activity.id}'),
+                onPressed: () {
+                  _controller.toggleCompleted(activity.id);
+                  Navigator.pop(dialogContext);
+                },
+                icon: const Icon(Icons.check),
+                label: const Text('활동 완료'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 class _BodyLoadCard extends StatelessWidget {
@@ -268,12 +405,12 @@ class _BodyLoadCard extends StatelessWidget {
 
 class _BodyAreaSelector extends StatelessWidget {
   const _BodyAreaSelector({
-    required this.loads,
+    required this.areas,
     required this.selectedArea,
     required this.onSelected,
   });
 
-  final List<BodyLoad> loads;
+  final List<String> areas;
   final String selectedArea;
   final ValueChanged<String> onSelected;
 
@@ -288,11 +425,11 @@ class _BodyAreaSelector extends StatelessWidget {
           spacing: AppSpacing.sm,
           runSpacing: AppSpacing.sm,
           children: [
-            for (final load in loads)
+            for (final area in areas)
               ChoiceChip(
-                label: Text(load.area),
-                selected: load.area == selectedArea,
-                onSelected: (_) => onSelected(load.area),
+                label: Text(area),
+                selected: area == selectedArea,
+                onSelected: (_) => onSelected(area),
               ),
           ],
         ),

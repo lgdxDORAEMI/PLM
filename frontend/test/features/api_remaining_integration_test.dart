@@ -46,12 +46,18 @@ void main() {
     final guide = BodyCareGuideData.fromJson({
       'items': [
         {
+          'item_id': 'health-item-1',
           'item_key': 'health:waist',
           'title': '허리 이완',
           'description': '가볍게 움직여요',
           'payload': {
             'bodyArea': '허리',
             'guide': '통증 없는 범위에서 움직여요.',
+            'video': {
+              'title': '임신 중 허리 통증 완화 스트레칭',
+              'provider': 'Pregnancy and Postpartum TV',
+              'youtube_id': '33LLeqyVbG0',
+            },
             'loads': [
               {'area': '허리', 'label': '부담 높음', 'value': 0.8},
             ],
@@ -60,9 +66,10 @@ void main() {
       ],
     });
 
-    expect(guide.activities.single.id, 'health:waist');
+    expect(guide.activities.single.id, 'health-item-1');
     expect(guide.activities.single.area, '허리');
     expect(guide.loads.single.value, 0.8);
+    expect(guide.activities.single.video?.youtubeId, '33LLeqyVbG0');
   });
 
   test('Movement 이벤트·일일 집계·동의 상태를 함께 파싱한다', () async {
