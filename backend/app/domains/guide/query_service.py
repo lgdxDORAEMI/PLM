@@ -76,13 +76,23 @@ class GuideQueryService:
             .order("sort_order")
             .execute()
         )
+        health_videos = (
+            self._health_videos()
+            if category == RoutineCategory.HEALTH and item_rows
+            else {}
+        )
         items = [
             GuideItem(
                 item_id=row["id"],
                 item_key=row["item_key"],
                 title=row["title"],
                 description=row.get("description"),
-                payload=_normalize_payload(category, row.get("payload") or {}),
+                payload=_normalize_payload(
+                    category,
+                    row.get("payload") or {},
+                    item_key=row["item_key"],
+                    health_videos=health_videos,
+                ),
                 status=row["status"],
                 completed_by=row.get("completed_by"),
                 completed_at=row.get("completed_at"),
@@ -97,6 +107,25 @@ class GuideQueryService:
         ]
         return GuideResponse(date=target_date, category=category, items=items)
 
+    def _health_videos(self) -> dict[str, dict[str, Any]]:
+        """활성 운동 영상 카탈로그를 routine item의 부위 코드로 찾을 수 있게 만든다."""
+        rows = self._run(
+            lambda: self.client.table("health_exercise_videos")
+            .select("pain_type", "routine_part", "title_ko", "provider", "youtube_id")
+            .eq("is_active", True)
+            .execute()
+        )
+        return {
+            row["routine_part"]: {
+                "pain_type": row["pain_type"],
+                "title": row["title_ko"],
+                "provider": row["provider"],
+                "youtube_id": row["youtube_id"],
+                "url": f"https://www.youtube.com/watch?v={row['youtube_id']}",
+            }
+            for row in rows
+        }
+
     def _run(self, request: Callable[[], Any]) -> list[dict]:
         try:
             return request().data
@@ -104,9 +133,19 @@ class GuideQueryService:
             raise DomainStorageError("루틴 가이드 저장소에 연결할 수 없습니다.") from error
 
 
-def _normalize_payload(category: RoutineCategory, payload: dict[str, Any]) -> dict[str, Any]:
+def _normalize_payload(
+    category: RoutineCategory,
+    payload: dict[str, Any],
+    *,
+    item_key: str = "",
+    health_videos: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     """09-22: 예전 루틴은 수면 환경 type이 한글("조명")로 저장돼 프론트가 5개를 모두 조명으로 처리했다.
     조회할 때 코드(light·temperature·humidity·sound·purifier)로 바꾼다. 새 루틴은 스키마가 코드만 허용한다."""
+    if category == RoutineCategory.HEALTH:
+        part = item_key.split(":")[1:2]
+        video = (health_videos or {}).get(part[0]) if part else None
+        return {**payload, "video": video} if video else payload
     if category != RoutineCategory.SLEEP or not isinstance(payload.get("environments"), list):
         return payload
     environments = [

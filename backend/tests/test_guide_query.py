@@ -60,15 +60,18 @@ class FakeTable:
 
 
 class FakeSupabaseClient:
-    def __init__(self, *, routines: list[dict], items: list[dict]) -> None:
+    def __init__(self, *, routines: list[dict], items: list[dict], videos: list[dict] | None = None) -> None:
         self.routines = routines
         self.items = items
+        self.videos = videos or []
 
     def table(self, name: str) -> FakeTable:
         if name == "daily_routines":
             return FakeTable(self.routines)
         if name == "routine_items":
             return FakeTable(self.items)
+        if name == "health_exercise_videos":
+            return FakeTable(self.videos)
         raise AssertionError(f"unexpected table: {name}")
 
 
@@ -135,6 +138,35 @@ class GuideQueryServiceTest(unittest.TestCase):
         service = GuideQueryService(client)
         guide = service.get_guide("wife-1", TARGET_DATE, RoutineCategory.SLEEP)
         self.assertEqual(guide.items, [])
+
+    def test_health_item_includes_video_from_catalog(self) -> None:
+        from app.domains.guide.schemas import RoutineCategory
+
+        item = {
+            **meal_item(0, "허리 이완"),
+            "category": "health",
+            "item_key": "health:waist",
+            "payload": {"bodyArea": "허리", "guide": "천천히 움직여요."},
+        }
+        client = FakeSupabaseClient(
+            routines=[{"user_id": "wife-1", "date": TARGET_DATE.isoformat(), "id": "r1"}],
+            items=[item],
+            videos=[{
+                "pain_type": "back",
+                "routine_part": "waist",
+                "title_ko": "임신 중 허리 통증 완화 스트레칭",
+                "provider": "Pregnancy and Postpartum TV",
+                "youtube_id": "33LLeqyVbG0",
+                "is_active": True,
+            }],
+        )
+
+        guide = GuideQueryService(client).get_guide(
+            "wife-1", TARGET_DATE, RoutineCategory.HEALTH
+        )
+
+        self.assertEqual(guide.items[0].payload["video"]["youtube_id"], "33LLeqyVbG0")
+        self.assertEqual(guide.items[0].payload["guide"], "천천히 움직여요.")
 
 
 class GuideApiTest(unittest.IsolatedAsyncioTestCase):

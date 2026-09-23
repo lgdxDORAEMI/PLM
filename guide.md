@@ -71,6 +71,8 @@ SDK가 저장소 밖에 있고 제한된 실행 환경에서 `bin/cache/lockfile
 
 아내 메뉴의 `초기화` 버튼을 사용하기 전에 `supabase/migrations/20260922000000_reset_daily_experience.sql`, `20260922010000_reset_today_posture_events.sql`, `20260923000000_reset_today_family_requests.sql`을 연결된 Supabase 프로젝트에 순서대로 적용해야 합니다. 앞선 마이그레이션이 이미 적용됐다면 새 파일만 적용합니다. 마이그레이션 없이 버튼을 누르면 API가 503을 반환하거나 기존 함수가 오늘 가사 요청 항목·남편 알림·모션 기록을 남길 수 있습니다. 초기화는 서버가 계산한 KST 오늘 날짜에만 적용되며, 삭제 후 되돌리려면 백업이 필요합니다. `POST /api/v1/care/today/reset`은 아내 로그인 세션으로만 호출할 수 있습니다. DB에서 `daily_conditions`만 직접 삭제하면 루틴·리포트·가사 요청·남편 알림·오늘 모션 감지 기록은 초기화되지 않으므로 이 API를 사용합니다. 모션 감지 기록은 `posture_events.started_at`의 KST 오늘 범위로 삭제하고, 캘리브레이션 기준선(`posture_calibration_profiles`)과 모션 동의 설정(`motion_consents`)은 유지합니다. 카메라 스트리밍 중에는 새 감지 기록이 다시 저장될 수 있으므로 스트리밍을 종료한 뒤 초기화합니다.
 
+건강 가이드 영상을 사용하려면 `supabase/migrations/20260923120000_health_exercise_videos.sql`을 연결된 프로젝트에 적용합니다. 이 마이그레이션은 부위별 YouTube 영상 카탈로그를 만들고 허리·손목·골반·다리 영상 4건을 등록합니다. 로컬에서 적용할 때는 Backend 전용 `backend/.env`의 `SUPABASE_DB_URL`에 Supabase Pooler PostgreSQL 연결 문자열을 설정한 뒤 해당 SQL을 실행합니다. DB 연결 문자열은 Frontend 환경이나 빌드 산출물에 포함하지 않습니다. 백엔드의 건강 가이드 조회는 이 테이블을 읽으므로 마이그레이션을 적용하지 않은 서버에서는 `/api/v1/health/today`가 저장소 오류를 반환할 수 있습니다.
+
 ## Backend 로컬 실행
 
 현재 계정·일일 기록·가족 공유 API는 Supabase 저장소에 연결됩니다. Bearer 토큰 검증과 데이터 접근에 백엔드 Supabase 설정이 필요합니다.

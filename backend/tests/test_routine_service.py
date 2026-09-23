@@ -350,14 +350,15 @@ class StretchingVideoTest(unittest.TestCase):
         with patch("app.services.routine.service.load_videos", return_value={}):
             self.assertEqual(attach_videos(routine), routine)
 
-    def test_default_file_has_six_parts_and_no_urls_yet(self) -> None:
-        """팀이 URL을 채우기 전 상태: 유효한 영상 0개 = video 필드 없음."""
+    def test_default_file_has_four_active_videos(self) -> None:
         import yaml as _yaml
         from app.services.routine.service import VIDEO_PATH
         parts = (_yaml.safe_load(VIDEO_PATH.read_text(encoding="utf-8")) or {})["videos"]
         self.assertEqual(sorted(parts), ["leg", "pelvis", "rest", "waist", "whole", "wrist"])
         load_videos.cache_clear()
-        self.assertEqual(load_videos(), {})
+        videos = load_videos()
+        self.assertEqual(len(videos), 4)
+        self.assertEqual(videos["waist"]["youtube_id"], "33LLeqyVbG0")
 
 
 class EditPathTest(unittest.TestCase):

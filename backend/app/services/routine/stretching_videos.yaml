@@ -1,12 +1,11 @@
 # S_stretching_video: 건강 가이드 대표 활동 영상(FUC-W-HEALTH-001 "대표 활동(영상·소요 시간)").
 # AI는 영상 URL을 만들지 않는다. 백엔드가 health 항목의 item_key(health:<부위>)로 여기서 찾아 payload.video에 붙인다.
 #
-# 팀이 부위별 영상을 고른 뒤 url·title·duration_min만 채우면 바로 적용된다(코드 수정 불필요).
 # url이 비어 있는 부위는 video 필드를 붙이지 않는다(앱은 영상 없이 표시).
 videos:
-  waist:  {title: "", url: "", duration_min: 0}   # 허리
-  pelvis: {title: "", url: "", duration_min: 0}   # 골반
-  leg:    {title: "", url: "", duration_min: 0}   # 다리
-  wrist:  {title: "", url: "", duration_min: 0}   # 손목
+  waist:  {pain_type: back, title: "임신 중 허리 통증 완화 스트레칭", provider: "Pregnancy and Postpartum TV", youtube_id: "33LLeqyVbG0", url: "https://www.youtube.com/watch?v=33LLeqyVbG0"}   # 허리
+  pelvis: {pain_type: pelvic, title: "임신 중 골반 통증 완화 운동", provider: "Pregnancy and Postpartum TV", youtube_id: "wqiDZZbaas8", url: "https://www.youtube.com/watch?v=wqiDZZbaas8"}   # 골반
+  leg:    {pain_type: leg, title: "임신 중 좌골신경·다리 통증 완화 요가", provider: "Pregnancy and Postpartum TV", youtube_id: "SFMoku8trIA", url: "https://www.youtube.com/watch?v=SFMoku8trIA"}   # 다리
+  wrist:  {pain_type: wrist, title: "임신 중 손목·손 저림 완화 운동", provider: "Pregnancy and Postpartum TV", youtube_id: "29OhkciWEMY", url: "https://www.youtube.com/watch?v=29OhkciWEMY"}   # 손목
   whole:  {title: "", url: "", duration_min: 0}   # 전신
   rest:   {title: "", url: "", duration_min: 0}   # 휴식

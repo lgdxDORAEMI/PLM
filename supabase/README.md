@@ -10,6 +10,7 @@ PLM 백엔드는 Supabase Auth로 사용자를 확인하고 PostgreSQL에 프로
 | 오늘 생활 기록 | `daily_conditions`, `daily_routines`, `routine_items`, `recommendation_feedback`, `daily_reports` |
 | 가족 분담·대화 | `household_requests`, `chat_messages` |
 | AI 지식 | `pregnancy_knowledge` |
+| 건강 운동 영상 | `health_exercise_videos` |
 | 모션 | `motion_consents`, `posture_calibration_profiles`, `posture_events` |
 
 `daily_routines`는 사용자·날짜별로 여러 revision을 가질 수 있습니다. 화면은 해당 날짜의 최신 루틴과 그 `routine_items`를 사용합니다. 모션 리포트는 `posture_events`를 조회 시 집계합니다. 카메라 프레임 자체는 DB에 보관하지 않습니다.
