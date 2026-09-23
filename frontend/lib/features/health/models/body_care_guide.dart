@@ -29,6 +29,8 @@ class HealthExerciseVideo {
     required this.title,
     required this.provider,
     required this.youtubeId,
+    this.duration,
+    this.target,
   });
 
   factory HealthExerciseVideo.fromJson(Map<String, dynamic> json) =>
@@ -36,11 +38,15 @@ class HealthExerciseVideo {
         title: json['title']?.toString() ?? '',
         provider: json['provider']?.toString() ?? '',
         youtubeId: json['youtube_id']?.toString() ?? '',
+        duration: json['duration']?.toString(),
+        target: json['target']?.toString(),
       );
 
   final String title;
   final String provider;
   final String youtubeId;
+  final String? duration;
+  final String? target;
 
   bool get canEmbed => RegExp(r'^[A-Za-z0-9_-]{11}$').hasMatch(youtubeId);
 }
@@ -166,6 +172,20 @@ abstract final class BodyCareMockData {
         title: '임신 중 손목·손 저림 완화 운동',
         provider: 'Pregnancy and Postpartum TV',
         youtubeId: '29OhkciWEMY',
+      ),
+    ),
+    BodyCareActivity(
+      id: 'whole-body',
+      area: '전신',
+      title: '전신 저강도 운동',
+      description: '임신 전 기간에 맞춘 25분 운동',
+      guide: '통증이 없는 범위에서 천천히 따라 하고 불편하면 즉시 멈춰요.',
+      video: HealthExerciseVideo(
+        title: '임산부 전신 저강도 운동',
+        provider: 'Pregnancy and Postpartum TV',
+        youtubeId: 'InQu8jMT130',
+        duration: '25분',
+        target: '임신 1·2·3분기',
       ),
     ),
   ];

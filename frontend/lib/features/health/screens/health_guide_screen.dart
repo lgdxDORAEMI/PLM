@@ -313,6 +313,14 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(color: AppColors.textSecondary),
                         ),
+                        if (video.duration != null || video.target != null) ...[
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            [?video.duration, ?video.target].join(' · '),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppColors.categoryHealth),
+                          ),
+                        ],
                       ],
                     ),
                   ),

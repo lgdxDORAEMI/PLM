@@ -57,6 +57,8 @@ void main() {
               'title': '임신 중 허리 통증 완화 스트레칭',
               'provider': 'Pregnancy and Postpartum TV',
               'youtube_id': '33LLeqyVbG0',
+              'duration': '25분',
+              'target': '임신 1·2·3분기',
             },
             'loads': [
               {'area': '허리', 'label': '부담 높음', 'value': 0.8},
@@ -70,6 +72,8 @@ void main() {
     expect(guide.activities.single.area, '허리');
     expect(guide.loads.single.value, 0.8);
     expect(guide.activities.single.video?.youtubeId, '33LLeqyVbG0');
+    expect(guide.activities.single.video?.duration, '25분');
+    expect(guide.activities.single.video?.target, '임신 1·2·3분기');
   });
 
   test('Movement 이벤트·일일 집계·동의 상태를 함께 파싱한다', () async {

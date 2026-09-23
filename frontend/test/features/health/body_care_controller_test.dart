@@ -84,6 +84,41 @@ void main() {
     expect(find.text('Pregnancy and Postpartum TV'), findsOneWidget);
     expect(find.byType(YouTubeEmbed), findsOneWidget);
   });
+
+  testWidgets('전신 운동 영상은 재생 시간과 대상 임신 분기를 표시한다', (tester) async {
+    tester.view.physicalSize = const Size(1200, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HealthGuideScreen(service: MockHealthGuideService()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final wholeChip = find.widgetWithText(ChoiceChip, '전신');
+    await tester.tap(wholeChip);
+    await tester.pumpAndSettle();
+    final wholeActivity = find.byKey(
+      const ValueKey('health-activity-whole-body'),
+    );
+    await tester.ensureVisible(wholeActivity);
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: wholeActivity,
+        matching: find.byIcon(Icons.play_arrow),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('임산부 전신 저강도 운동'), findsOneWidget);
+    expect(find.text('25분 · 임신 1·2·3분기'), findsOneWidget);
+    expect(find.byType(YouTubeEmbed), findsOneWidget);
+  });
 }
 
 class _ConditionRepository implements ConditionRepository {
