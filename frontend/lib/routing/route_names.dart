@@ -56,6 +56,8 @@ abstract final class RouteNames {
       '/husband/report/daily/${Uri.encodeComponent(date)}';
   static String husbandRequest(String id) =>
       '/husband/requests/${Uri.encodeComponent(id)}';
+  static String husbandRequestsForDate(String date) =>
+      Uri(path: husbandRequests, queryParameters: {'date': date}).toString();
   static String husbandRequestResult(String id) =>
       '${husbandRequest(id)}/result';
   static String mealDetail(String mealKey) =>

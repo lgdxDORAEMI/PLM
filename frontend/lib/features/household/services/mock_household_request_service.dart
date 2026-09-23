@@ -55,6 +55,7 @@ class MockHouseholdRequestService implements HouseholdRequestService {
             ? tasks.first.title
             : '${tasks.first.title} 외 ${tasks.length - 1}건',
         timeLabel: '방금',
+        reportDate: request.recordDate,
         requestId: requestId,
       ),
     );

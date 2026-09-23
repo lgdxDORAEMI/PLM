@@ -9,6 +9,7 @@ import '../../../design_system/components/app_card.dart';
 import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/components/top_app_bar.dart';
+import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_names.dart';
 import '../../../routing/route_refresh_observer.dart';
@@ -21,8 +22,9 @@ import '../controllers/partner_request_list_controller.dart';
 import '../models/partner_request.dart';
 
 class PartnerRequestListScreen extends StatefulWidget {
-  const PartnerRequestListScreen({super.key, this.service});
+  const PartnerRequestListScreen({super.key, this.targetDate, this.service});
 
+  final String? targetDate;
   final HouseholdRequestService? service;
 
   @override
@@ -39,6 +41,7 @@ class _PartnerRequestListScreenState extends State<PartnerRequestListScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _controller = PartnerRequestListController(
+      targetDate: widget.targetDate,
       service:
           widget.service ??
           (AppConfig.hasSupabaseConfig
@@ -102,8 +105,10 @@ class _PartnerRequestListScreenState extends State<PartnerRequestListScreen>
     PartnerRequestViewState.loading => const AppLoadingState(
       message: '가사 요청 내역을 불러오고 있어요',
     ),
-    PartnerRequestViewState.empty => const AppEmptyState(
-      title: '가사 요청 내역이 없어요',
+    PartnerRequestViewState.empty => AppEmptyState(
+      title: widget.targetDate == null
+          ? '가사 요청 내역이 없어요'
+          : '${widget.targetDate}에 받은 가사 요청이 없어요',
     ),
     PartnerRequestViewState.authError => AppErrorState(
       title: '가사 요청 내역을 볼 수 없어요',
@@ -118,18 +123,48 @@ class _PartnerRequestListScreenState extends State<PartnerRequestListScreen>
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
       children: [
         Text(
-          '전체 요청 ${_controller.requests.length}건',
+          '${widget.targetDate ?? '전체'} 요청 ${_controller.items.length}건',
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: AppSpacing.md),
-        for (final request in _controller.requests) ...[
-          _RequestSummaryCard(request: request),
+        for (final item in _controller.items) ...[
+          _RequestTaskCard(
+            item: item,
+            updating: _controller.isUpdating(item.task.id),
+            onConfirm: () => unawaited(
+              _controller.confirmTask(item.request.id, item.task.id),
+            ),
+            onComplete: () => _confirmCompletion(item),
+          ),
           const SizedBox(height: AppSpacing.md),
         ],
       ],
     ),
     _ => AppErrorState(title: '가사 요청 내역을 불러오지 못했어요', onRetry: _controller.load),
   };
+
+  Future<void> _confirmCompletion(PartnerRequestListItem item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('이 집안일을 다 하셨나요?'),
+        content: Text('${item.task.title}\n\n이 항목을 완료로 표시할까요?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('아직이에요'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('완료했어요'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) {
+      await _controller.completeTask(item.request.id, item.task.id);
+    }
+  }
 
   void _handleBack() {
     if (Navigator.canPop(context)) {
@@ -140,51 +175,92 @@ class _PartnerRequestListScreenState extends State<PartnerRequestListScreen>
   }
 }
 
-class _RequestSummaryCard extends StatelessWidget {
-  const _RequestSummaryCard({required this.request});
+class _RequestTaskCard extends StatelessWidget {
+  const _RequestTaskCard({
+    required this.item,
+    required this.updating,
+    required this.onConfirm,
+    required this.onComplete,
+  });
 
-  final PartnerRequestData request;
+  final PartnerRequestListItem item;
+  final bool updating;
+  final VoidCallback onConfirm;
+  final VoidCallback onComplete;
 
   @override
-  Widget build(BuildContext context) => AppCard(
-    key: ValueKey('partner-request-summary-${request.id}'),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                request.recordDate,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            _statusBadge(request.status),
-          ],
-        ),
-        const SizedBox(height: AppSpacing.md),
-        for (final task in request.tasks) ...[
+  Widget build(BuildContext context) {
+    final task = item.task;
+    final (backgroundColor, borderColor) = switch (task.status) {
+      PartnerRequestStatus.requested => (
+        AppColors.surface,
+        AppColors.primary600,
+      ),
+      PartnerRequestStatus.confirmed => (
+        AppColors.infoBackground,
+        AppColors.info,
+      ),
+      PartnerRequestStatus.completed => (
+        AppColors.successBackground,
+        AppColors.success,
+      ),
+    };
+    return AppCard(
+      key: ValueKey('partner-request-task-${task.id}'),
+      backgroundColor: backgroundColor,
+      borderColor: borderColor,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
           Row(
             children: [
-              Expanded(child: Text(task.title)),
-              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  task.title,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
               _statusBadge(task.status),
             ],
           ),
-          const SizedBox(height: AppSpacing.sm),
-        ],
-        AppButton(
-          key: ValueKey('partner-request-open-${request.id}'),
-          label: '요청 보기',
-          variant: AppButtonVariant.secondary,
-          onPressed: () => Navigator.pushNamed(
-            context,
-            RouteNames.partnerRequest(request.id),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            '${item.request.recordDate} · ${item.request.requester}',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
           ),
-        ),
-      ],
-    ),
-  );
+          if (task.description.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(task.description),
+          ],
+          if (task.status != PartnerRequestStatus.completed) ...[
+            const SizedBox(height: AppSpacing.lg),
+            AppButton(
+              key: ValueKey(
+                task.status == PartnerRequestStatus.requested
+                    ? 'husband-request-confirm-${task.id}'
+                    : 'husband-request-complete-${task.id}',
+              ),
+              label: updating
+                  ? '처리 중'
+                  : task.status == PartnerRequestStatus.requested
+                  ? '확인하기'
+                  : '완료했어요',
+              variant: task.status == PartnerRequestStatus.requested
+                  ? AppButtonVariant.secondary
+                  : AppButtonVariant.primary,
+              onPressed: updating
+                  ? null
+                  : task.status == PartnerRequestStatus.requested
+                  ? onConfirm
+                  : onComplete,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 
   Widget _statusBadge(PartnerRequestStatus status) => AppBadge(
     label: switch (status) {

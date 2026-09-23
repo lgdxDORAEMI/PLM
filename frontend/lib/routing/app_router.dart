@@ -403,7 +403,7 @@ abstract final class AppRouter {
       return const PartnerNotificationsScreen();
     }
     if (path == RouteNames.husbandRequests) {
-      return const PartnerRequestListScreen();
+      return PartnerRequestListScreen(targetDate: uri.queryParameters['date']);
     }
     if (parts.length == 4 && parts[0] == 'husband' && parts[1] == 'report') {
       if (parts[2] == 'morning') {

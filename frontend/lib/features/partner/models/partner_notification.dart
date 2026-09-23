@@ -47,9 +47,7 @@ class PartnerNotificationItem {
       title: json['title']?.toString() ?? '',
       message: json['body']?.toString() ?? '',
       timeLabel: createdAt == null ? '' : _timeLabel(createdAt.toLocal()),
-      reportDate: type == PartnerNotificationType.householdRequest
-          ? null
-          : targetDate,
+      reportDate: targetDate,
       requestId: type == PartnerNotificationType.householdRequest
           ? referenceId
           : null,

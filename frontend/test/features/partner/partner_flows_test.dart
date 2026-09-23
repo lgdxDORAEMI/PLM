@@ -53,8 +53,21 @@ void main() {
         matching: find.byType(AppCard),
       ),
     );
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('notification-report-2026-09-12')),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    final readReportCard = tester.widget<AppCard>(
+      find.descendant(
+        of: find.byKey(const ValueKey('notification-report-2026-09-12')),
+        matching: find.byType(AppCard),
+      ),
+    );
     expect(reportCard.backgroundColor, AppColors.infoBackground);
     expect(requestCard.backgroundColor, AppColors.categoryHouseholdBackground);
+    expect(reportCard.borderColor, AppColors.primary600);
+    expect(readReportCard.borderColor, AppColors.borderSubtle);
 
     await tester.tap(
       find.byKey(const ValueKey('notification-routine-2026-09-13')),
@@ -154,11 +167,7 @@ void main() {
       find.byKey(const ValueKey('notification-request-demo-request')),
     );
     await tester.pumpAndSettle();
-    expect(find.text('전체 요청 1건'), findsOneWidget);
-    await tester.tap(
-      find.byKey(const ValueKey('partner-request-open-demo-request')),
-    );
-    await tester.pumpAndSettle();
+    expect(find.text('2026-09-13 요청 3건'), findsOneWidget);
 
     expect(find.text('오늘 요청한 이유'), findsNothing);
     expect(find.text('참고 정보'), findsNothing);
@@ -198,9 +207,7 @@ void main() {
 
     await _tapTaskAction(tester, 'husband-request-complete-${taskIds.first}');
     await _acceptCompletionDialog(tester);
-    // 항목 하나만 완료했을 뿐 나머지 두 항목이 남아 있으니 요청 전체 완료 화면으로는
-    // 아직 넘어가지 않는다.
-    expect(find.text('가사 요청을 완료했어요'), findsNothing);
+    // 완료한 항목은 목록 아래로 이동하고 나머지 항목은 바로 처리할 수 있어야 한다.
     expect(
       requestStore.request('demo-request').tasks.map((task) => task.status),
       [
@@ -216,21 +223,15 @@ void main() {
       await _acceptCompletionDialog(tester);
     }
 
-    expect(find.text('가사 요청을 완료했어요'), findsOneWidget);
-    expect(find.text('반영 위치'), findsOneWidget);
-    expect(find.text('3건'), findsNWidgets(3));
+    expect(find.text('완료됨'), findsNWidgets(3));
     expect(find.byType(AlertDialog), findsNothing);
-
-    await tester.tap(find.text('캘린더로 돌아가기'));
-    await tester.pumpAndSettle();
-    expect(find.text('컨디션 캘린더'), findsOneWidget);
   });
 
-  testWidgets('가사 알림을 열면 요청 횟수와 관계없이 전체 요청과 상태를 표시한다', (tester) async {
+  testWidgets('가사 알림을 열면 알림 날짜의 요청만 상태순으로 표시한다', (tester) async {
     final store = PartnerRequestStore.instance;
     store.request('demo-request');
     store.save(
-      const PartnerRequestData(
+      PartnerRequestData(
         id: 'another-request',
         requester: '희선님',
         reason: '추가로 도움이 필요해요.',
@@ -242,6 +243,18 @@ void main() {
           ),
         ],
         supportingInfo: '',
+        recordDate: '2026-09-13',
+        requestedAt: DateTime(2026, 9, 13, 9),
+      ),
+    );
+    store.save(
+      const PartnerRequestData(
+        id: 'old-request',
+        requester: '희선님',
+        reason: '어제 요청이에요.',
+        tasks: [PartnerRequestTask(id: 'old-task', title: '어제 가사 요청')],
+        supportingInfo: '',
+        recordDate: '2026-09-12',
       ),
     );
 
@@ -251,16 +264,14 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('전체 요청 2건'), findsOneWidget);
-    expect(
-      find.byKey(const ValueKey('partner-request-summary-demo-request')),
-      findsOneWidget,
-    );
-    expect(
-      find.byKey(const ValueKey('partner-request-summary-another-request')),
-      findsOneWidget,
+    expect(find.text('2026-09-13 요청 4건'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('추가 가사 요청'),
+      200,
+      scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('추가 가사 요청'), findsOneWidget);
+    expect(find.text('어제 가사 요청'), findsNothing);
     expect(find.text('확인됨'), findsWidgets);
   });
 }
@@ -269,9 +280,11 @@ Future<void> _tapTaskAction(WidgetTester tester, String key) async {
   final action = find.byKey(ValueKey(key));
   await tester.scrollUntilVisible(
     action,
-    300,
+    200,
     scrollable: find.byType(Scrollable).first,
   );
+  await tester.ensureVisible(action);
+  await tester.pumpAndSettle();
   await tester.tap(action);
   await tester.pumpAndSettle();
 }

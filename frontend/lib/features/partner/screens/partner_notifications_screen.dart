@@ -158,6 +158,8 @@ class _PartnerNotificationsScreenState extends State<PartnerNotificationsScreen>
     final route = switch (item.type) {
       PartnerNotificationType.morningReport when item.reportDate != null =>
         RouteNames.partnerMorningReport(item.reportDate!),
+      PartnerNotificationType.householdRequest when item.reportDate != null =>
+        RouteNames.husbandRequestsForDate(item.reportDate!),
       PartnerNotificationType.householdRequest => RouteNames.partnerRequests,
       PartnerNotificationType.routineChanged when item.reportDate != null =>
         _routineChangedRoute(item.reportDate!),
@@ -201,7 +203,9 @@ class _NotificationCard extends StatelessWidget {
         onTap: onTap,
         child: AppCard(
           backgroundColor: visual.background,
-          borderColor: visual.foreground.withValues(alpha: .28),
+          borderColor: item.read
+              ? AppColors.borderSubtle
+              : AppColors.primary600,
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

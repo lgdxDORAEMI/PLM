@@ -51,6 +51,7 @@ class PartnerNotificationStore extends ChangeNotifier {
       title: '가사 요청이 도착했어요',
       message: '장보기 · 무거운 것 옮기기 외 2건',
       timeLabel: '오늘 오전 8:22',
+      reportDate: '2026-09-13',
       requestId: 'demo-request',
     ),
     PartnerNotificationItem(
