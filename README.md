@@ -35,4 +35,4 @@ PLM은 임산부의 오늘 컨디션과 예정 활동을 바탕으로 식사·�
 
 ## 배포 구성
 
-운영 환경은 `frontend/`의 Flutter Web을 GitHub Pages에, `backend/`의 FastAPI를 Render Web Service에 배포합니다. Pages 빌드는 Repository Variable `API_BASE_URL`로 Render 주소를 받아 사용하며, 서버 비밀값은 Backend의 Render Environment에만 저장합니다. 실제 생성 순서와 환경변수 목록은 [배포 안내](guide.md#render와-github-pages-배포)를 참고하세요.
+운영 환경은 `frontend/`의 Flutter Web을 GitHub Pages에, `backend/`의 FastAPI를 Railway Service에 배포합니다. Pages 빌드는 Repository Variable `API_BASE_URL`로 Railway 주소를 받아 사용하며, 서버 비밀값은 Railway의 Backend 서비스 Variables에만 저장합니다. 실제 생성 순서와 환경변수 목록은 [배포 안내](guide.md#railway와-github-pages-배포)를 참고하세요.

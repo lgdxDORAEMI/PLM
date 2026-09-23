@@ -2,7 +2,7 @@
 
 ## ThinQ Connect 설정과 확인
 
-Backend의 `backend/.env`에 `THINQ_PAT=<Personal Access Token>`, `THINQ_COUNTRY_CODE=KR`, `THINQ_CLIENT_ID=<고정 UUID>`를 설정한다. `THINQ_CLIENT_ID`는 한 번 생성해 유지하고 요청마다 새로 만들지 않는다. 실제 PAT는 코드·문서·Frontend `.env`·GitHub Actions에 저장하지 않는다. Render 배포 시 Environment Secret을 사용한다. ThinQ 설정 변경 후 Backend를 재시작한다.
+Backend의 `backend/.env`에 `THINQ_PAT=<Personal Access Token>`, `THINQ_COUNTRY_CODE=KR`, `THINQ_CLIENT_ID=<고정 UUID>`를 설정한다. `THINQ_CLIENT_ID`는 한 번 생성해 유지하고 요청마다 새로 만들지 않는다. 실제 PAT는 코드·문서·Frontend `.env`·GitHub Actions에 저장하지 않는다. Railway 배포 시 Backend 서비스 Variable을 사용한다. ThinQ 설정 변경 후 Backend를 재시작한다.
 
 실제 확인 순서: ① Backend 재시작 ② `PLM_WIFE_EMAIL`과 일치하는 아내 계정의 Supabase 로그인 토큰으로 `GET /api/v1/thinq/devices` 조회 ③ `status=connected`와 등록 가전 확인 ④ 오늘 컨디션 입력 및 AI 루틴 생성 ⑤ 가사 가이드 진입 ⑥ `3. 가전이 대신합니다`에서 보유 가전으로 가능한 일만 표시되는지 확인. `connected`에 빈 목록이면 등록 기기가 없거나 해당 PAT의 계정이 다르다. `not_configured`면 PAT·UUID 또는 로그인 계정 설정을, `auth_error`면 PAT 유효성을, `timeout`·`error`면 ThinQ 접속 상태를 확인한다. 오류 시 가전 추천은 비고 일반 가사는 계속 표시된다. 단일 PAT의 목록은 설정된 아내 계정에만 제공한다. 실제 기기 제어는 구현하지 않았다.
 
@@ -140,20 +140,20 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 python 02_translate_chunk_embed_upload.py --step all
 ```
 
-## Render와 GitHub Pages 배포
+## Railway와 GitHub Pages 배포
 
-### 1. Render Backend 생성
+### 1. Railway Backend 생성
 
-저장소 루트의 `render.yaml`을 사용하는 Render Blueprint를 생성합니다. 수동으로 Web Service를 만들 때는 아래 값을 사용합니다.
+Railway에서 GitHub 저장소를 연결하고 Backend 서비스를 생성한 뒤 아래 값을 사용합니다.
 
 ```text
 Root Directory: backend
 Build Command: pip install -r requirements.txt
 Start Command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-Health Check Path: /health
+Healthcheck Path: /health
 ```
 
-Render Environment에는 `backend/.env.example`에 있는 서버 설정을 입력합니다. 최소 실제 연동에 필요한 값은 다음과 같습니다.
+Railway Backend 서비스의 Variables에는 `backend/.env.example`을 기준으로 실제 사용하는 서버 설정을 입력합니다.
 
 ```text
 SUPABASE_URL
@@ -171,14 +171,14 @@ THINQ_CLIENT_ID
 FRONTEND_ORIGIN=https://lgdxdoraemi.github.io
 ```
 
-`SUPABASE_SERVICE_ROLE_KEY`, 계정 비밀번호, `LLM_API_KEY`, `THINQ_PAT`은 Render에만 저장합니다. Flutter 빌드 인자나 GitHub Repository Variable에 넣지 않습니다. 배포가 끝나면 Render가 발급한 `https://<render-service>.onrender.com` 주소에서 `/health`와 `/docs`를 확인합니다.
+`SUPABASE_DB_URL`은 마이그레이션을 Railway에서 직접 실행할 때만 추가합니다. `SUPABASE_SERVICE_ROLE_KEY`, 계정 비밀번호, `LLM_API_KEY`, `THINQ_PAT`은 Railway Backend 서비스에만 저장합니다. Flutter 빌드 인자나 GitHub Repository Variable에 넣지 않습니다. 배포 후 Railway의 Public Networking에서 도메인을 생성하고 `https://<railway-domain>` 주소의 `/health`와 `/docs`를 확인합니다.
 
 ### 2. GitHub Repository Variables 설정
 
 GitHub 저장소의 `Settings > Secrets and variables > Actions > Variables`에 다음 값을 추가합니다.
 
 ```text
-API_BASE_URL=https://<render-service>.onrender.com
+API_BASE_URL=https://<railway-domain>
 SUPABASE_URL=<Supabase Project URL>
 SUPABASE_ANON_KEY=<Supabase public anon key>
 ```
@@ -199,11 +199,9 @@ flutter build web --release \
 
 ### 4. 배포 확인
 
-1. `https://<render-service>.onrender.com/health`가 `{"status":"ok"}`를 반환하는지 확인합니다.
-2. `https://<render-service>.onrender.com/docs`에서 OpenAPI 문서가 열리는지 확인합니다.
-3. `https://lgdxdoraemi.github.io/PLM/`에서 앱을 열고 브라우저 개발자 도구의 API 요청 대상이 Render URL인지 확인합니다.
-4. Render 로그에 Pages Origin의 요청이 남고 CORS 오류가 없는지 확인합니다.
-
-Render 무료 인스턴스를 사용하는 경우 비활성 상태 뒤 첫 요청이 늦을 수 있습니다. 이때 Pages에서 일시적인 로딩 또는 API 오류가 보이면 Render `/health`를 먼저 열어 인스턴스를 시작한 뒤 다시 시도합니다.
+1. `https://<railway-domain>/health`가 `{"status":"ok"}`를 반환하는지 확인합니다.
+2. `https://<railway-domain>/docs`에서 OpenAPI 문서가 열리는지 확인합니다.
+3. `https://lgdxdoraemi.github.io/PLM/`에서 앱을 열고 브라우저 개발자 도구의 API 요청 대상이 Railway URL인지 확인합니다.
+4. Railway 배포 로그에 Pages Origin의 요청이 남고 CORS 오류가 없는지 확인합니다.
 
 개별 단계는 `--step translate`, `--step embed`, `--step upload`로 실행할 수 있습니다.
