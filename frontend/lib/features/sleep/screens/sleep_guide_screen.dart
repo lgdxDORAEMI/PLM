@@ -121,6 +121,7 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
             label: setting.label,
             value: setting.value,
             options: purifierCommands.keys.toList(growable: false),
+            recommendedValue: setting.recommendedValue,
           )
         : setting;
     return showAppBottomSheet<void>(

@@ -91,4 +91,31 @@ void main() {
     // 전체 실행에서 방금 고른 값(강풍)으로 실기기를 켠다.
     expect(find.text('수면 루틴을 실행했습니다'), findsOneWidget);
   });
+
+  testWidgets('선택지를 바꿔 실행해도 (권장)은 AI 최초 추천값에 그대로 남는다', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: SleepGuideScreen()));
+    await tester.pumpAndSettle();
+
+    final purifierCard = find.byKey(const ValueKey('sleep-environment-purifier'));
+    await tester.ensureVisible(purifierCard);
+    await tester.pumpAndSettle();
+    await tester.tap(purifierCard);
+    await tester.pumpAndSettle();
+
+    // MockSleepService의 최초 AI 추천값은 '조용 모드'다.
+    expect(find.text('조용 모드 (권장)'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('sleep-option-purifier-강풍')));
+    await tester.tap(find.byKey(const ValueKey('sleep-apply-purifier')));
+    await tester.pumpAndSettle();
+
+    // 다시 열어도 '강풍'이 (권장)으로 옮겨붙지 않고, 최초 추천값에 그대로 남아야 한다.
+    await tester.ensureVisible(purifierCard);
+    await tester.pumpAndSettle();
+    await tester.tap(purifierCard);
+    await tester.pumpAndSettle();
+
+    expect(find.text('조용 모드 (권장)'), findsOneWidget);
+    expect(find.text('강풍 (권장)'), findsNothing);
+  });
 }

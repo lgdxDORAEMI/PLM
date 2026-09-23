@@ -67,7 +67,9 @@ class _SleepEnvironmentSheetState extends State<SleepEnvironmentSheet> {
                 ),
                 value: option,
                 title: Text(
-                  option == widget.setting.value ? '$option (권장)' : option,
+                  option == widget.setting.recommendedValue
+                      ? '$option (권장)'
+                      : option,
                 ),
                 activeColor: AppColors.categorySleep,
               ),
