@@ -108,3 +108,21 @@ class ControlEndpointTest(unittest.IsolatedAsyncioTestCase):
         ):
             response = await self._call(client, "purifier-1", {"power": "on"})
         self.assertEqual(response.status_code, 502)
+
+    async def test_auth_error_and_timeout_get_distinct_messages(self) -> None:
+        """502 하나로 뭉치면 네트워크 탭만 보고 원인(PAT 권한 vs 타임아웃)을 구분할 수 없다."""
+        client = ThinQClient()
+        inventory = DeviceInventory((purifier(),), InventoryStatus.CONNECTED)
+        with (
+            patch.object(client, "get_inventory", return_value=inventory),
+            patch.object(client, "control", return_value=ControlStatus.AUTH_ERROR),
+        ):
+            auth_response = await self._call(client, "purifier-1", {"power": "on"})
+        with (
+            patch.object(client, "get_inventory", return_value=inventory),
+            patch.object(client, "control", return_value=ControlStatus.TIMEOUT),
+        ):
+            timeout_response = await self._call(client, "purifier-1", {"power": "on"})
+        self.assertEqual(auth_response.status_code, 502)
+        self.assertEqual(timeout_response.status_code, 502)
+        self.assertNotEqual(auth_response.json()["detail"], timeout_response.json()["detail"])

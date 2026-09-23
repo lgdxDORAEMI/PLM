@@ -12,6 +12,14 @@ from app.services.thinq.client import ControlStatus, InventoryStatus, ThinQClien
 router = APIRouter(prefix="/thinq", tags=["thinq"])
 
 _WIND_STRENGTH = {"low": "LOW", "mid": "MID", "high": "HIGH", "auto": "AUTO"}
+# ControlStatus별로 다른 문구를 줘야 프론트/네트워크 탭만 보고도 원인을 구분할 수 있다.
+# SDK 예외 원문은 절대 넣지 않는다(PAT 등 요청 정보가 섞여 나올 수 있어 client.py가 이미 거른다).
+_CONTROL_ERROR_DETAIL = {
+    ControlStatus.NOT_CONFIGURED: "ThinQ 연결 설정이 필요합니다.",
+    ControlStatus.AUTH_ERROR: "ThinQ 인증에 실패했습니다. PAT 권한(제어 스코프)을 확인해 주세요.",
+    ControlStatus.TIMEOUT: "ThinQ 응답이 지연되었습니다. 잠시 후 다시 시도해 주세요.",
+    ControlStatus.ERROR: "가전 제어에 실패했습니다. 기기가 온라인인지 확인해 주세요.",
+}
 
 
 class DevicesResponse(BaseModel):
@@ -63,5 +71,5 @@ async def control_device(
         payload["airFlow"] = {"windStrength": _WIND_STRENGTH[body.wind_strength]}
     result = await client.control(device_id, payload)
     if result != ControlStatus.OK:
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "가전 제어에 실패했습니다.")
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, _CONTROL_ERROR_DETAIL[result])
     return ControlResponse(status="ok")
