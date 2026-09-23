@@ -29,6 +29,7 @@
 |---|---|---|
 | 식사 메뉴 변경 | "식사 가이드의 AI 재조정에서 바꿀 수 있어요" + `식사 가이드 보기` | 재추천만 (추천 카드 → 사용자가 직접 선택, S6) |
 | 가사·건강·수면 변경 | "아직 지원하지 않아요" + 해당 가이드 보기 버튼 | 같음 |
+| 오늘 컨디션 점수 변경 | 명시적 1~5 값 확인 후 웬즈데이 루틴 백그라운드 재생성(S8) | 같음 |
 
 - 가사·건강·수면 변경(FUC-W-CHAT-002)은 Phase 2 이연이 아니라 **프로젝트 범위에서 제외**한다.
 - 버튼은 요청 영역에 따라 `가사 가이드 보기` / `건강 가이드 보기` / `수면 가이드 보기` 중 하나. 누르면 프론트 기존 경로(`householdGuide`, `healthGuide`, `sleepGuide`)로 이동한다.
@@ -123,11 +124,20 @@
   5. "이걸로 할게요"는 기존 Care API `PUT /care/routine-items/{id}`(`meal_replace`)를 호출한다. 앱 안 임시 저장소만 바꾸지 않는다. "다른 메뉴 보기"는 `POST /chat/messages` 재호출.
 - 테스트: 기존 `backend/tests/test_chat.py`에 모드 분기·폴백·금지 재료 차단 3건 추가.
 
+### S8 챗봇 컨디션 수정 + 백그라운드 루틴 재생성
+- 구현(09-23): 챗봇 Structured Outputs에 `condition_update`를 추가한다. 명시적 1~5 값만 수정 후보로 만들고, 모호한 표현은 값을 다시 묻는다. `mood`는 기존 결정대로 제외한다.
+- 사용자 확인 전에는 저장하지 않는다. assistant 메시지의 `routine_update`가 `awaiting_confirmation` 상태와 수정 후보를 보관한다.
+- `POST /chat/messages/{message_id}/routine-update` 확인 요청은 `queued`로 즉시 반환한다. FastAPI 백그라운드 작업이 Care 컨디션을 병합 저장한 뒤 기존 `RoutineService.generate_today()`를 호출한다.
+- 상태는 `GET /chat/messages/{message_id}/routine-update`로 조회한다. `queued`·`running` 중에도 일반 `POST /chat/messages`를 막지 않는다.
+- 프론트는 확인 카드와 진행 상태를 별도로 표시하고 2초 간격으로 상태를 확인한다. 채팅 입력의 `responding` 상태와 루틴 작업 상태를 분리한다.
+- 실패하면 컨디션 저장 사실을 숨기지 않고 재시도를 제공한다. 기존 웬즈데이의 부분 재생성·폴백·가족 알림 흐름을 재사용한다.
+- 저장: 신규 테이블 없이 `chat_messages.routine_update jsonb`를 사용하고 assistant 메시지 id를 작업 id로 쓴다.
+
 ## 3. 공통 규칙
 1. 의료 판단·진단을 하지 않는다. 위험 신호(출혈·심한 복통 등)는 "병원에 바로 문의" 고정 문구.
 2. LLM에는 NFR-014 허용 키만 넘긴다. 이름·이메일·키 금지 (`inputs.py` 머리 주석과 동일).
 3. 대화 원문은 남편에게 노출하지 않는다 (`chat_messages` RLS 주석).
-4. 챗봇은 어느 모드에서도 루틴을 바꾸지 않는다. 식사 모드는 추천만 하고, 식단 변경은 사용자가 기존 Care API로 직접 한다 (S6).
+4. 챗봇은 메뉴·가사·건강·수면 루틴을 직접 바꾸지 않는다. 단, S8에서 사용자가 확인한 오늘 컨디션 변경은 기존 웬즈데이 재생성 흐름을 호출한다. 식사 모드는 추천만 하고, 식단 변경은 사용자가 기존 Care API로 직접 한다 (S6).
 5. 모델·타임아웃은 `Settings`(`llm_model`) 값을 그대로 쓴다. 챗봇 전용 설정을 만들지 않는다.
 6. 가사·건강·수면 루틴 변경은 어느 모드에서도 하지 않는다 (§0.2, 범위 제외).
 
@@ -137,7 +147,9 @@
 | S1~S3 | `backend/app/domains/chat/**`, `api/v1/chat.py` | 해당 파일 `git checkout` → 고정 문구 응답으로 복귀 |
 | S4 | `GET /chat/context`·`GET /chat/messages`에 `routine_item_id` 쿼리 추가 (신규 엔드포인트 없음) | `git checkout`으로 S3 상태 복귀 |
 | S6 | 백엔드 변경 없음 (기존 Care API 사용) | 해당 없음 |
+| S8 | `domains/chat/**`, `api/v1/chat.py`, `api/v1/routine.py`, 프론트 챗 화면·서비스 | 해당 파일 복구 후 `chat_messages.routine_update` 컬럼 제거 |
 | DB | migration `20260922000000_chat_messages_recommendation.sql` (칸 1개 추가, S5) | `alter table public.chat_messages drop column if exists recommendation;` |
+| DB(S8) | migration `20260923140000_chat_routine_update.sql` | `alter table public.chat_messages drop column if exists routine_update;` |
 
 ## 5. 비용
 | 구분 | 값 | 비고 |

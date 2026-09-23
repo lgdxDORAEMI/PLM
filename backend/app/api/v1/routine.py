@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import date
 from functools import lru_cache
 from typing import Annotated, Any
 
@@ -70,6 +71,26 @@ def _with_regeneration_flag(routine: dict[str, Any]) -> dict[str, Any]:
     return {**routine, "is_regeneration": int(routine.get("revision") or 1) > 1}
 
 
+async def generate_today_and_notify(
+    user_id: str, today: date, service: RoutineService, family: FamilyServicePort
+) -> dict[str, Any]:
+    """일반 컨디션 화면과 챗봇 S8이 공유하는 웬즈데이 생성·가족 알림 흐름."""
+    saved = _with_regeneration_flag(await service.generate_today(user_id, today))
+    if saved.get("unchanged", False):
+        return saved
+    if saved["source"] == "ai":
+        try:
+            first = not repository.has_ai_routine_before(
+                service.supabase, user_id, today, int(saved["revision"])
+            )
+            family.notify_routine_ready(
+                user_id, today, str(saved["id"]), first_of_day=first
+            )
+        except Exception:
+            logger.exception("루틴 생성 알림 발송 실패")
+    return saved
+
+
 @router.get("/today")
 def read_today(user: User, service: Service) -> dict[str, Any]:
     """오늘 저장된 4종 가이드. 홈 화면 재진입·새로고침용. 없으면 404 → 앱은 컨디션 CTA를 보여준다."""
@@ -88,7 +109,7 @@ async def generate_today(user: User, service: Service, family: Family) -> dict[s
     """컨디션·예정 활동 저장 후 호출. AI 실패 시에도 폴백 루틴을 저장해 항상 4종을 돌려준다."""
     today = dates.today_kst()
     try:
-        saved = _with_regeneration_flag(await service.generate_today(user.id, today))
+        saved = await generate_today_and_notify(user.id, today, service, family)
     except ProfileMissingError as error:
         raise HTTPException(status.HTTP_409_CONFLICT, "출산예정일(프로필 1단계)을 먼저 저장해 주세요.") from error
     except ConditionMissingError as error:
@@ -103,10 +124,4 @@ async def generate_today(user: User, service: Service, family: Family) -> dict[s
     # S10 결정1: 컨디션이 그대로면 새 버전 없이 현재 루틴을 돌려주고 알림도 보내지 않는다.
     if saved.pop("unchanged", False):
         return _with_home(service, user.id, saved)
-    if saved["source"] == "ai":
-        try:
-            first = not repository.has_ai_routine_before(service.supabase, user.id, today, int(saved["revision"]))
-            family.notify_routine_ready(user.id, today, str(saved["id"]), first_of_day=first)
-        except Exception:
-            logger.exception("루틴 생성 알림 발송 실패")
     return _with_home(service, user.id, saved)

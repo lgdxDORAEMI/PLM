@@ -16,6 +16,8 @@ from typing import Any
 from app.services.routine.generator import OpenAIRoutineGenerator
 from app.services.routine.retriever import KnowledgeRetriever
 
+from .schemas import ConditionChange
+
 logger = logging.getLogger(__name__)
 
 TOTAL_TIMEOUT_SEC = 9.5  # NFR-001 10초. 임베딩 + LLM(8초) 합계 상한
@@ -23,13 +25,48 @@ HISTORY_LIMIT = 20  # 09-22 결정: 같은 날짜 대화 전체(모드 무관)�
 MAX_ACTIONS = 2
 FALLBACK_REPLY = "지금은 답변을 만들 수 없어요. 잠시 후 다시 물어봐 주세요."
 
+CONDITION_FIELDS = ["nausea", "waist_pain", "pelvis_pain", "leg_pain", "wrist_pain", "fatigue"]
+CONDITION_LABELS = {
+    "nausea": "입덧",
+    "waist_pain": "허리 통증",
+    "pelvis_pain": "골반 통증",
+    "leg_pain": "다리 통증",
+    "wrist_pain": "손목 통증",
+    "fatigue": "피로도",
+}
+CONDITION_UPDATE_SCHEMA = {
+    "anyOf": [
+        {
+            "type": "object",
+            "properties": {
+                "changes": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "field": {"type": "string", "enum": CONDITION_FIELDS},
+                            "value": {"type": "integer", "minimum": 1, "maximum": 5},
+                        },
+                        "required": ["field", "value"],
+                        "additionalProperties": False,
+                    },
+                },
+            },
+            "required": ["changes"],
+            "additionalProperties": False,
+        },
+        {"type": "null"},
+    ]
+}
+
 REPLY_SCHEMA = {
     "type": "object",
     "properties": {
         "content": {"type": "string"},
         "suggested_actions": {"type": "array", "items": {"type": "string"}},
+        "condition_update": CONDITION_UPDATE_SCHEMA,
     },
-    "required": ["content", "suggested_actions"],
+    "required": ["content", "suggested_actions", "condition_update"],
     "additionalProperties": False,
 }
 
@@ -63,8 +100,10 @@ SYSTEM_PROMPT = """너는 임산부 생활관리 앱의 챗봇이다. 한국어�
 2. 컨디션 값이 null이면 오늘 컨디션을 모르는 것이다. 주차·프로필만으로 답한다.
 3. 의료 진단·약 처방을 하지 않는다. 출혈·심한 복통·태동 감소·양수 등 위험 신호가 있으면 "지금 바로 병원에 문의해 주세요"를 먼저 말한다.
 4. [참고 자료]에 근거가 없는 수치·효능은 지어내지 않는다.
-5. 루틴을 바꿨다고 말하지 않는다. 챗봇은 루틴을 바꾸지 않는다.
-6. suggested_actions는 다음 행동 버튼 문구다. 필요할 때만 최대 2개, 각 12자 이내. 없으면 빈 배열."""
+5. 사용자가 오늘 컨디션 점수를 명확히 1~5로 수정해 달라고 하면 condition_update에 변경 필드와 값을 넣고, content로 변경 내용을 확인한다. 아직 바꿨다고 말하지 않는다.
+6. 수정 의도는 있지만 1~5 값이 불명확하면 임의로 점수화하지 말고 content로 값을 다시 묻고 condition_update는 null로 둔다.
+7. condition_update 대상은 nausea, waist_pain, pelvis_pain, leg_pain, wrist_pain, fatigue뿐이다. mood는 읽거나 수정하지 않는다.
+8. suggested_actions는 다음 행동 버튼 문구다. 필요할 때만 최대 2개, 각 12자 이내. 없으면 빈 배열."""
 
 
 @dataclass
@@ -73,6 +112,7 @@ class ChatReply:
     suggested_actions: list[str] = field(default_factory=list)
     source: str = "ai"  # ai | fallback
     recommendation: dict[str, Any] | None = None  # S5 식사 모드만
+    condition_update: dict[str, Any] | None = None  # S8 명시적 1~5 컨디션 수정 후보
 
 
 def build_prompt(
@@ -123,4 +163,22 @@ async def _generate(generator, retriever, context, question, history, extra_rule
     if not content:
         raise ValueError("빈 답변")
     actions = [a.strip() for a in data["suggested_actions"] if a.strip()][:MAX_ACTIONS]
-    return ChatReply(content, actions, "ai", data.get("recommendation"))
+    update = data.get("condition_update")
+    if update is not None:
+        deduped: dict[str, dict[str, Any]] = {}
+        for raw in update["changes"]:
+            change = ConditionChange.model_validate(raw)
+            deduped[change.field.value] = change.model_dump(mode="json")
+        if not deduped:
+            update = None
+        else:
+            changes = list(deduped.values())
+            summary = " · ".join(
+                f"{CONDITION_LABELS[change['field']]} {change['value']}단계"
+                for change in changes
+            )
+            update = {
+                "summary": f"{summary}로 수정하고 오늘 루틴을 다시 맞춥니다.",
+                "changes": changes,
+            }
+    return ChatReply(content, actions, "ai", data.get("recommendation"), update)

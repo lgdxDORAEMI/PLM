@@ -72,9 +72,15 @@
 | --- | --- | --- |
 | GET | `/chat/messages?date=YYYY-MM-DD` | 해당 날짜의 대화 이력; 날짜 생략 시 KST 오늘 |
 | POST | `/chat/messages` | `{"content":"...", "routine_item_id":null}`; LLM 답변과 대화 저장 |
+| GET | `/chat/messages/{message_id}/routine-update` | 챗봇 컨디션 수정·루틴 재생성 상태 조회 |
+| POST | `/chat/messages/{message_id}/routine-update` | `{"action":"confirm"}` 또는 `{"action":"cancel"}`; 확인은 202로 즉시 반환하고 재생성은 백그라운드 실행 |
 | POST | `/chat/meal-alternative` | `{"routine_item_id":"...", "request":"다른 메뉴 보기"}`; 대체 메뉴 카드 1개 |
 
-대화 메시지는 `role`, `content`, `created_at`, 선택적 `recommendation` 등을 반환합니다. `routine_item_id`를 주면 해당 식사 항목을 문맥으로 사용합니다. `meal-alternative`는 대화나 루틴을 저장하지 않습니다. 메뉴 선택은 `PUT /care/routine-items/{item_id}`로 별도 저장합니다. LLM 키가 없으면 채팅 API는 503을 반환합니다.
+대화 메시지는 `role`, `content`, `created_at`, 선택적 `recommendation`, `routine_update` 등을 반환합니다. `routine_update`는 `job_id`, `status`, `summary`, `changes`, 선택적 `error_message`, `routine_revision`을 포함합니다. 상태는 `awaiting_confirmation`, `queued`, `running`, `succeeded`, `failed`, `cancelled` 중 하나입니다.
+
+컨디션 수정은 `nausea`, `waist_pain`, `pelvis_pain`, `leg_pain`, `wrist_pain`, `fatigue`의 명시적 1~5 값만 받습니다. `mood`는 수정하지 않습니다. 확인 뒤 컨디션을 먼저 저장하고 기존 웬즈데이 부분 재생성을 실행합니다. `queued`·`running` 중에도 `/chat/messages`는 독립적으로 사용할 수 있습니다. 실패 응답은 컨디션 저장 여부를 숨기지 않고 `error_message`로 재시도를 안내합니다.
+
+`routine_item_id`를 주면 해당 식사 항목을 문맥으로 사용합니다. `meal-alternative`는 대화나 루틴을 저장하지 않습니다. 메뉴 선택은 `PUT /care/routine-items/{item_id}`로 별도 저장합니다. LLM 키가 없으면 채팅 API는 503을 반환합니다.
 
 ## 가족 공유
 

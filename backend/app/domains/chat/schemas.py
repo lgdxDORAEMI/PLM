@@ -10,6 +10,53 @@ class ChatRole(StrEnum):
     ASSISTANT = "assistant"
 
 
+class ConditionField(StrEnum):
+    NAUSEA = "nausea"
+    WAIST_PAIN = "waist_pain"
+    PELVIS_PAIN = "pelvis_pain"
+    LEG_PAIN = "leg_pain"
+    WRIST_PAIN = "wrist_pain"
+    FATIGUE = "fatigue"
+
+
+class ConditionChange(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    field: ConditionField
+    value: int = Field(ge=1, le=5)
+
+
+class RoutineUpdateStatus(StrEnum):
+    AWAITING_CONFIRMATION = "awaiting_confirmation"
+    QUEUED = "queued"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class RoutineUpdateState(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    job_id: str
+    status: RoutineUpdateStatus
+    summary: str
+    changes: list[ConditionChange]
+    error_message: str | None = None
+    routine_revision: int | None = None
+
+
+class RoutineUpdateDecision(StrEnum):
+    CONFIRM = "confirm"
+    CANCEL = "cancel"
+
+
+class RoutineUpdateDecisionInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    action: RoutineUpdateDecision
+
+
 class ChatMessageInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -48,4 +95,6 @@ class ChatMessageResponse(BaseModel):
     suggested_actions: list[str] | None = None
     # S5 식사 모드 추천 카드 {title, reason, nutritionTags, cautions}. 선택은 사용자가 Care API로 직접 한다(S6).
     recommendation: dict[str, Any] | None = None
+    # S8 컨디션 수정 확인 및 백그라운드 웬즈데이 재생성 상태. job_id는 이 assistant 메시지 id다.
+    routine_update: RoutineUpdateState | None = None
     created_at: datetime

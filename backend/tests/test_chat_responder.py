@@ -76,6 +76,31 @@ class GenerateReplyTest(unittest.TestCase):
         self.assertEqual(reply.source, "ai")
         self.assertIn("[참고 자료]\n없음", generator.prompts[0])
 
+    def test_explicit_condition_score_returns_structured_update(self) -> None:
+        result = json.dumps({
+            "content": "피로도를 5단계로 수정할까요?",
+            "suggested_actions": [],
+            "condition_update": {
+                "changes": [{"field": "fatigue", "value": 5}],
+            },
+        }, ensure_ascii=False)
+        reply = run(FakeGenerator(result))
+        self.assertEqual(reply.condition_update["changes"], [{"field": "fatigue", "value": 5}])
+
+    def test_duplicate_condition_fields_keep_last_value(self) -> None:
+        result = json.dumps({
+            "content": "피로도를 수정할까요?",
+            "suggested_actions": [],
+            "condition_update": {
+                "changes": [
+                    {"field": "fatigue", "value": 3},
+                    {"field": "fatigue", "value": 4},
+                ],
+            },
+        }, ensure_ascii=False)
+        reply = run(FakeGenerator(result))
+        self.assertEqual(reply.condition_update["changes"], [{"field": "fatigue", "value": 4}])
+
 
 class BuildPromptTest(unittest.TestCase):
     def test_sections_history_limit_and_extra_rules(self) -> None:

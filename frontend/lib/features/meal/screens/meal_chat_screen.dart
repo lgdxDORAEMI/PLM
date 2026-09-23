@@ -21,6 +21,7 @@ import '../services/api_meal_service.dart';
 import '../services/mock_meal_service.dart';
 import '../widgets/meal_chat_bubble.dart';
 import '../widgets/meal_recommendation_card.dart';
+import '../widgets/routine_update_status_card.dart';
 import '../../../shared/widgets/integration_required_state.dart';
 
 class MealChatScreen extends StatefulWidget {
@@ -145,6 +146,21 @@ class _MealChatScreenState extends State<MealChatScreen> {
                       period: widget.mealPeriod,
                       live: _liveChat,
                     ),
+                    if (_controller.routineUpdate case final update?
+                        when update.status !=
+                            RoutineUpdateStatus.cancelled) ...[
+                      const SizedBox(height: AppSpacing.lg),
+                      RoutineUpdateStatusCard(
+                        key: const ValueKey('routine-update-status'),
+                        update: update,
+                        busy: _controller.routineUpdateBusy,
+                        errorMessage: _controller.routineUpdateError,
+                        onConfirm: () =>
+                            unawaited(_controller.confirmRoutineUpdate()),
+                        onCancel: () =>
+                            unawaited(_controller.cancelRoutineUpdate()),
+                      ),
+                    ],
                     const SizedBox(height: AppSpacing.xxl),
                     if (_loadingChat)
                       const Center(child: CircularProgressIndicator())
