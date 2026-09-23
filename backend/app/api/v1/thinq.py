@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from app.core.security import CurrentUser, get_current_user
 from app.services.thinq.access import inventory_for_user
-from app.services.thinq.client import ControlStatus, InventoryStatus, ThinQClient, get_thinq_client
+from app.services.thinq.client import ControlResult, ControlStatus, InventoryStatus, ThinQClient, get_thinq_client
 
 router = APIRouter(prefix="/thinq", tags=["thinq"])
 
@@ -66,13 +66,16 @@ async def control_device(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "등록된 가전을 찾을 수 없습니다.")
     # 꺼진 기기에 "켜기+바람세기"를 한 요청으로 같이 보내면 거부하는 기기가 있어,
     # 전원부터 보내고 성공한 뒤에 바람세기를 별도 요청으로 보낸다.
-    result = ControlStatus.OK
+    result = ControlResult(ControlStatus.OK)
     if body.power is not None:
         power_payload = {"operation": {"airPurifierOperationMode": "POWER_ON" if body.power == "on" else "POWER_OFF"}}
         result = await client.control(device_id, power_payload)
-    if result == ControlStatus.OK and body.wind_strength is not None:
+    if result.status == ControlStatus.OK and body.wind_strength is not None:
         wind_payload = {"airFlow": {"windStrength": _WIND_STRENGTH[body.wind_strength]}}
         result = await client.control(device_id, wind_payload)
-    if result != ControlStatus.OK:
-        raise HTTPException(status.HTTP_502_BAD_GATEWAY, _CONTROL_ERROR_DETAIL[result])
+    if result.status != ControlStatus.OK:
+        detail = _CONTROL_ERROR_DETAIL[result.status]
+        if result.error_code:
+            detail = f"{detail} (LG 코드: {result.error_code})"
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, detail)
     return ControlResponse(status="ok")

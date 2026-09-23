@@ -32,6 +32,13 @@ class ControlStatus(StrEnum):
 
 
 @dataclass(frozen=True)
+class ControlResult:
+    status: ControlStatus
+    # LG 오류 코드(예: "0102")만 담는다. SDK 예외 메시지는 요청 정보를 echo할 수 있어 절대 담지 않는다.
+    error_code: str | None = None
+
+
+@dataclass(frozen=True)
 class DeviceInventory:
     devices: tuple[ThinQDevice, ...]
     status: InventoryStatus
@@ -100,35 +107,36 @@ class ThinQClient:
             # The household guide must remain available for unexpected SDK failures.
             return DeviceInventory((), InventoryStatus.ERROR)
 
-    async def control(self, device_id: str, payload: dict) -> ControlStatus:
-        """Never propagate SDK exceptions: they may contain sensitive request details."""
+    async def control(self, device_id: str, payload: dict) -> ControlResult:
+        """Never propagate SDK exceptions: the message may contain sensitive request details.
+        The LG error *code* alone is safe to keep — it is a short category id, never echoed request data."""
         settings = get_settings()
         pat = settings.thinq_pat.get_secret_value()
         if not pat or not settings.thinq_client_id:
-            return ControlStatus.NOT_CONFIGURED
+            return ControlResult(ControlStatus.NOT_CONFIGURED)
         try:
             UUID(settings.thinq_client_id)
         except ValueError:
-            return ControlStatus.NOT_CONFIGURED
+            return ControlResult(ControlStatus.NOT_CONFIGURED)
         try:
             async with aiohttp.ClientSession() as session:
                 try:
                     api = ThinQApi(session, pat, settings.thinq_country_code, settings.thinq_client_id)
                 except ValueError:
-                    return ControlStatus.ERROR
+                    return ControlResult(ControlStatus.ERROR)
                 await asyncio.wait_for(api.async_post_device_control(device_id, payload, timeout=8), timeout=10)
-            return ControlStatus.OK
+            return ControlResult(ControlStatus.OK)
         except ThinQAPIException as error:
-            # Never log or chain this exception: SDK messages may contain request data.
+            # Never log or chain this exception: the message may contain request data.
             if error.code in {"1103", "1218", "1302"}:
-                return ControlStatus.AUTH_ERROR
-            return ControlStatus.ERROR
+                return ControlResult(ControlStatus.AUTH_ERROR, error.code)
+            return ControlResult(ControlStatus.ERROR, error.code)
         except (asyncio.TimeoutError, TimeoutError):
-            return ControlStatus.TIMEOUT
+            return ControlResult(ControlStatus.TIMEOUT)
         except aiohttp.ClientError:
-            return ControlStatus.ERROR
+            return ControlResult(ControlStatus.ERROR)
         except Exception:
-            return ControlStatus.ERROR
+            return ControlResult(ControlStatus.ERROR)
 
 
 _client = ThinQClient()

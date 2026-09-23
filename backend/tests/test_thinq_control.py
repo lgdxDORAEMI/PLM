@@ -9,7 +9,14 @@ from thinqconnect.thinq_api import ThinQAPIException
 
 from app.core.security import CurrentUser, get_current_user
 from app.main import app
-from app.services.thinq.client import ControlStatus, DeviceInventory, InventoryStatus, ThinQClient, get_thinq_client
+from app.services.thinq.client import (
+    ControlResult,
+    ControlStatus,
+    DeviceInventory,
+    InventoryStatus,
+    ThinQClient,
+    get_thinq_client,
+)
 from app.services.thinq.models import ApplianceType, ThinQDevice
 
 
@@ -26,7 +33,7 @@ class ControlPayloadTest(unittest.IsolatedAsyncioTestCase):
             result = await client.control(
                 "purifier-1", {"operation": {"airPurifierOperationMode": "POWER_ON"}}
             )
-        self.assertEqual(result, ControlStatus.OK)
+        self.assertEqual(result.status, ControlStatus.OK)
         api.return_value.async_post_device_control.assert_awaited_once_with(
             "purifier-1", {"operation": {"airPurifierOperationMode": "POWER_ON"}}, timeout=8
         )
@@ -39,7 +46,8 @@ class ControlPayloadTest(unittest.IsolatedAsyncioTestCase):
                 side_effect=ThinQAPIException("1103", secret, {})
             )
             result = await client.control("purifier-1", {"operation": {"airPurifierOperationMode": "POWER_OFF"}})
-        self.assertEqual(result, ControlStatus.AUTH_ERROR)
+        self.assertEqual(result.status, ControlStatus.AUTH_ERROR)
+        self.assertEqual(result.error_code, "1103")
         self.assertNotIn(secret, repr(result))
 
 
@@ -62,7 +70,7 @@ class ControlEndpointTest(unittest.IsolatedAsyncioTestCase):
         inventory = DeviceInventory((purifier(),), InventoryStatus.CONNECTED)
         with (
             patch.object(client, "get_inventory", return_value=inventory),
-            patch.object(client, "control", return_value=ControlStatus.OK) as control,
+            patch.object(client, "control", return_value=ControlResult(ControlStatus.OK)) as control,
         ):
             response = await self._call(client, "purifier-1", {"power": "off"})
         self.assertEqual(response.status_code, 200)
@@ -75,7 +83,7 @@ class ControlEndpointTest(unittest.IsolatedAsyncioTestCase):
         inventory = DeviceInventory((purifier(),), InventoryStatus.CONNECTED)
         with (
             patch.object(client, "get_inventory", return_value=inventory),
-            patch.object(client, "control", return_value=ControlStatus.OK) as control,
+            patch.object(client, "control", return_value=ControlResult(ControlStatus.OK)) as control,
         ):
             response = await self._call(client, "purifier-1", {"power": "on", "wind_strength": "auto"})
         self.assertEqual(response.status_code, 200)
@@ -89,7 +97,7 @@ class ControlEndpointTest(unittest.IsolatedAsyncioTestCase):
         inventory = DeviceInventory((purifier(),), InventoryStatus.CONNECTED)
         with (
             patch.object(client, "get_inventory", return_value=inventory),
-            patch.object(client, "control", return_value=ControlStatus.ERROR) as control,
+            patch.object(client, "control", return_value=ControlResult(ControlStatus.ERROR)) as control,
         ):
             response = await self._call(client, "purifier-1", {"power": "on", "wind_strength": "auto"})
         self.assertEqual(response.status_code, 502)
@@ -116,7 +124,7 @@ class ControlEndpointTest(unittest.IsolatedAsyncioTestCase):
         inventory = DeviceInventory((purifier(),), InventoryStatus.CONNECTED)
         with (
             patch.object(client, "get_inventory", return_value=inventory),
-            patch.object(client, "control", return_value=ControlStatus.ERROR),
+            patch.object(client, "control", return_value=ControlResult(ControlStatus.ERROR)),
         ):
             response = await self._call(client, "purifier-1", {"power": "on"})
         self.assertEqual(response.status_code, 502)
@@ -127,14 +135,25 @@ class ControlEndpointTest(unittest.IsolatedAsyncioTestCase):
         inventory = DeviceInventory((purifier(),), InventoryStatus.CONNECTED)
         with (
             patch.object(client, "get_inventory", return_value=inventory),
-            patch.object(client, "control", return_value=ControlStatus.AUTH_ERROR),
+            patch.object(client, "control", return_value=ControlResult(ControlStatus.AUTH_ERROR)),
         ):
             auth_response = await self._call(client, "purifier-1", {"power": "on"})
         with (
             patch.object(client, "get_inventory", return_value=inventory),
-            patch.object(client, "control", return_value=ControlStatus.TIMEOUT),
+            patch.object(client, "control", return_value=ControlResult(ControlStatus.TIMEOUT)),
         ):
             timeout_response = await self._call(client, "purifier-1", {"power": "on"})
         self.assertEqual(auth_response.status_code, 502)
         self.assertEqual(timeout_response.status_code, 502)
         self.assertNotEqual(auth_response.json()["detail"], timeout_response.json()["detail"])
+
+    async def test_lg_error_code_is_appended_when_present(self) -> None:
+        """LG 오류 코드만 노출한다(민감한 메시지 원문은 여전히 감춘다) — 기기별 원인 구분용."""
+        client = ThinQClient()
+        inventory = DeviceInventory((purifier(),), InventoryStatus.CONNECTED)
+        with (
+            patch.object(client, "get_inventory", return_value=inventory),
+            patch.object(client, "control", return_value=ControlResult(ControlStatus.ERROR, "0102")),
+        ):
+            response = await self._call(client, "purifier-1", {"power": "on"})
+        self.assertIn("0102", response.json()["detail"])
