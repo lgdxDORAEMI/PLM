@@ -18,9 +18,10 @@ PLM Backend는 인증된 생활 기록, AI 루틴·챗봇, 네 가지 가이드,
 - LLM 챗봇, 최근 200건 대화 복원, 식사 대체 추천, 컨디션 수정 작업
 - Daily 리포트, 캘린더, 가족 알림과 가사 요청
 - 모션 WebSocket 분석, 이벤트 저장과 일일 집계
-- ThinQ 보유 기기 읽기와 가사 항목 매칭
+- ThinQ 보유 기기 읽기, 가사 항목 매칭과 공기청정기 전원·바람세기 제어
 
-AI 루틴 생성이 실패하면 서버 폴백 루틴을 저장할 수 있습니다. ThinQ는 읽기 전용이며 실제 기기 제어 명령은 보내지 않습니다.
+AI 루틴 생성이 실패하면 서버 폴백 루틴을 저장할 수 있습니다. ThinQ는 기기 조회는 모두 읽기 전용이며,
+실제 제어 명령은 데모 범위로 확정된 공기청정기 전원·바람세기에만 보냅니다(세탁기 등 다른 가전은 로컬 시연).
 
 ## 코드 구조
 
@@ -30,7 +31,7 @@ AI 루틴 생성이 실패하면 서버 폴백 루틴을 저장할 수 있습니
 | `app/domains/` | account, care, chat, family, guide 서비스와 저장소 |
 | `app/services/routine/` | 루틴 입력, RAG 검색, LLM 생성과 저장 |
 | `app/services/movement/` | 자세 추출, 캘리브레이션, 이벤트와 집계 |
-| `app/services/thinq/` | ThinQ 기기 조회와 가사 항목 매칭 |
+| `app/services/thinq/` | ThinQ 기기 조회, 가사 항목 매칭과 공기청정기 제어 |
 | `tests/` | API·서비스·저장소 회귀 테스트 |
 | `models/` | MediaPipe 런타임 모델 |
 
@@ -65,7 +66,7 @@ http://localhost:8000/docs
 | `PLM_WIFE_EMAIL`, `PLM_WIFE_PASSWORD` | 등록 아내 계정 | 비공개 |
 | `PLM_HUSBAND_EMAIL`, `PLM_HUSBAND_PASSWORD` | 등록 남편 계정 | 비공개 |
 | `LLM_API_KEY`, `LLM_API_BASE_URL` | OpenAI 호환 LLM | API Key 비공개 |
-| `THINQ_PAT`, `THINQ_COUNTRY_CODE`, `THINQ_CLIENT_ID` | ThinQ 조회 | PAT 비공개 |
+| `THINQ_PAT`, `THINQ_COUNTRY_CODE`, `THINQ_CLIENT_ID` | ThinQ 조회·제어 | PAT 비공개 |
 | `FRONTEND_ORIGIN` | 자동 계정 진입을 허용할 운영 Web Origin | 공개 가능 |
 
 운영값 예시:
