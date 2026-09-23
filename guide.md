@@ -73,6 +73,8 @@ SDK가 저장소 밖에 있고 제한된 실행 환경에서 `bin/cache/lockfile
 
 건강 가이드 영상을 사용하려면 `supabase/migrations/20260923120000_health_exercise_videos.sql`을 연결된 프로젝트에 적용합니다. 이 마이그레이션은 부위별 YouTube 영상 카탈로그를 만들고 허리·손목·골반·다리 영상 4건을 등록합니다. 로컬에서 적용할 때는 Backend 전용 `backend/.env`의 `SUPABASE_DB_URL`에 Supabase Pooler PostgreSQL 연결 문자열을 설정한 뒤 해당 SQL을 실행합니다. DB 연결 문자열은 Frontend 환경이나 빌드 산출물에 포함하지 않습니다. 백엔드의 건강 가이드 조회는 이 테이블을 읽으므로 마이그레이션을 적용하지 않은 서버에서는 `/api/v1/health/today`가 저장소 오류를 반환할 수 있습니다.
 
+전신 운동 영상은 기본 영상 카탈로그 적용 후 `supabase/migrations/20260923130000_health_full_body_video.sql`을 적용합니다. 이 마이그레이션은 허용 부위에 `whole`을 추가하고 전신 영상의 재생 시간과 대상 임신 분기를 저장합니다.
+
 ## Backend 로컬 실행
 
 현재 계정·일일 기록·가족 공유 API는 Supabase 저장소에 연결됩니다. Bearer 토큰 검증과 데이터 접근에 백엔드 Supabase 설정이 필요합니다.

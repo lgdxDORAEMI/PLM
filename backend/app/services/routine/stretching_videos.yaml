@@ -7,5 +7,5 @@ videos:
   pelvis: {pain_type: pelvic, title: "임신 중 골반 통증 완화 운동", provider: "Pregnancy and Postpartum TV", youtube_id: "wqiDZZbaas8", url: "https://www.youtube.com/watch?v=wqiDZZbaas8"}   # 골반
   leg:    {pain_type: leg, title: "임신 중 좌골신경·다리 통증 완화 요가", provider: "Pregnancy and Postpartum TV", youtube_id: "SFMoku8trIA", url: "https://www.youtube.com/watch?v=SFMoku8trIA"}   # 다리
   wrist:  {pain_type: wrist, title: "임신 중 손목·손 저림 완화 운동", provider: "Pregnancy and Postpartum TV", youtube_id: "29OhkciWEMY", url: "https://www.youtube.com/watch?v=29OhkciWEMY"}   # 손목
-  whole:  {title: "", url: "", duration_min: 0}   # 전신
+  whole:  {pain_type: full_body, title: "임산부 전신 저강도 운동", provider: "Pregnancy and Postpartum TV", youtube_id: "InQu8jMT130", url: "https://www.youtube.com/watch?v=InQu8jMT130", duration: "25분", target: "임신 1·2·3분기"}   # 전신
   rest:   {title: "", url: "", duration_min: 0}   # 휴식

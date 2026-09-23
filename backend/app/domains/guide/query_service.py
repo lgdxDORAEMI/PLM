@@ -111,7 +111,15 @@ class GuideQueryService:
         """활성 운동 영상 카탈로그를 routine item의 부위 코드로 찾을 수 있게 만든다."""
         rows = self._run(
             lambda: self.client.table("health_exercise_videos")
-            .select("pain_type", "routine_part", "title_ko", "provider", "youtube_id")
+            .select(
+                "pain_type",
+                "routine_part",
+                "title_ko",
+                "provider",
+                "youtube_id",
+                "duration",
+                "target",
+            )
             .eq("is_active", True)
             .execute()
         )
@@ -122,6 +130,8 @@ class GuideQueryService:
                 "provider": row["provider"],
                 "youtube_id": row["youtube_id"],
                 "url": f"https://www.youtube.com/watch?v={row['youtube_id']}",
+                **({"duration": row["duration"]} if row.get("duration") else {}),
+                **({"target": row["target"]} if row.get("target") else {}),
             }
             for row in rows
         }

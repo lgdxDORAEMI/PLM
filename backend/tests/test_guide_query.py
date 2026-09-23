@@ -157,6 +157,8 @@ class GuideQueryServiceTest(unittest.TestCase):
                 "title_ko": "임신 중 허리 통증 완화 스트레칭",
                 "provider": "Pregnancy and Postpartum TV",
                 "youtube_id": "33LLeqyVbG0",
+                "duration": None,
+                "target": None,
                 "is_active": True,
             }],
         )

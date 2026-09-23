@@ -61,7 +61,7 @@
 
 가이드 응답은 `date`, `category`, `items`를 반환합니다. 각 항목에는 `item_id`, `item_key`, `title`, `payload`, `status`, `completed_by`, `completed_at` 등이 있습니다. 저장된 `routine_items`를 읽으며 상세 조회만으로 새 추천을 생성하지 않습니다. 대상 날짜에 루틴이 없으면 404입니다.
 
-건강 가이드의 허리·골반·다리·손목 항목은 `payload.video`에 `pain_type`, `title`, `provider`, `youtube_id`, `url`을 포함합니다. 영상 정보는 `health_exercise_videos`의 활성 항목을 부위 코드와 매칭해 반환하며 Frontend는 `youtube_id`를 YouTube 개인정보 강화 임베드 주소에 사용합니다.
+건강 가이드의 허리·골반·다리·손목·전신 항목은 `payload.video`에 `pain_type`, `title`, `provider`, `youtube_id`, `url`을 포함합니다. 전신 운동처럼 제공된 경우 `duration`, `target`도 함께 반환합니다. 영상 정보는 `health_exercise_videos`의 활성 항목을 부위 코드와 매칭해 반환하며 Frontend는 `youtube_id`를 YouTube 개인정보 강화 임베드 주소에 사용합니다.
 
 가사 가이드는 현재 보유한 세탁기·건조기, 로봇청소기, 식기세척기와 해당 활동을 매칭합니다. 매칭 결과는 응답에만 반영하고 저장된 루틴을 변경하지 않습니다. `appliance_connection_status`는 `connected`, `not_configured`, `auth_error`, `timeout`, `unsupported_country`, `error` 중 하나입니다. `/thinq/devices`의 각 기기는 `device_id`, `name`, `device_type`만 노출합니다. 서버의 단일 PAT는 설정된 아내 계정에만 사용하고 다른 계정에는 빈 기기 목록을 반환합니다. ThinQ 제어 API는 제공하지 않습니다.
 

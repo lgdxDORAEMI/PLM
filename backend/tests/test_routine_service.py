@@ -357,8 +357,10 @@ class StretchingVideoTest(unittest.TestCase):
         self.assertEqual(sorted(parts), ["leg", "pelvis", "rest", "waist", "whole", "wrist"])
         load_videos.cache_clear()
         videos = load_videos()
-        self.assertEqual(len(videos), 4)
+        self.assertEqual(len(videos), 5)
         self.assertEqual(videos["waist"]["youtube_id"], "33LLeqyVbG0")
+        self.assertEqual(videos["whole"]["youtube_id"], "InQu8jMT130")
+        self.assertEqual(videos["whole"]["duration"], "25분")
 
 
 class EditPathTest(unittest.TestCase):
