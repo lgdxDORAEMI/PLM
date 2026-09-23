@@ -2,6 +2,7 @@ import unittest
 
 from httpx import ASGITransport, AsyncClient
 
+from app.core.config import build_allowed_origin_regex
 from app.main import app
 
 
@@ -12,7 +13,7 @@ class AppSmokeTest(unittest.IsolatedAsyncioTestCase):
         ) as client:
             for path, expected in (
                 ("/", {"message": "PLM API", "status": "ok"}),
-                ("/health", {"status": "healthy"}),
+                ("/health", {"status": "ok"}),
             ):
                 response = await client.get(path)
                 self.assertEqual(response.status_code, 200)
@@ -41,3 +42,8 @@ class AppSmokeTest(unittest.IsolatedAsyncioTestCase):
                     response.headers.get("access-control-allow-origin"),
                     origin if allowed else None,
                 )
+
+    def test_production_origin_regex(self) -> None:
+        pattern = build_allowed_origin_regex("https://lgdxdoraemi.github.io/")
+        self.assertRegex("https://lgdxdoraemi.github.io", rf"^{pattern}$")
+        self.assertNotRegex("https://example.com", rf"^{pattern}$")

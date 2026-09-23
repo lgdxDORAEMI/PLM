@@ -32,3 +32,7 @@ PLM은 임산부의 오늘 컨디션과 예정 활동을 바탕으로 식사·�
 - 사전 등록된 아내·남편 계정의 자동 로그인과 계정 전환은 로컬 실행 환경에 한정됩니다.
 - ThinQ 보유 기기 조회와 가사 매칭은 읽기 전용입니다. 가전 제어 기능은 포함되지 않습니다.
 - 모션 카메라 분석은 별도 진입점에서 실행합니다. 일반 앱의 실시간 화면은 기록 조회 중심입니다.
+
+## 배포 구성
+
+운영 환경은 `frontend/`의 Flutter Web을 GitHub Pages에, `backend/`의 FastAPI를 Render Web Service에 배포합니다. Pages 빌드는 Repository Variable `API_BASE_URL`로 Render 주소를 받아 사용하며, 서버 비밀값은 Backend의 Render Environment에만 저장합니다. 실제 생성 순서와 환경변수 목록은 [배포 안내](guide.md#render와-github-pages-배포)를 참고하세요.

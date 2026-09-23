@@ -5,6 +5,7 @@
 ## 공통 규칙
 
 - `GET /`은 서비스 정보, `GET /health`는 프로세스 상태를 반환합니다. `/health`는 DB·외부 서비스 연결을 검사하지 않습니다.
+- Render Health Check용 `GET /health`의 정상 응답은 `{"status":"ok"}`입니다.
 - 아래에서 별도 표기하지 않은 HTTP API는 `Authorization: Bearer <Supabase access token>`이 필요합니다. 남편이 아내 데이터를 읽는 경로는 `partner_links`의 연결 관계를 확인합니다.
 - 날짜 경로는 `YYYY-MM-DD`, 월 경로는 `YYYY-MM`입니다. `today`와 날짜 생략 시 기준은 서버의 KST 오늘입니다.
 - 일반적인 오류: 401 인증 실패, 403 역할·권한 제한, 404 대상 데이터 없음, 409 선행 입력 또는 상태 충돌, 422 요청 검증 실패, 503 저장소·외부 연결 불가. 실제 응답은 엔드포인트별로 달라집니다.

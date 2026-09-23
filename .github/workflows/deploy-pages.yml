@@ -1,0 +1,77 @@
+name: Flutter Web GitHub Pages 배포
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - frontend/**
+      - .github/workflows/deploy-pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Flutter 설치
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.44.4
+          channel: stable
+          cache: true
+
+      - name: 배포 설정 확인
+        shell: bash
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+        run: |
+          test -n "$API_BASE_URL" || { echo "Repository Variable API_BASE_URL이 필요합니다."; exit 1; }
+          test -n "$SUPABASE_URL" || { echo "Repository Variable SUPABASE_URL이 필요합니다."; exit 1; }
+          test -n "$SUPABASE_ANON_KEY" || { echo "Repository Variable SUPABASE_ANON_KEY가 필요합니다."; exit 1; }
+          printf 'SUPABASE_URL=%s\nSUPABASE_ANON_KEY=%s\nBACKEND_URL=%s\nDEMO_EMAIL=\nDEMO_PASSWORD=\n' \
+            "$SUPABASE_URL" "$SUPABASE_ANON_KEY" "$API_BASE_URL" > frontend/.env
+
+      - name: 패키지 설치
+        working-directory: frontend
+        run: flutter pub get
+
+      - name: Flutter Web 빌드
+        working-directory: frontend
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+        run: >-
+          flutter build web --release
+          --base-href "/${{ github.event.repository.name }}/"
+          --dart-define=API_BASE_URL="$API_BASE_URL"
+
+      - name: Pages 설정
+        uses: actions/configure-pages@v5
+
+      - name: Pages Artifact 업로드
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/build/web
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: GitHub Pages 배포
+        id: deployment
+        uses: actions/deploy-pages@v4

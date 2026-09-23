@@ -1,3 +1,4 @@
+import re
 from functools import lru_cache
 from pathlib import Path
 
@@ -7,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # 로컬 Flutter Web 개발 포트만 허용한다. main.py의 CORSMiddleware와
 # app/api/v1/movement.py의 WebSocket Origin 검증이 이 값을 같이 참조한다 —
 # 한 곳에만 정의해서 두 곳이 서로 다른 규칙으로 어긋나지 않게 한다.
-ALLOWED_ORIGIN_REGEX = r"http://(?:localhost|127\.0\.0\.1)(?::[0-9]+)?"
+LOCAL_ORIGIN_REGEX = r"http://(?:localhost|127\.0\.0\.1)(?::[0-9]+)?"
 
 
 class Settings(BaseSettings):
@@ -31,8 +32,20 @@ class Settings(BaseSettings):
     thinq_pat: SecretStr = SecretStr("")
     thinq_country_code: str = "KR"
     thinq_client_id: str = ""
+    frontend_origin: str = ""
 
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+def build_allowed_origin_regex(frontend_origin: str = "") -> str:
+    """로컬 개발 주소와 설정된 운영 Frontend Origin만 허용한다."""
+    origin = frontend_origin.strip().rstrip("/")
+    if not origin:
+        return LOCAL_ORIGIN_REGEX
+    return rf"(?:{LOCAL_ORIGIN_REGEX}|{re.escape(origin)})"
+
+
+ALLOWED_ORIGIN_REGEX = build_allowed_origin_regex(get_settings().frontend_origin)

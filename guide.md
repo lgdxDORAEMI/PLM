@@ -140,4 +140,70 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 python 02_translate_chunk_embed_upload.py --step all
 ```
 
+## Render와 GitHub Pages 배포
+
+### 1. Render Backend 생성
+
+저장소 루트의 `render.yaml`을 사용하는 Render Blueprint를 생성합니다. 수동으로 Web Service를 만들 때는 아래 값을 사용합니다.
+
+```text
+Root Directory: backend
+Build Command: pip install -r requirements.txt
+Start Command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+Health Check Path: /health
+```
+
+Render Environment에는 `backend/.env.example`에 있는 서버 설정을 입력합니다. 최소 실제 연동에 필요한 값은 다음과 같습니다.
+
+```text
+SUPABASE_URL
+SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+PLM_WIFE_EMAIL
+PLM_WIFE_PASSWORD
+PLM_HUSBAND_EMAIL
+PLM_HUSBAND_PASSWORD
+LLM_API_KEY
+LLM_API_BASE_URL
+THINQ_PAT
+THINQ_COUNTRY_CODE
+THINQ_CLIENT_ID
+FRONTEND_ORIGIN=https://lgdxdoraemi.github.io
+```
+
+`SUPABASE_SERVICE_ROLE_KEY`, 계정 비밀번호, `LLM_API_KEY`, `THINQ_PAT`은 Render에만 저장합니다. Flutter 빌드 인자나 GitHub Repository Variable에 넣지 않습니다. 배포가 끝나면 Render가 발급한 `https://<render-service>.onrender.com` 주소에서 `/health`와 `/docs`를 확인합니다.
+
+### 2. GitHub Repository Variables 설정
+
+GitHub 저장소의 `Settings > Secrets and variables > Actions > Variables`에 다음 값을 추가합니다.
+
+```text
+API_BASE_URL=https://<render-service>.onrender.com
+SUPABASE_URL=<Supabase Project URL>
+SUPABASE_ANON_KEY=<Supabase public anon key>
+```
+
+`SUPABASE_ANON_KEY`는 브라우저 앱에 포함되는 공개 클라이언트 키입니다. Service Role Key는 입력하지 않습니다. 운영 Backend 주소가 확정되기 전에는 `API_BASE_URL`을 placeholder로 두고 배포하지 않습니다.
+
+### 3. GitHub Pages 활성화 및 배포
+
+GitHub 저장소의 `Settings > Pages > Build and deployment > Source`를 `GitHub Actions`로 선택합니다. `main`에 Frontend 또는 배포 Workflow 변경이 push되면 `.github/workflows/deploy-pages.yml`이 다음 빌드를 실행합니다.
+
+```bash
+flutter build web --release \
+  --base-href "/PLM/" \
+  --dart-define=API_BASE_URL="$API_BASE_URL"
+```
+
+첫 설정 뒤에는 Actions의 `Flutter Web GitHub Pages 배포`에서 `Run workflow`를 한 번 실행할 수 있습니다. 배포 주소는 `https://lgdxdoraemi.github.io/PLM/`입니다. Flutter Web은 기본 hash routing을 사용하므로 앱 내부 경로는 `/#/wife/home` 형태이며 Pages의 직접 경로 404를 피합니다.
+
+### 4. 배포 확인
+
+1. `https://<render-service>.onrender.com/health`가 `{"status":"ok"}`를 반환하는지 확인합니다.
+2. `https://<render-service>.onrender.com/docs`에서 OpenAPI 문서가 열리는지 확인합니다.
+3. `https://lgdxdoraemi.github.io/PLM/`에서 앱을 열고 브라우저 개발자 도구의 API 요청 대상이 Render URL인지 확인합니다.
+4. Render 로그에 Pages Origin의 요청이 남고 CORS 오류가 없는지 확인합니다.
+
+Render 무료 인스턴스를 사용하는 경우 비활성 상태 뒤 첫 요청이 늦을 수 있습니다. 이때 Pages에서 일시적인 로딩 또는 API 오류가 보이면 Render `/health`를 먼저 열어 인스턴스를 시작한 뒤 다시 시도합니다.
+
 개별 단계는 `--step translate`, `--step embed`, `--step upload`로 실행할 수 있습니다.

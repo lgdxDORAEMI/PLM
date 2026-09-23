@@ -2,6 +2,10 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 abstract final class AppConfig {
+  static const String _definedBackendUrl = String.fromEnvironment(
+    'API_BASE_URL',
+  );
+
   /// 기존 Mock 화면 동작을 검증하는 위젯 테스트에서만 활성화한다.
   static bool mockPreviewEnabled = false;
 
@@ -18,8 +22,12 @@ abstract final class AppConfig {
     }
   }
 
-  static String get backendUrl =>
-      dotenv.env['BACKEND_URL'] ?? 'http://localhost:8000';
+  /// 배포 빌드는 API_BASE_URL을 사용하고 로컬 실행은 .env 값을 사용한다.
+  static String get backendUrl {
+    final buildUrl = _definedBackendUrl.trim();
+    if (buildUrl.isNotEmpty) return buildUrl;
+    return dotenv.env['BACKEND_URL']?.trim() ?? 'http://localhost:8000';
+  }
 
   /// `WS /api/v1/movement/live/stream`(B-1/B-3) 접속 주소. backendUrl의
   /// http(s) 스킴을 ws(s)로 바꿔서 파생한다.
