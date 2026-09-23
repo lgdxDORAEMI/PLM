@@ -23,6 +23,9 @@ jobs:
     steps:
       - name: 소스 체크아웃
         uses: actions/checkout@v4
+        with:
+          sparse-checkout: /frontend/
+          sparse-checkout-cone-mode: false
 
       - name: Flutter 설치
         uses: subosito/flutter-action@v2

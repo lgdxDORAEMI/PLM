@@ -151,7 +151,10 @@ Root Directory: backend
 Build Command: pip install -r requirements.txt
 Start Command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
 Healthcheck Path: /health
+Watch Path: /backend/**
 ```
+
+Root Directory로 `backend/`만 배포 범위에 포함하고, Watch Path로 Backend 변경이 있을 때만 새 배포를 생성합니다. `tests/`와 문서는 실행 시 import되지 않으며 크기가 작으므로, GitHub 연동 배포에서 보장되지 않는 별도 ignore 설정은 추가하지 않습니다. `models/pose_landmarker_full.task`는 모션 API가 런타임에 직접 사용하므로 제외하지 않습니다.
 
 Railway Backend 서비스의 Variables에는 `backend/.env.example`을 기준으로 실제 사용하는 서버 설정을 입력합니다.
 
@@ -187,7 +190,7 @@ SUPABASE_ANON_KEY=<Supabase public anon key>
 
 ### 3. GitHub Pages 활성화 및 배포
 
-GitHub 저장소의 `Settings > Pages > Build and deployment > Source`를 `GitHub Actions`로 선택합니다. `main`에 Frontend 또는 배포 Workflow 변경이 push되면 `.github/workflows/deploy-pages.yml`이 다음 빌드를 실행합니다.
+GitHub 저장소의 `Settings > Pages > Build and deployment > Source`를 `GitHub Actions`로 선택합니다. `main`에 Frontend 또는 배포 Workflow 변경이 push되면 `.github/workflows/deploy-pages.yml`이 `frontend/`만 체크아웃하고 다음 빌드를 실행합니다.
 
 ```bash
 flutter build web --release \
@@ -196,6 +199,8 @@ flutter build web --release \
 ```
 
 첫 설정 뒤에는 Actions의 `Flutter Web GitHub Pages 배포`에서 `Run workflow`를 한 번 실행할 수 있습니다. 배포 주소는 `https://lgdxdoraemi.github.io/PLM/`입니다. Flutter Web은 기본 hash routing을 사용하므로 앱 내부 경로는 `/#/wife/home` 형태이며 Pages의 직접 경로 404를 피합니다.
+
+배포 Artifact는 `frontend/build/web`만 업로드합니다. `frontend/test`, 로컬 IDE 설정, Android/iOS 파일, Backend와 프로젝트 문서는 Web 배포 결과에 포함되지 않습니다. Flutter가 생성하는 CanvasKit/Wasm 파일은 브라우저별 렌더러 호환에 필요하므로 임의로 제거하지 않습니다.
 
 ### 4. 배포 확인
 
