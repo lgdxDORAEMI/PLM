@@ -181,6 +181,51 @@ class ValidateTest(unittest.TestCase):
                              "source_ids": []}]}
         self.assertEqual([m["title"] for m in validate(routine, constraints, set())["meal"]], ["닭가슴살 샐러드"])
 
+    def test_purifier_missing_gets_team_confirmed_default(self) -> None:
+        """AI가 purifier 항목을 아예 안 줘도 실기기 제어 카드가 사라지지 않게 기본값을 넣는다."""
+        out = validate(AI_ROUTINE, apply_rules({}), {11})
+        purifier = next(e for e in out["sleep"]["payload"]["environments"] if e["type"] == "purifier")
+        self.assertEqual(purifier["value"], "자동")
+        self.assertEqual(purifier["options"], ["조용 모드", "자동", "강풍", "끄기"])
+
+    def test_purifier_value_outside_4_options_is_clamped(self) -> None:
+        routine = {**AI_ROUTINE, "sleep": {
+            **AI_ROUTINE["sleep"],
+            "payload": {"environments": [{"type": "purifier", "value": "약하게", "options": ["약하게", "세게"]}]},
+        }}
+        out = validate(routine, apply_rules({}), set())
+        purifier = next(e for e in out["sleep"]["payload"]["environments"] if e["type"] == "purifier")
+        self.assertEqual(purifier["value"], "자동")
+        self.assertEqual(purifier["options"], ["조용 모드", "자동", "강풍", "끄기"])
+
+    def test_purifier_value_already_valid_is_kept(self) -> None:
+        routine = {**AI_ROUTINE, "sleep": {
+            **AI_ROUTINE["sleep"],
+            "payload": {"environments": [{"type": "purifier", "value": "강풍", "options": []}]},
+        }}
+        out = validate(routine, apply_rules({}), set())
+        purifier = next(e for e in out["sleep"]["payload"]["environments"] if e["type"] == "purifier")
+        self.assertEqual(purifier["value"], "강풍")
+
+    def test_purifier_does_not_duplicate_or_drop_other_environments(self) -> None:
+        routine = {**AI_ROUTINE, "sleep": {
+            **AI_ROUTINE["sleep"],
+            "payload": {"environments": [
+                {"type": "temperature", "value": "24°C", "options": []},
+                {"type": "purifier", "value": "조용 모드", "options": []},
+            ]},
+        }}
+        out = validate(routine, apply_rules({}), set())
+        types = [e["type"] for e in out["sleep"]["payload"]["environments"]]
+        self.assertEqual(types.count("purifier"), 1)
+        self.assertIn("temperature", types)
+
+    def test_fallback_template_purifier_also_normalized(self) -> None:
+        """폴백도 validate()를 거치므로 AI 실패한 날에도 실기기 제어 카드가 항상 뜬다."""
+        out = validate(load_template(), apply_rules({}), set())
+        purifier = next(e for e in out["sleep"]["payload"]["environments"] if e["type"] == "purifier")
+        self.assertEqual(purifier["options"], ["조용 모드", "자동", "강풍", "끄기"])
+
     def test_template_item_keys_follow_key_rules(self) -> None:
         """폴백 템플릿 키도 AI 키 규칙과 같아야 한다(안 맞으면 diff에서 전부 교체로 잡힌다)."""
         from app.services.routine.prompt import HEALTH_KEYS, MEAL_KEYS, SLEEP_KEY

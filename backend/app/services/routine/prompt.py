@@ -18,7 +18,8 @@ from app.services.routine.inputs import ACTIVITY_CODES, CUSTOM_ACTIVITY
 # 2026-09-19.1: 전일 루틴 완료·모션 요약(yesterday) 입력 추가(S8)
 # 2026-09-19.2: 컨디션 수정 시 대상 가이드만 조정하는 수정 호출(EDIT_SYSTEM_PROMPT, S10)
 # 2026-09-20.1: K1 — 가장 느린 식단 호출의 출력 분량 제한(문장 길이·태그·주의 개수)
-PROMPT_VERSION = "2026-09-22.2"  # 09-22: 식사 4끼 필수(밤=snack), 수면 환경 type 코드 5종 고정
+# 2026-09-24.1: 수면 공기청정기 실기기 제어 — value/options를 팀이 확정한 4종으로 안내(강제는 service.validate가 한다)
+PROMPT_VERSION = "2026-09-24.1"
 CATEGORIES = ("meal", "household", "health", "sleep")
 
 
@@ -40,6 +41,9 @@ _STR = {"type": "string"}
 # 수면 환경 종류 코드. 프론트 SleepEnvironmentType enum 이름과 같아야 한다.
 SLEEP_ENV_TYPES = ("light", "temperature", "humidity", "sound", "purifier")
 SLEEP_ENV_LABELS = {"조명": "light", "온도": "temperature", "습도": "humidity", "소리": "sound", "공기청정기": "purifier"}
+# 09-24: 공기청정기는 실기기를 제어하므로 이 4개만 유효하다(취침 예약 타이머는 범위 제외).
+# service.validate가 AI 출력과 무관하게 이 값으로 강제한다 — 여기서는 프롬프트 안내용으로만 쓴다.
+PURIFIER_OPTIONS = ("조용 모드", "자동", "강풍", "끄기")
 MEAL_KEYS = ("meal:breakfast", "meal:lunch", "meal:dinner", "meal:snack")
 HEALTH_KEYS = ("health:waist", "health:pelvis", "health:leg", "health:wrist", "health:whole", "health:rest")  # rest는 fallback.yaml과 동일
 SLEEP_KEY = "sleep:main"
@@ -151,6 +155,7 @@ SYSTEM_PROMPT = """당신은 임산부의 하루 생활 루틴을 설계하는 �
 - household: yesterday.motion.bending_burden_events(전일 허리 숙임 부담 횟수)가 많으면 허리를 숙이는 가사는 partner·appliance를 우선 고려한다.
 - yesterday(전일 루틴 완료 현황·모션 요약)는 참고 정보다. 값이 null이면 오늘 입력만으로 판단한다.
 - sleep: 권장 취침 시각, 환경 제안값, 팁. environments.type은 light(조명)·temperature(온도)·humidity(습도)·sound(소리)·purifier(공기청정기) 코드로 쓰고 각 1개씩.
+- sleep: purifier는 실제 기기를 켜고 끈다. value는 반드시 "조용 모드"/"자동"/"강풍"/"끄기" 중 하나, options도 이 4개 그대로 쓴다. 취침 예약(타이머)은 다루지 않는다.
 - 근거 자료(참고 문단)가 주어지면 그 내용에 기반해 작성하고, 사용한 문단의 id만 source_ids에 넣는다. 자료가 없으면 빈 배열.
 - 자료에 없는 수치·의학 주장은 만들지 않는다. 산후 관련 내용은 무시한다.
 - 응급·위험 신호 판단은 하지 않고 "이상 증상은 의료진 상담" 한 줄만 허용한다."""

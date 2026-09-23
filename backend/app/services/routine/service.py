@@ -18,7 +18,7 @@ from app.services.routine import repository
 from app.services.routine.generator import OpenAIRoutineGenerator
 from app.services.routine.impact import load_impact_map, resolve_impact
 from app.services.routine.inputs import collect_facts, collect_yesterday
-from app.services.routine.prompt import CATEGORIES, MEAL_KEYS, PROMPT_VERSION
+from app.services.routine.prompt import CATEGORIES, MEAL_KEYS, PROMPT_VERSION, PURIFIER_OPTIONS
 from app.services.routine.retriever import KnowledgeRetriever
 from app.services.routine.rules import apply_rules
 
@@ -108,6 +108,23 @@ def validate_tip(
     return {"text": text, "source_ids": ids}
 
 
+def _normalize_purifier(sleep: dict[str, Any]) -> dict[str, Any]:
+    """공기청정기는 실기기를 제어하므로 AI 출력과 무관하게 PURIFIER_OPTIONS 4종으로 고정한다.
+
+    AI가 다른 문구를 주거나 purifier 항목을 아예 안 줘도(스키마가 개수를 강제하지 않는다)
+    항상 이 중 하나가 남는다 — 폴백 템플릿도 validate()를 거치므로 이 경로 하나로 충분하다.
+    """
+    payload = sleep.get("payload") or {}
+    environments = payload.get("environments") or []
+    rest = [e for e in environments if e.get("type") != "purifier"]
+    existing = next((e for e in environments if e.get("type") == "purifier"), None)
+    value = (existing or {}).get("value")
+    if value not in PURIFIER_OPTIONS:
+        value = PURIFIER_OPTIONS[1]  # "자동" — AI가 못 주거나 목록 밖 값을 준 경우의 기본값
+    rest.append({"type": "purifier", "value": value, "options": list(PURIFIER_OPTIONS)})
+    return {**sleep, "payload": {**payload, "environments": rest}}
+
+
 def validate(
     routine: dict[str, Any],
     constraints: dict[str, list[dict[str, Any]]],
@@ -131,7 +148,7 @@ def validate(
     for category in ("meal", "household", "health"):
         result[category] = [clean(e) for e in routine.get(category) or [] if keep(e)]
     sleep = routine.get("sleep") or {}
-    result["sleep"] = clean(sleep) if sleep else {}
+    result["sleep"] = _normalize_purifier(clean(sleep)) if sleep else {}
     return result
 
 
