@@ -23,6 +23,14 @@ class InventoryStatus(StrEnum):
     UNSUPPORTED_COUNTRY = "unsupported_country"
 
 
+class ControlStatus(StrEnum):
+    OK = "ok"
+    NOT_CONFIGURED = "not_configured"
+    AUTH_ERROR = "auth_error"
+    TIMEOUT = "timeout"
+    ERROR = "error"
+
+
 @dataclass(frozen=True)
 class DeviceInventory:
     devices: tuple[ThinQDevice, ...]
@@ -91,6 +99,36 @@ class ThinQClient:
         except Exception:
             # The household guide must remain available for unexpected SDK failures.
             return DeviceInventory((), InventoryStatus.ERROR)
+
+    async def control(self, device_id: str, payload: dict) -> ControlStatus:
+        """Never propagate SDK exceptions: they may contain sensitive request details."""
+        settings = get_settings()
+        pat = settings.thinq_pat.get_secret_value()
+        if not pat or not settings.thinq_client_id:
+            return ControlStatus.NOT_CONFIGURED
+        try:
+            UUID(settings.thinq_client_id)
+        except ValueError:
+            return ControlStatus.NOT_CONFIGURED
+        try:
+            async with aiohttp.ClientSession() as session:
+                try:
+                    api = ThinQApi(session, pat, settings.thinq_country_code, settings.thinq_client_id)
+                except ValueError:
+                    return ControlStatus.ERROR
+                await asyncio.wait_for(api.async_post_device_control(device_id, payload, timeout=8), timeout=10)
+            return ControlStatus.OK
+        except ThinQAPIException as error:
+            # Never log or chain this exception: SDK messages may contain request data.
+            if error.code in {"1103", "1218", "1302"}:
+                return ControlStatus.AUTH_ERROR
+            return ControlStatus.ERROR
+        except (asyncio.TimeoutError, TimeoutError):
+            return ControlStatus.TIMEOUT
+        except aiohttp.ClientError:
+            return ControlStatus.ERROR
+        except Exception:
+            return ControlStatus.ERROR
 
 
 _client = ThinQClient()
