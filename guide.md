@@ -146,6 +146,17 @@ python 02_translate_chunk_embed_upload.py --step all
 
 ## Railway와 GitHub Pages 배포
 
+현재 운영 주소는 다음과 같습니다.
+
+```text
+Web App: https://lgdxdoraemi.github.io/PLM/
+Backend API: https://plm-backend-production-cc76.up.railway.app
+Swagger UI: https://plm-backend-production-cc76.up.railway.app/docs
+Healthcheck: https://plm-backend-production-cc76.up.railway.app/health
+```
+
+전체 배포 개요와 빠른 확인 절차는 [루트 README](README.md#배포-구조), 서비스별 상세 설정은 [Frontend README](frontend/README.md#github-pages-배포)와 [Backend README](backend/README.md#railway-배포)를 함께 참고합니다.
+
 ### 1. Railway Backend 생성
 
 Railway에서 GitHub 저장소를 연결하고 Backend 서비스를 생성한 뒤 아래 값을 사용합니다.

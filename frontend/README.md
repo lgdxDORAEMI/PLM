@@ -1,25 +1,132 @@
 # PLM Frontend
 
-Flutter Web으로 구현한 PLM 사용자 앱입니다. 아내는 프로필, 오늘 컨디션과 할 일, 네 가지 가이드, 실행 기록과 리포트를 사용합니다. 남편은 연결된 아내의 캘린더·오전 리포트·알림·가사 요청을 확인합니다.
+PLM Frontend는 아내와 남편의 생활 루틴·가족 공유 흐름을 제공하는 Flutter Web 앱입니다. 운영 앱은 <https://lgdxdoraemi.github.io/PLM/>에서 실행됩니다.
 
-## 사용자 화면
+## 화면과 기능
 
-- 아내의 초기 흐름: 프로필 설정 → 가족 초대 → 홈 → 오늘 컨디션 → 할 일 → 남편 초대 선택 후 AI 루틴 자동 생성 → 홈. 이미 연결된 가족을 확인할 때 별도의 초대 완료나 루틴 생성 버튼 화면을 거치지 않음
-- 홈과 식사·가사·건강·수면 상세: 백엔드에 저장된 같은 날짜의 `daily_routines`와 `routine_items`를 조회
-- 식사: 끼니별 가이드, 다른 메뉴 요청, 선택한 대체 메뉴 반영
-- 가사: 직접 할 일, 가족 분담 요청, 보유 ThinQ 가전과 매칭된 제안 표시. 미공유 항목을 위에, 공유한 항목을 아래에 두고 공유됨·확인됨·완료됨 표시로 진행 상태를 구분. 남은 항목은 추가 요청 가능
-- 건강: 오늘 컨디션에서 통증이 보통 이상인 부위를 집중 부위로 표시하고 도움말로 기준을 안내. 집중 부위 영상에서만 완료를 기록하며, 다른 부위 운동은 완료 버튼 없이 조회·재생. 전신 운동은 재생 시간과 대상 임신 분기를 함께 표시
-- 챗봇: 대화 이력 조회와 LLM 응답; 식사 가이드에서 진입하면 해당 루틴 항목을 문맥으로 전달
-- 리포트·캘린더: 실행 및 가족 참여 결과 조회
-- 남편: 공유된 오전 리포트와 알림 확인, 가사 요청 알림 날짜의 요청 항목 조회 및 목록에서 확인·완료 처리
-- 실시간: 일반 앱에서는 오늘 저장된 모션 이벤트 조회. 카메라/WebSocket 분석 화면은 별도 `main_movement_debug.dart` 진입점
+### 아내
 
-실제 연동 환경에서 API 실패 시 해당 화면의 빈 상태 또는 오류 상태를 표시합니다. `PLM_PREVIEW=true`로 실행하는 화면 미리보기는 로컬 예시를 사용합니다.
+- 프로필과 출산예정일 입력, 임신 주차 표시
+- 오늘 컨디션과 예정 활동 입력
+- 컨디션 입력 전에도 프로필 기반 주차 안내 표시
+- AI 루틴과 식사·가사·건강·수면 상세 가이드
+- 식사 메뉴 수락·거절·대체 추천
+- 최근 챗봇 대화 복원, 추천 카드, 컨디션 수정 확인과 루틴 재생성 상태
+- 건강 영상 재생과 실행 완료, 수면 환경 설정
+- 가사 분담 요청과 확인·완료 상태
+- Daily 리포트, 캘린더, 오늘 기록 초기화
 
-## 연결 경계
+### 남편
 
-`lib/main.dart`가 앱을 시작하고 `lib/routing/app_router.dart`가 역할별 경로를 관리합니다. 화면별 Controller와 Service가 `BACKEND_URL`의 API를 호출합니다. 서버 인증은 Supabase 세션을 사용하며 사전 설정 계정의 자동 진입·전환은 로컬 백엔드에서만 허용됩니다. 아내 계정의 초기화는 오늘 가사 요청과 남편 알림을 포함한 일일 기록을 삭제한 뒤 프로필 입력 흐름으로 돌아갑니다.
+- 연결된 아내의 오전 리포트와 캘린더
+- 알림 목록과 읽음 처리
+- 가사 요청 상세, 항목별 확인·완료
+- 공유 가능한 모션 이벤트와 일일 집계
 
-ThinQ 가전 목록은 백엔드에서 읽습니다. 가이드의 실행 버튼은 실제 가전 제어 명령을 보내지 않습니다. Web 이외의 플랫폼 프로젝트는 현재 지원 범위가 아닙니다.
+일반 실시간 화면은 저장된 오늘 모션 이벤트를 조회합니다. 카메라/WebSocket 분석은 `lib/main_movement_debug.dart`를 사용하는 별도 개발 진입점입니다.
 
-화면별 실제 연결 여부는 [FE–BE 연결 기록](../docs/FE_BE_CONNECTION_STATUS.md), API 경로는 [API 문서](../docs/api.md)를 참고하세요. 실행 및 환경 설정은 [guide.md](../guide.md)에 있습니다.
+## 구조
+
+```text
+lib/
+├─ core/              # 환경 설정, API 클라이언트
+├─ design_system/     # 공통 색상·간격·컴포넌트
+├─ features/          # 화면별 model/controller/service/widget
+├─ routing/           # 역할별 경로와 세션 상태
+├─ shared/            # 공통 상태·표시 컴포넌트
+└─ main.dart          # Web 앱 진입점
+```
+
+제품 경로는 `Screen → Controller/Store → Service/Repository → ApiClient → Backend`를 사용합니다. Mock Service는 Widget 테스트와 명시적 Preview에서만 사용하며, 실제 API 실패를 Mock 데이터로 감추지 않습니다.
+
+## 환경 설정
+
+```powershell
+Copy-Item .env.example .env
+```
+
+```dotenv
+SUPABASE_URL=<Supabase Project URL>
+SUPABASE_ANON_KEY=<Supabase public anon key>
+BACKEND_URL=http://localhost:8000
+DEMO_EMAIL=
+DEMO_PASSWORD=
+```
+
+- `SUPABASE_URL`과 `SUPABASE_ANON_KEY`가 모두 있어야 실제 인증·API 모드를 사용합니다.
+- 로컬 API 주소는 `.env`의 `BACKEND_URL`을 사용합니다.
+- 배포 빌드는 `--dart-define=API_BASE_URL=...` 값을 우선합니다.
+- Service Role Key, 등록 계정 비밀번호, LLM·ThinQ 비밀값을 Frontend에 넣지 않습니다.
+
+## 로컬 실행
+
+```powershell
+flutter pub get
+flutter run -d chrome
+```
+
+로컬 예시 화면만 확인하려면 다음과 같이 실행합니다.
+
+```powershell
+flutter run -d chrome --dart-define=PLM_PREVIEW=true
+```
+
+사전 등록 계정 자동 진입과 계정 전환은 localhost 또는 Backend의 `FRONTEND_ORIGIN`과 정확히 일치하는 운영 Web Origin에서만 허용됩니다.
+
+## Backend 연결
+
+- REST 기본 주소: `AppConfig.backendUrl`
+- API prefix: `/api/v1`
+- 인증: Supabase access token을 `Authorization: Bearer ...`로 전달
+- 모션 WebSocket: Backend URL에서 `ws://` 또는 `wss://`로 파생
+- 404: 오늘 데이터가 아직 없는 정상 빈 상태일 수 있음
+- 401: Supabase 세션 확인
+- 403: 계정 권한 또는 `FRONTEND_ORIGIN` 확인
+- 503: Railway, Supabase, DB 스키마 또는 LLM 연결 확인
+
+화면별 경로는 [API 문서](../docs/api.md), 연결 상태는 [FE–BE 연결 기록](../docs/FE_BE_CONNECTION_STATUS.md)을 참고합니다.
+
+## 테스트와 빌드
+
+```powershell
+flutter analyze
+flutter test
+flutter build web --release --base-href /PLM/
+```
+
+운영 Backend를 지정하는 배포 빌드는 다음 형식입니다.
+
+```powershell
+flutter build web --release `
+  --base-href /PLM/ `
+  --dart-define=API_BASE_URL=https://plm-backend-production-cc76.up.railway.app
+```
+
+## GitHub Pages 배포
+
+`.github/workflows/deploy-pages.yml`이 다음 과정을 자동 수행합니다.
+
+1. `frontend/`만 체크아웃
+2. Flutter 3.44.4 설치
+3. Repository Variables로 `frontend/.env` 생성
+4. `/PLM/` base href와 Railway API 주소로 Web 릴리스 빌드
+5. `frontend/build/web`만 Pages Artifact로 업로드
+
+필요한 Repository Variables:
+
+```text
+API_BASE_URL=https://plm-backend-production-cc76.up.railway.app
+SUPABASE_URL=<Supabase Project URL>
+SUPABASE_ANON_KEY=<Supabase public anon key>
+```
+
+`main`의 `frontend/**` 또는 배포 Workflow 변경이 배포를 시작합니다. 수동 배포는 GitHub Actions의 `Flutter Web GitHub Pages 배포`에서 `Run workflow`를 실행합니다. Flutter Web은 hash routing을 사용하므로 내부 주소는 `/#/wife/home` 형태입니다.
+
+## 배포 확인
+
+- 앱: <https://lgdxdoraemi.github.io/PLM/>
+- 브라우저 Network의 API 호스트가 Railway인지 확인
+- 오래된 UI가 보이면 강력 새로고침
+- Console의 401/403/404/503을 위 연결 기준에 따라 확인
+
+전체 로컬·운영 설정은 [guide.md](../guide.md)를 참고합니다.

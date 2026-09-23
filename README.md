@@ -1,42 +1,148 @@
 # PLM — Pregnancy Life Mode
 
-PLM은 임산부의 오늘 컨디션과 예정 활동을 바탕으로 식사·가사·건강·수면 루틴을 만들고, 실행 기록을 가족과 함께 확인하는 Flutter Web 앱입니다. FastAPI가 인증, 루틴, 가이드, 대화, 리포트와 가족 공유 API를 제공하며 Supabase가 계정과 생활 기록을 저장합니다.
+PLM은 임산부의 프로필, 오늘 컨디션과 예정 활동을 바탕으로 식사·가사·건강·수면 루틴을 생성하고 가족과 실행 결과를 공유하는 Flutter Web 서비스입니다. FastAPI가 인증된 API와 AI 기능을 제공하고 Supabase Auth/PostgreSQL이 계정과 생활 기록을 저장합니다.
 
-## 주요 흐름
+## 운영 서비스
 
-1. 아내 계정으로 진입해 프로필과 출산 예정일을 등록합니다.
-2. 오늘 컨디션과 할 일을 입력하고 가족 초대 화면을 거쳐 AI 루틴을 생성합니다.
-3. 홈의 네 가지 가이드에서 같은 날짜의 루틴 항목을 확인하고 실행 상태를 기록합니다.
-4. Daily 리포트와 캘린더에서 결과를 확인합니다. 연결된 남편은 공유 리포트, 알림, 가사 요청을 조회합니다.
+| 구분 | 주소 |
+| --- | --- |
+| Web 앱 | <https://lgdxdoraemi.github.io/PLM/> |
+| Backend API | <https://plm-backend-production-cc76.up.railway.app> |
+| Swagger UI | <https://plm-backend-production-cc76.up.railway.app/docs> |
+| 상태 확인 | <https://plm-backend-production-cc76.up.railway.app/health> |
 
-챗봇은 백엔드 LLM과 대화 이력을 사용합니다. 식사 가이드의 다른 메뉴 보기는 대체 카드 1개를 요청하고, 선택 시 루틴 항목을 갱신합니다. ThinQ 연동은 보유 기기를 읽어 가사 가이드와 매칭합니다. 화면의 가전 실행 기록은 실제 기기 제어가 아닙니다.
+Web 앱은 GitHub Pages, Backend는 Railway에서 운영합니다. 브라우저가 이전 번들을 유지하면 `Ctrl+Shift+R`로 새로고침합니다.
 
-모션 감지 API와 별도 카메라 데모가 있으며, 일반 앱의 실시간 화면은 저장된 오늘 감지 기록을 조회합니다.
+## 주요 기능
 
-## 구성
+- 프로필 및 출산예정일 기반 임신 주차 계산
+- 오늘 컨디션·예정 활동 저장과 AI 맞춤 루틴 생성
+- 루틴 생성 전에도 표시되는 홈 주차별 안내
+- 식사·가사·건강·수면 가이드 및 실행·피드백 기록
+- 날짜가 바뀌어도 복원되는 챗봇 최근 대화, 식사 대체 추천, 컨디션 기반 루틴 수정
+- 배우자 초대·연결, 오전 리포트, 알림, 가사 요청 확인·완료
+- Daily 리포트와 월별 캘린더
+- 모션 이벤트 조회와 별도 카메라/WebSocket 분석 화면
+- ThinQ 보유 기기 읽기 및 가사 항목 매칭
+
+ThinQ 연동은 보유 기기 조회 전용이며 실제 가전 제어는 하지 않습니다. 일반 앱의 실시간 화면은 저장된 모션 이벤트를 조회하고, 카메라 분석은 별도 진입점으로 실행합니다.
+
+## 사용자 흐름
+
+1. 등록된 아내 계정으로 진입해 프로필을 작성합니다.
+2. 오늘 컨디션과 예정 활동을 입력하고 루틴을 생성합니다.
+3. 홈과 네 가지 가이드에서 추천 내용을 확인하고 실행 상태를 기록합니다.
+4. 챗봇에서 상담하거나 식사 대체 메뉴와 컨디션 수정을 요청합니다.
+5. 리포트·캘린더에서 기록을 확인하고 연결된 남편과 가사 요청·알림을 공유합니다.
+
+## 저장소 구성
 
 | 경로 | 역할 |
 | --- | --- |
-| [frontend](frontend/README.md) | Flutter Web 앱 |
-| [backend](backend/README.md) | FastAPI, AI, ThinQ 조회, 모션 분석 |
-| [supabase](supabase/README.md) | DB 마이그레이션과 접근 정책 |
-| [docs](docs/README.md) | API, 요구사항, 흐름도, 연동 현황 |
+| [frontend](frontend/README.md) | Flutter Web 앱, 화면·상태·API 클라이언트 |
+| [backend](backend/README.md) | FastAPI, AI 루틴·챗봇, 가족 공유, 모션·ThinQ |
+| [supabase](supabase/README.md) | PostgreSQL 마이그레이션과 접근 정책 |
+| [docs](docs/README.md) | API 계약, 요구사항, 화면 흐름과 연동 현황 |
 | [tools](tools/rag_ingest/README.md) | 지식 데이터 적재 및 모션 개발 도구 |
 
-실행 방법, 환경변수, DB 적용 순서와 문제 해결은 [guide.md](guide.md)에 있습니다. 현재 서버의 엔드포인트는 [API 문서](docs/api.md)와 실행 중인 `/docs`에서 확인할 수 있습니다. 화면별 연동 상태는 [FE–BE 연결 기록](docs/FE_BE_CONNECTION_STATUS.md)을 참고하세요.
+주요 데이터 흐름은 `Flutter Screen → Controller/Service → FastAPI → Supabase`입니다. Frontend 기능 코드는 Supabase 테이블을 직접 조작하지 않으며 인증 세션만 Supabase Auth SDK로 관리합니다.
 
-## 현재 범위
+## 빠른 시작
 
-- 실제 데이터 경로는 Supabase Auth와 FastAPI API를 사용합니다. 명시적 화면 미리보기는 로컬 예시를 사용합니다.
-- 홈의 주차별 안내는 오늘 컨디션이나 루틴 생성 여부와 무관하게 프로필 주차를 기준으로 조회합니다.
-- 챗봇은 날짜가 바뀌어도 등록 계정의 최근 대화 이력을 복원합니다.
-- 루틴 생성은 AI 응답을 우선하고 실패 시 백엔드 폴백 루틴을 저장할 수 있습니다.
-- 사전 등록된 아내·남편 계정의 자동 로그인과 계정 전환은 로컬 또는 Backend의 `FRONTEND_ORIGIN`과 일치하는 운영 Web 앱에서만 허용됩니다. 계정 비밀번호는 Backend에만 저장합니다.
-- ThinQ 보유 기기 조회와 가사 매칭은 읽기 전용입니다. 가전 제어 기능은 포함되지 않습니다.
-- 모션 카메라 분석은 별도 진입점에서 실행합니다. 일반 앱의 실시간 화면은 기록 조회 중심입니다.
+자세한 초기 설정과 예외 처리는 [guide.md](guide.md)를 참고합니다.
 
-## 배포 구성
+```powershell
+# Backend
+cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
+python -m app.server
+```
 
-운영 환경은 `frontend/`의 Flutter Web을 GitHub Pages에, `backend/`의 FastAPI를 Railway Service에 배포합니다. Pages 빌드는 Repository Variable `API_BASE_URL`로 Railway 주소를 받아 사용하며, 서버 비밀값은 Railway의 Backend 서비스 Variables에만 저장합니다. Pages 작업은 `frontend/`만 체크아웃하고 `frontend/build/web`만 배포하며, Railway는 `/backend`만 빌드합니다. 실제 생성 순서와 환경변수 목록은 [배포 안내](guide.md#railway와-github-pages-배포)를 참고하세요.
+```powershell
+# Frontend — 별도 터미널
+cd frontend
+flutter pub get
+Copy-Item .env.example .env
+flutter run -d chrome
+```
 
-Railway Backend는 `backend/Dockerfile`을 사용합니다. 이 이미지는 FastAPI와 MediaPipe/OpenCV 실행에 필요한 Linux 런타임 라이브러리를 포함하며, 배포 후 `/health`와 `/docs`에서 상태 및 Swagger UI를 확인할 수 있습니다.
+Backend는 기본 `http://localhost:8000`, Swagger는 `http://localhost:8000/docs`에서 실행됩니다. Frontend `.env`에는 `SUPABASE_URL`, 공개 `SUPABASE_ANON_KEY`, `BACKEND_URL`을 입력합니다. 서버 비밀키와 등록 계정 비밀번호는 반드시 `backend/.env`에만 둡니다.
+
+## 배포 구조
+
+```text
+GitHub main
+├─ frontend/** 변경 → GitHub Actions → Flutter Web → GitHub Pages
+└─ backend/** 변경  → Railway GitHub 연동 → Dockerfile → Railway Service
+
+GitHub Pages ── HTTPS/Bearer token ──> Railway FastAPI ──> Supabase
+                                           ├─ OpenAI 호환 LLM
+                                           └─ ThinQ API (읽기 전용)
+```
+
+### GitHub Pages
+
+`.github/workflows/deploy-pages.yml`은 `main`의 `frontend/**` 또는 Workflow 변경 시 실행됩니다. Repository Variables는 다음 세 값을 사용합니다.
+
+```text
+API_BASE_URL=https://plm-backend-production-cc76.up.railway.app
+SUPABASE_URL=<Supabase Project URL>
+SUPABASE_ANON_KEY=<Supabase public anon key>
+```
+
+Workflow가 `frontend/.env`를 생성하고 다음과 같은 릴리스 빌드를 수행합니다.
+
+```bash
+flutter build web --release \
+  --base-href "/PLM/" \
+  --dart-define=API_BASE_URL="$API_BASE_URL"
+```
+
+GitHub Pages의 Source는 `GitHub Actions`로 설정합니다. Backend나 문서만 변경한 커밋은 Frontend 배포를 만들지 않습니다.
+
+### Railway Backend
+
+Railway 서비스는 GitHub 저장소의 `backend`를 Root Directory로 사용하고 `backend/Dockerfile`로 빌드합니다.
+
+```text
+Root Directory: backend
+Dockerfile Path: /backend/Dockerfile
+Start Command: python -m app.server
+Healthcheck Path: /health
+Watch Path: /backend/**
+```
+
+Railway Variables에는 Supabase 서버 설정, 등록 계정, LLM, ThinQ 설정과 아래 Origin을 입력합니다.
+
+```text
+FRONTEND_ORIGIN=https://lgdxdoraemi.github.io
+```
+
+`SUPABASE_SERVICE_ROLE_KEY`, `PLM_*_PASSWORD`, `LLM_API_KEY`, `THINQ_PAT`은 Railway에만 저장하며 GitHub Variables나 Flutter 빌드에 포함하지 않습니다. 전체 변수와 배포 순서는 [guide.md의 배포 안내](guide.md#railway와-github-pages-배포)를 참고합니다.
+
+## 배포 후 확인
+
+1. `/health`가 `{"status":"ok"}`를 반환하는지 확인합니다.
+2. `/docs`에서 Swagger UI와 최신 API 경로를 확인합니다.
+3. Web 앱의 개발자 도구 Network에서 요청 대상이 Railway 도메인인지 확인합니다.
+4. 등록 계정 진입이 403이면 Railway의 `FRONTEND_ORIGIN`이 Pages Origin과 정확히 일치하는지 확인합니다.
+5. 503이면 Railway 로그와 Supabase 테이블·마이그레이션, LLM 설정을 확인합니다.
+
+API 목록은 [docs/api.md](docs/api.md), 화면별 연결 현황은 [docs/FE_BE_CONNECTION_STATUS.md](docs/FE_BE_CONNECTION_STATUS.md)에 있습니다.
+
+## 검증
+
+```powershell
+cd backend
+python -m unittest discover -s tests
+
+cd ..\frontend
+flutter analyze
+flutter test
+flutter build web --release --base-href /PLM/
+```
+
+기능 범위에 맞는 테스트를 우선 실행하고, 배포 전에는 정적 분석과 Web 릴리스 빌드를 확인합니다.
