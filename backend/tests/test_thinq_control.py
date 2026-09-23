@@ -2,7 +2,7 @@
 
 import unittest
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, call, patch
 
 from httpx import ASGITransport, AsyncClient
 from thinqconnect.thinq_api import ThinQAPIException
@@ -70,6 +70,7 @@ class ControlEndpointTest(unittest.IsolatedAsyncioTestCase):
         control.assert_awaited_once_with("purifier-1", {"operation": {"airPurifierOperationMode": "POWER_OFF"}})
 
     async def test_wind_strength_maps_to_documented_enum(self) -> None:
+        """전원이 꺼진 기기가 켜기+바람세기를 한 요청으로 거부할 수 있어, 두 번의 개별 요청으로 나눠 보낸다."""
         client = ThinQClient()
         inventory = DeviceInventory((purifier(),), InventoryStatus.CONNECTED)
         with (
@@ -78,10 +79,21 @@ class ControlEndpointTest(unittest.IsolatedAsyncioTestCase):
         ):
             response = await self._call(client, "purifier-1", {"power": "on", "wind_strength": "auto"})
         self.assertEqual(response.status_code, 200)
-        control.assert_awaited_once_with(
-            "purifier-1",
-            {"operation": {"airPurifierOperationMode": "POWER_ON"}, "airFlow": {"windStrength": "AUTO"}},
-        )
+        control.assert_has_awaits([
+            call("purifier-1", {"operation": {"airPurifierOperationMode": "POWER_ON"}}),
+            call("purifier-1", {"airFlow": {"windStrength": "AUTO"}}),
+        ])
+
+    async def test_wind_strength_skipped_when_power_call_fails(self) -> None:
+        client = ThinQClient()
+        inventory = DeviceInventory((purifier(),), InventoryStatus.CONNECTED)
+        with (
+            patch.object(client, "get_inventory", return_value=inventory),
+            patch.object(client, "control", return_value=ControlStatus.ERROR) as control,
+        ):
+            response = await self._call(client, "purifier-1", {"power": "on", "wind_strength": "auto"})
+        self.assertEqual(response.status_code, 502)
+        control.assert_awaited_once_with("purifier-1", {"operation": {"airPurifierOperationMode": "POWER_ON"}})
 
     async def test_unowned_device_id_is_rejected(self) -> None:
         client = ThinQClient()

@@ -64,12 +64,15 @@ async def control_device(
         device.device_id == device_id for device in inventory.devices
     ):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "등록된 가전을 찾을 수 없습니다.")
-    payload: dict[str, dict[str, str]] = {}
+    # 꺼진 기기에 "켜기+바람세기"를 한 요청으로 같이 보내면 거부하는 기기가 있어,
+    # 전원부터 보내고 성공한 뒤에 바람세기를 별도 요청으로 보낸다.
+    result = ControlStatus.OK
     if body.power is not None:
-        payload["operation"] = {"airPurifierOperationMode": "POWER_ON" if body.power == "on" else "POWER_OFF"}
-    if body.wind_strength is not None:
-        payload["airFlow"] = {"windStrength": _WIND_STRENGTH[body.wind_strength]}
-    result = await client.control(device_id, payload)
+        power_payload = {"operation": {"airPurifierOperationMode": "POWER_ON" if body.power == "on" else "POWER_OFF"}}
+        result = await client.control(device_id, power_payload)
+    if result == ControlStatus.OK and body.wind_strength is not None:
+        wind_payload = {"airFlow": {"windStrength": _WIND_STRENGTH[body.wind_strength]}}
+        result = await client.control(device_id, wind_payload)
     if result != ControlStatus.OK:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, _CONTROL_ERROR_DETAIL[result])
     return ControlResponse(status="ok")
