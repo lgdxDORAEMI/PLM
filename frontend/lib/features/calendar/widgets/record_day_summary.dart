@@ -7,8 +7,13 @@ import '../../../design_system/tokens/app_spacing.dart';
 import '../../report/models/daily_record.dart';
 
 class RecordDaySummary extends StatelessWidget {
-  const RecordDaySummary({super.key, required this.record});
+  const RecordDaySummary({
+    super.key,
+    required this.record,
+    required this.showMotionCaution,
+  });
   final DailyRecord record;
+  final bool showMotionCaution;
 
   @override
   Widget build(BuildContext context) {
@@ -35,10 +40,13 @@ class RecordDaySummary extends StatelessWidget {
             value:
                 '요청 ${record.familyRequested} · 확인 ${record.familyConfirmed} · 완료 ${record.familyCompleted}',
           ),
-          const _SummaryItem(
-            label: '홈캠 관련 주의사항',
-            value: '장시간 서 있거나 반복적으로 숙인 행동이 확인됐어요.',
-          ),
+          if (showMotionCaution)
+            _SummaryItem(
+              label: '홈캠 관련 주의사항',
+              value: record.motionSummaries.isNotEmpty
+                  ? record.motionSummaries.first
+                  : '특이 자세가 감지되지 않았어요',
+            ),
         ],
       ),
     );

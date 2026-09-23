@@ -390,6 +390,17 @@ class ReportApiTest(unittest.IsolatedAsyncioTestCase):
             response = await client.get(f"/api/v1/care/daily-reports/{TARGET_DATE.isoformat()}")
         self.assertEqual(response.status_code, 404)
 
+    async def test_motion_summaries_field_present_and_empty_when_movement_unavailable(self) -> None:
+        """USER="wife-1"은 UUID가 아니라서 Movement 조회가 ValueError로 실패하고
+        _movement_summary()가 빈 리스트로 넘어간다(파일 상단 설명 참고) — 그래도
+        응답 스키마에는 motion_summaries 필드가 존재해야 한다."""
+        self.client.seed_condition()
+        async with self.http() as client:
+            response = await client.post(
+                f"/api/v1/care/daily-reports/{TARGET_DATE.isoformat()}/preview"
+            )
+        self.assertEqual(response.json()["motion_summaries"], [])
+
     async def test_no_household_requests_for_the_date_reports_zero_not_fabricated(self) -> None:
         self.client.seed_condition()
         async with self.http() as client:

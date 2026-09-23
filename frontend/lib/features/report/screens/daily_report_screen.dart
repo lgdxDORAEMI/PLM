@@ -278,10 +278,20 @@ class _ReportInsights extends StatelessWidget {
           children: [
             Text('홈캠 관련 주의사항', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: AppSpacing.sm),
-            const Text(
-              '장시간 서 있거나 허리를 반복해서 숙이는 행동이 확인됐어요. 내일은 중간에 휴식을 더 자주 가져보세요.',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
+            if (record.motionSummaries.isEmpty)
+              const Text(
+                '특이 자세가 감지되지 않았어요',
+                style: TextStyle(color: AppColors.textSecondary),
+              )
+            else
+              for (final summary in record.motionSummaries)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                  child: Text(
+                    summary,
+                    style: const TextStyle(color: AppColors.textSecondary),
+                  ),
+                ),
           ],
         ),
       ),

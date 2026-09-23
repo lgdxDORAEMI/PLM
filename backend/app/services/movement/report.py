@@ -100,7 +100,12 @@ def generate_daily_report(
 
     aggregates = [_build_aggregate(key, group) for key, group in groups.items()]
 
-    narratives = _build_narratives(groups)
+    # narratives[0]이 화면에 그대로 노출되므로(2026-09-23 결정), 발생 횟수가
+    # 많은 그룹부터, 같으면 더 먼저 발생한 그룹부터 정렬한다. sorted()는 안정
+    # 정렬이라 groups(발생 순으로 쌓인 dict)의 원래 순서가 동률 시 유지된다.
+    ordered_groups = sorted(groups.items(), key=lambda item: len(item[1]), reverse=True)
+
+    narratives = _build_narratives(ordered_groups)
     if cumulative_forward_bend_sec > 0:
         narratives.append(_build_cumulative_narrative(cumulative_forward_bend_sec))
 
@@ -112,6 +117,7 @@ def generate_daily_report(
         cumulative_forward_bend_sec=cumulative_forward_bend_sec,
         bending_burden_event_count=_count_bending_burden_events(normal_events),
         narratives=narratives,
+        posture_summaries=_build_posture_summaries(ordered_groups),
     )
 
 
@@ -148,14 +154,11 @@ def _pick_top_burdened(aggregates: list[PostureAggregate]) -> BodyPart | None:
     return max(scores, key=lambda part: scores[part])
 
 
-def _build_narratives(groups: dict[_GroupKey, list[PostureEvent]]) -> list[str]:
-    """narratives[0]이 화면(실시간 탭 현재 상태 카드)에 그대로 노출되므로, 순서
-    자체가 "무엇을 대표로 보여줄지" 정하는 기준이다(2026-09-23 결정): 발생
-    횟수가 많은 그룹부터, 횟수가 같으면 더 먼저 발생한 그룹부터. sorted()는
-    안정 정렬이라 groups(발생 순으로 쌓인 dict)의 원래 순서가 동률 시 그대로
-    유지된다 — 동률 처리를 따로 안 해도 되는 이유."""
+def _build_narratives(ordered_groups: list[tuple[_GroupKey, list[PostureEvent]]]) -> list[str]:
+    """narratives[0]이 화면(실시간 탭 현재 상태 카드)에 그대로 노출되므로, 호출부가
+    넘기는 ordered_groups의 순서 자체가 "무엇을 대표로 보여줄지" 정하는
+    기준이다(2026-09-23 결정)."""
     narratives: list[str] = []
-    ordered_groups = sorted(groups.items(), key=lambda item: len(item[1]), reverse=True)
     for (posture_type, burden_label), group_events in ordered_groups:
         if LABEL_LEVEL[burden_label.value] < _NOTABLE_LEVEL:
             continue
@@ -175,6 +178,20 @@ def _build_narratives(groups: dict[_GroupKey, list[PostureEvent]]) -> list[str]:
             )
         )
     return narratives
+
+
+def _build_posture_summaries(ordered_groups: list[tuple[_GroupKey, list[PostureEvent]]]) -> list[str]:
+    """캘린더/일일 리포트 화면용 짧은 문구(2026-09-23 결정). narratives는 문헌
+    인용이 섞인 긴 문장이라 이 두 화면에는 안 맞아서, "{자세} 행동이 {횟수}번
+    확인됐어요." 형식으로 따로 만든다. 정렬 기준은 narratives와 동일하게
+    호출부의 ordered_groups를 그대로 따른다."""
+    summaries: list[str] = []
+    for (posture_type, burden_label), group_events in ordered_groups:
+        if LABEL_LEVEL[burden_label.value] < _NOTABLE_LEVEL:
+            continue
+        posture_label = _POSTURE_LABEL_KO.get(posture_type, posture_type.value)
+        summaries.append(f"{posture_label} 행동이 {len(group_events)}번 확인됐어요.")
+    return summaries
 
 
 def _format_duration(total_seconds: float) -> str:

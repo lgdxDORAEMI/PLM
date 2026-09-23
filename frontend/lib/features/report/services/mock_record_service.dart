@@ -46,6 +46,9 @@ class MockRecordService implements RecordService {
       burdenArea: '허리',
       // 모션 분석은 Phase 2이므로 MVP 기록에서 부담 초과를 생성하지 않는다.
       burdenCount: 0,
+      motionSummaries: isSelectedMock
+          ? const ['허리를 숙이는 행동이 5번 확인됐어요.', '서 있는 행동이 3번 확인됐어요.']
+          : const [],
       familyRequested: isSelectedMock ? 3 : 1,
       familyConfirmed: isSelectedMock ? 3 : 1,
       familyCompleted: isSelectedMock ? 2 : day % 2,

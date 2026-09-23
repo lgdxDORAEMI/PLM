@@ -100,6 +100,37 @@ void main() {
     );
   });
 
+  testWidgets('남편 캘린더에는 홈캠 관련 주의사항 섹션이 없다', (tester) async {
+    AuthSessionStore.instance.update(
+      accountId: 'calendar-husband',
+      roles: {ActiveRole.husband},
+      husbandLinked: true,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        initialRoute: RouteNames.partnerCalendar,
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        onGenerateInitialRoutes: AppRouter.onGenerateInitialRoutes,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('홈캠 관련 주의사항'), findsNothing);
+  });
+
+  testWidgets('아내 캘린더에는 홈캠 관련 주의사항 섹션이 있다', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        initialRoute: RouteNames.wifeCalendar,
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        onGenerateInitialRoutes: AppRouter.onGenerateInitialRoutes,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('홈캠 관련 주의사항'), findsOneWidget);
+  });
+
   testWidgets('Desktop에서는 Calendar와 선택 날짜 상세를 2-column으로 표시한다', (tester) async {
     tester.view.physicalSize = const Size(1280, 900);
     tester.view.devicePixelRatio = 1;

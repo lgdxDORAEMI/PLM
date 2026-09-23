@@ -408,7 +408,9 @@ class SupabaseCareRepository(CareRepository):
         appliance_executions = sum(
             1 for r in routines if r.completed_by == CompletionActor.APPLIANCE
         )
-        highest_load_area, motion_cautions = self._movement_summary(user_id, target_date)
+        highest_load_area, motion_cautions, motion_summaries = self._movement_summary(
+            user_id, target_date
+        )
 
         return {
             "completed_routines": completed_routines,
@@ -416,6 +418,7 @@ class SupabaseCareRepository(CareRepository):
             "routines": routines,
             "highest_load_area": highest_load_area,
             "motion_cautions": motion_cautions,
+            "motion_summaries": motion_summaries,
             "family": self._family_summary(user_id, target_date),
         }
 
@@ -438,7 +441,9 @@ class SupabaseCareRepository(CareRepository):
             completed=sum(1 for row in rows if row["status"] == "completed"),
         )
 
-    def _movement_summary(self, user_id: str, target_date: date) -> tuple[str | None, list[str]]:
+    def _movement_summary(
+        self, user_id: str, target_date: date
+    ) -> tuple[str | None, list[str], list[str]]:
         """Movement(Protected)가 이미 만든 generate_daily_report()를 그대로
         재사용한다 — 카테고리별 재계산이 아니라 Movement 산출물을 읽기만 한다."""
         try:
@@ -448,11 +453,11 @@ class SupabaseCareRepository(CareRepository):
             # 모션 데이터는 Report의 핵심이 아니라 보강 정보다(NFR-017: 외부 시스템
             # 장애가 핵심 기능을 막지 않아야 한다) — 실패해도 리포트는 계속 만든다.
             logger.info("모션 데이터 조회 실패, 리포트는 모션 요약 없이 진행")
-            return None, []
+            return None, [], []
         highest_load_area = (
             summary.top_burdened_body_part.value if summary.top_burdened_body_part else None
         )
-        return highest_load_area, summary.narratives
+        return highest_load_area, summary.narratives, summary.posture_summaries
 
 
 class _ClientHolder:

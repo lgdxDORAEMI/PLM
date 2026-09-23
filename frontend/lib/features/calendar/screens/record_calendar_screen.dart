@@ -313,7 +313,10 @@ class _SelectedDayDetail extends StatelessWidget {
         ],
       ),
       const SizedBox(height: AppSpacing.lg),
-      RecordDaySummary(record: record),
+      RecordDaySummary(
+        record: record,
+        showMotionCaution: role == AppUserRole.wife,
+      ),
       const SizedBox(height: AppSpacing.lg),
       AppButton(
         key: const ValueKey('calendar-open-report'),

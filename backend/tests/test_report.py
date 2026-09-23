@@ -120,6 +120,31 @@ class ReportTest(unittest.TestCase):
         self.assertIn("서 있는", report.narratives[0])
         self.assertIn("허리를 숙이는", report.narratives[1])
 
+    def test_posture_summaries_format_and_sorted_by_group_count(self) -> None:
+        """narratives와 같은 정렬 기준(횟수 내림차순, 동률은 먼저 발생한 순)을
+        따르고, "{자세} 행동이 {횟수}번 확인됐어요." 형식이어야 한다."""
+        store = InMemoryEventStore()
+        store.record(_event(8, PostureType.STANDING, BurdenLabel.HIGH_LOAD_ACTION, EventTrigger.SIT_TO_STAND, 0.0))
+        store.record(_event(9, PostureType.STANDING, BurdenLabel.HIGH_LOAD_ACTION, EventTrigger.SIT_TO_STAND, 0.0))
+        store.record(_event(14, PostureType.BENDING, BurdenLabel.REPEATED_LOAD, EventTrigger.REPEATED_COUNT, 1.0))
+        store.record(_event(15, PostureType.BENDING, BurdenLabel.REPEATED_LOAD, EventTrigger.REPEATED_COUNT, 1.0))
+        store.record(_event(16, PostureType.BENDING, BurdenLabel.REPEATED_LOAD, EventTrigger.REPEATED_COUNT, 1.0))
+
+        report = generate_daily_report(store, _USER_ID, _TODAY)
+
+        self.assertEqual(
+            report.posture_summaries,
+            ["허리를 숙이는 행동이 3번 확인됐어요.", "서 있는 행동이 2번 확인됐어요."],
+        )
+
+    def test_posture_summaries_excludes_normal_label(self) -> None:
+        store = InMemoryEventStore()
+        store.record(_event(9, PostureType.STANDING, BurdenLabel.NORMAL, EventTrigger.STATE_DURATION, 2.0))
+
+        report = generate_daily_report(store, _USER_ID, _TODAY)
+
+        self.assertEqual(report.posture_summaries, [])
+
     def test_sit_to_stand_frequency_outranks_single_long_bend_for_top_burdened(self) -> None:
         """total_duration_sec 합산만으로 고르면 Sit-to-Stand(항상 duration=0)가
         아무리 자주 일어나도 절대 1위가 될 수 없다는 게 이전에 실제로 확인된

@@ -218,3 +218,7 @@ class DailyReportSummary(BaseModel):
     posture_type 조건 없이 포함한다 — posture_type=Bending으로 강제 태깅하면
     body_part 분류 의미가 왜곡되기 때문에 집계 시점에서만 예외 처리한다."""
     narratives: list[str] = Field(default_factory=list)
+    posture_summaries: list[str] = Field(default_factory=list)
+    """"{자세} 행동이 {횟수}번 확인됐어요." 형식의 짧은 문구(2026-09-23 결정).
+    narratives는 문헌 인용이 섞인 긴 문장이라 캘린더 요약 카드/하루 인사이트
+    화면에는 이 필드를 대신 쓴다."""

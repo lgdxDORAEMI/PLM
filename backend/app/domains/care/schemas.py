@@ -104,6 +104,7 @@ class DailyReportResponse(BaseModel):
     routines: list[RoutineExecutionResponse] = Field(default_factory=list)
     highest_load_area: str | None = None
     motion_cautions: list[str] = Field(default_factory=list)
+    motion_summaries: list[str] = Field(default_factory=list)
     family: FamilyContributionSummary
     updated_at: datetime
 

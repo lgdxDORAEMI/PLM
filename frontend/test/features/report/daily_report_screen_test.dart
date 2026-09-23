@@ -63,6 +63,26 @@ void main() {
     expect(find.textContaining('남편 캘린더 탭'), findsOneWidget);
   });
 
+  testWidgets('하루 인사이트에 감지된 자세 문구가 전부 노출된다', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: DailyReportScreen(date: '2026-09-13')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('허리를 숙이는 행동이 5번 확인됐어요.'), findsOneWidget);
+    expect(find.text('서 있는 행동이 3번 확인됐어요.'), findsOneWidget);
+    expect(find.text('특이 자세가 감지되지 않았어요'), findsNothing);
+  });
+
+  testWidgets('감지된 자세가 없으면 빈 상태 문구를 보여준다', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: DailyReportScreen(date: '2026-09-01')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('특이 자세가 감지되지 않았어요'), findsOneWidget);
+  });
+
   testWidgets('유효하지 않은 날짜 parameter를 오늘 기록으로 대체하지 않는다', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(home: DailyReportScreen(date: '2026-02-31')),

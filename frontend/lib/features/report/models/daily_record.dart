@@ -34,6 +34,7 @@ class DailyRecord {
     required this.familyCompleted,
     this.burdenArea = '허리',
     this.burdenCount = 0,
+    this.motionSummaries = const [],
   });
 
   final DateTime date;
@@ -50,6 +51,7 @@ class DailyRecord {
   final int familyCompleted;
   final String burdenArea;
   final int burdenCount;
+  final List<String> motionSummaries;
 
   DailyRecord copyWithFamilySummary({
     required int requested,
@@ -70,6 +72,7 @@ class DailyRecord {
     familyCompleted: completed,
     burdenArea: burdenArea,
     burdenCount: burdenCount,
+    motionSummaries: motionSummaries,
   );
 
   DailyRecord copyWithApplianceSummary({
@@ -90,6 +93,7 @@ class DailyRecord {
     familyCompleted: familyCompleted,
     burdenArea: burdenArea,
     burdenCount: burdenCount,
+    motionSummaries: motionSummaries,
   );
 }
 

@@ -103,6 +103,9 @@ class ApiRecordService implements RecordService {
       burdenCount: report['motion_cautions'] is List
           ? (report['motion_cautions'] as List).length
           : 0,
+      motionSummaries:
+          (report['motion_summaries'] as List?)?.whereType<String>().toList() ??
+          const [],
     );
   }
 
