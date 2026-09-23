@@ -105,6 +105,6 @@ WebSocket은 브라우저 제약 때문에 Bearer 헤더 대신 `token` 쿼리�
 
 `POST /care/today/reset`은 본문 없이 호출합니다. 성공하면 `{"target_date":"YYYY-MM-DD","reset":true}`를 반환합니다. 서버가 계산한 KST 오늘과 로그인한 아내 계정만 허용합니다.
 
-DB의 `reset_daily_experience` 함수가 한 트랜잭션에서 오늘의 남편 알림, Daily 리포트, `posture_events`, 가사 요청, 해당 루틴 항목과 연결된 채팅·피드백, `routine_items`, 같은 날짜의 모든 `daily_routines` revision, `daily_conditions`를 삭제합니다. 프로필, 배우자 연결, `motion_consents`, `posture_calibration_profiles`는 유지합니다. 루틴 항목과 무관한 일반 채팅 메시지도 유지합니다. 모션 이벤트는 `started_at`이 KST 오늘 구간에 속한 행만 삭제합니다. 프론트엔드는 성공 후 프로필 재입력 흐름으로 이동하지만 이 API는 DB 프로필 자체를 지우지 않습니다.
+DB의 `reset_daily_experience` 함수가 한 트랜잭션에서 오늘의 남편 알림, Daily 리포트, `posture_events`, 가사 요청과 `household_request_items`, 해당 루틴 항목과 연결된 채팅·피드백, `routine_items`, 같은 날짜의 모든 `daily_routines` revision, `daily_conditions`를 삭제합니다. 프로필, 배우자 연결, `motion_consents`, `posture_calibration_profiles`는 유지합니다. 루틴 항목과 무관한 일반 채팅 메시지도 유지합니다. 모션 이벤트는 `started_at`이 KST 오늘 구간에 속한 행만 삭제합니다. 프론트엔드는 성공 후 프로필 재입력 흐름으로 이동하지만 이 API는 DB 프로필 자체를 지우지 않습니다.
 
-이 동작에는 [초기화 마이그레이션](../supabase/migrations/20260922000000_reset_daily_experience.sql)과 [오늘 모션 기록 추가 마이그레이션](../supabase/migrations/20260922010000_reset_today_posture_events.sql)이 필요합니다. 카메라 스트림이 계속 열려 있으면 초기화 직후 새로운 이벤트가 다시 기록될 수 있습니다. 적용·실행 순서는 [guide.md](../guide.md)를 참고하세요.
+이 동작에는 [초기화 마이그레이션](../supabase/migrations/20260922000000_reset_daily_experience.sql), [오늘 모션 기록 추가 마이그레이션](../supabase/migrations/20260922010000_reset_today_posture_events.sql), [오늘 가족 요청·알림 추가 마이그레이션](../supabase/migrations/20260923000000_reset_today_family_requests.sql)이 필요합니다. 카메라 스트림이 계속 열려 있으면 초기화 직후 새로운 이벤트가 다시 기록될 수 있습니다. 적용·실행 순서는 [guide.md](../guide.md)를 참고하세요.

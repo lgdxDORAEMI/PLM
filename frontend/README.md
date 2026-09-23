@@ -17,7 +17,7 @@ Flutter Web으로 구현한 PLM 사용자 앱입니다. 아내는 프로필, 오
 
 ## 연결 경계
 
-`lib/main.dart`가 앱을 시작하고 `lib/routing/app_router.dart`가 역할별 경로를 관리합니다. 화면별 Controller와 Service가 `BACKEND_URL`의 API를 호출합니다. 서버 인증은 Supabase 세션을 사용하며 사전 설정 계정의 자동 진입·전환은 로컬 백엔드에서만 허용됩니다. 아내 계정의 초기화 성공 후 앱은 프로필 입력 흐름으로 돌아갑니다.
+`lib/main.dart`가 앱을 시작하고 `lib/routing/app_router.dart`가 역할별 경로를 관리합니다. 화면별 Controller와 Service가 `BACKEND_URL`의 API를 호출합니다. 서버 인증은 Supabase 세션을 사용하며 사전 설정 계정의 자동 진입·전환은 로컬 백엔드에서만 허용됩니다. 아내 계정의 초기화는 오늘 가사 요청과 남편 알림을 포함한 일일 기록을 삭제한 뒤 프로필 입력 흐름으로 돌아갑니다.
 
 ThinQ 가전 목록은 백엔드에서 읽습니다. 가이드의 실행 버튼은 실제 가전 제어 명령을 보내지 않습니다. Web 이외의 플랫폼 프로젝트는 현재 지원 범위가 아닙니다.
 

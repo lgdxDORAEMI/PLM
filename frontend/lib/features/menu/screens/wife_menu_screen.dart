@@ -224,7 +224,9 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('오늘 기록을 초기화할까요?'),
-        content: const Text('오늘의 컨디션, 루틴, 실행 이력, 모션 감지 기록과 리포트가 삭제됩니다.'),
+        content: const Text(
+          '오늘의 컨디션, 루틴, 실행 이력, 가사 요청과 남편 알림, 모션 감지 기록 및 리포트가 삭제됩니다.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),

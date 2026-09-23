@@ -16,8 +16,8 @@ PLM 백엔드는 Supabase Auth로 사용자를 확인하고 PostgreSQL에 프로
 
 ## 오늘 기록 초기화
 
-`reset_daily_experience(uuid, date)`는 [기본 초기화 마이그레이션](migrations/20260922000000_reset_daily_experience.sql)에 정의되고 [모션 기록 확장 마이그레이션](migrations/20260922010000_reset_today_posture_events.sql)에서 갱신됩니다. 백엔드의 `POST /api/v1/care/today/reset`을 통해 service role로만 호출합니다.
+`reset_daily_experience(uuid, date)`는 [기본 초기화 마이그레이션](migrations/20260922000000_reset_daily_experience.sql)에 정의되고 [모션 기록 확장 마이그레이션](migrations/20260922010000_reset_today_posture_events.sql), [가족 요청·알림 확장 마이그레이션](migrations/20260923000000_reset_today_family_requests.sql) 순서로 갱신됩니다. 백엔드의 `POST /api/v1/care/today/reset`을 통해 service role로만 호출합니다.
 
-함수는 KST 오늘의 아내 데이터에 대해 알림·리포트·모션 이벤트·가사 요청·루틴 연관 채팅과 피드백·모든 루틴 revision·컨디션을 하나의 트랜잭션에서 삭제합니다. 프로필, 배우자 연결, 모션 동의와 캘리브레이션 기준선은 유지합니다. `posture_events`는 `started_at`의 KST 날짜 구간으로 제한합니다.
+함수는 KST 오늘의 아내 데이터에 대해 남편 알림·리포트·모션 이벤트·가사 요청과 요청 항목·루틴 연관 채팅과 피드백·모든 루틴 revision·컨디션을 하나의 트랜잭션에서 삭제합니다. 프로필, 배우자 연결, 모션 동의와 캘리브레이션 기준선은 유지합니다. `posture_events`는 `started_at`의 KST 날짜 구간으로 제한합니다.
 
 마이그레이션 적용 순서와 환경 설정은 [guide.md](../guide.md), 엔드포인트 계약은 [docs/api.md](../docs/api.md)를 참고하세요. 실제 키나 DB URL은 문서나 Git에 기록하지 않습니다.

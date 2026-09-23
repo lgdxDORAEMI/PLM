@@ -69,7 +69,7 @@ SDK가 저장소 밖에 있고 제한된 실행 환경에서 `bin/cache/lockfile
 
 ### 오늘 기록 초기화 API 준비
 
-아내 메뉴의 `초기화` 버튼을 사용하기 전에 `supabase/migrations/20260922000000_reset_daily_experience.sql`과 `20260922010000_reset_today_posture_events.sql`을 연결된 Supabase 프로젝트에 순서대로 적용해야 합니다. 첫 마이그레이션이 이미 적용됐다면 두 번째만 적용합니다. 마이그레이션 없이 버튼을 누르면 API가 503을 반환하거나 기존 함수가 모션 기록을 남깁니다. 초기화는 서버가 계산한 KST 오늘 날짜에만 적용되며, 삭제 후 되돌리려면 백업이 필요합니다. `POST /api/v1/care/today/reset`은 아내 로그인 세션으로만 호출할 수 있습니다. DB에서 `daily_conditions`만 직접 삭제하면 루틴·리포트·남편 알림·오늘 모션 감지 기록은 초기화되지 않으므로 이 API를 사용합니다. 모션 감지 기록은 `posture_events.started_at`의 KST 오늘 범위로 삭제하고, 캘리브레이션 기준선(`posture_calibration_profiles`)과 모션 동의 설정(`motion_consents`)은 유지합니다. 카메라 스트리밍 중에는 새 감지 기록이 다시 저장될 수 있으므로 스트리밍을 종료한 뒤 초기화합니다.
+아내 메뉴의 `초기화` 버튼을 사용하기 전에 `supabase/migrations/20260922000000_reset_daily_experience.sql`, `20260922010000_reset_today_posture_events.sql`, `20260923000000_reset_today_family_requests.sql`을 연결된 Supabase 프로젝트에 순서대로 적용해야 합니다. 앞선 마이그레이션이 이미 적용됐다면 새 파일만 적용합니다. 마이그레이션 없이 버튼을 누르면 API가 503을 반환하거나 기존 함수가 오늘 가사 요청 항목·남편 알림·모션 기록을 남길 수 있습니다. 초기화는 서버가 계산한 KST 오늘 날짜에만 적용되며, 삭제 후 되돌리려면 백업이 필요합니다. `POST /api/v1/care/today/reset`은 아내 로그인 세션으로만 호출할 수 있습니다. DB에서 `daily_conditions`만 직접 삭제하면 루틴·리포트·가사 요청·남편 알림·오늘 모션 감지 기록은 초기화되지 않으므로 이 API를 사용합니다. 모션 감지 기록은 `posture_events.started_at`의 KST 오늘 범위로 삭제하고, 캘리브레이션 기준선(`posture_calibration_profiles`)과 모션 동의 설정(`motion_consents`)은 유지합니다. 카메라 스트리밍 중에는 새 감지 기록이 다시 저장될 수 있으므로 스트리밍을 종료한 뒤 초기화합니다.
 
 ## Backend 로컬 실행
 
