@@ -46,7 +46,7 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 flutter run -d chrome
 ```
 
-실제 연동에는 `frontend/.env`의 Backend·Supabase 공개 설정과 `backend/.env`의 Supabase 서버 설정이 필요합니다. 백엔드에 등록된 계정으로 로컬에서 시작하면 아내 계정 세션을 발급하고, 메뉴의 계정 전환으로 남편 세션을 선택할 수 있습니다. 현재 앱의 진입 경로와 화면 연결 상태는 [Frontend README](frontend/README.md)를 참고하세요.
+실제 연동에는 `frontend/.env`의 Backend·Supabase 공개 설정과 `backend/.env`의 Supabase 서버 설정이 필요합니다. 백엔드에 등록된 계정으로 로컬 또는 `FRONTEND_ORIGIN`과 일치하는 운영 Web 앱에서 시작하면 아내 계정 세션을 발급하고, 메뉴의 계정 전환으로 남편 세션을 선택할 수 있습니다. 현재 앱의 진입 경로와 화면 연결 상태는 [Frontend README](frontend/README.md)를 참고하세요.
 
 실제 대화에는 백엔드 `LLM_API_KEY`가 필요합니다. 루틴 생성에는 오늘 컨디션·할 일 저장과 AI 설정이 필요하며, AI 생성 실패 시 백엔드 폴백 루틴이 저장될 수 있습니다. 연결 실패 시 실제 앱은 로컬 예시로 자동 대체하지 않습니다. `PLM_PREVIEW=true`로 명시적으로 실행한 미리보기에서만 로컬 예시를 사용합니다.
 
@@ -108,7 +108,7 @@ flutter run -d chrome --dart-define=PLM_PREVIEW=true
 3. Backend의 비공개 `backend/.env`에 `PLM_WIFE_EMAIL`, `PLM_WIFE_PASSWORD`, `PLM_HUSBAND_EMAIL`, `PLM_HUSBAND_PASSWORD`를 설정하고 Backend를 재시작합니다. 두 계정은 Supabase Auth에 등록되어 있어야 합니다. 계정 비밀번호를 `frontend/.env`에 넣지 않습니다.
 4. 앱을 열면 아내 계정으로 자동 로그인합니다. 아내·남편 메뉴의 `계정 전환` 버튼은 실제 Supabase 세션을 교체합니다. 새로고침하면 다시 아내 계정으로 시작합니다. 계정 상태 조회 API가 역할과 프로필 완료 여부를 결정합니다.
 
-`SUPABASE_URL`과 `SUPABASE_ANON_KEY`가 모두 비어 있으면 기존 로컬 화면 흐름을 사용합니다. 한쪽만 입력한 상태는 연결 설정이 완료된 것으로 취급하지 않습니다. API 요청에서 401이 나오면 Supabase 로그인 세션을, 503이 나오면 백엔드와 Supabase 연결을 확인합니다. 자동 계정 진입 API는 Backend와 Web 앱을 같은 PC의 localhost에서 실행할 때만 사용할 수 있습니다. Flutter Web의 `.env`는 빌드에 포함되므로 계정 비밀번호를 넣지 마세요.
+`SUPABASE_URL`과 `SUPABASE_ANON_KEY`가 모두 비어 있으면 기존 로컬 화면 흐름을 사용합니다. 한쪽만 입력한 상태는 연결 설정이 완료된 것으로 취급하지 않습니다. API 요청에서 401이 나오면 Supabase 로그인 세션을, 403이 나오면 요청 Origin과 Backend의 `FRONTEND_ORIGIN`을, 503이 나오면 백엔드와 Supabase 연결을 확인합니다. 자동 계정 진입 API는 localhost 또는 `FRONTEND_ORIGIN`과 정확히 일치하는 Web 앱에서 사용할 수 있습니다. Flutter Web의 `.env`는 빌드에 포함되므로 계정 비밀번호를 넣지 마세요.
 
 백엔드 프로필 API는 생년월일을 저장하고 반환합니다. Frontend는 마지막 생리 시작일만 선택한 경우 계산값을 화면에 표시하되, 저장 요청에는 마지막 생리 시작일만 보내 Backend가 출산예정일을 계산하도록 합니다. 가이드 응답의 `item_id`로 건강 활동 완료와 수면 환경 변경을 저장합니다. 루틴 생성 시 컨디션 저장 → 예정 활동 저장 → 루틴 생성 순서를 유지합니다. 401은 로그인 세션, 404는 오늘 루틴 또는 기록의 존재 여부, 409는 선행 입력, 422는 입력값, 503은 서버 연결 상태를 확인하세요.
 

@@ -42,16 +42,23 @@ class AccountSwitchInput(BaseModel):
     target: Literal["wife", "husband"]
 
 
-def _require_local_request(request: Request) -> None:
-    """Passwordless account access is available only on the presentation machine."""
-    if request.client is None or request.client.host not in {"127.0.0.1", "::1"}:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "로컬 앱에서만 사용할 수 있습니다.")
+def _require_presentation_request(request: Request, settings: Settings) -> None:
+    """사전 등록 계정 세션은 로컬 또는 설정된 운영 Web Origin에만 발급한다."""
+    if request.client is not None and request.client.host in {"127.0.0.1", "::1"}:
+        return
+
+    request_origin = request.headers.get("origin", "").strip().rstrip("/")
+    frontend_origin = settings.frontend_origin.strip().rstrip("/")
+    if frontend_origin and request_origin == frontend_origin:
+        return
+
+    raise HTTPException(status.HTTP_403_FORBIDDEN, "허용된 앱에서만 사용할 수 있습니다.")
 
 
 @router.post("/session/default")
 def default_session(request: Request, response: Response, settings: SettingsDependency) -> dict[str, str]:
     """Start each fresh app launch with the configured wife account."""
-    _require_local_request(request)
+    _require_presentation_request(request, settings)
     response.headers["Cache-Control"] = "no-store"
     return issue_account_session(settings, "wife")
 
@@ -65,7 +72,7 @@ def switch_session(
     settings: SettingsDependency,
 ) -> dict[str, str]:
     """Only either configured account may request the other account's session."""
-    _require_local_request(request)
+    _require_presentation_request(request, settings)
     known_emails = {
         configured_email(settings, "wife").strip().lower(),
         configured_email(settings, "husband").strip().lower(),

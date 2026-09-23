@@ -1,4 +1,4 @@
-"""The two presentation sessions stay server-side and local-only."""
+"""The two presentation sessions stay server-side and trusted-app-only."""
 
 import unittest
 from types import SimpleNamespace
@@ -20,6 +20,7 @@ SETTINGS = Settings(
     plm_wife_password="wife-test-password",
     plm_husband_email="husband@example.com",
     plm_husband_password="husband-test-password",
+    frontend_origin="https://app.example.com",
 )
 
 
@@ -39,7 +40,7 @@ class AccountSessionTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["user_id"], "wife-id")
         self.assertEqual(result["refresh_token"], "refresh")
 
-    async def test_default_session_requires_loopback(self) -> None:
+    async def test_default_session_rejects_untrusted_remote_origin(self) -> None:
         app.dependency_overrides[get_settings] = lambda: SETTINGS
         with patch("app.api.v1.account.issue_account_session") as issue:
             async with AsyncClient(
@@ -49,6 +50,26 @@ class AccountSessionTest(unittest.IsolatedAsyncioTestCase):
                 response = await client.post("/api/v1/account/session/default")
         self.assertEqual(response.status_code, 403)
         issue.assert_not_called()
+
+    async def test_default_session_allows_configured_frontend_origin(self) -> None:
+        app.dependency_overrides[get_settings] = lambda: SETTINGS
+        session = {
+            "account": "wife",
+            "user_id": "wife-id",
+            "access_token": "access",
+            "refresh_token": "refresh",
+        }
+        with patch("app.api.v1.account.issue_account_session", return_value=session) as issue:
+            async with AsyncClient(
+                transport=ASGITransport(app=app, client=("192.0.2.10", 12345)),
+                base_url="http://test",
+                headers={"Origin": "https://app.example.com"},
+            ) as client:
+                response = await client.post("/api/v1/account/session/default")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["cache-control"], "no-store")
+        self.assertEqual(response.json(), session)
+        issue.assert_called_once_with(SETTINGS, "wife")
 
     async def test_switch_requires_configured_source_account(self) -> None:
         app.dependency_overrides[get_settings] = lambda: SETTINGS

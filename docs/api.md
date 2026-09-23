@@ -15,8 +15,8 @@
 
 | 메서드 | 경로 | 요청·결과 |
 | --- | --- | --- |
-| POST | `/account/session/default` | 로컬 실행 환경에서 사전 설정된 아내 계정 세션 발급. Bearer 토큰 예외 |
-| POST | `/account/session/switch` | 로컬의 설정된 계정만 `target`이 `wife` 또는 `husband`인 본문으로 전환 |
+| POST | `/account/session/default` | 로컬 또는 허용된 운영 Web Origin에서 사전 설정된 아내 계정 세션 발급. Bearer 토큰 예외 |
+| POST | `/account/session/switch` | 로컬 또는 허용된 운영 Web Origin의 설정된 계정만 `target`이 `wife` 또는 `husband`인 본문으로 전환 |
 | GET | `/account/bootstrap` | 역할, 프로필 완료 상태, 배우자 연결 상태와 시작 목적지 |
 | GET | `/account/partner-link` | 연결 상태와 본인·배우자 표시 이름 |
 | POST | `/account/partner-invitations` | 만료 시각이 있는 초대 링크 발급; 201 |
@@ -29,7 +29,7 @@
 | PUT | `/profile/me/allergies` | 알레르기 저장 |
 | PUT | `/profile/me/medical-notes` | 병원 주의사항 저장 |
 
-`/account/session/default`와 `/account/session/switch`는 요청 클라이언트가 서버의 localhost일 때만 허용됩니다. 계정 비밀번호는 백엔드 설정에만 둡니다. 프로필 필드의 정확한 필수 여부와 범위는 OpenAPI 스키마를 따릅니다.
+`/account/session/default`와 `/account/session/switch`는 요청 클라이언트가 서버의 localhost이거나 요청 `Origin`이 Backend의 `FRONTEND_ORIGIN`과 정확히 일치할 때만 허용됩니다. 계정 비밀번호는 백엔드 설정에만 둡니다. 프로필 필드의 정확한 필수 여부와 범위는 OpenAPI 스키마를 따릅니다.
 
 ## 오늘 기록과 루틴
 
