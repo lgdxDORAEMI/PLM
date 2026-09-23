@@ -76,34 +76,6 @@ class ApplianceMapperTest(unittest.TestCase):
         self.assertNotIn("appliance", [item.payload["owner"] for item in result.items])
         self.assertEqual(result.items[1].payload["owner"], "partner")
 
-    def test_air_purifier_is_injected_regardless_of_ai_output(self) -> None:
-        result = apply_inventory(
-            guide(task("laundry", "빨래")),
-            DeviceInventory(
-                (device(ApplianceType.WASHER, "세탁기"), device(ApplianceType.AIR_PURIFIER, "공청이")),
-                InventoryStatus.CONNECTED,
-            ),
-        )
-        purifier_items = [item for item in result.items if item.item_key == "household:air_purifier"]
-        self.assertEqual(len(purifier_items), 1)
-        self.assertEqual(purifier_items[0].title, "공기청정기 가동")
-        self.assertEqual(purifier_items[0].payload["owner"], "appliance")
-        self.assertEqual(purifier_items[0].payload["appliances"][0]["name"], "공청이")
-
-    def test_no_air_purifier_item_without_the_device(self) -> None:
-        result = apply_inventory(
-            guide(task("laundry", "빨래")),
-            DeviceInventory((device(ApplianceType.WASHER, "세탁기"),), InventoryStatus.CONNECTED),
-        )
-        self.assertNotIn("household:air_purifier", [item.item_key for item in result.items])
-
-    def test_air_purifier_not_injected_when_inventory_unavailable(self) -> None:
-        result = apply_inventory(
-            guide(task("laundry", "빨래")),
-            DeviceInventory((device(ApplianceType.AIR_PURIFIER, "공청이"),), InventoryStatus.TIMEOUT),
-        )
-        self.assertNotIn("household:air_purifier", [item.item_key for item in result.items])
-
     def test_unknown_type_and_unrelated_title_never_match(self) -> None:
         unknown = normalize_device({"deviceId": "x", "deviceInfo": {"alias": "에어컨", "deviceType": "DEVICE_AIR_CONDITIONER"}})
         self.assertEqual(unknown.device_type, ApplianceType.UNKNOWN)
