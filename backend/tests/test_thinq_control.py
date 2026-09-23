@@ -125,6 +125,17 @@ class ControlEndpointTest(unittest.IsolatedAsyncioTestCase):
             call("purifier-1", {"airFlow": {"windStrength": "HIGH"}}),
         ])
 
+    async def test_power_off_succeeds_when_device_already_off(self) -> None:
+        """이미 꺼진 기기에 "끄기"를 다시 보내면 LG가 2304로 거부한다 — 이것도 치명적 실패가 아니다."""
+        client = ThinQClient()
+        inventory = DeviceInventory((purifier(),), InventoryStatus.CONNECTED)
+        with (
+            patch.object(client, "get_inventory", return_value=inventory),
+            patch.object(client, "control", return_value=ControlResult(ControlStatus.ERROR, "2304")),
+        ):
+            response = await self._call(client, "purifier-1", {"power": "off"})
+        self.assertEqual(response.status_code, 200)
+
     async def test_unowned_device_id_is_rejected(self) -> None:
         client = ThinQClient()
         inventory = DeviceInventory((purifier(),), InventoryStatus.CONNECTED)
