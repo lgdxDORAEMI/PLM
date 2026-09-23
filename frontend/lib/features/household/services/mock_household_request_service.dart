@@ -16,9 +16,6 @@ class MockHouseholdRequestService implements HouseholdRequestService {
   Future<List<HouseholdTask>> fetchGuide() async => HouseholdTaskMockData.tasks;
 
   @override
-  Future<bool> runAirPurifier(String deviceId) async => true;
-
-  @override
   void addListener(void Function() listener) => _store.addListener(listener);
 
   @override

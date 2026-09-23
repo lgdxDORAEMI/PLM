@@ -37,9 +37,6 @@ class ApiHouseholdRequestService extends ChangeNotifier
             _ => HouseholdTaskOwner.self,
           };
           final appliances = payload['appliances'];
-          final applianceMaps = appliances is List
-              ? appliances.whereType<Map>().toList(growable: false)
-              : const <Map>[];
           return HouseholdTask(
             id: item['item_id']?.toString() ?? '',
             title: item['title']?.toString() ?? '',
@@ -48,16 +45,13 @@ class ApiHouseholdRequestService extends ChangeNotifier
                 payload['reason']?.toString() ??
                 '',
             owner: owner,
-            applianceNames: applianceMaps
-                .map((device) => device['name']?.toString() ?? '')
-                .where((name) => name.isNotEmpty)
-                .toList(growable: false),
-            airPurifierDeviceId: applianceMaps
-                .firstWhere(
-                  (device) => device['device_type'] == 'air_purifier',
-                  orElse: () => const {},
-                )['device_id']
-                ?.toString(),
+            applianceNames: appliances is List
+                ? appliances
+                      .whereType<Map>()
+                      .map((device) => device['name']?.toString() ?? '')
+                      .where((name) => name.isNotEmpty)
+                      .toList(growable: false)
+                : const [],
             selected: owner == HouseholdTaskOwner.partner,
             status: item['status'] == 'completed'
                 ? HouseholdTaskStatus.done
@@ -65,19 +59,6 @@ class ApiHouseholdRequestService extends ChangeNotifier
           );
         })
         .toList(growable: false);
-  }
-
-  @override
-  Future<bool> runAirPurifier(String deviceId) async {
-    try {
-      await _client.post(
-        '/api/v1/thinq/devices/${Uri.encodeComponent(deviceId)}/control',
-        {'power': 'on'},
-      );
-      return true;
-    } on ApiException {
-      return false;
-    }
   }
 
   @override

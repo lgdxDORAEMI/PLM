@@ -15,9 +15,6 @@ class HouseholdShareResult {
 abstract interface class HouseholdRequestService implements Listenable {
   Future<List<HouseholdTask>> fetchGuide();
 
-  /// 실제 ThinQ 기기 전원을 켠다. 실패 시 false를 돌려주며 예외를 던지지 않는다.
-  Future<bool> runAirPurifier(String deviceId);
-
   Future<HouseholdShareResult> send({
     required List<HouseholdTask> tasks,
     required String reason,

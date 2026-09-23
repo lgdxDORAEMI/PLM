@@ -202,9 +202,6 @@ class HouseholdGuideController extends ChangeNotifier {
     }
   }
 
-  Future<bool> runAirPurifier(String deviceId) =>
-      requestService.runAirPurifier(deviceId);
-
   void confirmPartnerTask(String id) {
     _update(id, (task) => task.copyWith(status: HouseholdTaskStatus.done));
   }
