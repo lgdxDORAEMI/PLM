@@ -36,3 +36,5 @@ PLM은 임산부의 오늘 컨디션과 예정 활동을 바탕으로 식사·�
 ## 배포 구성
 
 운영 환경은 `frontend/`의 Flutter Web을 GitHub Pages에, `backend/`의 FastAPI를 Railway Service에 배포합니다. Pages 빌드는 Repository Variable `API_BASE_URL`로 Railway 주소를 받아 사용하며, 서버 비밀값은 Railway의 Backend 서비스 Variables에만 저장합니다. Pages 작업은 `frontend/`만 체크아웃하고 `frontend/build/web`만 배포하며, Railway는 `/backend`만 빌드합니다. 실제 생성 순서와 환경변수 목록은 [배포 안내](guide.md#railway와-github-pages-배포)를 참고하세요.
+
+Railway Backend는 `backend/Dockerfile`을 사용합니다. 이 이미지는 FastAPI와 MediaPipe/OpenCV 실행에 필요한 Linux 런타임 라이브러리를 포함하며, 배포 후 `/health`와 `/docs`에서 상태 및 Swagger UI를 확인할 수 있습니다.
