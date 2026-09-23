@@ -85,6 +85,21 @@ void main() {
     expect(find.byType(YouTubeEmbed), findsOneWidget);
   });
 
+  testWidgets('집중 부위 카드를 누르면 해당 부위 운동 영상을 연다', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: HealthGuideScreen(service: MockHealthGuideService()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('health-area-골반')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('임신 중 골반 통증 완화 운동'), findsOneWidget);
+    expect(find.byType(YouTubeEmbed), findsOneWidget);
+  });
+
   testWidgets('전신 운동 영상은 재생 시간과 대상 임신 분기를 표시한다', (tester) async {
     tester.view.physicalSize = const Size(1200, 1200);
     tester.view.devicePixelRatio = 1;

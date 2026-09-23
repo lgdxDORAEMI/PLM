@@ -213,7 +213,7 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
                             _BodyLoadCard(
                               load: load,
                               selected: load.area == _controller.selectedArea,
-                              onTap: () => _controller.selectArea(load.area),
+                              onTap: () => _openAreaGuide(load.area),
                             ),
                             const SizedBox(height: AppSpacing.md),
                           ],
@@ -243,6 +243,17 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
       Navigator.pop(context);
     } else {
       Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
+    }
+  }
+
+  /// 집중 부위 카드에서도 부위 선택과 대표 운동 재생을 한 번에 수행한다.
+  void _openAreaGuide(String area) {
+    _controller.selectArea(area);
+    final activities = _controller.activities.where(
+      (activity) => activity.area == area,
+    );
+    if (activities.isNotEmpty) {
+      unawaited(_showGuide(activities.first));
     }
   }
 
