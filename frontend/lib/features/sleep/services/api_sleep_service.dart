@@ -20,6 +20,36 @@ class ApiSleepService implements SleepService {
   }
 
   @override
+  Future<String?> findAirPurifierDeviceId() async {
+    final response = await _client.get('/api/v1/thinq/devices');
+    final devices = response?['devices'];
+    if (devices is! List) return null;
+    for (final device in devices.whereType<Map>()) {
+      if (device['device_type'] == 'air_purifier') {
+        return device['device_id']?.toString();
+      }
+    }
+    return null;
+  }
+
+  @override
+  Future<bool> controlAirPurifier(
+    String deviceId, {
+    required String power,
+    String? windStrength,
+  }) async {
+    try {
+      await _client.post(
+        '/api/v1/thinq/devices/${Uri.encodeComponent(deviceId)}/control',
+        {'power': power, 'wind_strength': ?windStrength},
+      );
+      return true;
+    } on ApiException {
+      return false;
+    }
+  }
+
+  @override
   Future<SleepGuideData> fetchGuide() async {
     final response = await _client.get(
       '/api/v1/sleep/today',

@@ -76,6 +76,18 @@ class ApplianceMapperTest(unittest.TestCase):
         self.assertNotIn("appliance", [item.payload["owner"] for item in result.items])
         self.assertEqual(result.items[1].payload["owner"], "partner")
 
+    def test_air_purifier_is_recognized_but_never_matches_household_tasks(self) -> None:
+        """실제 ThinQ 제어는 수면가이드 전용이다 — 가사가이드는 공기청정기를 매칭하지 않는다."""
+        purifier = normalize_device(
+            {"deviceId": "p", "deviceInfo": {"alias": "공청이", "deviceType": "DEVICE_AIR_PURIFIER"}}
+        )
+        self.assertEqual(purifier.device_type, ApplianceType.AIR_PURIFIER)
+        result = apply_inventory(
+            guide(task("laundry", "빨래")),
+            DeviceInventory((device(ApplianceType.AIR_PURIFIER, "공청이"),), InventoryStatus.CONNECTED),
+        )
+        self.assertNotIn("appliance", [item.payload["owner"] for item in result.items])
+
     def test_unknown_type_and_unrelated_title_never_match(self) -> None:
         unknown = normalize_device({"deviceId": "x", "deviceInfo": {"alias": "에어컨", "deviceType": "DEVICE_AIR_CONDITIONER"}})
         self.assertEqual(unknown.device_type, ApplianceType.UNKNOWN)

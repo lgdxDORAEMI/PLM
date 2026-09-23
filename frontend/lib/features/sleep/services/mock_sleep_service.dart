@@ -10,6 +10,16 @@ class MockSleepService implements SleepService {
     Map<String, dynamic> values,
   ) async {}
 
+  @override
+  Future<String?> findAirPurifierDeviceId() async => 'mock-purifier';
+
+  @override
+  Future<bool> controlAirPurifier(
+    String deviceId, {
+    required String power,
+    String? windStrength,
+  }) async => true;
+
   static const guide = SleepGuideData(
     summaryTitle: '오늘은 충분한 휴식이 필요해요',
     summary: '28주차에 권장되는 왼쪽 옆으로 눕는 자세를 반영했어요',

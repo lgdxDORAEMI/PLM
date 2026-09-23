@@ -50,4 +50,28 @@ void main() {
     expect(find.textContaining('실제 기기는 작동하지 않아요'), findsNothing);
     expect(ApplianceExecutionStore.instance.forDate(DateTime.now()).length, 1);
   });
+
+  testWidgets('공기청정기 카드는 팀이 확정한 4개 라벨만 보여주고 실제 제어를 호출한다', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: SleepGuideScreen()));
+    await tester.pumpAndSettle();
+
+    final purifierCard = find.byKey(const ValueKey('sleep-environment-purifier'));
+    await tester.ensureVisible(purifierCard);
+    await tester.pumpAndSettle();
+    await tester.tap(purifierCard);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('sleep-option-purifier-조용 모드')), findsOneWidget);
+    expect(find.byKey(const ValueKey('sleep-option-purifier-자동')), findsOneWidget);
+    expect(find.byKey(const ValueKey('sleep-option-purifier-강풍')), findsOneWidget);
+    expect(find.byKey(const ValueKey('sleep-option-purifier-끄기')), findsOneWidget);
+    // 취침 예약(타이머)은 이번 범위에서 제외되어 목록에 없어야 한다.
+    expect(find.byKey(const ValueKey('sleep-option-purifier-취침 예약')), findsNothing);
+
+    await tester.tap(find.byKey(const ValueKey('sleep-option-purifier-강풍')));
+    await tester.tap(find.byKey(const ValueKey('sleep-apply-purifier')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('공기청정기를 강풍(으)로 설정했어요'), findsOneWidget);
+  });
 }

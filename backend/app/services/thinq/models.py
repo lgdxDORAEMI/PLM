@@ -10,6 +10,7 @@ class ApplianceType(StrEnum):
     DRYER = "dryer"
     ROBOT_VACUUM = "robot_vacuum"
     DISHWASHER = "dishwasher"
+    AIR_PURIFIER = "air_purifier"
     UNKNOWN = "unknown"
 
 
@@ -22,12 +23,14 @@ DEVICE_TYPES = {
     "DEVICE_WASHTOWER_DRYER": ApplianceType.DRYER,
     "DEVICE_ROBOT_CLEANER": ApplianceType.ROBOT_VACUUM,
     "DEVICE_DISH_WASHER": ApplianceType.DISHWASHER,
+    "DEVICE_AIR_PURIFIER": ApplianceType.AIR_PURIFIER,
 }
 DEFAULT_NAMES = {
     ApplianceType.WASHER: "세탁기",
     ApplianceType.DRYER: "건조기",
     ApplianceType.ROBOT_VACUUM: "로봇청소기",
     ApplianceType.DISHWASHER: "식기세척기",
+    ApplianceType.AIR_PURIFIER: "공기청정기",
     ApplianceType.UNKNOWN: "가전",
 }
 

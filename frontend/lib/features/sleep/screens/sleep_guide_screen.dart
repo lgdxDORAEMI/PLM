@@ -111,11 +111,46 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
   }
 
   Future<void> _showEnvironmentSheet(SleepEnvironmentSetting setting) {
+    if (setting.type == SleepEnvironmentType.purifier &&
+        _controller.airPurifierConnected) {
+      return showAppBottomSheet<void>(
+        context: context,
+        builder: (context) => SleepEnvironmentSheet(
+          setting: SleepEnvironmentSetting(
+            type: setting.type,
+            label: setting.label,
+            value: setting.value,
+            options: purifierCommands.keys.toList(growable: false),
+          ),
+          onApply: _runAirPurifier,
+        ),
+      );
+    }
     return showAppBottomSheet<void>(
       context: context,
       builder: (context) => SleepEnvironmentSheet(
         setting: setting,
         onApply: (value) => _controller.updateValue(setting.type, value),
+      ),
+    );
+  }
+
+  /// 공기청정기만 팀이 확정한 4개 라벨로 실기기를 켜고 끈다.
+  Future<void> _runAirPurifier(String label) async {
+    final ok = await _controller.runAirPurifier(label);
+    if (!mounted) return;
+    await showAppDialog<void>(
+      context: context,
+      builder: (context) => AppDialog(
+        icon: ok ? Icons.check_circle_outline : Icons.error_outline,
+        iconColor: ok ? AppColors.success : AppColors.danger,
+        title: ok ? '공기청정기를 $label(으)로 설정했어요' : '공기청정기를 제어하지 못했어요',
+        content: ok
+            ? const SizedBox.shrink()
+            : const Text('연결 상태를 확인하고 다시 시도해 주세요.'),
+        actions: [
+          AppDialogAction(label: '확인', onPressed: () => Navigator.pop(context)),
+        ],
       ),
     );
   }
