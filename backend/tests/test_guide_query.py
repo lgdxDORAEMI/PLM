@@ -345,3 +345,14 @@ class SleepEnvironmentTypeTest(unittest.TestCase):
         out = _normalize_payload(RoutineCategory.SLEEP, payload)
         self.assertEqual([e["type"] for e in out["environments"]], ["light", "temperature", "humidity", "purifier"])
         self.assertIs(_normalize_payload(RoutineCategory.MEAL, payload), payload)  # 수면만 바꾼다
+
+    def test_health_body_area_codes_become_korean(self) -> None:
+        """09-25: 부위가 화면에 그대로 보여 "waist"가 노출됐다. 조회할 때 한글로 바꾼다."""
+        from app.domains.guide.query_service import _normalize_payload
+        from app.domains.guide.schemas import RoutineCategory
+
+        payload = {"bodyArea": "waist", "loads": [{"area": "pelvis", "label": "보통이에요", "value": 3},
+                                                  {"area": "허리", "label": "심해요", "value": 5}]}
+        out = _normalize_payload(RoutineCategory.HEALTH, payload, item_key="health:waist")
+        self.assertEqual(out["bodyArea"], "허리")
+        self.assertEqual([load["area"] for load in out["loads"]], ["골반", "허리"])  # 예전 한글 행은 그대로

@@ -29,7 +29,7 @@ from supabase import Client
 
 from app.domains.errors import DomainNotFoundError, DomainStorageError
 from app.services.routine.meal_catalog import image_path_for, public_image_url
-from app.services.routine.prompt import SLEEP_ENV_LABELS
+from app.services.routine.prompt import BODY_AREA_LABELS, SLEEP_ENV_LABELS
 
 from .schemas import GuideItem, GuideResponse, RoutineCategory
 
@@ -191,10 +191,13 @@ def _normalize_payload(
     health_videos: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """09-22: 예전 루틴은 수면 환경 type이 한글("조명")로 저장돼 프론트가 5개를 모두 조명으로 처리했다.
-    조회할 때 코드(light·temperature·humidity·sound·purifier)로 바꾼다. 새 루틴은 스키마가 코드만 허용한다."""
+    조회할 때 코드(light·temperature·humidity·sound·purifier)로 바꾼다. 새 루틴은 스키마가 코드만 허용한다.
+    09-25: 건강 부위(bodyArea·loads[].area)는 반대로 코드로 저장하고 조회할 때 한글로 바꾼다 —
+    화면에 그대로 보이는 값이라 "waist"가 노출됐다. 예전에 한글로 저장된 행은 그대로 통과한다."""
     if category == RoutineCategory.HEALTH:
         part = item_key.split(":")[1:2]
         video = (health_videos or {}).get(part[0]) if part else None
+        payload = _localize_body_areas(payload)
         return {**payload, "video": video} if video else payload
     if category != RoutineCategory.SLEEP or not isinstance(payload.get("environments"), list):
         return payload
@@ -204,3 +207,20 @@ def _normalize_payload(
         for env in payload["environments"]
     ]
     return {**payload, "environments": environments}
+
+
+_BODY_AREA_KO = {code: label for label, code in BODY_AREA_LABELS.items()}
+
+
+def _body_area_ko(value: Any) -> Any:
+    """waist → 허리. 이미 한글이거나 모르는 값이면 그대로 둔다."""
+    return _BODY_AREA_KO.get(str(value).strip(), value) if value else value
+
+
+def _localize_body_areas(payload: dict[str, Any]) -> dict[str, Any]:
+    loads = payload.get("loads")
+    if isinstance(loads, list):
+        loads = [{**load, "area": _body_area_ko(load.get("area"))} if isinstance(load, dict) else load
+                 for load in loads]
+        payload = {**payload, "loads": loads}
+    return {**payload, "bodyArea": _body_area_ko(payload.get("bodyArea"))}
