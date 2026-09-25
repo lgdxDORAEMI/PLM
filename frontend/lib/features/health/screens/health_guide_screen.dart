@@ -33,7 +33,6 @@ class HealthGuideScreen extends StatefulWidget {
 class _HealthGuideScreenState extends State<HealthGuideScreen> {
   late final BodyCareController _controller;
   bool _showFocusHelp = false;
-  bool _allowActivityCompletion = true;
   @override
   void initState() {
     super.initState();
@@ -118,20 +117,27 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
                           MovementGuideCard(
                             activity: activity.$2,
                             featured: activity.$1 == 0,
-                            showCompletion: _allowActivityCompletion,
+                            showCompletion: _controller.isFocusActivity(
+                              activity.$2,
+                            ),
                             completed: _controller.isCompleted(activity.$2.id),
+                            skipped: _controller.isSkipped(activity.$2.id),
                             onOpen: () => _showGuide(
                               activity.$2,
-                              allowCompletion: _allowActivityCompletion,
+                              allowCompletion: _controller.isFocusActivity(
+                                activity.$2,
+                              ),
                             ),
                             onComplete: () =>
                                 _controller.toggleCompleted(activity.$2.id),
+                            onSkip: () =>
+                                _controller.toggleSkipped(activity.$2.id),
                           ),
                           const SizedBox(height: AppSpacing.md),
                         ],
                         const SizedBox(height: AppSpacing.sm),
                         _BodyAreaSelector(
-                          areas: _controller.availableAreas,
+                          areas: _controller.otherAreas,
                           selectedArea: _controller.selectedArea,
                           onSelected: _selectOtherArea,
                         ),
@@ -201,7 +207,7 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
                                     ),
                                   ),
                                   child: const Text(
-                                    '컨디션 정보를 반영하여 통증이 보통 이상인 항목을 보여줍니다.',
+                                    '통증이 보통 이상인 부위를 우선 보여주고, 해당 부위가 없으면 전신 스트레칭을 추천합니다.',
                                   ),
                                 ),
                               ),
@@ -209,28 +215,29 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
                           : const SizedBox.shrink(),
                     ),
                     const SizedBox(height: AppSpacing.lg),
-                    if (_controller.loads.isEmpty)
-                      const Text('오늘 입력한 통증 중 보통 이상인 부위가 없어요.')
-                    else
-                      Column(
-                        children: [
-                          for (final load in _controller.loads) ...[
-                            _BodyLoadCard(
-                              load: load,
-                              selected: load.area == _controller.selectedArea,
-                              onTap: () => _openAreaGuide(load.area),
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                          ],
+                    if (_controller.loads.isEmpty) ...[
+                      const Text('오늘 입력한 통증 중 보통 이상인 부위가 없어 전신 스트레칭을 추천해요.'),
+                      const SizedBox(height: AppSpacing.md),
+                    ],
+                    Column(
+                      children: [
+                        for (final load in _controller.focusLoads) ...[
+                          _BodyLoadCard(
+                            load: load,
+                            selected: load.area == _controller.selectedArea,
+                            onTap: () => _openAreaGuide(load.area),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
                         ],
-                      ),
+                      ],
+                    ),
                   ],
                 ),
               ),
               const SizedBox(height: AppSpacing.xl),
               Text(
                 _controller.loads.isEmpty
-                    ? '불편하거나 통증이 생기면 동작을 멈추고 의료진과 상담해 주세요.'
+                    ? '가볍게 전신을 풀어보세요. 불편하거나 통증이 생기면 동작을 멈추고 의료진과 상담해 주세요.'
                     : '오늘은 ${_controller.loads.map((load) => load.area).join('·')} 부위를 살펴보세요. 불편하거나 통증이 심해지면 동작을 멈추고 의료진과 상담해 주세요.',
                 style: Theme.of(
                   context,
@@ -251,22 +258,10 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
     }
   }
 
-  /// 집중 부위 카드에서도 부위 선택과 대표 운동 재생을 한 번에 수행한다.
-  void _openAreaGuide(String area) {
-    _allowActivityCompletion = true;
-    _controller.selectArea(area);
-    final activities = _controller.activities.where(
-      (activity) => activity.area == area,
-    );
-    if (activities.isNotEmpty) {
-      unawaited(_showGuide(activities.first, allowCompletion: true));
-    }
-  }
+  /// 집중 부위를 선택하면 같은 화면의 활동 카드 영역을 해당 부위로 바꾼다.
+  void _openAreaGuide(String area) => _controller.selectArea(area);
 
-  void _selectOtherArea(String area) {
-    _allowActivityCompletion = false;
-    _controller.selectArea(area);
-  }
+  void _selectOtherArea(String area) => _controller.selectArea(area);
 
   Future<void> _showGuide(
     BodyCareActivity activity, {
@@ -294,12 +289,29 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
               Text(activity.guide),
               if (allowCompletion) ...[
                 const SizedBox(height: AppSpacing.lg),
-                FilledButton(
-                  onPressed: () {
-                    _controller.toggleCompleted(activity.id);
-                    Navigator.pop(context);
-                  },
-                  child: const Text('활동 완료'),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        key: ValueKey('health-guide-skip-${activity.id}'),
+                        onPressed: () {
+                          _controller.toggleSkipped(activity.id);
+                          Navigator.pop(context);
+                        },
+                        child: const Text('오늘 안하기'),
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () {
+                          _controller.toggleCompleted(activity.id);
+                          Navigator.pop(context);
+                        },
+                        child: const Text('활동 완료'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ],
@@ -369,23 +381,47 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
               ),
               if (allowCompletion) ...[
                 const SizedBox(height: AppSpacing.md),
-                FilledButton(
-                  key: ValueKey('health-video-complete-${activity.id}'),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary700,
-                    foregroundColor: AppColors.textInverse,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.button),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        key: ValueKey('health-video-skip-${activity.id}'),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.md,
+                          ),
+                        ),
+                        onPressed: () {
+                          _controller.toggleSkipped(activity.id);
+                          Navigator.pop(dialogContext);
+                        },
+                        child: const Text('오늘 안하기'),
+                      ),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: AppSpacing.md,
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: FilledButton(
+                        key: ValueKey('health-video-complete-${activity.id}'),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppColors.primary700,
+                          foregroundColor: AppColors.textInverse,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.button,
+                            ),
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.md,
+                          ),
+                        ),
+                        onPressed: () {
+                          _controller.toggleCompleted(activity.id);
+                          Navigator.pop(dialogContext);
+                        },
+                        child: const Text('활동 완료'),
+                      ),
                     ),
-                  ),
-                  onPressed: () {
-                    _controller.toggleCompleted(activity.id);
-                    Navigator.pop(dialogContext);
-                  },
-                  child: const Text('활동 완료'),
+                  ],
                 ),
               ],
             ],

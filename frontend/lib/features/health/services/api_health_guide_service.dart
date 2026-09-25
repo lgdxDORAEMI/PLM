@@ -8,10 +8,10 @@ class ApiHealthGuideService implements HealthGuideService {
   final ApiClient _client;
 
   @override
-  Future<void> setCompleted(String itemId, bool completed) async {
+  Future<void> setStatus(String itemId, HealthExecutionStatus status) async {
     await _client.put(
       '/api/v1/care/routine-items/${Uri.encodeComponent(itemId)}/execution',
-      {'status': completed ? 'completed' : 'scheduled'},
+      {'status': status.name},
     );
   }
 

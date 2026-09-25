@@ -183,11 +183,14 @@ class ApiRecordService implements RecordService {
       'leg_pain': '다리',
       'wrist_pain': '손목',
       'fatigue': '피로',
+      'mood': '기분',
     };
     final summaries = labels.entries
-        .where((entry) => (condition[entry.key] as num? ?? 0) >= 4)
-        .map((entry) => '${entry.value} 높음')
+        .where((entry) => condition[entry.key] is num)
+        .map(
+          (entry) => '${entry.value} ${(condition[entry.key] as num).toInt()}점',
+        )
         .toList(growable: false);
-    return summaries.isEmpty ? '특별히 불편한 항목 없음' : summaries.join(' · ');
+    return summaries.isEmpty ? '컨디션 점수 없음' : summaries.join(' · ');
   }
 }

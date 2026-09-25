@@ -12,17 +12,21 @@ class MovementGuideCard extends StatelessWidget {
     super.key,
     required this.activity,
     required this.completed,
+    required this.skipped,
     this.featured = false,
     this.showCompletion = true,
     required this.onOpen,
     required this.onComplete,
+    required this.onSkip,
   });
   final BodyCareActivity activity;
   final bool completed;
+  final bool skipped;
   final bool featured;
   final bool showCompletion;
   final VoidCallback onOpen;
   final VoidCallback onComplete;
+  final VoidCallback onSkip;
   @override
   Widget build(BuildContext context) => Container(
     key: ValueKey('health-activity-${activity.id}'),
@@ -41,7 +45,10 @@ class MovementGuideCard extends StatelessWidget {
       AppInkWell(
         onTap: onOpen,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        child: VideoThumbnail(youtubeId: activity.video?.youtubeId, height: 132),
+        child: VideoThumbnail(
+          youtubeId: activity.video?.youtubeId,
+          height: 132,
+        ),
       ),
       const SizedBox(height: AppSpacing.lg),
       Text(activity.title, style: Theme.of(context).textTheme.titleMedium),
@@ -54,67 +61,100 @@ class MovementGuideCard extends StatelessWidget {
       ),
       if (showCompletion) ...[
         const SizedBox(height: AppSpacing.md),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton.icon(
-            key: ValueKey('body-complete-${activity.id}'),
-            onPressed: onComplete,
-            icon: Icon(completed ? Icons.check_circle : Icons.circle_outlined),
-            label: Text(completed ? '활동 완료됨' : '활동 완료'),
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            TextButton(
+              key: ValueKey('body-skip-${activity.id}'),
+              onPressed: onSkip,
+              child: Text(skipped ? '오늘 안함 취소' : '오늘 안하기'),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            TextButton.icon(
+              key: ValueKey('body-complete-${activity.id}'),
+              onPressed: onComplete,
+              icon: Icon(
+                completed ? Icons.check_circle : Icons.circle_outlined,
+              ),
+              label: Text(completed ? '완료 취소' : '활동 완료'),
+            ),
+          ],
         ),
       ],
     ],
   );
 
-  Widget _buildCompact(BuildContext context) => Row(
+  Widget _buildCompact(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      DecoratedBox(
-        decoration: BoxDecoration(
-          color: AppColors.categoryBodyBackground,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-        child: const SizedBox.square(
-          dimension: 52,
-          child: Icon(Icons.accessibility_new, color: AppColors.categoryBody),
-        ),
+      Row(
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.categoryBodyBackground,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: const SizedBox.square(
+              dimension: 52,
+              child: Icon(
+                Icons.accessibility_new,
+                color: AppColors.categoryBody,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  activity.title,
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  activity.description,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            key: ValueKey('body-guide-${activity.id}'),
+            tooltip: '자세 보기',
+            onPressed: onOpen,
+            icon: const Icon(
+              Icons.play_circle_outline,
+              color: AppColors.categoryBody,
+            ),
+          ),
+        ],
       ),
-      const SizedBox(width: AppSpacing.md),
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      if (showCompletion) ...[
+        const SizedBox(height: AppSpacing.sm),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            Text(activity.title, style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              activity.description,
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+            TextButton(
+              key: ValueKey('body-skip-${activity.id}'),
+              onPressed: onSkip,
+              child: Text(skipped ? '오늘 안함 취소' : '오늘 안하기'),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            TextButton.icon(
+              key: ValueKey('body-complete-${activity.id}'),
+              onPressed: onComplete,
+              icon: Icon(
+                completed ? Icons.check_circle : Icons.radio_button_unchecked,
+                color: completed ? AppColors.success : AppColors.textTertiary,
+              ),
+              label: Text(completed ? '완료 취소' : '활동 완료'),
             ),
           ],
         ),
-      ),
-      IconButton(
-        key: ValueKey('body-guide-${activity.id}'),
-        tooltip: '자세 보기',
-        onPressed: onOpen,
-        icon: const Icon(
-          Icons.play_circle_outline,
-          color: AppColors.categoryBody,
-        ),
-      ),
-      if (showCompletion)
-        IconButton(
-          key: ValueKey('body-complete-${activity.id}'),
-          tooltip: completed ? '완료 취소' : '완료',
-          onPressed: onComplete,
-          icon: Icon(
-            completed ? Icons.check_circle : Icons.radio_button_unchecked,
-            color: completed ? AppColors.success : AppColors.textTertiary,
-          ),
-        ),
+      ],
     ],
   );
 }
-

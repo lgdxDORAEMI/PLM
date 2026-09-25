@@ -36,6 +36,22 @@ import '../models/home_week_context.dart';
 import '../services/api_home_week_service.dart';
 import '../services/home_week_service.dart';
 
+/// 현재 컨디션에서 진행도에 포함할 건강 집중 부위 코드를 계산한다.
+Set<String>? _healthFocusAreas(ConditionDraft? condition) {
+  if (condition == null) return null;
+  final scores = {
+    '허리': condition.waistPain,
+    '골반': condition.pelvisPain,
+    '다리': condition.legPain,
+    '손목': condition.wristPain,
+  };
+  final focus = scores.entries
+      .where((entry) => entry.value >= 3)
+      .map((entry) => entry.key)
+      .toSet();
+  return focus.isEmpty ? {'전신'} : focus;
+}
+
 class WifeHomeScreen extends StatefulWidget {
   const WifeHomeScreen({super.key, this.routineService, this.homeWeekService});
 
@@ -354,7 +370,10 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
         ),
       ),
       const SizedBox(height: AppSpacing.xxl),
-      RoutineProgress(items: plan.items),
+      RoutineProgress(
+        items: plan.items,
+        healthFocusAreas: _healthFocusAreas(_todayCareStore.today),
+      ),
       const SizedBox(height: AppSpacing.xl),
       // 시안: 버튼 라벨 Bold(700).
       Theme(

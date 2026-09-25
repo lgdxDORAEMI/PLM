@@ -7,7 +7,7 @@ import 'package:plm_frontend/core/network/api_client.dart';
 import 'package:plm_frontend/features/report/services/api_record_service.dart';
 
 void main() {
-  test('컨디션 요약에 다리와 손목 통증을 포함한다', () async {
+  test('컨디션 요약에 저장된 7종 점수를 모두 포함한다', () async {
     final service = _serviceWithCondition({
       'nausea': 1,
       'waist_pain': 1,
@@ -15,14 +15,18 @@ void main() {
       'leg_pain': 4,
       'wrist_pain': 5,
       'fatigue': 1,
+      'mood': 3,
     });
 
     final record = await service.fetchCalendarRecord(DateTime(2026, 9, 13));
 
-    expect(record?.conditionSummary, '다리 높음 · 손목 높음');
+    expect(
+      record?.conditionSummary,
+      '입덧 1점 · 허리 1점 · 골반 1점 · 다리 4점 · 손목 5점 · 피로 1점 · 기분 3점',
+    );
   });
 
-  test('높은 컨디션 항목이 없으면 빈 문구 대신 정상 상태를 표시한다', () async {
+  test('높은 항목이 없어도 저장된 컨디션 점수를 생략하지 않는다', () async {
     final service = _serviceWithCondition({
       'nausea': 2,
       'waist_pain': 2,
@@ -30,11 +34,15 @@ void main() {
       'leg_pain': 2,
       'wrist_pain': 2,
       'fatigue': 2,
+      'mood': 3,
     });
 
     final record = await service.fetchCalendarRecord(DateTime(2026, 9, 13));
 
-    expect(record?.conditionSummary, '특별히 불편한 항목 없음');
+    expect(
+      record?.conditionSummary,
+      '입덧 2점 · 허리 2점 · 골반 2점 · 다리 2점 · 손목 2점 · 피로 2점 · 기분 3점',
+    );
   });
 
   test('Daily 리포트 조회는 기존 리포트와 컨디션 API 계약을 유지한다', () async {
@@ -115,6 +123,7 @@ const _normalCondition = {
   'leg_pain': 2,
   'wrist_pain': 2,
   'fatigue': 2,
+  'mood': 3,
 };
 
 const _emptyReport = {

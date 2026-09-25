@@ -24,6 +24,7 @@ from app.services.routine.service import (
     RoutineService,
     _normalize_item_keys,
     attach_videos,
+    ensure_health_focus_items,
     load_template,
     template_household,
     load_videos,
@@ -377,6 +378,42 @@ class StretchingVideoTest(unittest.TestCase):
 
     VIDEO = {"waist": {"title": "허리 이완 5분", "url": "https://example.com/waist", "duration_min": 5}}
 
+    def test_low_pain_adds_whole_body_recommendation(self) -> None:
+        routine = {"health": [{"item_key": "health:rest", "payload": {}}]}
+        facts = {key: 2 for key in ("waist_pain", "pelvis_pain", "leg_pain", "wrist_pain")}
+
+        result = ensure_health_focus_items(routine, facts)
+
+        self.assertEqual(result["health"][-1]["item_key"], "health:whole")
+        self.assertEqual(result["health"][-1]["payload"]["bodyArea"], "whole")
+
+    def test_normal_pain_does_not_add_whole_body_recommendation(self) -> None:
+        routine = {"health": [{"item_key": "health:waist", "payload": {}}]}
+        facts = {key: 2 for key in ("waist_pain", "pelvis_pain", "leg_pain", "wrist_pain")}
+        facts["waist_pain"] = 3
+
+        result = ensure_health_focus_items(routine, facts)
+
+        self.assertEqual([item["item_key"] for item in result["health"]], ["health:waist"])
+        self.assertTrue(result["health"][0]["payload"]["isFocus"])
+
+    def test_all_high_pain_parts_are_focus_and_missing_parts_are_added(self) -> None:
+        routine = {
+            "health": [
+                {"item_key": "health:waist", "payload": {"bodyArea": "waist"}},
+                {"item_key": "health:whole", "payload": {"bodyArea": "whole"}},
+            ]
+        }
+        facts = {key: 2 for key in ("waist_pain", "pelvis_pain", "leg_pain", "wrist_pain")}
+        facts.update({"waist_pain": 4, "pelvis_pain": 3})
+
+        result = ensure_health_focus_items(routine, facts)
+        by_part = {item["payload"]["bodyArea"]: item for item in result["health"]}
+
+        self.assertTrue(by_part["waist"]["payload"]["isFocus"])
+        self.assertTrue(by_part["pelvis"]["payload"]["isFocus"])
+        self.assertFalse(by_part["whole"]["payload"]["isFocus"])
+
     def test_video_attached_by_body_part(self) -> None:
         routine = {"health": [
             {"item_key": "health:waist", "title": "허리", "payload": {"guide": "천천히"}},
@@ -612,8 +649,16 @@ class RoutineServiceTest(unittest.TestCase):
         self.assertEqual(saved["source"], "fallback_template")
         self.assertIn("insufficient_quota", saved["error_message"])
         self.assertEqual(len(saved["response"]["meal"]), 4)  # 09-22: 아침·점심·저녁·밤
-        # 식단 4(09-22 밤 추가) + 건강 1 + 수면 1 + 가사(K8: 예정 활동 1건으로 생성) 1 = 7
-        self.assertEqual(len(self.db.tables["routine_items"]), 7)
+        # 식단 4 + 기존 건강 안내 1 + 허리 집중 운동 1 + 수면 1 + 예정 가사 1 = 8
+        self.assertEqual(len(self.db.tables["routine_items"]), 8)
+        focus_items = [
+            item for item in saved["response"]["health"]
+            if item["payload"]["isFocus"]
+        ]
+        self.assertEqual(
+            [(item["item_key"], item["payload"]["bodyArea"]) for item in focus_items],
+            [("health:waist", "waist")],
+        )
 
     def test_llm_failure_uses_previous_routine(self) -> None:
         self.db.tables["daily_routines"] = [{

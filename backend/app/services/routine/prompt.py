@@ -21,7 +21,8 @@ from app.services.routine.meal_catalog import load_meal_catalog, meal_catalog_pr
 # 2026-09-20.1: K1 — 가장 느린 식단 호출의 출력 분량 제한(문장 길이·태그·주의 개수)
 # 2026-09-24.1: 수면 공기청정기 실기기 제어 — value/options를 팀이 확정한 4종으로 안내(강제는 service.validate가 한다)
 # 2026-09-25.2: 건강 부위(bodyArea·loads[].area)를 코드 5종으로 고정(화면에 "waist"가 그대로 노출되던 문제)
-PROMPT_VERSION = "2026-09-25.2"
+# 2026-09-25.3: 통증 3점 이상인 모든 부위, 없으면 전신을 건강 집중 항목으로 생성
+PROMPT_VERSION = "2026-09-25.3"
 WEEK_GUIDE_PROMPT_VERSION = "2026-09-25.1"
 CATEGORIES = ("meal", "household", "health", "sleep")
 
@@ -199,7 +200,7 @@ SYSTEM_PROMPT = """당신은 임산부의 하루 생활 루틴을 설계하는 �
   cautions는 꼭 필요할 때만 1개(없으면 빈 배열). 같은 내용을 여러 항목에 반복하지 않는다.
 - household: 사용자가 고른 예정 활동을 각각 owner(self=직접, appliance=가전, partner=가족)로 분류한다. 금지 가사는 self로 두지 않는다.
 - household: planned_activities의 각 항목({code, label})마다 1개. item_key는 `household:<code>`(예: household:laundry), 직접 입력(code=custom)은 household:custom. title·설명은 label을 기준으로 쓴다.
-- health: 통증이 높은 부위 우선. 금지 활동은 넣지 않는다. 5~15분 내 활동.
+- health: 허리·골반·다리·손목 중 통증이 3 이상인 모든 부위를 각각 포함한다. 모두 3 미만이면 health:whole 전신 스트레칭을 포함한다. 금지 활동은 넣지 않는다. 5~15분 내 활동.
 - health: bodyArea와 loads[].area는 waist(허리)·pelvis(골반)·leg(다리)·wrist(손목)·whole(전신) 코드로 쓴다. item_key의 부위와 같아야 한다(health:rest는 whole).
 - health: yesterday.motion.top_burdened_area(전일 부담이 컸던 부위)가 있으면 오늘 통증과 함께 우선순위에 반영한다.
 - household: yesterday.motion.bending_burden_events(전일 허리 숙임 부담 횟수)가 많으면 허리를 숙이는 가사는 partner·appliance를 우선 고려한다.

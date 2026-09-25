@@ -12,6 +12,8 @@ class RoutineItem {
     required this.type,
     required this.status,
     this.time,
+    this.bodyArea,
+    this.countsTowardProgress = true,
   });
 
   final String id;
@@ -20,6 +22,8 @@ class RoutineItem {
   final RoutineType type;
   final RoutineStatus status;
   final String? time;
+  final String? bodyArea;
+  final bool countsTowardProgress;
 }
 
 class DailyRoutinePlan {

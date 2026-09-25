@@ -5,20 +5,39 @@ import '../../../design_system/tokens/app_spacing.dart';
 import '../models/daily_routine.dart';
 
 class RoutineProgress extends StatelessWidget {
-  const RoutineProgress({super.key, required this.items});
+  const RoutineProgress({
+    super.key,
+    required this.items,
+    this.healthFocusAreas,
+  });
 
   final List<RoutineItem> items;
+  final Set<String>? healthFocusAreas;
 
   @override
   Widget build(BuildContext context) {
     // 분야(식사·가사·건강·수면) 단위로 센다. 분야의 모든 항목이 완료돼야 완료다.
     final groups = <RoutineType, List<RoutineItem>>{};
     for (final item in items) {
+      if (!item.countsTowardProgress) continue;
+      if (item.type == RoutineType.health &&
+          healthFocusAreas != null &&
+          item.bodyArea != null &&
+          !healthFocusAreas!.contains(item.bodyArea)) {
+        continue;
+      }
       (groups[item.type] ??= []).add(item);
     }
     final total = groups.length;
     final completed = groups.values
-        .where((g) => g.every((i) => i.status == RoutineStatus.completed))
+        .where(
+          (group) => group.every(
+            (item) =>
+                item.status == RoutineStatus.completed ||
+                (item.type == RoutineType.health &&
+                    item.status == RoutineStatus.skipped),
+          ),
+        )
         .length;
     final progress = total == 0 ? 0.0 : completed / total;
     return Semantics(

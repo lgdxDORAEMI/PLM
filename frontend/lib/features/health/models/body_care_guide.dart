@@ -14,6 +14,8 @@ class BodyCareActivity {
     required this.guide,
     this.video,
     this.completed = false,
+    this.skipped = false,
+    this.isFocus,
   });
   final String id;
   final String area;
@@ -22,6 +24,8 @@ class BodyCareActivity {
   final String guide;
   final HealthExerciseVideo? video;
   final bool completed;
+  final bool skipped;
+  final bool? isFocus;
 }
 
 class HealthExerciseVideo {
@@ -80,6 +84,10 @@ class BodyCareGuideData {
               ? HealthExerciseVideo.fromJson(video.cast<String, dynamic>())
               : null,
           completed: item['status'] == 'completed',
+          skipped: item['status'] == 'skipped',
+          isFocus: payload.containsKey('isFocus')
+              ? payload['isFocus'] == true
+              : null,
         ),
       );
       final loads = payload['loads'];

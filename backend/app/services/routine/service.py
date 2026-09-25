@@ -40,6 +40,67 @@ LLM_FACT_KEYS = (
     "planned_activities", "yesterday",
 )
 
+PAIN_FACT_KEYS = ("waist_pain", "pelvis_pain", "leg_pain", "wrist_pain")
+PAIN_PARTS = dict(zip(PAIN_FACT_KEYS, ("waist", "pelvis", "leg", "wrist")))
+HEALTH_DEFAULTS = {
+    "waist": ("허리 이완 스트레칭", "허리를 통증 없는 범위에서 천천히 이완해요."),
+    "pelvis": ("골반 이완 스트레칭", "골반을 통증 없는 범위에서 천천히 움직여요."),
+    "leg": ("다리 이완 스트레칭", "다리를 무리하지 않는 범위에서 천천히 풀어줘요."),
+    "wrist": ("손목 이완 스트레칭", "손목을 통증 없는 범위에서 천천히 움직여요."),
+    "whole": ("전신 저강도 스트레칭", "전신을 천천히 움직이고 불편하면 즉시 멈춰요."),
+}
+
+
+def ensure_health_focus_items(
+    routine: dict[str, Any], facts: dict[str, Any]
+) -> dict[str, Any]:
+    """3점 이상 통증 부위를 집중 항목으로 표시하고, 없으면 전신을 집중 항목으로 보장한다."""
+    focus_parts = {
+        part
+        for key, part in PAIN_PARTS.items()
+        if isinstance(facts.get(key), (int, float)) and facts[key] >= 3
+    }
+    if not focus_parts:
+        focus_parts = {"whole"}
+    health = list(routine.get("health") or [])
+
+    def health_part(item: dict[str, Any]) -> str:
+        payload_part = str((item.get("payload") or {}).get("bodyArea") or "")
+        if payload_part in HEALTH_DEFAULTS:
+            return payload_part
+        key_parts = str(item.get("item_key") or "").split(":")
+        return key_parts[1] if len(key_parts) > 1 else ""
+
+    existing_parts = {health_part(item) for item in health}
+    for part in HEALTH_DEFAULTS:
+        if part not in focus_parts or part in existing_parts:
+            continue
+        title, guide = HEALTH_DEFAULTS[part]
+        health.append({
+            "item_key": f"health:{part}",
+            "title": title,
+            "payload": {
+                "bodyArea": part,
+                "loads": [],
+                "guide": guide,
+                "durationMin": 10,
+                "reason": "오늘의 집중 부위에 맞춰 추천해요.",
+            },
+            "source_ids": [],
+        })
+    marked = []
+    unmarked_focus_parts = set(focus_parts)
+    for item in health:
+        part = health_part(item)
+        payload = item.get("payload") or {}
+        is_focus = part in unmarked_focus_parts
+        unmarked_focus_parts.discard(part)
+        marked.append({
+            **item,
+            "payload": {**payload, "isFocus": is_focus},
+        })
+    return {**routine, "health": marked}
+
 
 def load_template() -> dict[str, Any]:
     return yaml.safe_load(FALLBACK_PATH.read_text(encoding="utf-8"))
@@ -245,7 +306,10 @@ class RoutineService:
         deadline = asyncio.get_running_loop().time() + TOTAL_TIMEOUT_SEC
         try:
             generated, allowed = await asyncio.wait_for(self._generate(facts, constraints, deadline), TOTAL_TIMEOUT_SEC)
-            routine = attach_videos(attach_meal_images(_normalize_item_keys(validate(generated, constraints, allowed))))
+            routine = ensure_health_focus_items(
+                validate(generated, constraints, allowed), facts
+            )
+            routine = attach_videos(attach_meal_images(_normalize_item_keys(routine)))
             routine["tip"] = validate_tip(generated.get("tip"), constraints, allowed)
         except Exception as exc:  # 타임아웃·API 오류·JSON 오류 모두 폴백 (W-CALLBACK-001)
             error = f"{type(exc).__name__}: {exc}"[:500]
@@ -259,7 +323,10 @@ class RoutineService:
                 if household:
                     routine = {**routine, "household": household}
             model = None
-            routine = attach_videos(attach_meal_images(_normalize_item_keys(validate(routine, constraints, set()))))
+            routine = ensure_health_focus_items(
+                validate(routine, constraints, set()), facts
+            )
+            routine = attach_videos(attach_meal_images(_normalize_item_keys(routine)))
             routine["tip"] = None  # 폴백에는 팁이 없다(전일 팁을 그대로 쓰지 않음). 앱은 기본 문구를 쓴다
 
         saved = repository.save_routine(
@@ -316,6 +383,7 @@ class RoutineService:
             for category in failed:
                 if not routine.get(category):
                     routine[category] = template[category]
+        routine = ensure_health_focus_items(routine, facts)
         routine = attach_videos(attach_meal_images(_normalize_item_keys(routine)))
         routine["tip"] = validate_tip(tip, constraints, allowed)
 

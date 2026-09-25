@@ -64,17 +64,26 @@ void main() {
             jsonEncode({
               'date': date,
               'category': category,
-              'items': category == 'meal'
-                  ? [
-                      {
-                        'item_id': 'saved-meal-1',
-                        'title': '저장된 식사',
-                        'description': '현재 항목',
-                        'status': 'completed',
-                        'payload': {},
-                      },
-                    ]
-                  : [],
+              'items': switch (category) {
+                'meal' => [
+                  {
+                    'item_id': 'saved-meal-1',
+                    'title': '저장된 식사',
+                    'description': '현재 항목',
+                    'status': 'completed',
+                    'payload': {},
+                  },
+                ],
+                'health' => [
+                  {
+                    'item_id': 'saved-health-1',
+                    'title': '다른 부위 운동',
+                    'status': 'scheduled',
+                    'payload': {'bodyArea': 'leg', 'isFocus': false},
+                  },
+                ],
+                _ => [],
+              },
             }),
             200,
             headers: {'content-type': 'application/json; charset=utf-8'},
@@ -103,9 +112,12 @@ void main() {
       'GET /api/v1/sleep/today',
     ]);
     expect(plan.isBackendFallback, isTrue);
-    expect(plan.items.single.id, 'saved-meal-1');
-    expect(plan.items.single.title, '저장된 식사');
-    expect(plan.items.single.status, RoutineStatus.completed);
+    final meal = plan.items.firstWhere((item) => item.id == 'saved-meal-1');
+    final health = plan.items.firstWhere((item) => item.id == 'saved-health-1');
+    expect(meal.title, '저장된 식사');
+    expect(meal.status, RoutineStatus.completed);
+    expect(health.bodyArea, 'leg');
+    expect(health.countsTowardProgress, isFalse);
     expect(plan.homeCards.map((card) => card.type), RoutineType.values);
     expect(plan.homeCards.map((card) => card.description), [
       '편한 식사로',

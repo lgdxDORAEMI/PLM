@@ -103,6 +103,9 @@ class ApiRoutineService implements RoutineService {
               _ => RoutineStatus.scheduled,
             },
             time: details['time']?.toString(),
+            bodyArea: details['bodyArea']?.toString(),
+            countsTowardProgress:
+                type != RoutineType.health || details['isFocus'] != false,
           ),
         );
       }

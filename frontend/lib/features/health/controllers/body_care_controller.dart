@@ -14,7 +14,7 @@ class BodyCareController extends ChangeNotifier {
 
   final HealthGuideService service;
   final TodayCareStore conditionStore;
-  final Set<String> _completed = {};
+  final Map<String, HealthExecutionStatus> _statuses = {};
   BodyCareViewState _state = BodyCareViewState.loading;
   BodyCareGuideData? _guide;
   String? _selectedArea;
@@ -39,8 +39,19 @@ class BodyCareController extends ChangeNotifier {
       .map((activity) => activity.area)
       .toSet()
       .toList(growable: false);
+  Set<String> get focusAreas =>
+      loads.isEmpty ? const {'전신'} : loads.map((load) => load.area).toSet();
+  List<BodyLoad> get focusLoads =>
+      loads.isEmpty ? const [BodyLoad('전신', '추천 활동', 1)] : loads;
+  List<String> get otherAreas => availableAreas
+      .where((area) => !focusAreas.contains(area))
+      .toList(growable: false);
   String get selectedArea => _selectedArea ?? '';
-  bool isCompleted(String id) => _completed.contains(id);
+  bool isCompleted(String id) =>
+      _statuses[id] == HealthExecutionStatus.completed;
+  bool isSkipped(String id) => _statuses[id] == HealthExecutionStatus.skipped;
+  bool isFocusActivity(BodyCareActivity activity) =>
+      activity.isFocus ?? focusAreas.contains(activity.area);
   List<BodyCareActivity> get selectedActivities => activities
       .where((activity) => activity.area == selectedArea)
       .toList(growable: false);
@@ -51,20 +62,30 @@ class BodyCareController extends ChangeNotifier {
     try {
       await conditionStore.loadToday();
       _guide = await service.fetchGuide();
-      _completed
+      _statuses
         ..clear()
-        ..addAll(
-          activities
-              .where((activity) => activity.completed)
-              .map((activity) => activity.id),
+        ..addEntries(
+          activities.map(
+            (activity) => MapEntry(
+              activity.id,
+              activity.completed
+                  ? HealthExecutionStatus.completed
+                  : activity.skipped
+                  ? HealthExecutionStatus.skipped
+                  : HealthExecutionStatus.scheduled,
+            ),
+          ),
         );
       if (activities.isEmpty) {
         _state = BodyCareViewState.empty;
       } else {
-        _selectedArea = loads
-            .map((load) => load.area)
-            .where(availableAreas.contains)
-            .firstOrNull;
+        final focusLoads = loads;
+        _selectedArea = focusLoads.isEmpty && availableAreas.contains('전신')
+            ? '전신'
+            : focusLoads
+                  .map((load) => load.area)
+                  .where(availableAreas.contains)
+                  .firstOrNull;
         _selectedArea ??= availableAreas.first;
         _state = BodyCareViewState.data;
       }
@@ -88,13 +109,27 @@ class BodyCareController extends ChangeNotifier {
   }
 
   Future<void> toggleCompleted(String id) async {
-    final completed = !_completed.contains(id);
-    completed ? _completed.add(id) : _completed.remove(id);
+    final next = isCompleted(id)
+        ? HealthExecutionStatus.scheduled
+        : HealthExecutionStatus.completed;
+    await _setStatus(id, next);
+  }
+
+  Future<void> toggleSkipped(String id) async {
+    final next = isSkipped(id)
+        ? HealthExecutionStatus.scheduled
+        : HealthExecutionStatus.skipped;
+    await _setStatus(id, next);
+  }
+
+  Future<void> _setStatus(String id, HealthExecutionStatus next) async {
+    final previous = _statuses[id] ?? HealthExecutionStatus.scheduled;
+    _statuses[id] = next;
     notifyListeners();
     try {
-      await service.setCompleted(id, completed);
+      await service.setStatus(id, next);
     } on Object {
-      completed ? _completed.remove(id) : _completed.add(id);
+      _statuses[id] = previous;
       _state = BodyCareViewState.error;
       notifyListeners();
     }
