@@ -18,6 +18,7 @@ from app.services.routine import repository
 from app.services.routine.generator import OpenAIRoutineGenerator
 from app.services.routine.impact import load_impact_map, resolve_impact
 from app.services.routine.inputs import collect_facts, collect_yesterday
+from app.services.routine.meal_catalog import attach_meal_images
 from app.services.routine.prompt import CATEGORIES, MEAL_KEYS, PROMPT_VERSION, PURIFIER_OPTIONS
 from app.services.routine.retriever import KnowledgeRetriever
 from app.services.routine.rules import apply_rules
@@ -244,7 +245,7 @@ class RoutineService:
         deadline = asyncio.get_running_loop().time() + TOTAL_TIMEOUT_SEC
         try:
             generated, allowed = await asyncio.wait_for(self._generate(facts, constraints, deadline), TOTAL_TIMEOUT_SEC)
-            routine = attach_videos(_normalize_item_keys(validate(generated, constraints, allowed)))
+            routine = attach_videos(attach_meal_images(_normalize_item_keys(validate(generated, constraints, allowed))))
             routine["tip"] = validate_tip(generated.get("tip"), constraints, allowed)
         except Exception as exc:  # 타임아웃·API 오류·JSON 오류 모두 폴백 (W-CALLBACK-001)
             error = f"{type(exc).__name__}: {exc}"[:500]
@@ -258,7 +259,7 @@ class RoutineService:
                 if household:
                     routine = {**routine, "household": household}
             model = None
-            routine = attach_videos(_normalize_item_keys(validate(routine, constraints, set())))
+            routine = attach_videos(attach_meal_images(_normalize_item_keys(validate(routine, constraints, set()))))
             routine["tip"] = None  # 폴백에는 팁이 없다(전일 팁을 그대로 쓰지 않음). 앱은 기본 문구를 쓴다
 
         saved = repository.save_routine(
@@ -315,7 +316,7 @@ class RoutineService:
             for category in failed:
                 if not routine.get(category):
                     routine[category] = template[category]
-        routine = attach_videos(_normalize_item_keys(routine))
+        routine = attach_videos(attach_meal_images(_normalize_item_keys(routine)))
         routine["tip"] = validate_tip(tip, constraints, allowed)
 
         generated = [c for c in targets if c in results]

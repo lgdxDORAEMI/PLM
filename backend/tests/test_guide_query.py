@@ -38,8 +38,9 @@ class FakeTable:
         self._filters[column] = value
         return self
 
-    def order(self, column: str) -> "FakeTable":
+    def order(self, column: str, *, desc: bool = False) -> "FakeTable":
         self._order = column
+        self._descending = desc
         return self
 
     def limit(self, size: int) -> "FakeTable":
@@ -53,17 +54,25 @@ class FakeTable:
             if all(row.get(key) == value for key, value in self._filters.items())
         ]
         if self._order:
-            rows = sorted(rows, key=lambda row: row[self._order])
+            rows = sorted(
+                rows,
+                key=lambda row: row[self._order],
+                reverse=getattr(self, "_descending", False),
+            )
         if self._limit is not None:
             rows = rows[: self._limit]
         return SimpleNamespace(data=rows)
 
 
 class FakeSupabaseClient:
-    def __init__(self, *, routines: list[dict], items: list[dict], videos: list[dict] | None = None) -> None:
+    def __init__(
+        self, *, routines: list[dict], items: list[dict],
+        videos: list[dict] | None = None, feedback: list[dict] | None = None,
+    ) -> None:
         self.routines = routines
         self.items = items
         self.videos = videos or []
+        self.feedback = feedback or []
 
     def table(self, name: str) -> FakeTable:
         if name == "daily_routines":
@@ -72,6 +81,8 @@ class FakeSupabaseClient:
             return FakeTable(self.items)
         if name == "health_exercise_videos":
             return FakeTable(self.videos)
+        if name == "recommendation_feedback":
+            return FakeTable(self.feedback)
         raise AssertionError(f"unexpected table: {name}")
 
 
@@ -103,6 +114,58 @@ class GuideQueryServiceTest(unittest.TestCase):
 
         guide = service.get_guide("wife-1", TARGET_DATE, RoutineCategory.MEAL)
         self.assertEqual([item.title for item in guide.items], ["점심", "저녁"])
+
+    def test_latest_meal_replacement_overlays_guide_without_changing_item_id(self) -> None:
+        from app.domains.guide.schemas import RoutineCategory
+
+        client = FakeSupabaseClient(
+            routines=[{"user_id": "wife-1", "date": TARGET_DATE.isoformat(), "id": "r1"}],
+            items=[meal_item(0, "원래 아침")],
+            feedback=[
+                {
+                    "user_id": "wife-1", "routine_item_id": "item-0",
+                    "kind": "meal_replace", "created_at": "2026-09-24T01:00:00Z",
+                    "payload": {"title": "첫 대체식", "reason": "첫 이유"},
+                },
+                {
+                    "user_id": "wife-1", "routine_item_id": "item-0",
+                    "kind": "meal_replace", "created_at": "2026-09-24T02:00:00Z",
+                    "payload": {
+                        "title": "바나나 감자 찜", "reason": "속이 편해요",
+                        "period": "breakfast", "nutritionTags": ["에너지"],
+                    },
+                },
+            ],
+        )
+
+        guide = GuideQueryService(client).get_guide(
+            "wife-1", TARGET_DATE, RoutineCategory.MEAL
+        )
+
+        self.assertEqual(guide.items[0].item_id, "item-0")
+        self.assertEqual(guide.items[0].title, "바나나 감자 찜")
+        self.assertEqual(guide.items[0].payload["reason"], "속이 편해요")
+
+    def test_meal_title_is_returned_with_matching_image_asset(self) -> None:
+        from app.domains.guide.schemas import RoutineCategory
+
+        item = {
+            **meal_item(0, "연어구이와 현미밥"),
+            "payload": {"period": "lunch", "reasonTitle": "균형 잡힌 한 끼"},
+        }
+        client = FakeSupabaseClient(
+            routines=[{"user_id": "wife-1", "date": TARGET_DATE.isoformat(), "id": "r1"}],
+            items=[item],
+        )
+
+        guide = GuideQueryService(client).get_guide(
+            "wife-1", TARGET_DATE, RoutineCategory.MEAL
+        )
+
+        self.assertEqual(
+            guide.items[0].payload["imagePath"],
+            "lunch/grilled_salmon_brown_rice.jpg",
+        )
 
     def test_excludes_items_removed_by_regeneration(self) -> None:
         """재생성 시 FK(chat_messages 등)가 삭제를 막아 change_kind='removed'로만

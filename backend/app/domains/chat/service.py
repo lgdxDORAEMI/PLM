@@ -9,6 +9,7 @@ from app.domains.care.schemas import ConditionInput
 from app.domains.care.service import CareServicePort
 from app.domains.errors import DomainConflictError, DomainNotFoundError, DomainStorageError
 from app.services.routine.generator import OpenAIRoutineGenerator
+from app.services.routine.meal_catalog import attach_recommendation_image, meal_catalog_prompt
 from app.services.routine.retriever import KnowledgeRetriever
 
 from . import meal_memory
@@ -28,6 +29,10 @@ from .supabase_repository import SupabaseChatRepository
 
 # 09-22 식사 가이드 '다른 메뉴 보기': 챗봇 S5 식사 메모리를 그대로 쓰고, 카드는 반드시 1장.
 ALTERNATIVE_RULE = "- 이번 요청은 식사 가이드의 '다른 메뉴 보기' 버튼이다. recommendation은 반드시 1개 채운다. content는 한 문장."
+MEAL_CATALOG_RULE = (
+    "\n- recommendation.title은 아래 period별 식사 후보 중 하나를 글자까지 정확히 사용한다. 임의 메뉴명을 만들지 않는다.\n"
+    + meal_catalog_prompt()
+)
 ALTERNATIVE_FAILED = "다른 메뉴를 찾지 못했어요. 잠시 후 다시 시도해 주세요."
 CONDITION_UPDATE_RULE = (
     "오늘 컨디션 수정은 점수가 명확한 경우에만 condition_update로 제안한다. "
@@ -101,9 +106,9 @@ class ChatService(ChatServicePort):
         memory = await asyncio.to_thread(meal_memory.load, self.client, user_id, target_date, item_id, context["facts"])
         reply = await generate_reply(
             self.generator, self.retriever, context, payload.request, [],
-            memory["rules"] + "\n" + ALTERNATIVE_RULE, MEAL_REPLY_SCHEMA,
+            memory["rules"] + "\n" + ALTERNATIVE_RULE + MEAL_CATALOG_RULE, MEAL_REPLY_SCHEMA,
         )
-        card = reply.recommendation
+        card = attach_recommendation_image(reply.recommendation)
         if not card or meal_memory.is_banned(card, memory["banned"]):
             raise DomainStorageError(ALTERNATIVE_FAILED)  # AI 실패·카드 없음·금지 재료 → 503, 프론트는 지금 메뉴 유지
         return MealAlternativeResponse(routine_item_id=item_id, **card)
@@ -128,7 +133,7 @@ class ChatService(ChatServicePort):
             memory = await asyncio.to_thread(
                 meal_memory.load, self.client, user_id, target_date, payload.routine_item_id, context["facts"]
             )
-            rules = memory["rules"] + "\n" + CONDITION_UPDATE_RULE
+            rules = memory["rules"] + "\n" + CONDITION_UPDATE_RULE + MEAL_CATALOG_RULE
             schema, banned = MEAL_REPLY_SCHEMA, memory["banned"]
         else:
             rules = (
@@ -148,6 +153,7 @@ class ChatService(ChatServicePort):
             content, actions, card = meal_memory.BANNED_REPLY, [], None
         elif card:
             actions = meal_memory.CARD_ACTIONS
+            card = attach_recommendation_image(card)
         return await asyncio.to_thread(
             repository.add_ai_message, user_id, target_date, payload, content, actions, card,
             reply.condition_update,

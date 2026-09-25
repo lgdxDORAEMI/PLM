@@ -58,11 +58,11 @@ class SupabaseChatRepository(ChatRepository):
         return [_to_response(row) for row in rows]
 
     def history_for_day(self, user_id: str, target_date: date) -> list[dict[str, str]]:
-        """LLM에 넘기는 이력: 같은 날짜 대화 전체(모드 무관) 최근 20개. 추천 카드는 메뉴명만 붙여 반복 추천을 막는다."""
+        """LLM에 넘기는 이력: 추천 메뉴와 컨디션 수정 상태를 짧게 붙여 후속 답변의 문맥을 보존한다."""
         return [
             {
                 "role": row.role.value,
-                "content": row.content + (f" [추천: {row.recommendation['title']}]" if row.recommendation else ""),
+                "content": _history_content(row),
             }
             for row in self.list_messages(user_id, target_date)
         ][-HISTORY_LIMIT:]
@@ -190,6 +190,26 @@ def _to_response(row: dict) -> ChatMessageResponse:
         routine_update=_to_routine_update(row) if row.get("routine_update") else None,
         created_at=created_at,
     )
+
+
+def _history_content(row: ChatMessageResponse) -> str:
+    content = row.content
+    if row.recommendation:
+        content += f" [추천: {row.recommendation['title']}]"
+    if row.routine_update:
+        status = {
+            RoutineUpdateStatus.AWAITING_CONFIRMATION: "사용자 확인 대기",
+            RoutineUpdateStatus.QUEUED: "루틴 재생성 대기",
+            RoutineUpdateStatus.RUNNING: "루틴 재생성 중",
+            RoutineUpdateStatus.SUCCEEDED: "루틴 재생성 완료",
+            RoutineUpdateStatus.FAILED: "루틴 재생성 실패",
+            RoutineUpdateStatus.CANCELLED: "사용자 취소",
+        }[row.routine_update.status]
+        content += (
+            f" [컨디션 수정 상태: {status}; "
+            f"요청: {row.routine_update.summary}]"
+        )
+    return content
 
 
 def _to_routine_update(row: dict) -> RoutineUpdateState:

@@ -136,15 +136,12 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
               spacing: AppSpacing.md,
               runSpacing: AppSpacing.md,
               children: [
-                for (final period in data.periods)
+                for (final period in _controller.periodSummaries)
                   SizedBox(
                     width: itemWidth,
                     child: MealPeriodCard(
                       summary: period,
-                      onTap: () => Navigator.pushNamed(
-                        context,
-                        RouteNames.mealDetail(period.period.name),
-                      ),
+                      onTap: () => unawaited(_openMealDetail(period.period)),
                     ),
                   ),
               ],
@@ -259,6 +256,11 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
     final route = RouteNames.chatFromGuide('meal', mealPeriod: period?.name);
     await Navigator.pushNamed(context, route);
     if (mounted) _controller.showAppliedRecommendation();
+  }
+
+  Future<void> _openMealDetail(MealPeriod period) async {
+    await Navigator.pushNamed(context, RouteNames.mealDetail(period.name));
+    if (mounted) await _controller.load();
   }
 
   void _handleBack() {

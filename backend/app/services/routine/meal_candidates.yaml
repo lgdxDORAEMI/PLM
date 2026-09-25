@@ -10,84 +10,84 @@ meal_candidates:
   breakfast:
     - item_key: meal:breakfast
       title: 베리 요거트 귀리죽
-      payload: {period: breakfast, reasonTitle: 속 편한 아침, reason: "부드럽게 넘어가고 섬유질과 칼슘을 함께 챙길 수 있어요.", evidence: "", nutritionTags: [섬유질, 칼슘], cautions: []}
+      payload: {period: breakfast, imagePath: breakfast/berry_yogurt_oatmeal.jpg, reasonTitle: 속 편한 아침, reason: "부드럽게 넘어가고 섬유질과 칼슘을 함께 챙길 수 있어요.", evidence: "", nutritionTags: [섬유질, 칼슘], cautions: []}
       source_ids: []
     - item_key: meal:breakfast
       title: 계란찜과 흰쌀죽
-      payload: {period: breakfast, reasonTitle: 입덧이 있을 때, reason: "간이 약하고 부드러워 빈속에도 부담이 적어요.", evidence: "", nutritionTags: [단백질], cautions: []}
+      payload: {period: breakfast, imagePath: breakfast/steamed_egg_rice_porridge.jpg, reasonTitle: 입덧이 있을 때, reason: "간이 약하고 부드러워 빈속에도 부담이 적어요.", evidence: "", nutritionTags: [단백질], cautions: []}
       source_ids: []
     - item_key: meal:breakfast
       title: 바나나 두유 스무디
-      payload: {period: breakfast, reasonTitle: 입맛 없는 아침, reason: "씹지 않아도 되어 아침 입맛이 없을 때 넘기기 편해요.", evidence: "", nutritionTags: [칼륨, 단백질], cautions: []}
+      payload: {period: breakfast, imagePath: breakfast/banana_soy_smoothie.jpg, reasonTitle: 입맛 없는 아침, reason: "씹지 않아도 되어 아침 입맛이 없을 때 넘기기 편해요.", evidence: "", nutritionTags: [칼륨, 단백질], cautions: []}
       source_ids: []
     - item_key: meal:breakfast
       title: 시금치 두부 된장국과 밥
-      payload: {period: breakfast, reasonTitle: 철분 챙기기, reason: "시금치와 두부로 철분과 단백질을 같이 채울 수 있어요.", evidence: "", nutritionTags: [철분, 단백질], cautions: []}
+      payload: {period: breakfast, imagePath: breakfast/spinach_tofu_soybean_soup.jpg, reasonTitle: 철분 챙기기, reason: "시금치와 두부로 철분과 단백질을 같이 채울 수 있어요.", evidence: "", nutritionTags: [철분, 단백질], cautions: []}
       source_ids: []
     - item_key: meal:breakfast
       title: 고구마와 삶은 달걀
-      payload: {period: breakfast, reasonTitle: 간단한 아침, reason: "준비가 간단하고 포만감이 오래 가요.", evidence: "", nutritionTags: [섬유질, 단백질], cautions: []}
+      payload: {period: breakfast, imagePath: breakfast/sweet_potato_boiled_egg.jpg, reasonTitle: 간단한 아침, reason: "준비가 간단하고 포만감이 오래 가요.", evidence: "", nutritionTags: [섬유질, 단백질], cautions: []}
       source_ids: []
   lunch:
     - item_key: meal:lunch
       title: 닭가슴살 채소 샐러드
-      payload: {period: lunch, reasonTitle: 담백한 한 끼, reason: "기름기가 적어 속이 편하고 단백질을 채울 수 있어요.", evidence: "", nutritionTags: [단백질, 비타민], cautions: []}
+      payload: {period: lunch, imagePath: lunch/chicken_breast_salad.jpg, reasonTitle: 담백한 한 끼, reason: "기름기가 적어 속이 편하고 단백질을 채울 수 있어요.", evidence: "", nutritionTags: [단백질, 비타민], cautions: []}
       source_ids: []
     - item_key: meal:lunch
       title: 소고기 미역국과 잡곡밥
-      payload: {period: lunch, reasonTitle: 철분 챙기기, reason: "소고기와 미역으로 철분과 미네랄을 같이 챙겨요.", evidence: "", nutritionTags: [철분, 단백질], cautions: []}
+      payload: {period: lunch, imagePath: lunch/beef_seaweed_soup_multigrain_rice.jpg, reasonTitle: 철분 챙기기, reason: "소고기와 미역으로 철분과 미네랄을 같이 챙겨요.", evidence: "", nutritionTags: [철분, 단백질], cautions: []}
       source_ids: []
     - item_key: meal:lunch
       title: 연어구이와 현미밥
-      payload: {period: lunch, reasonTitle: 균형 잡힌 한 끼, reason: "완전히 익힌 연어로 단백질과 오메가3를 채워요.", evidence: "", nutritionTags: [단백질, 오메가3], cautions: [{title: 완전히 익혀서, description: "생선은 속까지 익혀 드세요.", badge: 주의}]}
+      payload: {period: lunch, imagePath: lunch/grilled_salmon_brown_rice.jpg, reasonTitle: 균형 잡힌 한 끼, reason: "완전히 익힌 연어로 단백질과 오메가3를 채워요.", evidence: "", nutritionTags: [단백질, 오메가3], cautions: [{title: 완전히 익혀서, description: "생선은 속까지 익혀 드세요.", badge: 주의}]}
       source_ids: []
     - item_key: meal:lunch
       title: 두부 채소 비빔밥
-      payload: {period: lunch, reasonTitle: 채소 채우기, reason: "여러 채소를 한 그릇에 담아 골고루 먹을 수 있어요.", evidence: "", nutritionTags: [섬유질, 단백질], cautions: []}
+      payload: {period: lunch, imagePath: lunch/tofu_vegetable_bibimbap.jpg, reasonTitle: 채소 채우기, reason: "여러 채소를 한 그릇에 담아 골고루 먹을 수 있어요.", evidence: "", nutritionTags: [섬유질, 단백질], cautions: []}
       source_ids: []
     - item_key: meal:lunch
       title: 닭죽과 나물 반찬
-      payload: {period: lunch, reasonTitle: 소화가 편한 점심, reason: "따뜻하고 부드러워 속이 불편한 날에 좋아요.", evidence: "", nutritionTags: [단백질], cautions: []}
+      payload: {period: lunch, imagePath: lunch/chicken_porridge_greens.jpg, reasonTitle: 소화가 편한 점심, reason: "따뜻하고 부드러워 속이 불편한 날에 좋아요.", evidence: "", nutritionTags: [단백질], cautions: []}
       source_ids: []
   dinner:
     - item_key: meal:dinner
       title: 야채죽과 두부 반찬
-      payload: {period: dinner, reasonTitle: 가벼운 저녁, reason: "늦은 시간에도 속이 편하도록 가볍게 구성했어요.", evidence: "", nutritionTags: [섬유질, 단백질], cautions: []}
+      payload: {period: dinner, imagePath: dinner/vegetable_porridge_tofu.jpg, reasonTitle: 가벼운 저녁, reason: "늦은 시간에도 속이 편하도록 가볍게 구성했어요.", evidence: "", nutritionTags: [섬유질, 단백질], cautions: []}
       source_ids: []
     - item_key: meal:dinner
       title: 대구 맑은탕과 흰쌀밥
-      payload: {period: dinner, reasonTitle: 담백한 저녁, reason: "기름기가 적고 국물이 따뜻해 소화에 부담이 적어요.", evidence: "", nutritionTags: [단백질], cautions: [{title: 완전히 익혀서, description: "생선은 속까지 익혀 드세요.", badge: 주의}]}
+      payload: {period: dinner, imagePath: dinner/cod_clear_soup_rice.jpg, reasonTitle: 담백한 저녁, reason: "기름기가 적고 국물이 따뜻해 소화에 부담이 적어요.", evidence: "", nutritionTags: [단백질], cautions: [{title: 완전히 익혀서, description: "생선은 속까지 익혀 드세요.", badge: 주의}]}
       source_ids: []
     - item_key: meal:dinner
       title: 가지 두부조림과 현미밥
-      payload: {period: dinner, reasonTitle: 채소 중심 저녁, reason: "식물성 단백질과 채소를 함께 먹을 수 있어요.", evidence: "", nutritionTags: [단백질, 섬유질], cautions: []}
+      payload: {period: dinner, imagePath: dinner/eggplant_tofu_brown_rice.jpg, reasonTitle: 채소 중심 저녁, reason: "식물성 단백질과 채소를 함께 먹을 수 있어요.", evidence: "", nutritionTags: [단백질, 섬유질], cautions: []}
       source_ids: []
     - item_key: meal:dinner
       title: 닭안심 채소볶음과 밥
-      payload: {period: dinner, reasonTitle: 단백질 채우기, reason: "기름을 적게 써서 볶으면 속이 편해요.", evidence: "", nutritionTags: [단백질, 비타민], cautions: []}
+      payload: {period: dinner, imagePath: dinner/chicken_vegetable_stir_fry.jpg, reasonTitle: 단백질 채우기, reason: "기름을 적게 써서 볶으면 속이 편해요.", evidence: "", nutritionTags: [단백질, 비타민], cautions: []}
       source_ids: []
     - item_key: meal:dinner
       title: 버섯 들깨 칼국수
-      payload: {period: dinner, reasonTitle: 따뜻한 저녁, reason: "따뜻한 국물로 속을 데우고 포만감을 채워요.", evidence: "", nutritionTags: [섬유질], cautions: []}
+      payload: {period: dinner, imagePath: dinner/mushroom_perilla_kalguksu.jpg, reasonTitle: 따뜻한 저녁, reason: "따뜻한 국물로 속을 데우고 포만감을 채워요.", evidence: "", nutritionTags: [섬유질], cautions: []}
       source_ids: []
   snack:
     - item_key: meal:snack
       title: 따뜻한 우유 한 컵
-      payload: {period: snack, reasonTitle: 자기 전 가볍게, reason: "부담 없이 칼슘을 채우고 속을 따뜻하게 해줘요.", evidence: "", nutritionTags: [칼슘], cautions: []}
+      payload: {period: snack, imagePath: snack/warm_milk.jpg, reasonTitle: 자기 전 가볍게, reason: "부담 없이 칼슘을 채우고 속을 따뜻하게 해줘요.", evidence: "", nutritionTags: [칼슘], cautions: []}
       source_ids: []
     - item_key: meal:snack
       title: 바나나와 견과류 한 줌
-      payload: {period: snack, reasonTitle: 밤에 출출할 때, reason: "소량으로 허기를 달래고 다리 경련에도 도움이 돼요.", evidence: "", nutritionTags: [칼륨, 마그네슘], cautions: []}
+      payload: {period: snack, imagePath: snack/banana_nuts.jpg, reasonTitle: 밤에 출출할 때, reason: "소량으로 허기를 달래고 다리 경련에도 도움이 돼요.", evidence: "", nutritionTags: [칼륨, 마그네슘], cautions: []}
       source_ids: []
     - item_key: meal:snack
       title: 찐 감자 반 개
-      payload: {period: snack, reasonTitle: 속 편한 간식, reason: "냄새가 거의 없어 입덧이 있는 밤에도 먹기 편해요.", evidence: "", nutritionTags: [탄수화물], cautions: []}
+      payload: {period: snack, imagePath: snack/steamed_potato.jpg, reasonTitle: 속 편한 간식, reason: "냄새가 거의 없어 입덧이 있는 밤에도 먹기 편해요.", evidence: "", nutritionTags: [탄수화물], cautions: []}
       source_ids: []
     - item_key: meal:snack
       title: 플레인 요거트와 블루베리
-      payload: {period: snack, reasonTitle: 가벼운 마무리, reason: "달지 않게 먹으면 자기 전에도 부담이 적어요.", evidence: "", nutritionTags: [칼슘, 항산화], cautions: []}
+      payload: {period: snack, imagePath: snack/plain_yogurt_blueberry.jpg, reasonTitle: 가벼운 마무리, reason: "달지 않게 먹으면 자기 전에도 부담이 적어요.", evidence: "", nutritionTags: [칼슘, 항산화], cautions: []}
       source_ids: []
     - item_key: meal:snack
       title: 삶은 달걀과 방울토마토
-      payload: {period: snack, reasonTitle: 단백질 간식, reason: "적은 양으로 단백질을 채워 밤에 허기를 줄여요.", evidence: "", nutritionTags: [단백질, 비타민], cautions: []}
+      payload: {period: snack, imagePath: snack/boiled_egg_cherry_tomato.jpg, reasonTitle: 단백질 간식, reason: "적은 양으로 단백질을 채워 밤에 허기를 줄여요.", evidence: "", nutritionTags: [단백질, 비타민], cautions: []}
       source_ids: []

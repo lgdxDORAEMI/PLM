@@ -13,6 +13,10 @@ class ApiHomeWeekService implements HomeWeekService {
     if (response == null) {
       throw const FormatException('주차별 안내 응답이 없습니다.');
     }
-    return HomeWeekContext.fromJson(response);
+    final context = HomeWeekContext.fromJson(response);
+    if (context.week == null || context.notes.isEmpty) {
+      throw const FormatException('주차별 안내 데이터가 준비되지 않았습니다.');
+    }
+    return context;
   }
 }

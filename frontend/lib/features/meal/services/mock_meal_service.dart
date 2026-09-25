@@ -12,6 +12,9 @@ class MockMealService implements MealService, MealChatService {
     MealDecision decision,
   ) async {}
 
+  @override
+  Future<void> replaceRecommendation(MealRecommendation recommendation) async {}
+
   static const _cautions = [
     MealCaution(title: '회 · 육회 등 날것', description: '배탈이 나도 쓸 수 있는 약이 적어요'),
     MealCaution(title: '커피', description: '하루 1잔까지는 괜찮아요.'),

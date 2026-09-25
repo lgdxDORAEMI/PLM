@@ -159,6 +159,9 @@ class SupabaseChatRepositoryTest(unittest.TestCase):
             reply.routine_update.status,
             RoutineUpdateStatus.AWAITING_CONFIRMATION,
         )
+        history = repo.history_for_day(USER_ID, TARGET_DATE)
+        self.assertIn("컨디션 수정 상태: 사용자 확인 대기", history[-1]["content"])
+        self.assertIn("피로도를 5단계로 수정합니다.", history[-1]["content"])
         queued = repo.set_routine_update_status(
             USER_ID,
             TARGET_DATE,
@@ -166,6 +169,8 @@ class SupabaseChatRepositoryTest(unittest.TestCase):
             RoutineUpdateStatus.QUEUED,
         )
         self.assertEqual(queued.status, RoutineUpdateStatus.QUEUED)
+        history = repo.history_for_day(USER_ID, TARGET_DATE)
+        self.assertIn("컨디션 수정 상태: 루틴 재생성 대기", history[-1]["content"])
 
 
 class ChatApiTest(unittest.IsolatedAsyncioTestCase):

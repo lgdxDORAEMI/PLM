@@ -36,14 +36,42 @@ class MealPeriodCard extends StatelessWidget {
           ),
           child: Row(
             children: [
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: visual.background,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
                 child: SizedBox.square(
                   dimension: 52,
-                  child: Icon(visual.icon, color: visual.foreground, size: 30),
+                  child: summary.imageUrl == null
+                      ? ColoredBox(
+                          color: visual.background,
+                          child: Icon(
+                            visual.icon,
+                            color: visual.foreground,
+                            size: 30,
+                          ),
+                        )
+                      : Image.network(
+                          summary.imageUrl!,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, progress) =>
+                              progress == null
+                              ? child
+                              : ColoredBox(
+                                  color: visual.background,
+                                  child: Icon(
+                                    visual.icon,
+                                    color: visual.foreground,
+                                    size: 30,
+                                  ),
+                                ),
+                          errorBuilder: (_, _, _) => ColoredBox(
+                            color: visual.background,
+                            child: Icon(
+                              visual.icon,
+                              color: visual.foreground,
+                              size: 30,
+                            ),
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(width: AppSpacing.lg),

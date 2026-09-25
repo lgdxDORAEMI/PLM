@@ -17,7 +17,7 @@
 | --- | --- | --- |
 | POST | `/account/session/default` | 로컬 또는 허용된 운영 Web Origin에서 사전 설정된 아내 계정 세션 발급. Bearer 토큰 예외 |
 | POST | `/account/session/switch` | 로컬 또는 허용된 운영 Web Origin의 설정된 계정만 `target`이 `wife` 또는 `husband`인 본문으로 전환 |
-| GET | `/routine/home` | 오늘 루틴 생성 여부와 무관한 프로필 주차 기반 홈 안내 |
+| GET | `/routine/home` | 오늘 루틴 생성 여부와 무관한 프로필 주차 기반 RAG 홈 안내; 사용자별·KST 날짜별 1건 유지 |
 | GET | `/account/bootstrap` | 역할, 프로필 완료 상태, 배우자 연결 상태와 시작 목적지 |
 | GET | `/account/partner-link` | 연결 상태와 본인·배우자 표시 이름 |
 | POST | `/account/partner-invitations` | 만료 시각이 있는 초대 링크 발급; 201 |
@@ -50,6 +50,8 @@
 | GET | `/care/calendar/{month}` | 날짜별 컨디션 지수·리포트 상태 조회 |
 
 컨디션 입력은 `nausea`, `waist_pain`, `pelvis_pain`, `leg_pain`, `wrist_pain`, `fatigue`, `mood`의 1~5 점수 7개를 요구합니다. 화면에 기분을 표시하지 않더라도 API 요청에는 `mood`가 필요합니다. 루틴 생성은 프로필과 오늘 컨디션 저장 후 호출하며, 반환값의 `source`와 `revision`으로 AI/폴백 및 재생성 여부를 구분합니다. 컨디션을 바꾼 경우 기존 확정 리포트와 루틴 상태를 고려해 `write_kind=new_routine_required`가 반환될 수 있습니다.
+
+`GET /routine/home`의 `week_notes` 2개와 `caution`은 첫 조회 시 현재 임신 주차로 `pregnancy_knowledge`를 검색해 웬즈데이가 생성합니다. 결과는 `home_week_guides`에 사용자별·KST 날짜별 1건으로 저장되며 같은 날에는 다시 생성하지 않습니다. 응답의 `source`는 `rag` 또는 `fallback`, `source_ids`는 사용한 `pregnancy_knowledge.id`, `sources`는 해당 id와 원문 출처, `generated_at`은 저장 시각입니다. RAG 검색·생성 또는 검증이 실패하면 `week_notes.yaml` 문구를 그날의 `fallback` 결과로 저장하고 출처 배열은 비워 둡니다. 같은 날 프로필 수정으로 계산 주차가 달라진 경우에만 기존 1건을 새 주차 기준으로 갱신합니다.
 
 ## 네 가지 상세 가이드와 ThinQ
 

@@ -123,6 +123,17 @@ void main() {
 
     expect(find.byKey(const ValueKey('routine-update-status')), findsOneWidget);
     expect(find.text('컨디션을 수정할까요?'), findsOneWidget);
+    final statusCard = find.byKey(const ValueKey('routine-update-status'));
+    final assistantReply = find.text('피로도를 수정할까요?');
+    final chatInput = find.byKey(const ValueKey('meal-chat-input'));
+    expect(
+      tester.getTopLeft(statusCard).dy,
+      greaterThan(tester.getTopLeft(assistantReply).dy),
+    );
+    expect(
+      tester.getBottomLeft(statusCard).dy,
+      lessThanOrEqualTo(tester.getTopLeft(chatInput).dy),
+    );
 
     await tester.tap(find.byKey(const ValueKey('confirm-routine-update')));
     await tester.pump();

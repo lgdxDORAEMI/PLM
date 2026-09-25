@@ -10,6 +10,7 @@ import json
 from typing import Any
 
 from app.services.routine.inputs import ACTIVITY_CODES, CUSTOM_ACTIVITY
+from app.services.routine.meal_catalog import load_meal_catalog, meal_catalog_prompt
 
 # 2026-09-17.1: 4종 한 번 호출 → 카테고리별 4회 동시 호출(생성 8.6초로 타임아웃 잦음)
 # 2026-09-18.1: item_key 값 목록 고정(S1), 가사 키 = 활동 코드표(S6), 예정 활동을 {code, label}로 전달
@@ -20,6 +21,7 @@ from app.services.routine.inputs import ACTIVITY_CODES, CUSTOM_ACTIVITY
 # 2026-09-20.1: K1 — 가장 느린 식단 호출의 출력 분량 제한(문장 길이·태그·주의 개수)
 # 2026-09-24.1: 수면 공기청정기 실기기 제어 — value/options를 팀이 확정한 4종으로 안내(강제는 service.validate가 한다)
 PROMPT_VERSION = "2026-09-24.1"
+WEEK_GUIDE_PROMPT_VERSION = "2026-09-25.1"
 CATEGORIES = ("meal", "household", "health", "sleep")
 
 
@@ -45,6 +47,11 @@ SLEEP_ENV_LABELS = {"조명": "light", "온도": "temperature", "습도": "humid
 # service.validate가 AI 출력과 무관하게 이 값으로 강제한다 — 여기서는 프롬프트 안내용으로만 쓴다.
 PURIFIER_OPTIONS = ("조용 모드", "자동", "강풍", "끄기")
 MEAL_KEYS = ("meal:breakfast", "meal:lunch", "meal:dinner", "meal:snack")
+MEAL_TITLES = tuple(
+    item["title"]
+    for items in load_meal_catalog().values()
+    for item in items
+)
 HEALTH_KEYS = ("health:waist", "health:pelvis", "health:leg", "health:wrist", "health:whole", "health:rest")  # rest는 fallback.yaml과 동일
 SLEEP_KEY = "sleep:main"
 # S6: 활동 코드표 9종 + 직접 입력(custom). 직접 입력이 여러 개면 service._normalize_item_keys가 :2를 붙인다.
@@ -55,7 +62,7 @@ _SOURCE_IDS = _arr(_INT)
 _MEAL_ITEM = _obj(
     {
         "item_key": {"type": "string", "enum": list(MEAL_KEYS)},
-        "title": _STR,
+        "title": {"type": "string", "enum": list(MEAL_TITLES)},
         "payload": _obj(
             {
                 "period": {"type": "string", "enum": ["breakfast", "lunch", "dinner", "snack"]},
@@ -138,6 +145,42 @@ TIP_REQUEST = (
 )
 
 
+# 홈 "이번 주에 알아두세요". 주차 특징 2줄과 주의 1줄 모두 제공된 RAG 문단에 근거해야 한다.
+WEEK_GUIDE_SCHEMA: dict[str, Any] = _obj(
+    {
+        "week_notes": {"type": "array", "items": _STR, "minItems": 2, "maxItems": 2},
+        "caution": _STR,
+        "source_ids": _SOURCE_IDS,
+    }
+)
+WEEK_GUIDE_SYSTEM_PROMPT = """당신은 PLM 임산부 생활관리 AI '웬즈데이'의 주차별 생활 안내 작성 도구다.
+의료 진단이나 처방을 하지 않는다.
+규칙:
+- 출력은 지정된 JSON 스키마만 사용하고 한국어로 작성한다.
+- 제공된 참고 문단에 직접 근거한 내용만 작성한다. 일반 상식이나 기억으로 내용을 보충하지 않는다.
+- week_notes는 해당 임신 주차에 나타날 수 있는 일반적인 신체 변화나 생활 특징 2개다.
+- caution은 사용자가 일상에서 참고할 안전한 주의사항 1개다.
+- 각 문장은 단정하지 않고 개인차가 있음을 전제로 하며 60자 이내로 쓴다.
+- 진단, 치료 효과, 약 복용 지시, 근거 문단에 없는 수치를 만들지 않는다.
+- 사용한 참고 문단의 id를 source_ids에 넣는다. 적어도 1개 이상의 id를 사용한다.
+- 응급 증상은 구체적으로 판정하지 않고 이상 증상이 있으면 의료진과 상담하도록 안내한다."""
+
+
+def build_week_guide_prompt(week: int, chunks: list[dict[str, Any]]) -> str:
+    """임신 주차와 RAG 문단만 전달한다. 프로필·컨디션은 일일 루틴/오늘의 팁에서 별도로 다룬다."""
+    lines = [
+        f"[id={c['id']}] ({c.get('category', '')}, 출처={c.get('source', '')}) {c['content']}"
+        for c in chunks
+    ]
+    return "\n".join(
+        [
+            f"## 임신 주차\n{week}주",
+            "## 참고 문단\n" + "\n\n".join(lines),
+            "## 요청\n홈 화면 '이번 주에 알아두세요'에 표시할 주차 특징 2줄과 주의사항 1줄을 작성하세요.",
+        ]
+    )
+
+
 def category_schema(category: str) -> dict[str, Any]:
     """카테고리 1개만 담은 strict 스키마. 응답은 {category: ...} 모양."""
     return _obj({category: ROUTINE_SCHEMA["properties"][category]})
@@ -145,7 +188,7 @@ def category_schema(category: str) -> dict[str, Any]:
 SYSTEM_PROMPT = """당신은 임산부의 하루 생활 루틴을 설계하는 보조 도구다. 의료 진단이나 처방을 하지 않는다.
 규칙:
 - 출력은 주어진 JSON 스키마만. 한국어.
-- meal: 아침(breakfast)·점심(lunch)·저녁(dinner)·밤(snack) 각 1개, 반드시 4개. 밤은 가벼운 간식이나 늦은 저녁이다. 금지(exclude) 재료는 절대 포함하지 않는다. 제한(limit)은 양을 줄이고 이유를 적는다.
+- meal: 아침(breakfast)·점심(lunch)·저녁(dinner)·밤(snack) 각 1개, 반드시 4개. 밤은 가벼운 간식이나 늦은 저녁이다. 사용자 메시지의 '선택 가능한 식사 메뉴'에서 각 period에 속한 title을 정확히 하나 골라 쓰며 임의 메뉴명을 만들지 않는다. 금지(exclude) 재료는 절대 포함하지 않는다. 제한(limit)은 양을 줄이고 이유를 적는다.
 - meal 분량 제한(응답 속도): title 20자 이내, reason·evidence는 각각 한 문장(60자 이내), nutritionTags 3개 이내,
   cautions는 꼭 필요할 때만 1개(없으면 빈 배열). 같은 내용을 여러 항목에 반복하지 않는다.
 - household: 사용자가 고른 예정 활동을 각각 owner(self=직접, appliance=가전, partner=가족)로 분류한다. 금지 가사는 self로 두지 않는다.
@@ -176,6 +219,8 @@ def build_user_prompt(
     if chunks:
         lines = [f"[id={c['id']}] ({c.get('category', '')}) {c['content']}" for c in chunks]
         parts += ["## 참고 문단", "\n\n".join(lines)]
+    if category == "meal":
+        parts += ["## 선택 가능한 식사 메뉴(period별 title 고정)", meal_catalog_prompt()]
     target = category or "meal·household·health·sleep"
     parts += ["## 요청", request or f"위 정보로 오늘의 {target} 루틴을 JSON 스키마에 맞게 작성."]
     return "\n".join(parts)
@@ -227,6 +272,8 @@ def build_edit_prompt(
     if chunks:
         lines = [f"[id={c['id']}] ({c.get('category', '')}) {c['content']}" for c in chunks]
         parts += ["[참고 문단]", "\n\n".join(lines)]
+    if category == "meal":
+        parts += ["[선택 가능한 식사 메뉴(period별 title 고정)]", meal_catalog_prompt()]
     parts.append(
         "악화와 호전을 하나의 점수로 상쇄하지 마세요. category_decision의 mode·strength 범위에서 기존 루틴을 필요한 만큼만 "
         "조정하세요. 다른 카테고리의 루틴을 출력하거나 관련 없는 변화를 수정 이유로 삼지 마세요. 확정 규칙을 준수하고, "

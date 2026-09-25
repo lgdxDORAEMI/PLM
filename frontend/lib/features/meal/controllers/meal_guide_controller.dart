@@ -30,6 +30,7 @@ class MealGuideController extends ChangeNotifier {
   MealGuideData? _data;
   MealPeriod? _selectedPeriod;
   final Map<MealPeriod, MealRecommendation> _selectedRecommendations = {};
+  final Set<MealPeriod> _replacementPeriods = {};
   bool _showDetails = false;
   bool _loadingAlternative = false;
 
@@ -38,6 +39,25 @@ class MealGuideController extends ChangeNotifier {
   /// '다른 메뉴 보기'로 새 메뉴를 받아오는 중(3~4초). 화면은 버튼을 잠근다.
   bool get loadingAlternative => _loadingAlternative;
   MealGuideData? get data => _data;
+  List<MealPeriodSummary> get periodSummaries {
+    final guide = _data;
+    if (guide == null) return const [];
+    return [
+      for (final summary in guide.periods)
+        MealPeriodSummary(
+          period: summary.period,
+          label: summary.label,
+          summary:
+              _selectedRecommendations[summary.period]?.title ??
+              summary.summary,
+          isCurrent: summary.isCurrent,
+          imageUrl:
+              _selectedRecommendations[summary.period]?.imageUrl ??
+              summary.imageUrl,
+        ),
+    ];
+  }
+
   MealPeriod? get selectedPeriod => _selectedPeriod;
   bool get showDetails => _showDetails;
   MealDecision get selectedDecision {
@@ -124,12 +144,19 @@ class MealGuideController extends ChangeNotifier {
 
   Future<void> acceptSelected() async {
     final recommendation = selectedRecommendation;
-    if (recommendation == null) return;
+    final period = _selectedPeriod;
+    if (recommendation == null || period == null) return;
     final previous = store.decisionFor(recommendation.id);
-    store.recordDecision(recommendation.id, MealDecision.accepted);
-    notifyListeners();
     try {
-      await service.recordDecision(recommendation, MealDecision.accepted);
+      if (_replacementPeriods.contains(period)) {
+        await service.replaceRecommendation(recommendation);
+      } else {
+        await service.recordDecision(recommendation, MealDecision.accepted);
+      }
+      store.recordDecision(recommendation.id, MealDecision.accepted);
+      store.applyRecommendation(recommendation);
+      _selectedRecommendations[period] = recommendation;
+      notifyListeners();
     } on Object {
       store.recordDecision(recommendation.id, previous);
       _state = MealGuideViewState.error;
@@ -183,6 +210,7 @@ class MealGuideController extends ChangeNotifier {
         ? 0
         : (currentIndex + 1) % recommendations.length;
     _selectedRecommendations[period] = recommendations[nextIndex];
+    _replacementPeriods.add(period);
     notifyListeners();
   }
 
@@ -199,6 +227,7 @@ class MealGuideController extends ChangeNotifier {
         request: '다른 메뉴 보기',
       );
       _selectedRecommendations[period] = next;
+      _replacementPeriods.add(period);
       // 새 메뉴는 아직 고르지 않은 상태다(같은 끼니 id라 직전 거절 표시가 남지 않게 되돌린다).
       store.recordDecision(next.id, MealDecision.undecided);
     } on Object {

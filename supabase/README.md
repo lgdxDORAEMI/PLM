@@ -24,3 +24,18 @@ PLM 백엔드는 Supabase Auth로 사용자를 확인하고 PostgreSQL에 프로
 마이그레이션 적용 순서와 환경 설정은 [guide.md](../guide.md), 엔드포인트 계약은 [docs/api.md](../docs/api.md)를 참고하세요. 실제 키나 DB URL은 문서나 Git에 기록하지 않습니다.
 
 건강 운동 영상은 기본 카탈로그 마이그레이션 이후 `20260923130000_health_full_body_video.sql`에서 전신 저강도 운동과 재생 시간·대상 분기 정보를 추가합니다.
+
+## 식사 이미지 Storage
+
+식사 이미지는 공개 버킷 `meal-images`에 두고, 루틴 DB에는 버킷 내부 `imagePath`만 저장합니다.
+Supabase SQL Editor에서
+[`20260925020000_meal_storage_images.sql`](migrations/20260925020000_meal_storage_images.sql)을 실행한 뒤,
+저장소 루트에서 다음 명령으로 사진 20장을 업로드합니다.
+
+```bash
+backend/.venv/bin/python supabase/scripts/upload_meal_images.py --dry-run
+backend/.venv/bin/python supabase/scripts/upload_meal_images.py
+```
+
+업로드는 `backend/.env`의 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`를 사용합니다.
+키는 출력하거나 Git에 저장하지 않습니다. 같은 객체 경로는 덮어쓰며 브라우저 캐시는 1시간으로 설정합니다.

@@ -28,6 +28,7 @@ from postgrest.exceptions import APIError
 from supabase import Client
 
 from app.domains.errors import DomainNotFoundError, DomainStorageError
+from app.services.routine.meal_catalog import image_path_for, public_image_url
 from app.services.routine.prompt import SLEEP_ENV_LABELS
 
 from .schemas import GuideItem, GuideResponse, RoutineCategory
@@ -81,31 +82,70 @@ class GuideQueryService:
             if category == RoutineCategory.HEALTH and item_rows
             else {}
         )
-        items = [
-            GuideItem(
-                item_id=row["id"],
-                item_key=row["item_key"],
-                title=row["title"],
-                description=row.get("description"),
-                payload=_normalize_payload(
-                    category,
-                    row.get("payload") or {},
-                    item_key=row["item_key"],
-                    health_videos=health_videos,
-                ),
-                status=row["status"],
-                completed_by=row.get("completed_by"),
-                completed_at=row.get("completed_at"),
-            )
-            for row in item_rows
+        meal_replacements = (
+            self._meal_replacements(user_id, item_rows)
+            if category == RoutineCategory.MEAL and item_rows
+            else {}
+        )
+        items: list[GuideItem] = []
+        for row in item_rows:
             # 재생성 시 FK(예: chat_messages.routine_item_id)가 삭제를 막으면 Routine AI
-            # 쪽이 지우는 대신 change_kind='removed'로만 표시한다(routine/repository.py
-            # _sync_items) — 그 행은 더 이상 오늘 루틴이 아니므로 화면에 보여주지 않는다.
-            # SQL .neq()는 NULL(대부분의 정상 행)까지 걸러내므로 Python에서 비교한다
-            # (Routine AI 쪽 inputs.py가 같은 이유로 쓰는 것과 동일한 패턴).
-            if row.get("change_kind") != "removed"
-        ]
+            # 쪽이 지우는 대신 change_kind='removed'로만 표시한다. 그 행은 화면에서 제외한다.
+            if row.get("change_kind") == "removed":
+                continue
+            replacement = meal_replacements.get(str(row["id"]), {})
+            title = replacement.get("title") or row["title"]
+            payload = {**(row.get("payload") or {}), **replacement}
+            payload.pop("imageAsset", None)
+            image_path = image_path_for(title)
+            if image_path:
+                payload["imagePath"] = image_path
+                image_url = public_image_url(image_path)
+                if image_url:
+                    payload["imageUrl"] = image_url
+            items.append(
+                GuideItem(
+                    item_id=row["id"],
+                    item_key=row["item_key"],
+                    title=title,
+                    description=replacement.get("reason") or row.get("description"),
+                    payload=_normalize_payload(
+                        category,
+                        payload,
+                        item_key=row["item_key"],
+                        health_videos=health_videos,
+                    ),
+                    status=row["status"],
+                    completed_by=row.get("completed_by"),
+                    completed_at=row.get("completed_at"),
+                )
+            )
         return GuideResponse(date=target_date, category=category, items=items)
+
+    def _meal_replacements(
+        self, user_id: str, item_rows: list[dict[str, Any]]
+    ) -> dict[str, dict[str, Any]]:
+        """각 끼니의 최신 meal_replace를 조회 결과에만 덮는다. 원본 routine_items는 보존한다."""
+        item_ids = {str(row["id"]) for row in item_rows}
+        rows = self._run(
+            lambda: self.client.table("recommendation_feedback")
+            .select("routine_item_id", "payload", "created_at")
+            .eq("user_id", user_id)
+            .eq("kind", "meal_replace")
+            .order("created_at", desc=True)
+            .execute()
+        )
+        replacements: dict[str, dict[str, Any]] = {}
+        for row in rows:
+            item_id = str(row.get("routine_item_id"))
+            payload = row.get("payload")
+            if (
+                item_id in item_ids
+                and item_id not in replacements
+                and isinstance(payload, dict)
+            ):
+                replacements[item_id] = payload
+        return replacements
 
     def _health_videos(self) -> dict[str, dict[str, Any]]:
         """활성 운동 영상 카탈로그를 routine item의 부위 코드로 찾을 수 있게 만든다."""

@@ -8,12 +8,14 @@ class MealPeriodSummary {
     required this.label,
     required this.summary,
     this.isCurrent = false,
+    this.imageUrl,
   });
 
   final MealPeriod period;
   final String label;
   final String summary;
   final bool isCurrent;
+  final String? imageUrl;
 }
 
 class MealRecommendation {
@@ -27,6 +29,8 @@ class MealRecommendation {
     required this.evidence,
     required this.nutritionTags,
     required this.cautions,
+    this.imagePath,
+    this.imageUrl,
   });
 
   final String id;
@@ -38,6 +42,8 @@ class MealRecommendation {
   final String evidence;
   final List<String> nutritionTags;
   final List<MealCaution> cautions;
+  final String? imagePath;
+  final String? imageUrl;
 }
 
 class MealCaution {

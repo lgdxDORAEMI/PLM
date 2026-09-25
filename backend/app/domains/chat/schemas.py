@@ -83,6 +83,8 @@ class MealAlternativeResponse(BaseModel):
     reason: str
     nutritionTags: list[str]
     cautions: list[dict[str, Any]]
+    imagePath: str | None = None
+    imageUrl: str | None = None
 
 
 class ChatMessageResponse(BaseModel):

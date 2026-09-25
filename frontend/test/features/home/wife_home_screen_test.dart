@@ -8,6 +8,8 @@ import 'package:plm_frontend/features/condition/models/condition_draft.dart';
 import 'package:plm_frontend/features/home/screens/wife_home_screen.dart';
 import 'package:plm_frontend/features/home/models/home_week_context.dart';
 import 'package:plm_frontend/features/home/services/home_week_service.dart';
+import 'package:plm_frontend/features/profile/data/profile_store.dart';
+import 'package:plm_frontend/features/profile/models/profile_draft.dart';
 import 'package:plm_frontend/features/routine/models/daily_routine.dart';
 import 'package:plm_frontend/features/routine/services/mock_routine_service.dart';
 import 'package:plm_frontend/features/routine/services/routine_service.dart';
@@ -34,7 +36,7 @@ void main() {
     expect(find.byKey(const ValueKey('home-routine-success')), findsNothing);
   });
 
-  testWidgets('컨디션과 루틴이 없어도 주차별 안내를 표시한다', (tester) async {
+  testWidgets('주차별 안내를 최상단 초록 배너 안에 표시한다', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: WifeHomeScreen(homeWeekService: _FakeHomeWeekService()),
@@ -42,13 +44,30 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('home-week-tip')),
-      200,
-      scrollable: find.byType(Scrollable).first,
+    final hero = find.byKey(const ValueKey('home-week-hero'));
+    expect(hero, findsOneWidget);
+    expect(
+      find.ancestor(of: find.text('주차 안내 첫 번째'), matching: hero),
+      findsOneWidget,
     );
-    expect(find.byKey(const ValueKey('home-week-tip')), findsOneWidget);
-    expect(find.text('주차 안내 첫 번째'), findsOneWidget);
+    expect(find.text('주차 안내 두 번째'), findsOneWidget);
+    expect(find.text('주차 주의사항'), findsOneWidget);
+    expect(find.byKey(const ValueKey('home-week-tip')), findsNothing);
+  });
+
+  testWidgets('실연동 주차 데이터가 비어도 연동 필요 메시지로 오인하지 않는다', (tester) async {
+    ProfileStore.instance.save(ProfileDraft.mockEdit());
+    addTearDown(ProfileStore.instance.reset);
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: WifeHomeScreen(homeWeekService: _EmptyHomeWeekService()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('주차별 안내를 준비하지 못했어요'), findsOneWidget);
+    expect(find.text('다시 불러오기'), findsOneWidget);
+    expect(find.text('연동이 필요합니다'), findsNothing);
   });
 
   testWidgets('컨디션 완료 후 Loading에서 Success와 Progress로 전환한다', (tester) async {
@@ -142,4 +161,12 @@ class _FakeHomeWeekService implements HomeWeekService {
     notes: ['주차 안내 첫 번째', '주차 안내 두 번째'],
     caution: '주차 주의사항',
   );
+}
+
+class _EmptyHomeWeekService implements HomeWeekService {
+  const _EmptyHomeWeekService();
+
+  @override
+  Future<HomeWeekContext> fetch() async =>
+      const HomeWeekContext(week: null, notes: [], caution: null);
 }

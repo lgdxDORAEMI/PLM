@@ -113,6 +113,20 @@ class BuildPromptTest(unittest.TestCase):
         self.assertIn("[이 대화 추가 규칙]\n메뉴 변경은 안내만", prompt)
         self.assertTrue(prompt.endswith("[질문]\n질문"))
 
+    def test_pending_routine_update_context_is_kept_for_follow_up(self) -> None:
+        history = [{
+            "role": "assistant",
+            "content": (
+                "허리 통증을 2단계로 수정할까요? "
+                "[컨디션 수정 상태: 사용자 확인 대기; "
+                "요청: 허리 통증 2단계로 수정하고 오늘 루틴을 다시 맞춥니다.]"
+            ),
+        }]
+        prompt = build_prompt(CONTEXT, "그럼 새 루틴이 짜인 거야?", history, [], extra_rules="")
+
+        self.assertIn("컨디션 수정 상태: 사용자 확인 대기", prompt)
+        self.assertIn("아직 저장·재생성을 시작하지 않은 상태", responder.SYSTEM_PROMPT)
+
 
 if __name__ == "__main__":
     unittest.main()

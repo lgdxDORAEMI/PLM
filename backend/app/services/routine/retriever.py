@@ -64,6 +64,14 @@ class KnowledgeRetriever:
         [embedding] = await self.embed([text])
         return await asyncio.to_thread(self._match, embedding, week, None)
 
+    async def search_week_guide(self, week: int) -> list[dict[str, Any]]:
+        """홈 주차 안내: 주차에 맞는 신체 변화·생활 주의 근거를 카테고리 제한 없이 찾는다."""
+        search_week = min(40, max(1, week))
+        return await self.search(
+            f"임신 {search_week}주에 나타날 수 있는 일반적인 신체 변화와 일상생활 주의사항",
+            search_week,
+        )
+
     async def retrieve(
         self, facts: dict[str, Any], categories: list[str] | None = None
     ) -> dict[str, list[dict[str, Any]]]:

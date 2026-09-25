@@ -108,6 +108,8 @@ class ApiMealChatService implements MealChatService, RoutineUpdateService {
                 )
                 .toList(growable: false)
           : const [],
+      imagePath: value['imagePath']?.toString(),
+      imageUrl: value['imageUrl']?.toString(),
     );
   }
 

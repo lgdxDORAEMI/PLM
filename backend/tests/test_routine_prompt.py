@@ -8,6 +8,9 @@ from app.services.routine.prompt import (
     ROUTINE_SCHEMA,
     SLEEP_KEY,
     TIP_SCHEMA,
+    WEEK_GUIDE_SCHEMA,
+    WEEK_GUIDE_SYSTEM_PROMPT,
+    build_week_guide_prompt,
     build_user_prompt,
     category_schema,
 )
@@ -27,7 +30,7 @@ def _walk(node, path="$"):
 class RoutinePromptTest(unittest.TestCase):
     def test_schema_is_strict_compatible(self) -> None:
         """OpenAI strict 모드: 모든 객체는 additionalProperties=false, required = 모든 속성."""
-        for schema in (ROUTINE_SCHEMA, TIP_SCHEMA, *(category_schema(c) for c in CATEGORIES)):
+        for schema in (ROUTINE_SCHEMA, TIP_SCHEMA, WEEK_GUIDE_SCHEMA, *(category_schema(c) for c in CATEGORIES)):
             for path, obj in _walk(schema):
                 self.assertIs(obj.get("additionalProperties"), False, path)
                 self.assertEqual(set(obj["required"]), set(obj["properties"]), path)
@@ -49,6 +52,17 @@ class RoutinePromptTest(unittest.TestCase):
         for word in ("스트레칭", "식사 메뉴", "집안일 분담", "취침 시각"):
             self.assertIn(word, TIP_REQUEST)
         self.assertIn("쓰지 않는다", TIP_REQUEST)
+
+    def test_week_guide_requires_two_notes_and_rag_sources(self) -> None:
+        notes = WEEK_GUIDE_SCHEMA["properties"]["week_notes"]
+        self.assertEqual((notes["minItems"], notes["maxItems"]), (2, 2))
+        self.assertIn("참고 문단에 직접 근거", WEEK_GUIDE_SYSTEM_PROMPT)
+        prompt = build_week_guide_prompt(28, [{
+            "id": 7, "category": "임신", "content": "근거 문단", "source": "OWH",
+        }])
+        self.assertIn("28주", prompt)
+        self.assertIn("[id=7]", prompt)
+        self.assertIn("출처=OWH", prompt)
 
     def test_prompt_sections(self) -> None:
         facts = {"week": 24, "waist_pain": 4}

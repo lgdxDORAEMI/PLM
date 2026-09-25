@@ -22,8 +22,13 @@ void main() {
                   'items': [
                     {
                       'item_id': 'routine-item-42',
-                      'title': '아침 메뉴',
-                      'payload': {'period': 'breakfast'},
+                      'title': '베리 요거트 귀리죽',
+                      'payload': {
+                        'period': 'breakfast',
+                        'imagePath': 'breakfast/berry_yogurt_oatmeal.jpg',
+                        'imageUrl':
+                            'https://example.supabase.co/storage/v1/object/public/meal-images/breakfast/berry_yogurt_oatmeal.jpg',
+                      },
                     },
                   ],
                 }),
@@ -41,6 +46,11 @@ void main() {
     await service.recordDecision(recommendation, MealDecision.rejected);
 
     expect(recommendation.id, 'routine-item-42');
+    expect(recommendation.imagePath, 'breakfast/berry_yogurt_oatmeal.jpg');
+    expect(
+      recommendation.imageUrl,
+      'https://example.supabase.co/storage/v1/object/public/meal-images/breakfast/berry_yogurt_oatmeal.jpg',
+    );
     expect(feedbackRequest?.method, 'PUT');
     expect(
       feedbackRequest?.url.path,
@@ -66,5 +76,41 @@ void main() {
         isA<ApiException>().having((error) => error.statusCode, 'status', 404),
       ),
     );
+  });
+
+  test('대체 메뉴 선택은 전체 카드와 meal_replace로 저장한다', () async {
+    http.Request? replacementRequest;
+    final service = ApiMealService(
+      client: ApiClient(
+        baseUrl: 'http://localhost:8000',
+        httpClient: MockClient((request) async {
+          replacementRequest = request;
+          return http.Response('{}', 200);
+        }),
+      ),
+    );
+    final recommendation = MealRecommendation(
+      id: 'routine-item-42',
+      period: MealPeriod.breakfast,
+      title: '바나나 감자 찜',
+      description: '속이 편해요',
+      reasonTitle: '편안한 아침',
+      reason: '속이 편해요',
+      evidence: '',
+      nutritionTags: const ['에너지'],
+      cautions: const [],
+      imagePath: 'snack/steamed_potato.jpg',
+      imageUrl:
+          'https://example.supabase.co/storage/v1/object/public/meal-images/snack/steamed_potato.jpg',
+    );
+
+    await service.replaceRecommendation(recommendation);
+
+    final body = jsonDecode(replacementRequest!.body) as Map<String, dynamic>;
+    expect(body['feedback_kind'], 'meal_replace');
+    expect(body['payload']['title'], '바나나 감자 찜');
+    expect(body['payload']['period'], 'breakfast');
+    expect(body['payload']['nutritionTags'], ['에너지']);
+    expect(body['payload']['imagePath'], 'snack/steamed_potato.jpg');
   });
 }

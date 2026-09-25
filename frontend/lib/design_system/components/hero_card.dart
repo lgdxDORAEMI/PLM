@@ -5,10 +5,16 @@ import '../tokens/app_elevation.dart';
 
 /// 화면 첫 맥락을 primary 채움 카드로 보여준다(DESIGN_2 §5.1). 홈 주차 히어로·남편 초대 상단에서 쓴다.
 class HeroCard extends StatelessWidget {
-  const HeroCard({super.key, required this.title, required this.description});
+  const HeroCard({
+    super.key,
+    required this.title,
+    this.description,
+    this.content,
+  });
 
   final String title;
-  final String description;
+  final String? description;
+  final Widget? content;
 
   @override
   Widget build(BuildContext context) {
@@ -34,14 +40,16 @@ class HeroCard extends StatelessWidget {
               height: 1.38,
             ),
           ),
-          Text(
-            description,
-            style: const TextStyle(
-              color: AppColors.primary50,
-              fontSize: 14,
-              height: 2,
+          if (description case final description? when description.isNotEmpty)
+            Text(
+              description,
+              style: const TextStyle(
+                color: AppColors.primary50,
+                fontSize: 14,
+                height: 2,
+              ),
             ),
-          ),
+          ?content,
         ],
       ),
     );

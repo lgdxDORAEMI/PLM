@@ -19,29 +19,17 @@ class MealRecommendationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 식사 가이드 상세(compact=false)만 시안 스타일. 챗봇 대안 카드(compact)는 기존 그대로.
+    // 상세 카드에는 항상 이미지 영역을, 챗봇 대안 카드에는 사진이 있을 때만 표시한다.
     return AppCard(
       padding: const EdgeInsets.all(AppSpacing.pageMobile),
       borderColor: compact ? null : AppColors.categoryMeal,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (!compact) ...[
-            DecoratedBox(
-              decoration: BoxDecoration(
-                color: AppColors.surfaceSubtle,
-                borderRadius: BorderRadius.circular(AppRadius.card),
-              ),
-              child: const SizedBox(
-                height: 132,
-                child: Center(
-                  child: Icon(
-                    Icons.rice_bowl_outlined,
-                    size: 64,
-                    color: AppColors.categoryMeal,
-                  ),
-                ),
-              ),
+          if (!compact || recommendation.imageUrl != null) ...[
+            _MealImage(
+              imageUrl: recommendation.imageUrl,
+              height: compact ? 116 : 176,
             ),
             const SizedBox(height: AppSpacing.lg),
           ],
@@ -95,6 +83,42 @@ class MealRecommendationCard extends StatelessWidget {
     }
     if (tag.contains('혈당')) return AppBadgeTone.primary;
     return AppBadgeTone.info;
+  }
+}
+
+class _MealImage extends StatelessWidget {
+  const _MealImage({required this.imageUrl, required this.height});
+
+  final String? imageUrl;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final fallback = ColoredBox(
+      color: AppColors.surfaceSubtle,
+      child: const Center(
+        child: Icon(
+          Icons.rice_bowl_outlined,
+          size: 64,
+          color: AppColors.categoryMeal,
+        ),
+      ),
+    );
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadius.card),
+      child: SizedBox(
+        height: height,
+        child: imageUrl == null
+            ? fallback
+            : Image.network(
+                imageUrl!,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, progress) =>
+                    progress == null ? child : fallback,
+                errorBuilder: (_, _, _) => fallback,
+              ),
+      ),
+    );
   }
 }
 

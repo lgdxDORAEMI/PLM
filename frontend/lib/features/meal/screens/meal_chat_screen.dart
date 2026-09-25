@@ -147,21 +147,6 @@ class _MealChatScreenState extends State<MealChatScreen> {
                       period: widget.mealPeriod,
                       live: _liveChat,
                     ),
-                    if (_controller.routineUpdate case final update?
-                        when update.status !=
-                            RoutineUpdateStatus.cancelled) ...[
-                      const SizedBox(height: AppSpacing.lg),
-                      RoutineUpdateStatusCard(
-                        key: const ValueKey('routine-update-status'),
-                        update: update,
-                        busy: _controller.routineUpdateBusy,
-                        errorMessage: _controller.routineUpdateError,
-                        onConfirm: () =>
-                            unawaited(_controller.confirmRoutineUpdate()),
-                        onCancel: () =>
-                            unawaited(_controller.cancelRoutineUpdate()),
-                      ),
-                    ],
                     const SizedBox(height: AppSpacing.xxl),
                     if (_loadingChat)
                       const Center(child: CircularProgressIndicator())
@@ -179,6 +164,23 @@ class _MealChatScreenState extends State<MealChatScreen> {
                               key: ValueKey(message.id),
                               message: message.text,
                               fromUser: message.author == MealChatAuthor.user,
+                            ),
+                            const SizedBox(height: AppSpacing.lg),
+                          ],
+                          if (_controller.routineUpdate case final update?
+                              when update.status !=
+                                  RoutineUpdateStatus.cancelled) ...[
+                            RoutineUpdateStatusCard(
+                              key: const ValueKey('routine-update-status'),
+                              update: update,
+                              busy: _controller.routineUpdateBusy,
+                              errorMessage: _controller.routineUpdateError,
+                              onConfirm: () => unawaited(
+                                _controller.confirmRoutineUpdate(),
+                              ),
+                              onCancel: () => unawaited(
+                                _controller.cancelRoutineUpdate(),
+                              ),
                             ),
                             const SizedBox(height: AppSpacing.lg),
                           ],

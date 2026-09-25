@@ -27,6 +27,35 @@ class ApiMealService implements MealService {
   }
 
   @override
+  Future<void> replaceRecommendation(MealRecommendation recommendation) async {
+    await _client.put(
+      '/api/v1/care/routine-items/${Uri.encodeComponent(recommendation.id)}',
+      {
+        'feedback_kind': 'meal_replace',
+        'payload': {
+          'period': recommendation.period.name,
+          'title': recommendation.title,
+          'reasonTitle': recommendation.reasonTitle,
+          'reason': recommendation.reason,
+          'evidence': recommendation.evidence,
+          'nutritionTags': recommendation.nutritionTags,
+          if (recommendation.imagePath != null)
+            'imagePath': recommendation.imagePath,
+          'cautions': [
+            for (final caution in recommendation.cautions)
+              {
+                'title': caution.title,
+                'description': caution.description,
+                if (caution.badge != null) 'badge': caution.badge,
+              },
+          ],
+        },
+      },
+      true,
+    );
+  }
+
+  @override
   Future<MealGuideData> fetchGuide() async {
     final response = await _client.get(
       '/api/v1/meals/today',
@@ -83,6 +112,8 @@ class ApiMealService implements MealService {
                     )
                     .toList()
               : const [],
+          imagePath: details['imagePath']?.toString(),
+          imageUrl: details['imageUrl']?.toString(),
         ),
       );
     }
@@ -100,6 +131,7 @@ class ApiMealService implements MealService {
             MealPeriod.snack => '밤',
           },
           summary: matches.first.title,
+          imageUrl: matches.first.imageUrl,
         ),
       );
     }
@@ -150,6 +182,8 @@ class ApiMealService implements MealService {
                 )
                 .toList()
           : const [],
+      imagePath: response?['imagePath']?.toString(),
+      imageUrl: response?['imageUrl']?.toString(),
     );
   }
 }

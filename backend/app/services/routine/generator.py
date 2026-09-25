@@ -17,8 +17,11 @@ from app.services.routine.prompt import (
     SYSTEM_PROMPT,
     TIP_REQUEST,
     TIP_SCHEMA,
+    WEEK_GUIDE_SCHEMA,
+    WEEK_GUIDE_SYSTEM_PROMPT,
     build_edit_prompt,
     build_user_prompt,
+    build_week_guide_prompt,
     category_schema,
 )
 
@@ -93,6 +96,19 @@ class OpenAIRoutineGenerator(LLMService):
         """S7: 웰컴 카드 팁 1개 {text, source_ids}. 실패는 예외로 올리고, 루틴 폴백 여부는 service가 분리해 판단한다."""
         prompt = build_user_prompt(facts, constraints, chunks, request=TIP_REQUEST)
         return json.loads(await self.generate(prompt, TIP_SCHEMA, "routine_tip"))["tip"]
+
+    async def generate_week_guide(
+        self, week: int, chunks: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        """홈 주차 안내 1건. 제공된 RAG 문단 밖의 내용은 프롬프트와 후단 검증으로 막는다."""
+        prompt = build_week_guide_prompt(week, chunks)
+        content = await self.generate(
+            prompt,
+            WEEK_GUIDE_SCHEMA,
+            "home_week_guide",
+            WEEK_GUIDE_SYSTEM_PROMPT,
+        )
+        return json.loads(content)
 
     async def generate_routine(
         self,

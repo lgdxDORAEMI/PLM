@@ -26,7 +26,7 @@ void main() {
     expect(controller.showDetails, isTrue);
     expect(controller.selectedRecommendation?.title, '연어구이 + 현미밥 + 나물');
 
-    controller.acceptSelected();
+    await controller.acceptSelected();
     expect(controller.selectedDecision, MealDecision.accepted);
   });
 
@@ -85,6 +85,30 @@ void main() {
     expect(controller.loadingAlternative, isFalse);
   });
 
+  test('대체 메뉴 선택은 교체로 저장하고 목록용 Store에도 반영한다', () async {
+    final service = _SingleMenuService();
+    final controller = MealGuideController(
+      service: service,
+      store: store,
+      initialPeriod: MealPeriod.breakfast,
+    );
+    addTearDown(controller.dispose);
+
+    await controller.load();
+    await controller.showNextRecommendation();
+    await controller.acceptSelected();
+
+    expect(service.replaced?.title, '바나나 감자 찜');
+    expect(store.appliedRecommendation?.title, '바나나 감자 찜');
+    expect(controller.selectedDecision, MealDecision.accepted);
+    expect(
+      controller.periodSummaries
+          .firstWhere((summary) => summary.period == MealPeriod.breakfast)
+          .summary,
+      '바나나 감자 찜',
+    );
+  });
+
   test('대체 메뉴를 적용하면 Meal Store에 선택 결과를 보관한다', () async {
     final current = MockMealService.guide.recommendationFor(
       MealPeriod.breakfast,
@@ -108,6 +132,7 @@ void main() {
 class _RecordingMealService implements MealService {
   String? recordedId;
   MealDecision? recordedDecision;
+  MealRecommendation? replaced;
 
   @override
   Future<MealGuideData> fetchGuide() async => MockMealService.guide;
@@ -119,6 +144,11 @@ class _RecordingMealService implements MealService {
   ) async {
     recordedId = recommendation.id;
     recordedDecision = decision;
+  }
+
+  @override
+  Future<void> replaceRecommendation(MealRecommendation recommendation) async {
+    replaced = recommendation;
   }
 
   @override

@@ -329,6 +329,7 @@ Rule Engine을 준수하고, 근거 밖 의학적 내용을 추가하지 마세�
 
 | 날짜 | 내용 |
 |---|---|
+| 2026-09-25 | (커밋 전) 홈 `이번 주에 알아두세요`를 고정 문구 우선에서 웬즈데이 RAG 생성 우선으로 변경. `GET /routine/home` 첫 조회에서 현재 주차로 `pregnancy_knowledge`를 검색하고 특징 2줄·주의 1줄을 생성해 `home_week_guides`에 사용자별·KST 날짜별 1건 저장한다. 같은 날 재조회는 OpenAI 0회, 프로필 수정으로 계산 주차가 바뀐 경우만 기존 1건 갱신. 응답에 `source`·`source_ids`·`sources`·`generated_at`을 추가하고, 검색·생성·출처 검증 실패 시 `week_notes.yaml`을 `source=fallback`으로 그날 1건 저장. 비용은 캐시 미스마다 임베딩 1회+생성 1회로 추정하며 실측 전 |
 | 2026-09-16 | Supabase 마이그레이션 4건 + `20260917000002_grant_service_role.sql` 적용 확인(5테이블·RPC 접근 OK). 이 프로젝트는 service_role 기본 GRANT가 없어 권한 마이그레이션이 필수 |
 | 2026-09-16 | 0-a~0-c, 2~5 코드 작성 완료. 테스트 19개 통과(가짜 Supabase·OpenAI). 적재·실호출은 OpenAI 크레딧 0(`insufficient_quota`)으로 미실행 |
 | 2026-09-17 | 적재 완료(88행, 1536차원). 실호출 1회 `source=ai` 8.39초 |

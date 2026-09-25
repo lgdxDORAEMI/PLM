@@ -56,14 +56,29 @@ Service = Annotated[RoutineService, Depends(get_routine_service)]
 Family = Annotated[FamilyServicePort, Depends(get_family_service)]
 
 
-def _with_home(service: RoutineService, user_id: str, routine: dict[str, Any]) -> dict[str, Any]:
-    """FUC-W-HOME-001 ① 주차 특징 블록을 붙인다. 주차 조회가 실패해도 루틴 응답은 막지 않는다."""
+async def _resolve_home(service: RoutineService, user_id: str, today: date) -> dict[str, Any]:
+    """그날 생성된 주차 안내가 있으면 재사용하고, 없으면 RAG 기반으로 1건 생성한다."""
+    week = home.current_week(service.supabase, user_id, today)
+    guide = await home.resolve_daily_guide(
+        service.supabase,
+        service.retriever,
+        service.generator,
+        user_id,
+        today,
+        week,
+        service.settings.llm_model,
+    )
+    return home.home_block(week, guide)
+
+
+async def _with_home(service: RoutineService, user_id: str, routine: dict[str, Any]) -> dict[str, Any]:
+    """루틴 응답에 홈 주차 안내를 붙인다. 홈 조회 실패가 저장된 4종 루틴을 막지는 않는다."""
     try:
-        week = home.current_week(service.supabase, user_id, dates.today_kst())
+        block = await _resolve_home(service, user_id, dates.today_kst())
     except (APIError, httpx.HTTPError):
         logger.exception("홈 주차 조회 실패 — home.week_notes 빈 값")
-        week = None
-    return {**routine, "home": home.home_block(week, routine.get("response"))}
+        block = home.home_block(None, None)
+    return {**routine, "home": block}
 
 
 def _with_regeneration_flag(routine: dict[str, Any]) -> dict[str, Any]:
@@ -72,17 +87,14 @@ def _with_regeneration_flag(routine: dict[str, Any]) -> dict[str, Any]:
 
 
 @router.get("/home")
-def read_home_context(user: User, service: Service) -> dict[str, Any]:
+async def read_home_context(user: User, service: Service) -> dict[str, Any]:
     """루틴·컨디션 생성 여부와 무관하게 프로필 기반 주차 안내를 반환한다."""
     today = dates.today_kst()
     try:
-        week = home.current_week(service.supabase, user.id, today)
-        routine = repository.get_routine(service.supabase, user.id, today)
+        return await _resolve_home(service, user.id, today)
     except (APIError, httpx.HTTPError) as error:
         logger.exception("홈 주차 안내 조회 실패")
         raise _storage_unavailable() from error
-    response = routine.get("response") if routine is not None else None
-    return home.home_block(week, response)
 
 
 async def generate_today_and_notify(
@@ -106,7 +118,7 @@ async def generate_today_and_notify(
 
 
 @router.get("/today")
-def read_today(user: User, service: Service) -> dict[str, Any]:
+async def read_today(user: User, service: Service) -> dict[str, Any]:
     """오늘 저장된 4종 가이드. 홈 화면 재진입·새로고침용. 없으면 404 → 앱은 컨디션 CTA를 보여준다."""
     try:
         routine = repository.get_routine(service.supabase, user.id, dates.today_kst())
@@ -115,7 +127,7 @@ def read_today(user: User, service: Service) -> dict[str, Any]:
         raise _storage_unavailable() from error
     if routine is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "오늘 생성된 루틴이 없습니다.")
-    return _with_home(service, user.id, _with_regeneration_flag(routine))
+    return await _with_home(service, user.id, _with_regeneration_flag(routine))
 
 
 @router.post("/today", status_code=status.HTTP_201_CREATED)
@@ -137,5 +149,5 @@ async def generate_today(user: User, service: Service, family: Family) -> dict[s
     # AI 루틴이 이미 있었으면 루틴 변경(FUC-W-COND-003). 알림 실패는 루틴 생성 성공에 영향을 주지 않는다.
     # S10 결정1: 컨디션이 그대로면 새 버전 없이 현재 루틴을 돌려주고 알림도 보내지 않는다.
     if saved.pop("unchanged", False):
-        return _with_home(service, user.id, saved)
-    return _with_home(service, user.id, saved)
+        return await _with_home(service, user.id, saved)
+    return await _with_home(service, user.id, saved)
