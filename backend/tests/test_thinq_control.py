@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from unittest.mock import AsyncMock, call, patch
 
 from httpx import ASGITransport, AsyncClient
+from pydantic import SecretStr
 from thinqconnect.thinq_api import ThinQAPIException
 
 from app.core.security import CurrentUser, get_current_user
@@ -25,7 +26,22 @@ def purifier(device_id: str = "purifier-1") -> ThinQDevice:
     return ThinQDevice(device_id=device_id, name="공청이", device_type=ApplianceType.WASHER)
 
 
+def configured_settings() -> SimpleNamespace:
+    """control()은 ThinQApi를 만들기 전에 PAT·client_id를 먼저 검사한다. 값이 없으면 NOT_CONFIGURED로
+    바로 빠져 mock까지 가지 않으므로, 테스트는 로컬 .env가 아니라 이 가짜 설정을 쓴다."""
+    return SimpleNamespace(
+        thinq_pat=SecretStr("test-pat"),
+        thinq_client_id="00000000-0000-4000-8000-000000000000",
+        thinq_country_code="KR",
+    )
+
+
 class ControlPayloadTest(unittest.IsolatedAsyncioTestCase):
+    def setUp(self) -> None:
+        settings = patch("app.services.thinq.client.get_settings", return_value=configured_settings())
+        settings.start()
+        self.addCleanup(settings.stop)
+
     async def test_power_on_posts_documented_command(self) -> None:
         client = ThinQClient()
         with patch("app.services.thinq.client.ThinQApi") as api:

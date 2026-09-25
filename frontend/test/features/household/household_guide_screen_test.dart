@@ -28,8 +28,8 @@ void main() {
     await tester.tap(runButton);
     await tester.pumpAndSettle();
 
-    expect(find.text('수면 모드 실행'), findsOneWidget);
-    expect(find.textContaining('설정한 모든 항목을 실행했어요'), findsOneWidget);
+    // 09-25: 13c9df9로 실제 ThinQ 제어 연동을 되돌리면서 팝업이 '가전 실행했어요' 한 줄로 돌아갔다.
+    expect(find.text('가전 실행했어요'), findsOneWidget);
     expect(ApplianceExecutionStore.instance.forDate(DateTime.now()).length, 1);
   });
 
