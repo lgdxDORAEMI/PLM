@@ -125,6 +125,15 @@ class CalendarDay(BaseModel):
     report_finalized: bool
 
 
+class CalendarDayDetailResponse(BaseModel):
+    """캘린더 선택 날짜가 한 번의 요청으로 사용하는 읽기 전용 상세 모델."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    condition: ConditionResponse
+    report: DailyReportResponse
+
+
 class RoutineFeedbackKind(StrEnum):
     MEAL_ACCEPT = "meal_accept"
     MEAL_REJECT = "meal_reject"

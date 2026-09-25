@@ -22,7 +22,7 @@
 | Household | PARTIAL | PARTIAL | `GET /household/today`, `POST/GET /family/household-requests` 연결. 요청 목록 조회로 아내 화면의 남편 확인·완료 상태 복원. ThinQ 가전 실행 API는 없음 | `frontend/lib/features/household/controllers/household_guide_controller.dart` |
 | Health | REAL | REAL | `GET /health/today`, `PUT /care/routine-items/{id}/execution` | — |
 | Sleep | PARTIAL | PARTIAL | `GET /sleep/today`, `PUT /care/routine-items/{id}/sleep-environment` 연결. ThinQ 실행 API는 없음 | — |
-| Calendar | REAL | REAL | `GET /care/calendar/{month}`, 선택일 `GET /care/daily-reports/{date}` | — |
+| Calendar | REAL | REAL | `GET /care/calendar/{month}`, 선택일 `GET /care/calendar/days/{date}` | — |
 | Daily Report | REAL | REAL | `POST /care/daily-reports/{date}/preview`, `POST /care/daily-reports/{date}/finalize`, `GET /care/daily-reports/{date}` | — |
 | Partner Notification | REAL | REAL | `GET /family/notifications`, `POST /family/notifications/{id}/read` | — |
 | Partner Household Request | REAL | REAL | `GET /family/household-requests`, `GET /family/household-requests/{id}`, `POST /family/household-requests/{id}/items/{item_id}/{confirm,complete}` | — |

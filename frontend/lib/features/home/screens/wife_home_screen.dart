@@ -68,6 +68,9 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
       fallbackPlan: widget.routineService == null
           ? null
           : MockRoutineService.fallbackPlan,
+      initialPlan: widget.routineService == null && AppConfig.hasSupabaseConfig
+          ? ApiRoutineService.cachedToday
+          : null,
     )..addListener(_refresh);
     _homeWeekService =
         widget.homeWeekService ??
@@ -383,7 +386,7 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
         (plan == null || recordDateKey(plan.date) != recordDateKey(today))) {
       await _restoreTodayCare();
       if (mounted && _todayCareStore.hasTodayCare) {
-        await _routineController.loadToday();
+        await _routineController.loadToday(forceRefresh: true);
       }
       return;
     }
@@ -391,7 +394,7 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
     if (!mounted) return;
     await _restoreTodayCare();
     if (mounted && _todayCareStore.hasTodayCare) {
-      await _routineController.loadToday();
+      await _routineController.loadToday(forceRefresh: true);
     }
   }
 
@@ -399,7 +402,7 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
   Future<void> _editActivities() async {
     await Navigator.pushNamed(context, '${RouteNames.activity}?mode=edit');
     if (mounted) {
-      await _routineController.loadToday();
+      await _routineController.loadToday(forceRefresh: true);
     }
   }
 

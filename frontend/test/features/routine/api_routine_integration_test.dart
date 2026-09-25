@@ -11,6 +11,9 @@ import 'package:plm_frontend/features/routine/services/api_routine_service.dart'
 import 'package:plm_frontend/features/routine/models/daily_routine.dart';
 
 void main() {
+  setUp(ApiRoutineService.clearGeneration);
+  tearDown(ApiRoutineService.clearGeneration);
+
   test('컨디션, 예정 활동, 루틴 생성 순서와 서버 폴백 상태를 유지한다', () async {
     final paths = <String>[];
     final day = DateTime.now().toUtc().add(const Duration(hours: 9));
@@ -85,7 +88,10 @@ void main() {
     await ApiPlannedActivityService(
       client: client,
     ).saveAndGenerate(day, ['청소']);
-    final plan = await ApiRoutineService(client: client).fetchToday();
+    final service = ApiRoutineService(client: client);
+    final plan = await service.fetchToday();
+    final requestCount = paths.length;
+    final cachedPlan = await service.fetchToday();
 
     expect(paths, [
       'PUT /api/v1/care/conditions/$date',
@@ -110,5 +116,7 @@ void main() {
     expect(plan.homeCards.first.title, '식사 가이드');
     expect(plan.weekNotes, ['허리 부담이 늘어요', '다리가 자주 부어요']); // 09-22 주차 안내
     expect(plan.caution, '무거운 물건은 주의해주세요');
+    expect(cachedPlan, same(plan));
+    expect(paths, hasLength(requestCount));
   });
 }

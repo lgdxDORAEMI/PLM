@@ -466,6 +466,43 @@ class CalendarApiTest(unittest.IsolatedAsyncioTestCase):
     def http(self) -> AsyncClient:
         return AsyncClient(transport=ASGITransport(app=app), base_url="http://localhost")
 
+    async def test_calendar_day_combines_condition_and_unsaved_report_preview(self) -> None:
+        self.client.seed_condition(TARGET_DATE, leg_pain=4, wrist_pain=5)
+        self.client.seed_item("meal-1", "meal", status="completed")
+
+        async with self.http() as client:
+            response = await client.get(
+                f"/api/v1/care/calendar/days/{TARGET_DATE.isoformat()}"
+            )
+
+        self.assertEqual(response.status_code, 200)
+        body = response.json()
+        self.assertEqual(body["condition"]["target_date"], TARGET_DATE.isoformat())
+        self.assertEqual(body["condition"]["leg_pain"], 4)
+        self.assertEqual(body["condition"]["wrist_pain"], 5)
+        self.assertFalse(body["report"]["finalized"])
+        self.assertEqual(body["report"]["completed_routines"], 1)
+        self.assertEqual(self.client.tables["daily_reports"], [])
+
+    async def test_linked_husband_sees_wifes_calendar_day_detail(self) -> None:
+        self.client.seed_condition(TARGET_DATE)
+        self.client.tables["partner_links"].append(
+            {"husband_user_id": "husband-1", "wife_user_id": USER}
+        )
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(
+            id="husband-1"
+        )
+
+        async with self.http() as client:
+            response = await client.get(
+                f"/api/v1/care/calendar/days/{TARGET_DATE.isoformat()}"
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.json()["condition"]["target_date"], TARGET_DATE.isoformat()
+        )
+
     async def test_calendar_combines_conditions_and_finalized_reports_without_new_table(self) -> None:
         self.client.seed_condition(date(2026, 9, 1), mood=5, fatigue=1, nausea=1, waist_pain=1, pelvis_pain=1, leg_pain=1, wrist_pain=1)
         self.client.seed_condition(date(2026, 9, 15), fatigue=5, waist_pain=5, pelvis_pain=5, leg_pain=5, wrist_pain=5, nausea=5)

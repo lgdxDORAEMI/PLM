@@ -48,6 +48,7 @@
 | POST | `/care/daily-reports/{target_date}/finalize` | 리포트 저장·확정 |
 | GET | `/care/daily-reports/{target_date}` | 저장된 날짜별 리포트 조회 |
 | GET | `/care/calendar/{month}` | 날짜별 컨디션 지수·리포트 상태 조회 |
+| GET | `/care/calendar/days/{target_date}` | 캘린더 선택 날짜의 컨디션·저장 없는 리포트 미리보기 통합 조회 |
 
 컨디션 입력은 `nausea`, `waist_pain`, `pelvis_pain`, `leg_pain`, `wrist_pain`, `fatigue`, `mood`의 1~5 점수 7개를 요구합니다. 화면에 기분을 표시하지 않더라도 API 요청에는 `mood`가 필요합니다. 루틴 생성은 프로필과 오늘 컨디션 저장 후 호출하며, 반환값의 `source`와 `revision`으로 AI/폴백 및 재생성 여부를 구분합니다. 컨디션을 바꾼 경우 기존 확정 리포트와 루틴 상태를 고려해 `write_kind=new_routine_required`가 반환될 수 있습니다.
 

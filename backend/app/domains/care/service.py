@@ -5,6 +5,7 @@ from app.domains.errors import DomainNotFoundError
 
 from .repository import CareRepository
 from .schemas import (
+    CalendarDayDetailResponse,
     CalendarMonthResponse,
     ConditionInput,
     ConditionResponse,
@@ -50,6 +51,10 @@ class CareServicePort(Protocol):
     def get_report(self, user_id: str, target_date: date) -> DailyReportResponse: ...
 
     def calendar(self, user_id: str, month: str) -> CalendarMonthResponse: ...
+
+    def calendar_day(
+        self, user_id: str, target_date: date
+    ) -> CalendarDayDetailResponse: ...
 
 
 class CareService(CareServicePort):
@@ -118,3 +123,12 @@ class CareService(CareServicePort):
         """Calendar는 별도 테이블이 아니라 조회 모델(VIEW)이다 — 저장은
         Repository가 daily_conditions/daily_reports를 조합해서 만든다."""
         return CalendarMonthResponse(month=month, days=self.repository.list_calendar_days(user_id, month))
+
+    def calendar_day(
+        self, user_id: str, target_date: date
+    ) -> CalendarDayDetailResponse:
+        """컨디션과 저장 없는 리포트 미리보기를 캘린더용 응답으로 묶는다."""
+        return CalendarDayDetailResponse(
+            condition=self.get_condition(user_id, target_date),
+            report=self.preview_report(user_id, target_date),
+        )

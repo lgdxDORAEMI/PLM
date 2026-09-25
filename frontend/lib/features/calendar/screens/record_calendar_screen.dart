@@ -67,13 +67,13 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen>
   }
 
   @override
-  void didPopNext() => unawaited(_controller.load());
+  void didPopNext() => unawaited(_controller.refresh());
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed &&
         ModalRoute.of(context)?.isCurrent == true) {
-      unawaited(_controller.load());
+      unawaited(_controller.refresh());
     }
   }
 
@@ -128,7 +128,7 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen>
   ];
 
   Widget _buildBody() => switch (_controller.state) {
-    RecordCalendarViewState.loading => const AppLoadingState(
+    RecordCalendarViewState.initialLoading => const AppLoadingState(
       message: '기록을 불러오고 있어요',
     ),
     RecordCalendarViewState.error => AppErrorState(
@@ -136,7 +136,8 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen>
       message: '잠시 후 다시 시도해 주세요.',
       onRetry: _controller.load,
     ),
-    RecordCalendarViewState.ready => _CalendarContent(
+    RecordCalendarViewState.ready ||
+    RecordCalendarViewState.refreshing => _CalendarContent(
       controller: _controller,
       role: widget.role,
       onOpenReport: _openReport,
@@ -175,6 +176,13 @@ class _CalendarContent extends StatelessWidget {
         vertical: expandedCalendar ? AppSpacing.xxl : AppSpacing.xl,
       ),
       children: [
+        if (controller.state == RecordCalendarViewState.refreshing)
+          const LinearProgressIndicator(
+            key: ValueKey('calendar-refresh-progress'),
+            minHeight: 2,
+          ),
+        if (controller.monthRefreshFailed)
+          _CalendarRefreshError(onRetry: controller.refresh),
         const Text(
           '날짜를 선택하면 그날의 기록을 바로 확인할 수 있어요.',
           style: TextStyle(
@@ -199,12 +207,23 @@ class _CalendarContent extends StatelessWidget {
                   title: '이 달에는 기록이 없어요',
                   message: '기록이 있는 달만 조회할 수 있어요.',
                 )
-              : _SelectedDayDetail(
-                  record: selected,
-                  role: role,
-                  detailsLoading: controller.selectedDetailsLoading,
-                  onOpenReport: () => onOpenReport(selected),
-                ),
+              : switch (controller.detailState) {
+                  RecordCalendarDetailState.error => AppErrorState(
+                    title: '상세 기록을 불러오지 못했어요',
+                    message: '캘린더는 그대로 이용할 수 있어요.',
+                    onRetry: controller.retrySelectedDetails,
+                  ),
+                  RecordCalendarDetailState.empty => const AppEmptyState(
+                    title: '상세 기록이 없어요',
+                    message: '다른 날짜를 선택하거나 잠시 후 다시 시도해 주세요.',
+                  ),
+                  _ => _SelectedDayDetail(
+                    record: selected,
+                    role: role,
+                    detailsLoading: controller.selectedDetailsLoading,
+                    onOpenReport: () => onOpenReport(selected),
+                  ),
+                },
         ),
       ],
     );
@@ -214,6 +233,29 @@ class _CalendarContent extends StatelessWidget {
     const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
     return '${date.month}월 ${date.day}일 (${weekdays[date.weekday - 1]})';
   }
+}
+
+class _CalendarRefreshError extends StatelessWidget {
+  const _CalendarRefreshError({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+    child: Row(
+      key: const ValueKey('calendar-refresh-error'),
+      children: [
+        const Expanded(
+          child: Text(
+            '최신 기록을 불러오지 못했어요. 기존 기록을 표시합니다.',
+            style: TextStyle(color: AppColors.danger),
+          ),
+        ),
+        TextButton(onPressed: onRetry, child: const Text('다시 시도')),
+      ],
+    ),
+  );
 }
 
 class _CalendarPanel extends StatelessWidget {

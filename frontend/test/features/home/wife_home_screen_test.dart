@@ -140,14 +140,15 @@ class _ControlledRoutineService implements RoutineService {
   void complete(DailyRoutinePlan plan) => _completer.complete(plan);
 
   @override
-  Future<DailyRoutinePlan> fetchToday() => _completer.future;
+  Future<DailyRoutinePlan> fetchToday({bool forceRefresh = false}) =>
+      _completer.future;
 }
 
 class _FailingRoutineService implements RoutineService {
   const _FailingRoutineService();
 
   @override
-  Future<DailyRoutinePlan> fetchToday() {
+  Future<DailyRoutinePlan> fetchToday({bool forceRefresh = false}) {
     return Future.error(StateError('routine failure'));
   }
 }

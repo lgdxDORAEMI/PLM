@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/network/api_client.dart';
 import '../models/condition_draft.dart';
+import '../../routine/services/api_routine_service.dart';
 import 'api_condition_repository.dart';
 import 'condition_repository.dart';
 import 'mock_condition_repository.dart';
@@ -52,6 +53,9 @@ class TodayCareStore extends ChangeNotifier {
     try {
       await _repository.saveToday(DateTime.now(), value);
       _loadedDate = DateTime.now();
+      if (!_sameCondition(previous, value)) {
+        ApiRoutineService.invalidateCache();
+      }
     } catch (_) {
       _today = previous;
       notifyListeners();
@@ -70,4 +74,14 @@ class TodayCareStore extends ChangeNotifier {
     _loadedDate = null;
     notifyListeners();
   }
+
+  bool _sameCondition(ConditionDraft? left, ConditionDraft right) =>
+      left != null &&
+      left.nausea == right.nausea &&
+      left.waistPain == right.waistPain &&
+      left.pelvisPain == right.pelvisPain &&
+      left.legPain == right.legPain &&
+      left.wristPain == right.wristPain &&
+      left.fatigue == right.fatigue &&
+      left.mood == right.mood;
 }

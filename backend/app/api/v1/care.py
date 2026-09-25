@@ -7,6 +7,7 @@ from app.api.v1.domain_errors import to_http_exception
 from app.api.v1.partner_scope import DataOwnerUserId
 from app.core.security import CurrentUser, get_current_user
 from app.domains.care.schemas import (
+    CalendarDayDetailResponse,
     CalendarMonthResponse,
     ConditionInput,
     ConditionResponse,
@@ -166,5 +167,18 @@ def read_calendar(
     """B-CAL-001: 남편은 partner_links로 연동된 아내 캘린더를 읽기 전용 조회(partner_scope)."""
     try:
         return service.calendar(target_user_id, month)
+    except Exception as error:
+        raise to_http_exception(error) from error
+
+
+@router.get(
+    "/calendar/days/{target_date}", response_model=CalendarDayDetailResponse
+)
+def read_calendar_day(
+    target_date: date, target_user_id: DataOwnerUserId, service: Service
+) -> CalendarDayDetailResponse:
+    """선택 날짜의 컨디션과 리포트 미리보기를 한 번에 읽는다."""
+    try:
+        return service.calendar_day(target_user_id, target_date)
     except Exception as error:
         raise to_http_exception(error) from error

@@ -52,7 +52,7 @@ class MockRoutineService implements RoutineService {
   );
 
   @override
-  Future<DailyRoutinePlan> fetchToday() async {
+  Future<DailyRoutinePlan> fetchToday({bool forceRefresh = false}) async {
     await Future<void>.delayed(delay);
     if (shouldFail) throw StateError('Mock Routine 생성 실패');
     return todayPlan;

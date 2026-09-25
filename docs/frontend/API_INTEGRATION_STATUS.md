@@ -24,7 +24,7 @@
 | 가사 요청 생성·목록·상세·확인·완료 | CONNECTED | `/api/v1/family/household-requests/**` |
 | 건강 가이드 조회 | CONNECTED | `GET /api/v1/health/today` |
 | 수면 가이드 조회 | CONNECTED | `GET /api/v1/sleep/today` |
-| Daily 리포트·캘린더 | CONNECTED | `/api/v1/care/daily-reports/**`, `GET /api/v1/care/calendar/{month}` |
+| Daily 리포트·캘린더 | CONNECTED | `/api/v1/care/daily-reports/**`, `GET /api/v1/care/calendar/{month}`, `GET /api/v1/care/calendar/days/{target_date}` |
 | 남편 오전 리포트 | CONNECTED | `GET /api/v1/family/morning-reports/{target_date}` |
 | 남편 알림 목록·읽음 처리 | CONNECTED | `GET /api/v1/family/notifications`, `POST .../{notification_id}/read` |
 | Movement 제품 화면 이벤트·일일 집계 | CONNECTED | `GET /api/v1/movement/events`, `GET /api/v1/movement/report/daily` |

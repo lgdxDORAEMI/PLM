@@ -115,6 +115,9 @@ class MockRecordService implements RecordService {
   }
 
   @override
+  Future<DailyRecord?> fetchCalendarRecord(DateTime date) => fetchRecord(date);
+
+  @override
   Future<void> saveRecord(DailyRecord record) async {
     await Future<void>.delayed(const Duration(milliseconds: 150));
   }

@@ -31,6 +31,25 @@ class ApiRecordService implements RecordService {
   }
 
   @override
+  Future<DailyRecord?> fetchCalendarRecord(DateTime date) async {
+    final key = recordDateKey(date);
+    final response = await _client.get('/api/v1/care/calendar/days/$key');
+    // Backend보다 Frontend가 먼저 배포된 동안에는 기존 상세 조회 계약으로
+    // 폴백해 캘린더 상세가 비는 배포 순서 문제를 막는다.
+    if (response == null) return fetchRecord(date);
+    final report = response['report'];
+    final condition = response['condition'];
+    if (report is! Map || condition is! Map) {
+      throw const FormatException('캘린더 상세 응답 형식이 올바르지 않습니다.');
+    }
+    return _fromResponse(
+      date,
+      Map<String, dynamic>.from(report),
+      Map<String, dynamic>.from(condition),
+    );
+  }
+
+  @override
   Future<DailyRecord?> fetchRecord(DateTime date) async {
     final key = recordDateKey(date);
     var response = await _client.get('/api/v1/care/daily-reports/$key');
@@ -161,11 +180,14 @@ class ApiRecordService implements RecordService {
       'nausea': '입덧',
       'waist_pain': '허리',
       'pelvis_pain': '골반',
+      'leg_pain': '다리',
+      'wrist_pain': '손목',
       'fatigue': '피로',
     };
-    return labels.entries
+    final summaries = labels.entries
         .where((entry) => (condition[entry.key] as num? ?? 0) >= 4)
         .map((entry) => '${entry.value} 높음')
-        .join(' · ');
+        .toList(growable: false);
+    return summaries.isEmpty ? '특별히 불편한 항목 없음' : summaries.join(' · ');
   }
 }

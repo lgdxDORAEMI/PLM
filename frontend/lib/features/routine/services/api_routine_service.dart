@@ -8,6 +8,17 @@ class ApiRoutineService implements RoutineService {
 
   final ApiClient _client;
   static Map<String, dynamic>? _generatedToday;
+  static DailyRoutinePlan? _cachedToday;
+
+  /// 홈 화면이 다시 만들어져도 오늘 루틴을 즉시 복원할 수 있는 화면 캐시다.
+  static DailyRoutinePlan? get cachedToday {
+    final cached = _cachedToday;
+    if (cached == null || !_isToday(cached.date)) {
+      _cachedToday = null;
+      return null;
+    }
+    return cached;
+  }
 
   /// Keeps the POST response for the first home load, avoiding a duplicate GET.
   static void rememberGeneration(Map<String, dynamic> response) {
@@ -15,12 +26,21 @@ class ApiRoutineService implements RoutineService {
   }
 
   /// Removes a pending generation result before another account becomes active.
-  static void clearGeneration() => _generatedToday = null;
+  static void clearGeneration() {
+    _generatedToday = null;
+    _cachedToday = null;
+  }
+
+  static void invalidateCache() => _cachedToday = null;
 
   @override
-  Future<DailyRoutinePlan> fetchToday() async {
+  Future<DailyRoutinePlan> fetchToday({bool forceRefresh = false}) async {
     final cached = _generatedToday;
     _generatedToday = null;
+    final parsedCache = cachedToday;
+    if (cached == null && !forceRefresh && parsedCache != null) {
+      return parsedCache;
+    }
     final today = DateTime.now().toUtc().add(const Duration(hours: 9));
     final todayKey =
         '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
@@ -87,7 +107,7 @@ class ApiRoutineService implements RoutineService {
         );
       }
     }
-    return DailyRoutinePlan(
+    final plan = DailyRoutinePlan(
       date: date,
       updatedLabel: json['source'] == 'ai' ? '오늘의 맞춤 루틴' : '오늘의 기본 루틴',
       items: items,
@@ -99,6 +119,15 @@ class ApiRoutineService implements RoutineService {
           : const [],
       caution: home is Map ? home['caution'] as String? : null,
     );
+    _cachedToday = plan;
+    return plan;
+  }
+
+  static bool _isToday(DateTime date) {
+    final today = DateTime.now().toUtc().add(const Duration(hours: 9));
+    return date.year == today.year &&
+        date.month == today.month &&
+        date.day == today.day;
   }
 
   String _summaryFor(Map summaries, RoutineType type) {
