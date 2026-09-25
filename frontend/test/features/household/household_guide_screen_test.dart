@@ -28,7 +28,8 @@ void main() {
     await tester.tap(runButton);
     await tester.pumpAndSettle();
 
-    // 09-25: 13c9df9로 실제 ThinQ 제어 연동을 되돌리면서 팝업이 '가전 실행했어요' 한 줄로 돌아갔다.
+    // 화면(household_guide_screen.dart)에 하드코딩된 팝업 문구. DB에서 오지 않는다.
+    // cfbe6cc에서 화면만 '가전 실행했어요'로 바뀌고 이 기대값이 화면에 없는 문구로 남아 있었다.
     expect(find.text('가전 실행했어요'), findsOneWidget);
     expect(ApplianceExecutionStore.instance.forDate(DateTime.now()).length, 1);
   });
