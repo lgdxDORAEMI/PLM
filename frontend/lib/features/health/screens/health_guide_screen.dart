@@ -20,7 +20,7 @@ import '../services/health_guide_service.dart';
 import '../services/mock_health_guide_service.dart';
 import '../../../shared/widgets/integration_required_state.dart';
 import '../widgets/movement_guide_card.dart';
-import '../widgets/youtube_embed.dart';
+import '../widgets/video_thumbnail.dart';
 
 class HealthGuideScreen extends StatefulWidget {
   const HealthGuideScreen({super.key, this.service});
@@ -362,7 +362,10 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
               const SizedBox(height: AppSpacing.md),
               AspectRatio(
                 aspectRatio: 16 / 9,
-                child: YouTubeEmbed(youtubeId: video.youtubeId),
+                child: VideoThumbnail(
+                  youtubeId: video.youtubeId,
+                  showPlayIcon: false,
+                ),
               ),
               if (allowCompletion) ...[
                 const SizedBox(height: AppSpacing.md),

@@ -5,6 +5,7 @@ import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_radius.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../models/body_care_guide.dart';
+import 'video_thumbnail.dart';
 
 class MovementGuideCard extends StatelessWidget {
   const MovementGuideCard({
@@ -40,20 +41,7 @@ class MovementGuideCard extends StatelessWidget {
       AppInkWell(
         onTap: onOpen,
         borderRadius: BorderRadius.circular(AppRadius.card),
-        child: Container(
-          height: 132,
-          decoration: BoxDecoration(
-            color: AppColors.surfaceSubtle,
-            borderRadius: BorderRadius.circular(AppRadius.card),
-          ),
-          child: const Center(
-            child: CircleAvatar(
-              radius: 28,
-              backgroundColor: AppColors.surface,
-              child: Icon(Icons.play_arrow, color: AppColors.categoryBody),
-            ),
-          ),
-        ),
+        child: VideoThumbnail(youtubeId: activity.video?.youtubeId, height: 132),
       ),
       const SizedBox(height: AppSpacing.lg),
       Text(activity.title, style: Theme.of(context).textTheme.titleMedium),
@@ -129,3 +117,4 @@ class MovementGuideCard extends StatelessWidget {
     ],
   );
 }
+

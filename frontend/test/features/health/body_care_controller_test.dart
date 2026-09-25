@@ -9,7 +9,7 @@ import 'package:plm_frontend/features/health/models/body_care_guide.dart';
 import 'package:plm_frontend/features/health/screens/health_guide_screen.dart';
 import 'package:plm_frontend/features/health/services/health_guide_service.dart';
 import 'package:plm_frontend/features/health/services/mock_health_guide_service.dart';
-import 'package:plm_frontend/features/health/widgets/youtube_embed.dart';
+import 'package:plm_frontend/features/health/widgets/video_thumbnail.dart';
 
 void main() {
   test('활동 완료 상태를 토글한다', () {
@@ -70,7 +70,7 @@ void main() {
     expect(find.text(message), findsNothing);
   });
 
-  testWidgets('운동 재생 버튼은 해당 YouTube 영상을 임베드한 화면을 연다', (tester) async {
+  testWidgets('운동 재생 버튼은 해당 영상의 썸네일 화면을 연다', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: HealthGuideScreen(service: MockHealthGuideService()),
@@ -83,7 +83,10 @@ void main() {
 
     expect(find.text('임신 중 허리 통증 완화 스트레칭'), findsOneWidget);
     expect(find.text('Pregnancy and Postpartum TV'), findsOneWidget);
-    expect(find.byType(YouTubeEmbed), findsOneWidget);
+    expect(  // 09-25: 팝업도 재생 대신 썸네일. 카드에도 썸네일이 있어 팝업 안에서 찾는다.
+      find.descendant(of: find.byType(Dialog), matching: find.byType(VideoThumbnail)),
+      findsOneWidget,
+    );
   });
 
   testWidgets('집중 부위 카드를 누르면 해당 부위 운동 영상을 연다', (tester) async {
@@ -98,7 +101,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('임신 중 골반 통증 완화 운동'), findsOneWidget);
-    expect(find.byType(YouTubeEmbed), findsOneWidget);
+    expect(  // 09-25: 팝업도 재생 대신 썸네일. 카드에도 썸네일이 있어 팝업 안에서 찾는다.
+      find.descendant(of: find.byType(Dialog), matching: find.byType(VideoThumbnail)),
+      findsOneWidget,
+    );
     final completeButton = tester.widget<FilledButton>(
       find.byKey(const ValueKey('health-video-complete-pelvic-release')),
     );
@@ -149,7 +155,10 @@ void main() {
 
     expect(find.text('임산부 전신 저강도 운동'), findsOneWidget);
     expect(find.text('25분 · 임신 1·2·3분기'), findsOneWidget);
-    expect(find.byType(YouTubeEmbed), findsOneWidget);
+    expect(  // 09-25: 팝업도 재생 대신 썸네일. 카드에도 썸네일이 있어 팝업 안에서 찾는다.
+      find.descendant(of: find.byType(Dialog), matching: find.byType(VideoThumbnail)),
+      findsOneWidget,
+    );
     expect(
       find.byKey(const ValueKey('health-video-complete-whole-body')),
       findsNothing,
