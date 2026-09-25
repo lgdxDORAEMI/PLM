@@ -73,7 +73,9 @@ def list_messages(
     target_date: date | None = Query(default=None, alias="date"),
 ) -> list[ChatMessageResponse]:
     try:
-        return service.list_messages(user.id, target_date)
+        # 09-25: date를 안 주면 오늘 대화만 돌려준다. 이전 날짜까지 복원하면 화면에 어제 카드가 남고,
+        # 그 카드의 '반영하기'는 오늘 날짜로 조회돼 404가 난다(09-22 결정: 같은 날짜 = 같은 이력).
+        return service.list_messages(user.id, target_date or dates.today_kst())
     except Exception as error:
         raise to_http_exception(error) from error
 
