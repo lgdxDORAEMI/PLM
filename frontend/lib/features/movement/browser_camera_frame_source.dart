@@ -20,6 +20,7 @@ class BrowserCameraFrameSource implements CameraFrameSource {
     this.captureHeight = 480,
     this.captureInterval = const Duration(milliseconds: 200),
     this.jpegQuality = 0.6,
+    this.deviceId,
   }) : viewType = 'plm-movement-camera-${_nextViewId++}' {
     ui_web.platformViewRegistry.registerViewFactory(
       viewType,
@@ -33,6 +34,10 @@ class BrowserCameraFrameSource implements CameraFrameSource {
   final int captureHeight;
   final Duration captureInterval;
   final double jpegQuality;
+
+  /// 내장 웹캠과 외장 카메라가 함께 연결된 환경에서 브라우저 기본값이 엉뚱한
+  /// 장치를 잡는 걸 막기 위한 명시적 선택. null이면 브라우저 기본 동작.
+  final String? deviceId;
 
   @override
   final String viewType;
@@ -64,7 +69,13 @@ class BrowserCameraFrameSource implements CameraFrameSource {
     if (mediaDevices == null) {
       throw StateError('이 브라우저는 카메라 접근(getUserMedia)을 지원하지 않습니다.');
     }
-    _stream = await mediaDevices.getUserMedia({'video': true});
+    _stream = await mediaDevices.getUserMedia({
+      'video': deviceId == null
+          ? true
+          : {
+              'deviceId': {'exact': deviceId},
+            },
+    });
     _video.srcObject = _stream;
     await _video.onLoadedMetadata.first;
     await _video.play();
