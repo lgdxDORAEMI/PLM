@@ -27,6 +27,7 @@ class MovementGuideCard extends StatelessWidget {
   final VoidCallback onOpen;
   final VoidCallback onComplete;
   final VoidCallback onSkip;
+  bool get done => completed || skipped;
   @override
   Widget build(BuildContext context) => Container(
     key: ValueKey('health-activity-${activity.id}'),
@@ -66,17 +67,17 @@ class MovementGuideCard extends StatelessWidget {
           children: [
             TextButton(
               key: ValueKey('body-skip-${activity.id}'),
-              onPressed: onSkip,
-              child: Text(skipped ? '오늘 안함 취소' : '오늘 안하기'),
+              onPressed: done ? null : onSkip,
+              child: Text(skipped ? '오늘 안함' : '오늘 안하기'),
             ),
             const SizedBox(width: AppSpacing.sm),
             TextButton.icon(
               key: ValueKey('body-complete-${activity.id}'),
-              onPressed: onComplete,
+              onPressed: done ? null : onComplete,
               icon: Icon(
                 completed ? Icons.check_circle : Icons.circle_outlined,
               ),
-              label: Text(completed ? '완료 취소' : '활동 완료'),
+              label: Text(done ? '완료됨' : '활동 완료'),
             ),
           ],
         ),
@@ -139,18 +140,18 @@ class MovementGuideCard extends StatelessWidget {
           children: [
             TextButton(
               key: ValueKey('body-skip-${activity.id}'),
-              onPressed: onSkip,
-              child: Text(skipped ? '오늘 안함 취소' : '오늘 안하기'),
+              onPressed: done ? null : onSkip,
+              child: Text(skipped ? '오늘 안함' : '오늘 안하기'),
             ),
             const SizedBox(width: AppSpacing.sm),
             TextButton.icon(
               key: ValueKey('body-complete-${activity.id}'),
-              onPressed: onComplete,
+              onPressed: done ? null : onComplete,
               icon: Icon(
                 completed ? Icons.check_circle : Icons.radio_button_unchecked,
                 color: completed ? AppColors.success : AppColors.textTertiary,
               ),
-              label: Text(completed ? '완료 취소' : '활동 완료'),
+              label: Text(done ? '완료됨' : '활동 완료'),
             ),
           ],
         ),

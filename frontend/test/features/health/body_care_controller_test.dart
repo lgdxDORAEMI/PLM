@@ -11,16 +11,24 @@ import 'package:plm_frontend/features/health/services/mock_health_guide_service.
 import 'package:plm_frontend/features/health/widgets/video_thumbnail.dart';
 
 void main() {
-  test('활동 완료와 오늘 안하기 상태를 서로 배타적으로 저장한다', () async {
+  test('활동 완료와 오늘 안하기는 취소할 수 없는 최종 상태다', () async {
     final controller = BodyCareController(
       service: const MockHealthGuideService(),
     );
-    await controller.toggleCompleted('pelvis');
+    await controller.complete('pelvis');
     expect(controller.isCompleted('pelvis'), isTrue);
     expect(controller.isSkipped('pelvis'), isFalse);
-    await controller.toggleSkipped('pelvis');
-    expect(controller.isCompleted('pelvis'), isFalse);
-    expect(controller.isSkipped('pelvis'), isTrue);
+    await controller.skipToday('pelvis');
+    expect(controller.isCompleted('pelvis'), isTrue);
+    expect(controller.isSkipped('pelvis'), isFalse);
+    expect(controller.isDone('pelvis'), isTrue);
+
+    await controller.skipToday('waist');
+    expect(controller.isSkipped('waist'), isTrue);
+    expect(controller.isDone('waist'), isTrue);
+    await controller.complete('waist');
+    expect(controller.isSkipped('waist'), isTrue);
+    expect(controller.isCompleted('waist'), isFalse);
 
     controller.selectArea('골반');
     expect(controller.selectedArea, '골반');
@@ -159,6 +167,28 @@ void main() {
     expect(skip, findsOneWidget);
     expect(complete, findsOneWidget);
     expect(tester.getCenter(skip).dx, lessThan(tester.getCenter(complete).dx));
+
+    await tester.ensureVisible(complete);
+    await tester.pumpAndSettle();
+    await tester.tap(complete);
+    await tester.pumpAndSettle();
+    expect(tester.widget<TextButton>(skip).onPressed, isNull);
+    expect(tester.widget<TextButton>(complete).onPressed, isNull);
+    expect(find.text('완료됨'), findsOneWidget);
+
+    await tester.tap(
+      find.descendant(of: activity, matching: find.byIcon(Icons.play_arrow)),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('임신 중 골반 통증 완화 운동'), findsOneWidget);
+    final dialogSkip = tester.widget<OutlinedButton>(
+      find.byKey(const ValueKey('health-video-skip-pelvic-release')),
+    );
+    final dialogComplete = tester.widget<FilledButton>(
+      find.byKey(const ValueKey('health-video-complete-pelvic-release')),
+    );
+    expect(dialogSkip.onPressed, isNull);
+    expect(dialogComplete.onPressed, isNull);
   });
 
   testWidgets('전신 운동 영상은 재생 시간과 대상 임신 분기를 표시한다', (tester) async {

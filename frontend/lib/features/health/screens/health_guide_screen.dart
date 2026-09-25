@@ -129,9 +129,8 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
                               ),
                             ),
                             onComplete: () =>
-                                _controller.toggleCompleted(activity.$2.id),
-                            onSkip: () =>
-                                _controller.toggleSkipped(activity.$2.id),
+                                _controller.complete(activity.$2.id),
+                            onSkip: () => _controller.skipToday(activity.$2.id),
                           ),
                           const SizedBox(height: AppSpacing.md),
                         ],
@@ -271,6 +270,8 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
     if (video != null && video.canEmbed) {
       return _showVideo(activity, video, allowCompletion: allowCompletion);
     }
+    final done = _controller.isDone(activity.id);
+    final skipped = _controller.isSkipped(activity.id);
     return showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
@@ -294,21 +295,25 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
                     Expanded(
                       child: OutlinedButton(
                         key: ValueKey('health-guide-skip-${activity.id}'),
-                        onPressed: () {
-                          _controller.toggleSkipped(activity.id);
-                          Navigator.pop(context);
-                        },
-                        child: const Text('오늘 안하기'),
+                        onPressed: done
+                            ? null
+                            : () {
+                                _controller.skipToday(activity.id);
+                                Navigator.pop(context);
+                              },
+                        child: Text(skipped ? '오늘 안함' : '오늘 안하기'),
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: FilledButton(
-                        onPressed: () {
-                          _controller.toggleCompleted(activity.id);
-                          Navigator.pop(context);
-                        },
-                        child: const Text('활동 완료'),
+                        onPressed: done
+                            ? null
+                            : () {
+                                _controller.complete(activity.id);
+                                Navigator.pop(context);
+                              },
+                        child: Text(done ? '완료됨' : '활동 완료'),
                       ),
                     ),
                   ],
@@ -325,111 +330,120 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
     BodyCareActivity activity,
     HealthExerciseVideo video, {
     required bool allowCompletion,
-  }) => showDialog<void>(
-    context: context,
-    builder: (dialogContext) => Dialog(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 820),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          video.title,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Text(
-                          video.provider,
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppColors.textSecondary),
-                        ),
-                        if (video.duration != null || video.target != null) ...[
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            [?video.duration, ?video.target].join(' · '),
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: AppColors.categoryHealth),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: '닫기',
-                    onPressed: () => Navigator.pop(dialogContext),
-                    icon: const Icon(Icons.close),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppSpacing.md),
-              AspectRatio(
-                aspectRatio: 16 / 9,
-                child: VideoThumbnail(
-                  youtubeId: video.youtubeId,
-                  showPlayIcon: false,
-                ),
-              ),
-              if (allowCompletion) ...[
-                const SizedBox(height: AppSpacing.md),
+  }) {
+    final done = _controller.isDone(activity.id);
+    final skipped = _controller.isSkipped(activity.id);
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 820),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
-                      child: OutlinedButton(
-                        key: ValueKey('health-video-skip-${activity.id}'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.md,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            video.title,
+                            style: Theme.of(context).textTheme.titleLarge,
                           ),
-                        ),
-                        onPressed: () {
-                          _controller.toggleSkipped(activity.id);
-                          Navigator.pop(dialogContext);
-                        },
-                        child: const Text('오늘 안하기'),
+                          const SizedBox(height: AppSpacing.xs),
+                          Text(
+                            video.provider,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: AppColors.textSecondary),
+                          ),
+                          if (video.duration != null ||
+                              video.target != null) ...[
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              [?video.duration, ?video.target].join(' · '),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: AppColors.categoryHealth),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.sm),
-                    Expanded(
-                      child: FilledButton(
-                        key: ValueKey('health-video-complete-${activity.id}'),
-                        style: FilledButton.styleFrom(
-                          backgroundColor: AppColors.primary700,
-                          foregroundColor: AppColors.textInverse,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                              AppRadius.button,
-                            ),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.md,
-                          ),
-                        ),
-                        onPressed: () {
-                          _controller.toggleCompleted(activity.id);
-                          Navigator.pop(dialogContext);
-                        },
-                        child: const Text('활동 완료'),
-                      ),
+                    IconButton(
+                      tooltip: '닫기',
+                      onPressed: () => Navigator.pop(dialogContext),
+                      icon: const Icon(Icons.close),
                     ),
                   ],
                 ),
+                const SizedBox(height: AppSpacing.md),
+                AspectRatio(
+                  aspectRatio: 16 / 9,
+                  child: VideoThumbnail(
+                    youtubeId: video.youtubeId,
+                    showPlayIcon: false,
+                  ),
+                ),
+                if (allowCompletion) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          key: ValueKey('health-video-skip-${activity.id}'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.md,
+                            ),
+                          ),
+                          onPressed: done
+                              ? null
+                              : () {
+                                  _controller.skipToday(activity.id);
+                                  Navigator.pop(dialogContext);
+                                },
+                          child: Text(skipped ? '오늘 안함' : '오늘 안하기'),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: FilledButton(
+                          key: ValueKey('health-video-complete-${activity.id}'),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.primary700,
+                            foregroundColor: AppColors.textInverse,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.button,
+                              ),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.md,
+                            ),
+                          ),
+                          onPressed: done
+                              ? null
+                              : () {
+                                  _controller.complete(activity.id);
+                                  Navigator.pop(dialogContext);
+                                },
+                          child: Text(done ? '완료됨' : '활동 완료'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _BodyLoadCard extends StatelessWidget {

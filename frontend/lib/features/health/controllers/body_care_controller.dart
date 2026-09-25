@@ -15,6 +15,7 @@ class BodyCareController extends ChangeNotifier {
   final HealthGuideService service;
   final TodayCareStore conditionStore;
   final Map<String, HealthExecutionStatus> _statuses = {};
+  final Set<String> _updating = {};
   BodyCareViewState _state = BodyCareViewState.loading;
   BodyCareGuideData? _guide;
   String? _selectedArea;
@@ -50,6 +51,8 @@ class BodyCareController extends ChangeNotifier {
   bool isCompleted(String id) =>
       _statuses[id] == HealthExecutionStatus.completed;
   bool isSkipped(String id) => _statuses[id] == HealthExecutionStatus.skipped;
+  bool isDone(String id) => isCompleted(id) || isSkipped(id);
+  bool isUpdating(String id) => _updating.contains(id);
   bool isFocusActivity(BodyCareActivity activity) =>
       activity.isFocus ?? focusAreas.contains(activity.area);
   List<BodyCareActivity> get selectedActivities => activities
@@ -108,22 +111,21 @@ class BodyCareController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> toggleCompleted(String id) async {
-    final next = isCompleted(id)
-        ? HealthExecutionStatus.scheduled
-        : HealthExecutionStatus.completed;
-    await _setStatus(id, next);
+  /// 활동 완료는 취소할 수 없는 최종 상태로 한 번만 저장한다.
+  Future<void> complete(String id) async {
+    if (isDone(id) || isUpdating(id)) return;
+    await _setStatus(id, HealthExecutionStatus.completed);
   }
 
-  Future<void> toggleSkipped(String id) async {
-    final next = isSkipped(id)
-        ? HealthExecutionStatus.scheduled
-        : HealthExecutionStatus.skipped;
-    await _setStatus(id, next);
+  /// 오늘 안하기도 진행도상 완료인 최종 상태이며 다시 예정 상태로 되돌리지 않는다.
+  Future<void> skipToday(String id) async {
+    if (isDone(id) || isUpdating(id)) return;
+    await _setStatus(id, HealthExecutionStatus.skipped);
   }
 
   Future<void> _setStatus(String id, HealthExecutionStatus next) async {
     final previous = _statuses[id] ?? HealthExecutionStatus.scheduled;
+    _updating.add(id);
     _statuses[id] = next;
     notifyListeners();
     try {
@@ -131,6 +133,8 @@ class BodyCareController extends ChangeNotifier {
     } on Object {
       _statuses[id] = previous;
       _state = BodyCareViewState.error;
+    } finally {
+      _updating.remove(id);
       notifyListeners();
     }
   }
