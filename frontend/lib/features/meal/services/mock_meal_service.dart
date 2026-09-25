@@ -32,7 +32,6 @@ class MockMealService implements MealService, MealChatService {
         period: MealPeriod.breakfast,
         label: '아침',
         summary: '계란찜 + 누룽지 · 입덧에 순한 조합',
-        isCurrent: true,
       ),
       MealPeriodSummary(
         period: MealPeriod.lunch,

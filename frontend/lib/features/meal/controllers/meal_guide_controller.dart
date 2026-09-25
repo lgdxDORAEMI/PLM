@@ -42,6 +42,7 @@ class MealGuideController extends ChangeNotifier {
   List<MealPeriodSummary> get periodSummaries {
     final guide = _data;
     if (guide == null) return const [];
+    final current = currentMealPeriod();
     return [
       for (final summary in guide.periods)
         MealPeriodSummary(
@@ -50,7 +51,7 @@ class MealGuideController extends ChangeNotifier {
           summary:
               _selectedRecommendations[summary.period]?.title ??
               summary.summary,
-          isCurrent: summary.isCurrent,
+          isCurrent: summary.period == current,
           imageUrl:
               _selectedRecommendations[summary.period]?.imageUrl ??
               summary.imageUrl,

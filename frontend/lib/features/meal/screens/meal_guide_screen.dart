@@ -122,7 +122,11 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
       children: [
         _MealGreeting(data: data),
         const SizedBox(height: AppSpacing.xxl),
-        const _PeriodHeader(),
+        _PeriodHeader(
+          currentLabel: _controller.periodSummaries
+              .firstWhere((p) => p.isCurrent, orElse: () => data.periods.first)
+              .label,
+        ),
         const SizedBox(height: AppSpacing.lg),
         LayoutBuilder(
           builder: (context, constraints) {
@@ -513,18 +517,20 @@ class _MealAdjustmentEntry extends StatelessWidget {
   }
 }
 
-/// 끼니 선택 섹션 제목. 현재 끼니 안내 문구는 기존 고정 문구를 유지한다
-/// (현재 끼니 데이터는 BE 요청 사항).
+/// 끼니 선택 섹션 제목. 현재 끼니는 로컬 시간대 구간(currentMealPeriod)으로
+/// 판별해 안내 문구에 반영한다.
 class _PeriodHeader extends StatelessWidget {
-  const _PeriodHeader();
+  const _PeriodHeader({required this.currentLabel});
+
+  final String currentLabel;
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 4,
       children: [
-        Text(
+        const Text(
           '어떤 끼니를 볼까요?',
           style: TextStyle(
             color: AppColors.textPrimary,
@@ -534,8 +540,8 @@ class _PeriodHeader extends StatelessWidget {
           ),
         ),
         Text(
-          '지금은 아침이지만, 다른 끼니도 미리 볼 수 있어요',
-          style: TextStyle(
+          '지금은 $currentLabel이지만, 다른 끼니도 미리 볼 수 있어요',
+          style: const TextStyle(
             color: AppColors.textSecondary,
             fontSize: 15,
             height: 1.6,
