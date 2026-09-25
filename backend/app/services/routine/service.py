@@ -65,11 +65,16 @@ def ensure_health_focus_items(
     health = list(routine.get("health") or [])
 
     def health_part(item: dict[str, Any]) -> str:
+        key_parts = str(item.get("item_key") or "").split(":")
+        key_part = key_parts[1] if len(key_parts) > 1 else ""
+        # health:rest는 bodyArea가 whole이어도 영상 없는 휴식 안내다.
+        # 전신 집중 운동은 반드시 health:whole로 별도 생성해야 영상이 연결된다.
+        if key_part == "rest":
+            return "rest"
         payload_part = str((item.get("payload") or {}).get("bodyArea") or "")
         if payload_part in HEALTH_DEFAULTS:
             return payload_part
-        key_parts = str(item.get("item_key") or "").split(":")
-        return key_parts[1] if len(key_parts) > 1 else ""
+        return key_part
 
     existing_parts = {health_part(item) for item in health}
     for part in HEALTH_DEFAULTS:

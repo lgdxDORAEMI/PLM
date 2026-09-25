@@ -379,13 +379,29 @@ class StretchingVideoTest(unittest.TestCase):
     VIDEO = {"waist": {"title": "허리 이완 5분", "url": "https://example.com/waist", "duration_min": 5}}
 
     def test_low_pain_adds_whole_body_recommendation(self) -> None:
-        routine = {"health": [{"item_key": "health:rest", "payload": {}}]}
+        routine = {
+            "health": [{
+                "item_key": "health:rest",
+                "payload": {"bodyArea": "whole"},
+            }]
+        }
         facts = {key: 2 for key in ("waist_pain", "pelvis_pain", "leg_pain", "wrist_pain")}
 
         result = ensure_health_focus_items(routine, facts)
 
         self.assertEqual(result["health"][-1]["item_key"], "health:whole")
         self.assertEqual(result["health"][-1]["payload"]["bodyArea"], "whole")
+        self.assertFalse(result["health"][0]["payload"]["isFocus"])
+        self.assertTrue(result["health"][-1]["payload"]["isFocus"])
+
+    def test_low_pain_whole_body_recommendation_has_video(self) -> None:
+        routine = {"health": [{"item_key": "health:rest", "payload": {"bodyArea": "whole"}}]}
+        facts = {key: 2 for key in ("waist_pain", "pelvis_pain", "leg_pain", "wrist_pain")}
+
+        result = attach_videos(ensure_health_focus_items(routine, facts))
+        whole = next(item for item in result["health"] if item["item_key"] == "health:whole")
+
+        self.assertEqual(whole["payload"]["video"]["youtube_id"], "InQu8jMT130")
 
     def test_normal_pain_does_not_add_whole_body_recommendation(self) -> None:
         routine = {"health": [{"item_key": "health:waist", "payload": {}}]}
