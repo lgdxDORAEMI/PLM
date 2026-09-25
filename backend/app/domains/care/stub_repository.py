@@ -88,7 +88,12 @@ class StubCareRepository(CareRepository):
         return response
 
     def set_execution(
-        self, user_id: str, routine_item_id: str, payload: RoutineExecutionInput
+        self,
+        user_id: str,
+        routine_item_id: str,
+        payload: RoutineExecutionInput,
+        *,
+        actor: CompletionActor = CompletionActor.WIFE,
     ) -> RoutineExecutionResponse:
         key = (user_id, routine_item_id)
         previous = self._executions.get(key)
@@ -103,7 +108,7 @@ class StubCareRepository(CareRepository):
         response = previous.model_copy(
             update={
                 "status": payload.status,
-                "completed_by": CompletionActor.WIFE if completed else None,
+                "completed_by": actor if completed else None,
                 "completed_at": datetime.now(timezone.utc) if completed else None,
             }
         )

@@ -2,6 +2,13 @@ from datetime import date, datetime, timezone
 from typing import Protocol
 from uuid import uuid4
 
+from app.domains.care.repository import CareRepository
+from app.domains.care.schemas import (
+    CompletionActor,
+    ExecutionStatus,
+    RoutineExecutionInput,
+)
+from app.domains.care.stub_repository import StubCareRepository
 from app.domains.errors import (
     DomainConflictError,
     DomainForbiddenError,
@@ -63,8 +70,13 @@ class FamilyServicePort(Protocol):
 
 
 class FamilyService(FamilyServicePort):
-    def __init__(self, repository: FamilyRepository) -> None:
+    def __init__(
+        self, repository: FamilyRepository, care_repository: CareRepository | None = None
+    ) -> None:
         self.repository = repository
+        # 기존 호출부(테스트 등)는 대부분 가사 요청만 다뤄 이 인자를 안 넘긴다 —
+        # 그런 경우엔 routine_items 동기화가 그냥 메모리 Stub에만 반영되고 끝난다.
+        self.care_repository = care_repository or StubCareRepository()
 
     def create_request(
         self, user_id: str, payload: HouseholdRequestCreate
@@ -111,7 +123,28 @@ class FamilyService(FamilyServicePort):
         if item.status != HouseholdItemStatus.CONFIRMED:
             raise DomainConflictError("확인 상태의 항목만 완료할 수 있습니다.")
         # 요구사항에 따라 상태 변경 알림은 새로 만들지 않는다.
-        return self._apply_item_status(request, item_id, HouseholdItemStatus.COMPLETED)
+        updated = self._apply_item_status(request, item_id, HouseholdItemStatus.COMPLETED)
+        if item.routine_item_id:
+            self._sync_routine_item_completed(request_id, item.routine_item_id)
+        return updated
+
+    def _sync_routine_item_completed(self, request_id: str, routine_item_id: str) -> None:
+        """홈 화면 '루틴 진행도'가 읽는 routine_items.status를 같이 완료 처리한다 —
+        안 하면 가사 요청을 남편이 다 완료해도 진행도가 계속 0으로 남는다.
+        요청 소유자는 아내라 routine_items 행도 아내 user_id로 조회된다."""
+        owners = self.repository.request_owner_ids(request_id)
+        if owners is None:
+            return
+        wife_user_id, _ = owners
+        try:
+            self.care_repository.set_execution(
+                wife_user_id,
+                routine_item_id,
+                RoutineExecutionInput(status=ExecutionStatus.COMPLETED),
+                actor=CompletionActor.HUSBAND,
+            )
+        except DomainNotFoundError:
+            pass  # 루틴 항목이 이미 없어졌어도(다른 날짜로 넘어감 등) 가사 요청 완료는 유지한다.
 
     def _find_item(self, request: HouseholdRequestResponse, item_id: str):
         for item in request.items:

@@ -161,6 +161,9 @@ class MealGuideController extends ChangeNotifier {
       } else {
         await service.recordDecision(recommendation, MealDecision.accepted);
       }
+      // 홈 '루틴 진행도'가 읽는 routine_items 실행 상태를 같이 완료 처리한다 —
+      // 안 하면 메뉴를 다 수락해도 진행도가 계속 0으로 남는다.
+      await service.setCompleted(recommendation.id, true);
       store.recordDecision(recommendation.id, MealDecision.accepted);
       store.applyRecommendation(recommendation);
       _selectedRecommendations[period] = recommendation;

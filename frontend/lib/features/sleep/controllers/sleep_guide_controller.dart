@@ -114,6 +114,19 @@ class SleepGuideController extends ChangeNotifier {
     _replace(type, (item) => item.copyWith(value: value));
   }
 
+  /// '수면 환경 전체 실행' 시 호출 — 홈 '루틴 진행도'가 읽는 routine_items 실행
+  /// 상태를 완료로 갱신한다. 안 하면 실행해도 진행도가 계속 0으로 남는다.
+  Future<void> markCompleted() async {
+    final itemId = _guide?.itemId;
+    if (itemId == null) return;
+    try {
+      await service.setCompleted(itemId, true);
+    } on Object {
+      // 가전 실행 자체는 이미 끝난 뒤라, 진행도 반영 실패로 성공 다이얼로그까지
+      // 막지 않는다.
+    }
+  }
+
   void _replace(
     SleepEnvironmentType type,
     SleepEnvironmentSetting Function(SleepEnvironmentSetting) update,

@@ -56,6 +56,14 @@ class ApiMealService implements MealService {
   }
 
   @override
+  Future<void> setCompleted(String itemId, bool completed) async {
+    await _client.put(
+      '/api/v1/care/routine-items/${Uri.encodeComponent(itemId)}/execution',
+      {'status': completed ? 'completed' : 'scheduled'},
+    );
+  }
+
+  @override
   Future<MealGuideData> fetchGuide() async {
     final response = await _client.get(
       '/api/v1/meals/today',

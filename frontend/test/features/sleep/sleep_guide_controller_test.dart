@@ -5,18 +5,34 @@ import 'package:plm_frontend/features/sleep/services/mock_sleep_service.dart';
 import 'package:plm_frontend/features/sleep/services/sleep_service.dart';
 
 class _FakeSleepService implements SleepService {
-  _FakeSleepService({this.deviceId, this.controlOk = true});
+  _FakeSleepService({this.deviceId, this.controlOk = true, this.itemId});
 
   final String? deviceId;
   final bool controlOk;
+  final String? itemId;
   String? lastPower;
   String? lastWindStrength;
+  final Map<String, bool> completed = {};
 
   @override
-  Future<SleepGuideData> fetchGuide() async => MockSleepService.guide;
+  Future<SleepGuideData> fetchGuide() async => itemId == null
+      ? MockSleepService.guide
+      : SleepGuideData(
+          itemId: itemId,
+          summaryTitle: MockSleepService.guide.summaryTitle,
+          summary: MockSleepService.guide.summary,
+          recommendedBedtime: MockSleepService.guide.recommendedBedtime,
+          environments: MockSleepService.guide.environments,
+          tips: MockSleepService.guide.tips,
+        );
 
   @override
   Future<void> updateEnvironment(String itemId, Map<String, dynamic> values) async {}
+
+  @override
+  Future<void> setCompleted(String itemId, bool completed) async {
+    this.completed[itemId] = completed;
+  }
 
   @override
   Future<String?> findAirPurifierDeviceId() async => deviceId;
@@ -94,6 +110,17 @@ void main() {
 
     expect(ok, isFalse);
     expect(service.lastPower, isNull);
+  });
+
+  test('수면 환경 전체 실행 시 홈 루틴 진행도용 실행 상태를 완료로 갱신한다', () async {
+    final service = _FakeSleepService(itemId: 'sleep-item-1');
+    final controller = SleepGuideController(service: service);
+    addTearDown(controller.dispose);
+    await controller.load();
+
+    await controller.markCompleted();
+
+    expect(service.completed['sleep-item-1'], isTrue);
   });
 
   test('실기기 제어 실패 시 표시값을 바꾸지 않는다', () async {

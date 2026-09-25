@@ -12,6 +12,8 @@ from httpx import ASGITransport, AsyncClient
 
 from app.api.v1.family import get_family_service
 from app.core.security import CurrentUser, get_current_user
+from app.domains.care.schemas import CompletionActor, ExecutionStatus
+from app.domains.care.stub_repository import StubCareRepository
 from app.domains.family.schemas import HouseholdRequestStatus
 from app.domains.family.service import FamilyService
 from app.domains.family.stub_repository import StubFamilyRepository
@@ -191,6 +193,43 @@ class HouseholdRequestApiTest(unittest.IsolatedAsyncioTestCase):
         self.assertIsNotNone(stored["confirmed_at"])
         self.assertIsNotNone(stored["completed_at"])
         self.assertEqual(self.fake.tables["household_request_items"][0]["status"], "completed")
+
+    async def test_husband_completing_item_marks_routine_item_completed(self) -> None:
+        """가사 항목을 남편이 완료하면 홈 '루틴 진행도'가 읽는 routine_items.status도
+        같이 completed로 바뀌어야 한다 — 안 그러면 0/4에서 계속 멈춰 있는다."""
+        self.fake.link()
+        self.fake.seed_profile(HUSBAND, "남편")
+        care_repository = StubCareRepository()
+        app.dependency_overrides[get_family_service] = lambda: FamilyService(
+            SupabaseFamilyRepository(self.fake, fallback=StubFamilyRepository()),
+            care_repository,
+        )
+        payload = {
+            "target_date": TARGET_DATE,
+            "reason": "장보기 부탁해요.",
+            "items": [{"title": "장보기", "routine_item_id": "routine-meal-1"}],
+        }
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://localhost"
+        ) as client:
+            response = await client.post("/api/v1/family/household-requests", json=payload)
+            request_id = response.json()["request_id"]
+            item_id = response.json()["items"][0]["item_id"]
+
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=HUSBAND)
+        async with AsyncClient(
+            transport=ASGITransport(app=app), base_url="http://localhost"
+        ) as client:
+            await client.post(
+                f"/api/v1/family/household-requests/{request_id}/items/{item_id}/confirm"
+            )
+            await client.post(
+                f"/api/v1/family/household-requests/{request_id}/items/{item_id}/complete"
+            )
+
+        execution = care_repository._executions[(WIFE, "routine-meal-1")]
+        self.assertEqual(execution.status, ExecutionStatus.COMPLETED)
+        self.assertEqual(execution.completed_by, CompletionActor.HUSBAND)
 
     async def test_completed_item_cannot_be_confirmed_again(self) -> None:
         self.fake.link()

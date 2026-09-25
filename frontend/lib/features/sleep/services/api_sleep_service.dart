@@ -20,6 +20,14 @@ class ApiSleepService implements SleepService {
   }
 
   @override
+  Future<void> setCompleted(String itemId, bool completed) async {
+    await _client.put(
+      '/api/v1/care/routine-items/${Uri.encodeComponent(itemId)}/execution',
+      {'status': completed ? 'completed' : 'scheduled'},
+    );
+  }
+
+  @override
   Future<String?> findAirPurifierDeviceId() async {
     final response = await _client.get('/api/v1/thinq/devices');
     final devices = response?['devices'];

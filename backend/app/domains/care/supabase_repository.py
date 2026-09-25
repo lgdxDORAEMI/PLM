@@ -193,7 +193,12 @@ class SupabaseCareRepository(CareRepository):
     # 별도 실행 로그 테이블을 만들지 않는다 — routine_items 자체가 SOURCE다.
 
     def set_execution(
-        self, user_id: str, routine_item_id: str, payload: RoutineExecutionInput
+        self,
+        user_id: str,
+        routine_item_id: str,
+        payload: RoutineExecutionInput,
+        *,
+        actor: CompletionActor = CompletionActor.WIFE,
     ) -> RoutineExecutionResponse:
         if payload.status == ExecutionStatus.NEEDS_CONFIRMATION:
             # routine_items.status는 DB CHECK로 scheduled/completed/skipped만 허용한다
@@ -203,7 +208,7 @@ class SupabaseCareRepository(CareRepository):
         completed = payload.status == ExecutionStatus.COMPLETED
         values = {
             "status": payload.status.value,
-            "completed_by": CompletionActor.WIFE.value if completed else None,
+            "completed_by": actor.value if completed else None,
             "completed_at": _now() if completed else None,
         }
         rows = self._run(

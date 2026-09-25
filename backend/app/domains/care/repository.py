@@ -3,6 +3,7 @@ from typing import Protocol
 
 from .schemas import (
     CalendarDay,
+    CompletionActor,
     ConditionInput,
     ConditionResponse,
     DailyReportResponse,
@@ -31,7 +32,12 @@ class CareRepository(Protocol):
     ) -> ConditionResponse: ...
 
     def set_execution(
-        self, user_id: str, routine_item_id: str, payload: RoutineExecutionInput
+        self,
+        user_id: str,
+        routine_item_id: str,
+        payload: RoutineExecutionInput,
+        *,
+        actor: CompletionActor = CompletionActor.WIFE,
     ) -> RoutineExecutionResponse: ...
 
     def update_routine_item(

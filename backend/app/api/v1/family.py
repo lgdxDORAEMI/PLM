@@ -5,6 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.api.v1.domain_errors import to_http_exception
 from app.core.security import CurrentUser, get_current_user
+from app.domains.care.stub_repository import StubCareRepository
+from app.domains.care.supabase_repository import SupabaseCareRepository
 from app.domains.family.schemas import (
     HouseholdRequestCreate,
     HouseholdRequestResponse,
@@ -23,6 +25,7 @@ router = APIRouter(prefix="/family", tags=["family"])
 # 리포트(get_morning_report)만 실제 DB로 옮겼다(STEP 12). 모듈 싱글턴으로 둬야
 # 재시작 전까지 상태가 유지된다(기존과 동일).
 _stub_repository = StubFamilyRepository()
+_stub_care_repository = StubCareRepository()
 
 STORAGE_UNAVAILABLE = "가족 공유 저장소에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요."
 
@@ -36,7 +39,10 @@ def get_family_service() -> FamilyServicePort:
         client = get_supabase_service().client
     except ValueError as error:  # Supabase 환경변수 누락
         raise _storage_unavailable() from error
-    return FamilyService(SupabaseFamilyRepository(client, fallback=_stub_repository))
+    return FamilyService(
+        SupabaseFamilyRepository(client, fallback=_stub_repository),
+        SupabaseCareRepository(client, fallback=_stub_care_repository),
+    )
 
 
 User = Annotated[CurrentUser, Depends(get_current_user)]

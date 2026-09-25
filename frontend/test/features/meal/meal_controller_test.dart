@@ -30,6 +30,21 @@ void main() {
     expect(controller.selectedDecision, MealDecision.accepted);
   });
 
+  test('메뉴를 수락하면 홈 루틴 진행도용 실행 상태도 완료로 갱신한다', () async {
+    final service = _RecordingMealService();
+    final controller = MealGuideController(
+      service: service,
+      store: store,
+      initialPeriod: MealPeriod.dinner,
+    );
+    addTearDown(controller.dispose);
+
+    await controller.load();
+    await controller.acceptSelected();
+
+    expect(service.completed[controller.selectedRecommendation!.id], isTrue);
+  });
+
   test('다른 메뉴를 보여줘도 상단 추천 근거는 최초 메뉴 기준을 유지한다', () async {
     final controller = MealGuideController(
       service: const MockMealService(),
@@ -157,9 +172,15 @@ class _RecordingMealService implements MealService {
   String? recordedId;
   MealDecision? recordedDecision;
   MealRecommendation? replaced;
+  final Map<String, bool> completed = {};
 
   @override
   Future<MealGuideData> fetchGuide() async => MockMealService.guide;
+
+  @override
+  Future<void> setCompleted(String itemId, bool completed) async {
+    this.completed[itemId] = completed;
+  }
 
   @override
   Future<void> recordDecision(

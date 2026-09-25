@@ -11,6 +11,9 @@ class MockSleepService implements SleepService {
   ) async {}
 
   @override
+  Future<void> setCompleted(String itemId, bool completed) async {}
+
+  @override
   Future<String?> findAirPurifierDeviceId() async => 'mock-purifier';
 
   @override

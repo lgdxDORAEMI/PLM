@@ -14,4 +14,8 @@ abstract interface class SleepService {
     required String power,
     String? windStrength,
   });
+
+  /// 홈 화면 '루틴 진행도'가 읽는 routine_items 실행 상태를 갱신한다
+  /// (건강 가이드의 ApiHealthGuideService.setCompleted와 같은 역할).
+  Future<void> setCompleted(String itemId, bool completed);
 }

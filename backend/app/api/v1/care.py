@@ -60,9 +60,12 @@ def reset_today(user: User, service: Service) -> dict[str, str | bool]:
 
 
 @router.get("/conditions/{target_date}", response_model=ConditionResponse)
-def read_condition(target_date: date, user: User, service: Service) -> ConditionResponse:
+def read_condition(
+    target_date: date, target_user_id: DataOwnerUserId, service: Service
+) -> ConditionResponse:
+    """B-CAL-001과 동일 규칙: 남편은 연동된 아내의 컨디션을 읽기 전용 조회한다."""
     try:
-        return service.get_condition(user.id, target_date)
+        return service.get_condition(target_user_id, target_date)
     except Exception as error:
         raise to_http_exception(error) from error
 
@@ -126,9 +129,12 @@ def update_sleep_environment(
 
 
 @router.post("/daily-reports/{target_date}/preview", response_model=DailyReportResponse)
-def preview_report(target_date: date, user: User, service: Service) -> DailyReportResponse:
+def preview_report(
+    target_date: date, target_user_id: DataOwnerUserId, service: Service
+) -> DailyReportResponse:
+    """B-CAL-001과 동일 규칙: 저장은 안 하는 미리보기라 남편도 읽기 전용 조회 가능."""
     try:
-        return service.preview_report(user.id, target_date)
+        return service.preview_report(target_user_id, target_date)
     except Exception as error:
         raise to_http_exception(error) from error
 
@@ -143,9 +149,12 @@ def finalize_report(target_date: date, user: User, service: Service) -> DailyRep
 
 
 @router.get("/daily-reports/{target_date}", response_model=DailyReportResponse)
-def read_report(target_date: date, user: User, service: Service) -> DailyReportResponse:
+def read_report(
+    target_date: date, target_user_id: DataOwnerUserId, service: Service
+) -> DailyReportResponse:
+    """B-CAL-001과 동일 규칙: 남편은 연동된 아내의 확정 리포트를 읽기 전용 조회한다."""
     try:
-        return service.get_report(user.id, target_date)
+        return service.get_report(target_user_id, target_date)
     except Exception as error:
         raise to_http_exception(error) from error
 

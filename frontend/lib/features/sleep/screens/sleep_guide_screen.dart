@@ -150,6 +150,8 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
       source: ApplianceExecutionSource.sleep,
       label: '수면 환경 전체 실행',
     );
+    await _controller.markCompleted();
+    if (!mounted) return;
     await showAppDialog<void>(
       context: context,
       builder: (context) => AppDialog(

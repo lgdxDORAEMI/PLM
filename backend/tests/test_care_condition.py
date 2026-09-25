@@ -15,6 +15,7 @@ import httpx
 from httpx import ASGITransport, AsyncClient
 
 from app.api.v1.care import get_care_service
+from app.api.v1.partner_scope import get_partner_scope_client
 from app.core.security import CurrentUser, get_current_user
 from app.domains.care.service import CareService
 from app.domains.care.stub_repository import StubCareRepository
@@ -84,6 +85,22 @@ class FakeQuery:
         return SimpleNamespace(data=[row] if row else [])
 
 
+def _empty_partner_links_client() -> SimpleNamespace:
+    """resolve_data_owner()가 조회하는 partner_links를 빈 결과로 준다 — 이
+    테스트는 아내 본인 조회만 다루고 남편 파트너 스코프는 대상이 아니다."""
+    return SimpleNamespace(
+        table=lambda name: SimpleNamespace(
+            select=lambda *_: SimpleNamespace(
+                eq=lambda *_: SimpleNamespace(
+                    limit=lambda *_: SimpleNamespace(
+                        execute=lambda: SimpleNamespace(data=[])
+                    )
+                )
+            )
+        )
+    )
+
+
 def freeze_today(case: unittest.TestCase, today: date) -> None:
     patcher = patch("app.utils.dates.today_kst", return_value=today)
     patcher.start()
@@ -99,6 +116,7 @@ class ConditionApiTest(unittest.IsolatedAsyncioTestCase):
         app.dependency_overrides[get_care_service] = lambda: CareService(
             SupabaseCareRepository(self.supabase, fallback=self.stub_fallback)
         )
+        app.dependency_overrides[get_partner_scope_client] = _empty_partner_links_client
         app.dependency_overrides[get_current_user] = lambda: CurrentUser(id="wife-1")
         self.addCleanup(app.dependency_overrides.clear)
 

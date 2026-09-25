@@ -307,6 +307,7 @@ class ReportApiTest(unittest.IsolatedAsyncioTestCase):
         app.dependency_overrides[get_care_service] = lambda: CareService(
             SupabaseCareRepository(self.client, fallback=StubCareRepository())
         )
+        app.dependency_overrides[get_partner_scope_client] = lambda: self.client
         app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=USER)
         self.addCleanup(app.dependency_overrides.clear)
 
@@ -389,6 +390,29 @@ class ReportApiTest(unittest.IsolatedAsyncioTestCase):
         async with self.http() as client:
             response = await client.get(f"/api/v1/care/daily-reports/{TARGET_DATE.isoformat()}")
         self.assertEqual(response.status_code, 404)
+
+    async def test_linked_husband_sees_wifes_report_and_condition_not_his_own_empty_one(
+        self,
+    ) -> None:
+        """캘린더에서 날짜를 눌렀을 때 뜨는 상세 카드(컨디션/실행한 루틴/가전 자동
+        실행/가족 분담)는 이 두 엔드포인트로 채워진다 — 남편이 봐도 아내 데이터가
+        나와야 한다(B-CAL-001과 동일 규칙)."""
+        self.client.seed_condition()
+        self.client.seed_item("item-1", "health", status="completed", completed_by="wife")
+        self.client.tables["partner_links"].append(
+            {"husband_user_id": "husband-1", "wife_user_id": USER}
+        )
+        async with self.http() as client:
+            await client.post(f"/api/v1/care/daily-reports/{TARGET_DATE.isoformat()}/finalize")
+
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(id="husband-1")
+        async with self.http() as client:
+            report = await client.get(f"/api/v1/care/daily-reports/{TARGET_DATE.isoformat()}")
+            condition = await client.get(f"/api/v1/care/conditions/{TARGET_DATE.isoformat()}")
+
+        self.assertEqual(report.status_code, 200)
+        self.assertTrue(report.json()["finalized"])
+        self.assertEqual(condition.status_code, 200)
 
     async def test_motion_summaries_field_present_and_empty_when_movement_unavailable(self) -> None:
         """USER="wife-1"은 UUID가 아니라서 Movement 조회가 ValueError로 실패하고
