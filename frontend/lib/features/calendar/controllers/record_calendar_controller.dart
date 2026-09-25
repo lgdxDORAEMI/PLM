@@ -29,6 +29,10 @@ class RecordCalendarController extends ChangeNotifier {
   DateTime get selectedDate => _selectedDate;
   List<DailyRecord> get records => List.unmodifiable(_records);
   DailyRecord? get selectedRecord => _details ?? recordFor(_selectedDate);
+
+  /// true면 [selectedRecord]가 fetchMonth()의 가벼운 껍데기 값(컨디션/루틴 수 0)이라
+  /// 화면에 실제 값처럼 보여주면 안 된다 — fetchRecord() 상세 응답이 아직 안 왔다는 뜻.
+  bool get selectedDetailsLoading => _details == null;
   bool get canGoNext => _visibleMonth.isBefore(
     DateTime(DateTime.now().year, DateTime.now().month),
   );

@@ -202,6 +202,7 @@ class _CalendarContent extends StatelessWidget {
               : _SelectedDayDetail(
                   record: selected,
                   role: role,
+                  detailsLoading: controller.selectedDetailsLoading,
                   onOpenReport: () => onOpenReport(selected),
                 ),
         ),
@@ -277,11 +278,13 @@ class _SelectedDayDetail extends StatelessWidget {
     required this.record,
     required this.role,
     required this.onOpenReport,
+    this.detailsLoading = false,
   });
 
   final DailyRecord record;
   final AppUserRole role;
   final VoidCallback onOpenReport;
+  final bool detailsLoading;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -316,6 +319,7 @@ class _SelectedDayDetail extends StatelessWidget {
       RecordDaySummary(
         record: record,
         showMotionCaution: role == AppUserRole.wife,
+        detailsLoading: detailsLoading,
       ),
       const SizedBox(height: AppSpacing.lg),
       AppButton(

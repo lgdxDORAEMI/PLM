@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/tokens/app_elevation.dart';
 import '../../../design_system/tokens/app_radius.dart';
 import '../../../design_system/tokens/app_colors.dart';
@@ -11,9 +12,15 @@ class RecordDaySummary extends StatelessWidget {
     super.key,
     required this.record,
     required this.showMotionCaution,
+    this.detailsLoading = false,
   });
   final DailyRecord record;
   final bool showMotionCaution;
+
+  /// true면 [record]가 fetchMonth()의 가벼운 껍데기 값이라, 실제 값 대신
+  /// 스켈레톤을 보여준다 (날짜 클릭 직후 0/0·"컨디션 기록 있음"이 잠깐
+  /// 보였다가 바뀌는 깜빡임 버그 방지).
+  final bool detailsLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -29,16 +36,26 @@ class RecordDaySummary extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: 26,
         children: [
-          _SummaryItem(label: '컨디션', value: record.conditionSummary),
+          _SummaryItem(
+            label: '컨디션',
+            value: record.conditionSummary,
+            loading: detailsLoading,
+          ),
           _SummaryItem(
             label: '실행한 루틴',
             value: '${record.completedRoutines} / ${record.totalRoutines} 완료',
+            loading: detailsLoading,
           ),
-          _SummaryItem(label: '가전 자동 실행', value: record.applianceSummary),
+          _SummaryItem(
+            label: '가전 자동 실행',
+            value: record.applianceSummary,
+            loading: detailsLoading,
+          ),
           _SummaryItem(
             label: '가족 분담',
             value:
                 '요청 ${record.familyRequested} · 확인 ${record.familyConfirmed} · 완료 ${record.familyCompleted}',
+            loading: detailsLoading,
           ),
           if (showMotionCaution)
             _SummaryItem(
@@ -46,6 +63,7 @@ class RecordDaySummary extends StatelessWidget {
               value: record.motionSummaries.isNotEmpty
                   ? record.motionSummaries.first
                   : '특이 자세가 감지되지 않았어요',
+              loading: detailsLoading,
             ),
         ],
       ),
@@ -54,9 +72,14 @@ class RecordDaySummary extends StatelessWidget {
 }
 
 class _SummaryItem extends StatelessWidget {
-  const _SummaryItem({required this.label, required this.value});
+  const _SummaryItem({
+    required this.label,
+    required this.value,
+    this.loading = false,
+  });
   final String label;
   final String value;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
@@ -74,15 +97,18 @@ class _SummaryItem extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.xs),
-        Text(
-          value,
-          textAlign: TextAlign.start,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
-            fontSize: 14,
-            height: 1.5,
+        if (loading)
+          const AppSkeleton(height: 18, width: 140, radius: 6)
+        else
+          Text(
+            value,
+            textAlign: TextAlign.start,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 14,
+              height: 1.5,
+            ),
           ),
-        ),
       ],
     );
   }
