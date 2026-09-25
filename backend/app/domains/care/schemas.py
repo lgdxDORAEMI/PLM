@@ -126,12 +126,15 @@ class CalendarDay(BaseModel):
 
 
 class CalendarDayDetailResponse(BaseModel):
-    """캘린더 선택 날짜가 한 번의 요청으로 사용하는 읽기 전용 상세 모델."""
+    """캘린더 선택 날짜가 한 번의 요청으로 사용하는 읽기 전용 상세 모델.
+
+    09-25: 기록이 없는 날은 404 대신 두 값을 null로 준다. 404로 주면 프론트가
+    "엔드포인트가 없는 구버전 백엔드"와 구분하지 못해 조용히 구버전 경로로 빠졌다."""
 
     model_config = ConfigDict(extra="forbid")
 
-    condition: ConditionResponse
-    report: DailyReportResponse
+    condition: ConditionResponse | None = None
+    report: DailyReportResponse | None = None
 
 
 class RoutineFeedbackKind(StrEnum):

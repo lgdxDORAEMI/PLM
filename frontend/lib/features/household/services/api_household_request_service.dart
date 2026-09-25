@@ -98,8 +98,11 @@ class ApiHouseholdRequestService extends ChangeNotifier
       _progress[requestId]?[taskId];
 
   @override
-  Future<List<PartnerRequestData>> fetchAll() async {
-    final response = await _client.getList('/api/v1/family/household-requests');
+  Future<List<PartnerRequestData>> fetchAll({DateTime? date}) async {
+    final response = await _client.getList(
+      '/api/v1/family/household-requests',
+      query: date == null ? null : {'date': _dateKey(date)},
+    );
     return (response ?? const [])
         .whereType<Map>()
         .map((item) => PartnerRequestData.fromJson(item.cast()))
@@ -134,4 +137,9 @@ class ApiHouseholdRequestService extends ChangeNotifier
     if (response == null) throw StateError('가사 요청 응답이 없습니다.');
     return PartnerRequestData.fromJson(response);
   }
+
+  static String _dateKey(DateTime date) =>
+      '${date.year.toString().padLeft(4, '0')}-'
+      '${date.month.toString().padLeft(2, '0')}-'
+      '${date.day.toString().padLeft(2, '0')}';
 }

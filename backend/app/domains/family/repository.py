@@ -36,7 +36,9 @@ class FamilyRepository(Protocol):
 
     def save_request(self, request: HouseholdRequestResponse) -> None: ...
 
-    def list_requests(self, user_id: str) -> list[HouseholdRequestResponse]: ...
+    def list_requests(
+        self, user_id: str, target_date: date | None = None
+    ) -> list[HouseholdRequestResponse]: ...
 
     def add_notification(
         self, recipient_user_id: str, notification: NotificationResponse

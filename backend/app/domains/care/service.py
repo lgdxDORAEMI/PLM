@@ -127,8 +127,12 @@ class CareService(CareServicePort):
     def calendar_day(
         self, user_id: str, target_date: date
     ) -> CalendarDayDetailResponse:
-        """컨디션과 저장 없는 리포트 미리보기를 캘린더용 응답으로 묶는다."""
+        """컨디션과 저장 없는 리포트 미리보기를 캘린더용 응답으로 묶는다.
+        기록이 없는 날은 빈 응답(200)이다 — 404는 '엔드포인트 없음'만 뜻하게 남겨둔다."""
+        condition = self.repository.get_condition(user_id, target_date)
+        if condition is None:
+            return CalendarDayDetailResponse()
         return CalendarDayDetailResponse(
-            condition=self.get_condition(user_id, target_date),
+            condition=condition,
             report=self.preview_report(user_id, target_date),
         )

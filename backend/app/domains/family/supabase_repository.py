@@ -246,22 +246,79 @@ class SupabaseFamilyRepository(FamilyRepository):
                 .execute()
             )
 
-    def list_requests(self, user_id: str) -> list[HouseholdRequestResponse]:
-        as_wife = self._run(
+    def list_requests(
+        self, user_id: str, target_date: date | None = None
+    ) -> list[HouseholdRequestResponse]:
+        """요청 건수와 무관하게 쿼리 수가 일정하다(09-25). 예전에는 건마다 항목·프로필·일일합계를
+        따로 조회해 7건에 30쿼리·1.2초가 나왔다. target_date를 주면 그 날짜만 조회한다."""
+        def scoped(column: str):
+            query = (
+                self.client.table("household_requests").select("*").eq(column, user_id)
+            )
+            if target_date is not None:
+                query = query.eq("date", target_date.isoformat())
+            return query.execute()
+
+        rows = self._run(lambda: scoped("wife_user_id")) + self._run(
+            lambda: scoped("husband_user_id")
+        )
+        if not rows:
+            return []
+
+        # 일일 합계는 그 아내·그 날짜의 모든 요청을 합산해야 해서 rows 밖의 요청까지 필요하다.
+        wife_ids = sorted({row["wife_user_id"] for row in rows})
+        day_keys = sorted({str(row["date"]) for row in rows})
+        sibling_rows = self._run(
             lambda: self.client.table("household_requests")
-            .select("*")
-            .eq("wife_user_id", user_id)
+            .select("id,wife_user_id,date")
+            .in_("wife_user_id", wife_ids)
+            .in_("date", day_keys)
             .execute()
         )
-        as_husband = self._run(
-            lambda: self.client.table("household_requests")
+        request_ids = sorted(
+            {row["id"] for row in rows} | {row["id"] for row in sibling_rows}
+        )
+        item_rows = self._run(
+            lambda: self.client.table("household_request_items")
             .select("*")
-            .eq("husband_user_id", user_id)
+            .in_("request_id", request_ids)
             .execute()
         )
-        return [self._load_response(row) for row in as_wife + as_husband]
+        husband_ids = sorted({row["husband_user_id"] for row in rows})
+        profile_rows = self._run(
+            lambda: self.client.table("profiles")
+            .select("user_id,display_name")
+            .in_("user_id", husband_ids)
+            .execute()
+        )
+
+        names = {row["user_id"]: row["display_name"] for row in profile_rows}
+        items_by_request: dict[str, list[dict[str, Any]]] = {}
+        for item in item_rows:
+            items_by_request.setdefault(item["request_id"], []).append(item)
+        ids_by_day: dict[tuple[str, str], list[str]] = {}
+        for row in sibling_rows:
+            ids_by_day.setdefault((row["wife_user_id"], str(row["date"])), []).append(row["id"])
+
+        def summary_for(row: dict[str, Any]) -> HouseholdDailySummary:
+            ids = ids_by_day.get((row["wife_user_id"], str(row["date"])), [])
+            return _summarize_items(
+                [item for request_id in ids for item in items_by_request.get(request_id, [])]
+            )
+
+        return [
+            _build_response(
+                row,
+                items_by_request.get(row["id"], []),
+                "아내",
+                names.get(row["husband_user_id"], "남편"),
+                summary_for(row),
+            )
+            for row in rows
+        ]
 
     def _load_response(self, row: dict[str, Any]) -> HouseholdRequestResponse:
+        """단건 조회용. 목록은 list_requests가 한 번에 묶어 읽는다."""
         item_rows = self._run(
             lambda: self.client.table("household_request_items")
             .select("*")
@@ -307,13 +364,7 @@ class SupabaseFamilyRepository(FamilyRepository):
             .in_("request_id", request_ids)
             .execute()
         )
-        return HouseholdDailySummary(
-            requested=len(item_rows),
-            confirmed=sum(
-                1 for item in item_rows if item["status"] in ("confirmed", "completed")
-            ),
-            completed=sum(1 for item in item_rows if item["status"] == "completed"),
-        )
+        return _summarize_items(item_rows)
 
     def add_notification(
         self, recipient_user_id: str, notification: NotificationResponse
@@ -407,6 +458,15 @@ class SupabaseFamilyRepository(FamilyRepository):
 
 def _iso(value: datetime | None) -> str | None:
     return value.isoformat() if value else None
+
+
+def _summarize_items(item_rows: list[dict[str, Any]]) -> HouseholdDailySummary:
+    """항목 status 기준 합산(FUC-H-REQUEST-002). 건수가 아니라 항목 개수를 센다."""
+    return HouseholdDailySummary(
+        requested=len(item_rows),
+        confirmed=sum(1 for item in item_rows if item["status"] in ("confirmed", "completed")),
+        completed=sum(1 for item in item_rows if item["status"] == "completed"),
+    )
 
 
 def _build_response(

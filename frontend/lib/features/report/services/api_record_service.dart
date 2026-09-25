@@ -34,11 +34,12 @@ class ApiRecordService implements RecordService {
   Future<DailyRecord?> fetchCalendarRecord(DateTime date) async {
     final key = recordDateKey(date);
     final response = await _client.get('/api/v1/care/calendar/days/$key');
-    // Backend보다 Frontend가 먼저 배포된 동안에는 기존 상세 조회 계약으로
-    // 폴백해 캘린더 상세가 비는 배포 순서 문제를 막는다.
+    // null = 이 엔드포인트가 없는 구버전 백엔드. 이때만 예전 계약으로 폴백한다.
+    // 09-25 이후 기록이 없는 날은 404가 아니라 값이 null인 200이므로 여기서 걸리지 않는다.
     if (response == null) return fetchRecord(date);
     final report = response['report'];
     final condition = response['condition'];
+    if (report == null || condition == null) return null; // 그 날짜에 기록이 없다
     if (report is! Map || condition is! Map) {
       throw const FormatException('캘린더 상세 응답 형식이 올바르지 않습니다.');
     }

@@ -23,7 +23,8 @@ abstract interface class HouseholdRequestService implements Listenable {
 
   HouseholdRequestProgress? progressForTask(String requestId, String taskId);
 
-  Future<List<PartnerRequestData>> fetchAll();
+  /// [date]를 주면 그 날짜의 요청만 받는다(서버 필터). 가사 가이드는 오늘 것만 쓴다.
+  Future<List<PartnerRequestData>> fetchAll({DateTime? date});
   Future<PartnerRequestData?> fetchRequest(String requestId);
   Future<PartnerRequestData> confirm(String requestId, String itemId);
   Future<PartnerRequestData> complete(String requestId, String itemId);

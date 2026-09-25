@@ -484,6 +484,17 @@ class CalendarApiTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(body["report"]["completed_routines"], 1)
         self.assertEqual(self.client.tables["daily_reports"], [])
 
+    async def test_calendar_day_without_record_is_empty_200_not_404(self) -> None:
+        """09-25: 404는 '엔드포인트 없음'만 뜻해야 한다. 기록 없는 날까지 404면 프론트가
+        구버전 백엔드로 오해해 예전 상세 API로 2~3회 더 호출한다."""
+        async with self.http() as client:
+            response = await client.get(
+                f"/api/v1/care/calendar/days/{TARGET_DATE.isoformat()}"
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"condition": None, "report": None})
+
     async def test_linked_husband_sees_wifes_calendar_day_detail(self) -> None:
         self.client.seed_condition(TARGET_DATE)
         self.client.tables["partner_links"].append(

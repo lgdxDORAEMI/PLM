@@ -113,7 +113,9 @@ DB 적용 절차는 [Supabase README](../supabase/README.md)를 참고합니다.
 
 `GET /api/v1/chat/messages`는 날짜를 생략하면 KST 기준 오늘 대화만 반환합니다. `GET /api/v1/routine/home`은 오늘 컨디션이나 루틴 생성 여부와 무관하게 프로필 주차 안내를 반환합니다.
 
-캘린더는 월 조회와 날짜 상세 조회를 분리합니다. `GET /api/v1/care/calendar/{month}`는 기록 날짜와 상태를 반환하고, `GET /api/v1/care/calendar/days/{target_date}`는 해당 날짜의 컨디션과 저장을 만들지 않는 Daily 리포트 미리보기를 한 응답으로 반환합니다. 연결된 남편은 배우자 범위로 같은 데이터를 조회합니다.
+캘린더는 월 조회와 날짜 상세 조회를 분리합니다. `GET /api/v1/care/calendar/{month}`는 기록 날짜와 상태를 반환하고, `GET /api/v1/care/calendar/days/{target_date}`는 해당 날짜의 컨디션과 저장을 만들지 않는 Daily 리포트 미리보기를 한 응답으로 반환합니다. 기록이 없는 날은 404가 아니라 두 값이 `null`인 200이며, 404는 엔드포인트가 없는 경우만 뜻합니다. 연결된 남편은 배우자 범위로 같은 데이터를 조회합니다.
+
+`GET /api/v1/family/household-requests`는 `?date=YYYY-MM-DD`로 그 날짜의 요청만 조회합니다(생략하면 전체). 목록 응답은 요청 건수와 무관하게 일정한 수의 질의로 만듭니다.
 
 전체 계약은 [API 문서](../docs/api.md)에서 확인합니다.
 

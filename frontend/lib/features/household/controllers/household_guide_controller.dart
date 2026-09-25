@@ -51,14 +51,9 @@ class HouseholdGuideController extends ChangeNotifier {
     try {
       _tasks = await requestService.fetchGuide();
       if (requestService is ApiHouseholdRequestService) {
-        final today = DateTime.now();
-        final dateKey =
-            '${today.year.toString().padLeft(4, '0')}-'
-            '${today.month.toString().padLeft(2, '0')}-'
-            '${today.day.toString().padLeft(2, '0')}';
-        final requests = (await requestService.fetchAll())
-            .where((request) => request.recordDate == dateKey)
-            .toList();
+        // 09-25: 날짜 필터를 서버로 넘긴다. 예전에는 전체를 받아 오늘 것만 남겨
+        // 요청이 쌓일수록 느려졌다(7건에 30쿼리·1.2초).
+        final requests = await requestService.fetchAll(date: DateTime.now());
         _shared = requests.isNotEmpty;
         _lastRequestId = requests.isEmpty ? null : requests.last.id;
         _requestIdByTaskId.clear();

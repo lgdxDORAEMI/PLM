@@ -1,7 +1,7 @@
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.api.v1.domain_errors import to_http_exception
 from app.core.security import CurrentUser, get_current_user
@@ -64,9 +64,14 @@ def create_household_request(
 
 
 @router.get("/household-requests", response_model=list[HouseholdRequestResponse])
-def list_household_requests(user: User, service: Service) -> list[HouseholdRequestResponse]:
+def list_household_requests(
+    user: User,
+    service: Service,
+    target_date: date | None = Query(default=None, alias="date"),
+) -> list[HouseholdRequestResponse]:
+    """date를 주면 그 날짜의 요청만 돌려준다. 가사 가이드는 오늘 것만 쓰므로 항상 붙여 보낸다."""
     try:
-        return service.list_requests(user.id)
+        return service.list_requests(user.id, target_date)
     except Exception as error:
         raise to_http_exception(error) from error
 

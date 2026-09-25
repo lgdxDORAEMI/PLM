@@ -34,7 +34,9 @@ class FamilyServicePort(Protocol):
         self, user_id: str, payload: HouseholdRequestCreate
     ) -> HouseholdRequestResponse: ...
 
-    def list_requests(self, user_id: str) -> list[HouseholdRequestResponse]: ...
+    def list_requests(
+        self, user_id: str, target_date: date | None = None
+    ) -> list[HouseholdRequestResponse]: ...
 
     def get_request(self, user_id: str, request_id: str) -> HouseholdRequestResponse: ...
 
@@ -99,8 +101,10 @@ class FamilyService(FamilyServicePort):
         )
         return request
 
-    def list_requests(self, user_id: str) -> list[HouseholdRequestResponse]:
-        return self.repository.list_requests(user_id)
+    def list_requests(
+        self, user_id: str, target_date: date | None = None
+    ) -> list[HouseholdRequestResponse]:
+        return self.repository.list_requests(user_id, target_date)
 
     def get_request(self, user_id: str, request_id: str) -> HouseholdRequestResponse:
         request = self._authorized_request(user_id, request_id)

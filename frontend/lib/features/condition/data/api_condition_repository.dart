@@ -11,10 +11,33 @@ class ApiConditionRepository implements ConditionRepository {
 
   final ApiClient _client;
 
+  /// 09-25: 홈이 같은 `GET /care/conditions/{date}`를 컨디션용·할 일용으로 두 번 부르고
+  /// 있었다. 이 응답에 planned_activities가 이미 들어 있어 여기서 들고 있다가
+  /// ApiPlannedActivityService가 재사용한다. 저장·초기화 때는 forgetCache()로 버린다.
+  static String? _cachedKey;
+  static List<String> _cachedActivities = const [];
+
+  static List<String>? cachedActivities(DateTime date) =>
+      _cachedKey == _key(date) ? _cachedActivities : null;
+
+  static void forgetCache() {
+    _cachedKey = null;
+    _cachedActivities = const [];
+  }
+
   @override
   Future<ConditionDraft?> fetchToday(DateTime date) async {
     final response = await _client.get('/api/v1/care/conditions/${_isoDate(date)}');
-    if (response == null) return null;
+    if (response == null) {
+      forgetCache();
+      return null;
+    }
+    _cachedKey = _key(date);
+    _cachedActivities =
+        (response['planned_activities'] as List?)
+            ?.whereType<String>()
+            .toList(growable: false) ??
+        const [];
     return _fromResponse(response);
   }
 
@@ -43,7 +66,9 @@ class ApiConditionRepository implements ConditionRepository {
     );
   }
 
-  String _isoDate(DateTime date) =>
+  String _isoDate(DateTime date) => _key(date);
+
+  static String _key(DateTime date) =>
       '${date.year.toString().padLeft(4, '0')}-'
       '${date.month.toString().padLeft(2, '0')}-'
       '${date.day.toString().padLeft(2, '0')}';

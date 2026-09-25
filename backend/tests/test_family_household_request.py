@@ -311,6 +311,22 @@ class HouseholdRequestApiTest(unittest.IsolatedAsyncioTestCase):
             response = await client.get("/api/v1/family/household-requests")
         self.assertEqual(len(response.json()), 1)
 
+    async def test_list_requests_filters_by_date(self) -> None:
+        """09-25: 가사 가이드는 오늘 것만 쓴다. 전체를 받아 클라이언트에서 거르던 것을 서버 필터로 옮겼다."""
+        self.fake.link()
+        self.fake.seed_profile(HUSBAND, "남편")
+        other_day = {**REQUEST_PAYLOAD, "target_date": "2026-09-19"}
+        async with client_for(self.fake) as client:
+            await client.post("/api/v1/family/household-requests", json=REQUEST_PAYLOAD)
+            await client.post("/api/v1/family/household-requests", json=other_day)
+
+            everything = await client.get("/api/v1/family/household-requests")
+            one_day = await client.get(
+                "/api/v1/family/household-requests", params={"date": TARGET_DATE}
+            )
+        self.assertEqual(len(everything.json()), 2)
+        self.assertEqual([r["target_date"] for r in one_day.json()], [TARGET_DATE])
+
     async def test_daily_summary_sums_items_across_same_day_requests(self) -> None:
         self.fake.link()
         self.fake.seed_profile(HUSBAND, "남편")

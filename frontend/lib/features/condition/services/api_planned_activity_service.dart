@@ -1,5 +1,6 @@
 import '../../../core/network/api_client.dart';
 import '../../routine/services/api_routine_service.dart';
+import '../data/api_condition_repository.dart';
 import 'planned_activity_service.dart';
 
 class ApiPlannedActivityService implements PlannedActivityService {
@@ -10,6 +11,9 @@ class ApiPlannedActivityService implements PlannedActivityService {
 
   @override
   Future<List<String>> fetch(DateTime date) async {
+    // 컨디션 조회가 방금 같은 응답을 받아왔으면 그걸 쓴다(홈 첫 진입 중복 호출 제거).
+    final cached = ApiConditionRepository.cachedActivities(date);
+    if (cached != null) return cached;
     final response = await _client.get('/api/v1/care/conditions/${_key(date)}');
     return (response?['planned_activities'] as List?)
             ?.whereType<String>()
@@ -28,6 +32,7 @@ class ApiPlannedActivityService implements PlannedActivityService {
     await _client.put('/api/v1/care/conditions/${_key(date)}/activities', {
       'activities': activities,
     });
+    ApiConditionRepository.forgetCache();
   }
 
   @override

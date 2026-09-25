@@ -69,13 +69,18 @@ class ApiRoutineService implements RoutineService {
           status: RoutineStatus.scheduled,
         ),
     ];
+    // 09-25: 4종 가이드는 서로 독립이라 함께 보낸다. 순차 await면 왕복 4번을 그대로 기다렸다.
+    final guides = await Future.wait([
+      for (final type in RoutineType.values)
+        _client.get(
+          '/api/v1/${_guidePath(type)}/today',
+          query: {'date': dateKey},
+          throwOnNotFound: true,
+        ),
+    ]);
     final items = <RoutineItem>[];
-    for (final type in RoutineType.values) {
-      final guide = await _client.get(
-        '/api/v1/${_guidePath(type)}/today',
-        query: {'date': dateKey},
-        throwOnNotFound: true,
-      );
+    for (final (index, type) in RoutineType.values.indexed) {
+      final guide = guides[index];
       if (guide?['date'] != dateKey || guide?['category'] != type.name) {
         throw const FormatException('루틴 가이드 날짜 또는 종류가 일치하지 않습니다.');
       }

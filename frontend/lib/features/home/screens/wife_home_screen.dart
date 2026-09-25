@@ -97,10 +97,27 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
     // 할 일도 같은 GET /care/conditions를 쓰므로 컨디션 조회 뒤에 보낸다.
     // 동시에 보내면 BE 공유 Supabase 연결이 끊겨 503이 날 수 있다.
     unawaited(_restoreTodayCare().then((_) => _restoreActivities()));
-    if (_homeWeekService != null) unawaited(_restoreHomeWeekContext());
+    // 09-25: 주차 안내는 /routine/today 응답의 home 블록에도 들어 있다. 루틴을 받을 상황이면
+    // /routine/home을 따로 부르지 않고, 루틴이 없거나 안내가 비어 있을 때만 _ensureWeekGuide가 부른다.
     if (_todayCareStore.hasTodayCare || AppConfig.previewMode) {
       unawaited(_routineController.loadToday());
+    } else {
+      _ensureWeekGuide();
     }
+  }
+
+  /// 루틴에서 주차 안내를 못 얻은 경우에만 /routine/home을 부른다.
+  void _ensureWeekGuide() {
+    if (_homeWeekService == null ||
+        _homeWeekContext != null ||
+        _homeWeekLoading ||
+        _homeWeekLoadFailed) {
+      return;
+    }
+    if (_routineController.state == RoutineViewState.loading) return;
+    final plan = _routineController.plan;
+    if (plan != null && plan.weekNotes.isNotEmpty) return;
+    unawaited(_restoreHomeWeekContext());
   }
 
   Future<void> _restoreTodayCare() async {
@@ -159,7 +176,10 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
     super.dispose();
   }
 
-  void _refresh() => setState(() {});
+  void _refresh() {
+    setState(() {});
+    _ensureWeekGuide();
+  }
 
   void _onTodayCareChanged() {
     if ((_todayCareStore.hasTodayCare || AppConfig.previewMode) &&

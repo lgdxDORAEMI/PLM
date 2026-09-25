@@ -99,6 +99,28 @@ void main() {
       'GET /api/v1/care/conditions/2026-09-13',
     ]);
   });
+
+  test('기록이 없는 날은 폴백하지 않고 바로 비어 있다고 알린다', () async {
+    // 09-25: 기록 없는 날을 404로 주면 구버전 백엔드와 구분되지 않아 폴백 3회가 더 나갔다.
+    final requests = <String>[];
+    final client = ApiClient(
+      baseUrl: 'https://example.test',
+      httpClient: MockClient((request) async {
+        requests.add('${request.method} ${request.url.path}');
+        return http.Response(
+          jsonEncode({'condition': null, 'report': null}),
+          200,
+        );
+      }),
+    );
+
+    final record = await ApiRecordService(
+      client: client,
+    ).fetchCalendarRecord(DateTime(2026, 9, 13));
+
+    expect(record, isNull);
+    expect(requests, ['GET /api/v1/care/calendar/days/2026-09-13']);
+  });
 }
 
 ApiRecordService _serviceWithCondition(Map<String, dynamic> condition) {
