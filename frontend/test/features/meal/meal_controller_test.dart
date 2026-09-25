@@ -109,6 +109,30 @@ void main() {
     );
   });
 
+  test('상세 화면에서 메뉴를 적용해도 목록 화면 새로고침(initial:false)은 상세로 안 넘어간다', () async {
+    final listController = MealGuideController(
+      service: const MockMealService(),
+      store: store,
+    );
+    addTearDown(listController.dispose);
+    await listController.load();
+    expect(listController.showDetails, isFalse);
+
+    final detailController = MealGuideController(
+      service: const MockMealService(),
+      store: store,
+      initialPeriod: MealPeriod.dinner,
+    );
+    addTearDown(detailController.dispose);
+    await detailController.load();
+    await detailController.acceptSelected();
+    expect(store.appliedRecommendation, isNotNull);
+
+    // 목록 화면(A)이 상세 화면(B)에서 돌아와 다시 load()를 부르는 경우를 재현한다.
+    await listController.load(initial: false);
+    expect(listController.showDetails, isFalse);
+  });
+
   test('대체 메뉴를 적용하면 Meal Store에 선택 결과를 보관한다', () async {
     final current = MockMealService.guide.recommendationFor(
       MealPeriod.breakfast,

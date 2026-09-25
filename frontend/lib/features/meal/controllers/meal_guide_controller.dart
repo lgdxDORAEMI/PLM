@@ -83,7 +83,13 @@ class MealGuideController extends ChangeNotifier {
   }
 
   /// Mock/API 교체와 무관하게 화면은 동일한 Loading/Ready/Error 상태를 사용한다.
-  Future<void> load() async {
+  ///
+  /// [initial]이 false면 데이터만 새로고침하고 [_showDetails]는 건드리지 않는다.
+  /// 목록 화면(A)이 상세 화면(B)에서 돌아와 다시 load()를 부를 때 쓴다 —
+  /// true로 두면 B에서 방금 적용한 store.appliedRecommendation 때문에 A가
+  /// 자기도 모르게 상세 화면으로 되돌아가버려, 뒤로가기를 두 번 눌러야
+  /// 목록이 보이는 버그가 생긴다.
+  Future<void> load({bool initial = true}) async {
     _state = MealGuideViewState.loading;
     notifyListeners();
     try {
@@ -101,7 +107,9 @@ class MealGuideController extends ChangeNotifier {
       if (applied != null) {
         _selectedRecommendations[applied.period] = applied;
       }
-      _showDetails = initialPeriod != null || applied != null;
+      if (initial) {
+        _showDetails = initialPeriod != null || applied != null;
+      }
       _state = MealGuideViewState.ready;
     } on ApiException catch (error) {
       _state = switch (error.statusCode) {

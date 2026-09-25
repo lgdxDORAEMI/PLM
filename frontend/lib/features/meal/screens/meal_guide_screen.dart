@@ -260,7 +260,7 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
 
   Future<void> _openMealDetail(MealPeriod period) async {
     await Navigator.pushNamed(context, RouteNames.mealDetail(period.name));
-    if (mounted) await _controller.load();
+    if (mounted) await _controller.load(initial: false);
   }
 
   void _handleBack() {
