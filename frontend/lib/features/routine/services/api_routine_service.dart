@@ -33,6 +33,22 @@ class ApiRoutineService implements RoutineService {
 
   static void invalidateCache() => _cachedToday = null;
 
+  /// 상세 화면의 실행 결과를 홈 캐시에 즉시 반영해 하단 홈 이동 시 이전 진행도가 보이지 않게 한다.
+  static RoutineStatus? updateCachedItemStatus(
+    String itemId,
+    RoutineStatus status,
+  ) {
+    final cached = cachedToday;
+    if (cached == null) return null;
+    final index = cached.items.indexWhere((item) => item.id == itemId);
+    if (index < 0) return null;
+    final previous = cached.items[index].status;
+    final items = [...cached.items];
+    items[index] = items[index].copyWith(status: status);
+    _cachedToday = cached.copyWith(items: items);
+    return previous;
+  }
+
   @override
   Future<DailyRoutinePlan> fetchToday({bool forceRefresh = false}) async {
     final cached = _generatedToday;

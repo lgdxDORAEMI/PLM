@@ -7,6 +7,8 @@ import 'package:plm_frontend/core/network/api_client.dart';
 import 'package:plm_frontend/features/condition/data/api_condition_repository.dart';
 import 'package:plm_frontend/features/condition/models/condition_draft.dart';
 import 'package:plm_frontend/features/condition/services/api_planned_activity_service.dart';
+import 'package:plm_frontend/features/health/services/api_health_guide_service.dart';
+import 'package:plm_frontend/features/health/services/health_guide_service.dart';
 import 'package:plm_frontend/features/routine/services/api_routine_service.dart';
 import 'package:plm_frontend/features/routine/models/daily_routine.dart';
 
@@ -130,5 +132,38 @@ void main() {
     expect(plan.caution, '무거운 물건은 주의해주세요');
     expect(cachedPlan, same(plan));
     expect(paths, hasLength(requestCount));
+
+    final statusFuture = ApiHealthGuideService(
+      client: client,
+    ).setStatus('saved-health-1', HealthExecutionStatus.completed);
+    final updatedHealth = ApiRoutineService.cachedToday!.items.firstWhere(
+      (item) => item.id == 'saved-health-1',
+    );
+    expect(updatedHealth.status, RoutineStatus.completed);
+    await statusFuture;
+    expect(
+      paths.last,
+      'PUT /api/v1/care/routine-items/saved-health-1/execution',
+    );
+
+    final failingService = ApiHealthGuideService(
+      client: ApiClient(
+        baseUrl: 'http://localhost:8000',
+        httpClient: MockClient((_) async => http.Response('{}', 500)),
+      ),
+    );
+    await expectLater(
+      failingService.setStatus('saved-health-1', HealthExecutionStatus.skipped),
+      throwsA(isA<ApiException>()),
+    );
+    final rolledBackHealth = ApiRoutineService.cachedToday!.items.firstWhere(
+      (item) => item.id == 'saved-health-1',
+    );
+    expect(rolledBackHealth.status, RoutineStatus.completed);
+
+    await ApiHealthGuideService(
+      client: client,
+    ).setStatus('new-health-item', HealthExecutionStatus.completed);
+    expect(ApiRoutineService.cachedToday, isNull);
   });
 }

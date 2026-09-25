@@ -24,6 +24,17 @@ class RoutineItem {
   final String? time;
   final String? bodyArea;
   final bool countsTowardProgress;
+
+  RoutineItem copyWith({RoutineStatus? status}) => RoutineItem(
+    id: id,
+    title: title,
+    description: description,
+    type: type,
+    status: status ?? this.status,
+    time: time,
+    bodyArea: bodyArea,
+    countsTowardProgress: countsTowardProgress,
+  );
 }
 
 class DailyRoutinePlan {
@@ -50,4 +61,14 @@ class DailyRoutinePlan {
 
   /// Backend home.caution: 오늘의 팁(AI)이 있으면 그 문장, 없으면 주차별 주의 문구.
   final String? caution;
+
+  DailyRoutinePlan copyWith({List<RoutineItem>? items}) => DailyRoutinePlan(
+    date: date,
+    updatedLabel: updatedLabel,
+    items: items ?? this.items,
+    homeCards: homeCards,
+    isBackendFallback: isBackendFallback,
+    weekNotes: weekNotes,
+    caution: caution,
+  );
 }
