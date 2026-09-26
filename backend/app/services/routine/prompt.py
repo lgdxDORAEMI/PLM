@@ -22,7 +22,8 @@ from app.services.routine.meal_catalog import load_meal_catalog, meal_catalog_pr
 # 2026-09-24.1: 수면 공기청정기 실기기 제어 — value/options를 팀이 확정한 4종으로 안내(강제는 service.validate가 한다)
 # 2026-09-25.2: 건강 부위(bodyArea·loads[].area)를 코드 5종으로 고정(화면에 "waist"가 그대로 노출되던 문제)
 # 2026-09-25.3: 통증 3점 이상인 모든 부위, 없으면 전신을 건강 집중 항목으로 생성
-PROMPT_VERSION = "2026-09-25.3"
+# 2026-09-26.1: 식사 cautions를 끼니마다 1개 필수로(화면 '오늘 조심할 것'이 늘 비어 있던 문제)
+PROMPT_VERSION = "2026-09-26.1"
 WEEK_GUIDE_PROMPT_VERSION = "2026-09-25.1"
 CATEGORIES = ("meal", "household", "health", "sleep")
 
@@ -196,8 +197,12 @@ SYSTEM_PROMPT = """당신은 임산부의 하루 생활 루틴을 설계하는 �
 규칙:
 - 출력은 주어진 JSON 스키마만. 한국어.
 - meal: 아침(breakfast)·점심(lunch)·저녁(dinner)·밤(snack) 각 1개, 반드시 4개. 밤은 가벼운 간식이나 늦은 저녁이다. 사용자 메시지의 '선택 가능한 식사 메뉴'에서 각 period에 속한 title을 정확히 하나 골라 쓰며 임의 메뉴명을 만들지 않는다. 금지(exclude) 재료는 절대 포함하지 않는다. 제한(limit)은 양을 줄이고 이유를 적는다.
-- meal 분량 제한(응답 속도): title 20자 이내, reason·evidence는 각각 한 문장(60자 이내), nutritionTags 3개 이내,
-  cautions는 꼭 필요할 때만 1개(없으면 빈 배열). 같은 내용을 여러 항목에 반복하지 않는다.
+- meal 분량 제한(응답 속도): title 20자 이내, reason·evidence는 각각 한 문장(60자 이내), nutritionTags 3개 이내.
+  같은 내용을 여러 항목에 반복하지 않는다.
+- meal cautions: 끼니마다 정확히 1개를 채운다(빈 배열 금지) — 화면의 '오늘 조심할 것'에 그대로 나간다.
+  title은 조심할 대상 이름 12자 이내(예: 카페인, 찬 음식, 과식), description은 이유와 허용 범위를 한 문장(50자 이내)으로
+  적는다(예: 속이 쓰릴 수 있어요. 하루 한 잔까지 괜찮아요). badge는 '주의' 또는 '제한' 중 하나.
+  무조건 금지로 쓰지 않고, 진단·수치·약 이름은 쓰지 않는다. 끼니마다 다른 내용을 쓴다.
 - household: 사용자가 고른 예정 활동을 각각 owner(self=직접, appliance=가전, partner=가족)로 분류한다. 금지 가사는 self로 두지 않는다.
 - household: planned_activities의 각 항목({code, label})마다 1개. item_key는 `household:<code>`(예: household:laundry), 직접 입력(code=custom)은 household:custom. title·설명은 label을 기준으로 쓴다.
 - health: 허리·골반·다리·손목 중 통증이 3 이상인 모든 부위를 각각 포함한다. 모두 3 미만이면 health:whole 전신 스트레칭을 포함한다. 금지 활동은 넣지 않는다. 5~15분 내 활동.

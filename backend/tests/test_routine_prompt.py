@@ -89,5 +89,8 @@ class MealOutputLimitTest(unittest.TestCase):
     def test_meal_limits_in_system_prompt(self) -> None:
         from app.services.routine.prompt import SYSTEM_PROMPT
 
-        for phrase in ("title 20자 이내", "60자 이내", "nutritionTags 3개 이내", "cautions는 꼭 필요할 때만 1개"):
+        for phrase in ("title 20자 이내", "60자 이내", "nutritionTags 3개 이내"):
             self.assertIn(phrase, SYSTEM_PROMPT)
+        # 09-26: cautions는 분량 제한 대상이 아니라 끼니마다 1개 필수다
+        # (화면 '오늘 조심할 것'이 늘 비어 있었다).
+        self.assertIn("끼니마다 정확히 1개를 채운다(빈 배열 금지)", SYSTEM_PROMPT)
