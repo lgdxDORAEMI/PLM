@@ -116,17 +116,17 @@ class _MealGuideScreenState extends State<MealGuideScreen> {
 
   Widget _buildPeriodSelection() {
     final data = _controller.data!;
+    final current = _controller.periodSummaries.firstWhere(
+      (p) => p.isCurrent,
+      orElse: () => data.periods.first,
+    );
     return ListView(
       key: const ValueKey('meal-period-list'),
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
       children: [
-        _MealGreeting(data: data),
+        _MealGreeting(data: data, period: current.period),
         const SizedBox(height: AppSpacing.xxl),
-        _PeriodHeader(
-          currentLabel: _controller.periodSummaries
-              .firstWhere((p) => p.isCurrent, orElse: () => data.periods.first)
-              .label,
-        ),
+        _PeriodHeader(currentLabel: current.label),
         const SizedBox(height: AppSpacing.lg),
         LayoutBuilder(
           builder: (context, constraints) {
@@ -338,9 +338,12 @@ class _RecommendationActions extends StatelessWidget {
 }
 
 class _MealGreeting extends StatelessWidget {
-  const _MealGreeting({required this.data});
+  const _MealGreeting({required this.data, required this.period});
 
   final MealGuideData data;
+
+  /// "지금은 ○○이지만" 문구와 같은 현재 끼니로 아이콘을 고른다.
+  final MealPeriod period;
 
   @override
   Widget build(BuildContext context) {
@@ -381,7 +384,28 @@ class _MealGreeting extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.wb_sunny, size: 55, color: AppColors.warning),
+            switch (period) {
+              MealPeriod.breakfast => const Icon(
+                Icons.wb_twilight,
+                size: 55,
+                color: AppColors.warning,
+              ),
+              MealPeriod.lunch => const Icon(
+                Icons.wb_sunny,
+                size: 55,
+                color: AppColors.warning,
+              ),
+              MealPeriod.dinner => const Icon(
+                Icons.nights_stay,
+                size: 55,
+                color: AppColors.primary800,
+              ),
+              MealPeriod.snack => const Icon(
+                Icons.dark_mode,
+                size: 55,
+                color: AppColors.primary800,
+              ),
+            },
           ],
         ),
       ),

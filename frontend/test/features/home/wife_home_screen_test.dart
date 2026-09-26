@@ -47,11 +47,11 @@ void main() {
     final hero = find.byKey(const ValueKey('home-week-hero'));
     expect(hero, findsOneWidget);
     expect(
-      find.ancestor(of: find.text('주차 안내 첫 번째'), matching: hero),
+      find.ancestor(of: _findWeekText('주차 안내 첫 번째'), matching: hero),
       findsOneWidget,
     );
-    expect(find.text('주차 안내 두 번째'), findsOneWidget);
-    expect(find.text('주차 주의사항'), findsOneWidget);
+    expect(_findWeekText('주차 안내 두 번째'), findsOneWidget);
+    expect(_findWeekText('주차 주의사항'), findsOneWidget);
     expect(find.byKey(const ValueKey('home-week-tip')), findsNothing);
   });
 
@@ -171,3 +171,8 @@ class _EmptyHomeWeekService implements HomeWeekService {
   Future<HomeWeekContext> fetch() async =>
       const HomeWeekContext(week: null, notes: [], caution: null);
 }
+
+/// 주차 히어로는 어절 단위 줄바꿈을 위해 글자 사이에 U+2060을 넣으므로 이를 빼고 비교한다.
+Finder _findWeekText(String text) => find.byWidgetPredicate(
+  (widget) => widget is Text && widget.data?.replaceAll('\u2060', '') == text,
+);
