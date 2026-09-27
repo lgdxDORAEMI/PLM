@@ -45,6 +45,29 @@ void main() {
     );
   });
 
+  test('주차는 로그인한 본인 프로필이 아니라 서버가 준 캘린더 주인 기준 값을 쓴다', () async {
+    // 09-27: 남편은 임신 프로필이 없어 본인 기준으로 계산하면 0주차가 떴다.
+    final client = ApiClient(
+      baseUrl: 'https://example.test',
+      httpClient: MockClient(
+        (_) async => http.Response(
+          jsonEncode({
+            'condition': _normalCondition,
+            'report': _emptyReport,
+            'pregnancy_week': 20,
+          }),
+          200,
+        ),
+      ),
+    );
+
+    final record = await ApiRecordService(
+      client: client,
+    ).fetchCalendarRecord(DateTime(2026, 9, 13));
+
+    expect(record?.pregnancyWeek, 20);
+  });
+
   test('Daily 리포트 조회는 기존 리포트와 컨디션 API 계약을 유지한다', () async {
     final requests = <String>[];
     final client = ApiClient(

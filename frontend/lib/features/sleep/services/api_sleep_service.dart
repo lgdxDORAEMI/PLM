@@ -23,7 +23,11 @@ class ApiSleepService implements SleepService {
   Future<void> setCompleted(String itemId, bool completed) async {
     await _client.put(
       '/api/v1/care/routine-items/${Uri.encodeComponent(itemId)}/execution',
-      {'status': completed ? 'completed' : 'scheduled'},
+      // '수면 환경 전체 실행'(가전)에서만 완료하므로 가전 실행으로 기록한다.
+      {
+        'status': completed ? 'completed' : 'scheduled',
+        if (completed) 'by_appliance': true,
+      },
     );
   }
 

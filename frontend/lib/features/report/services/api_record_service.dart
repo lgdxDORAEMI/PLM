@@ -47,6 +47,7 @@ class ApiRecordService implements RecordService {
       date,
       Map<String, dynamic>.from(report),
       Map<String, dynamic>.from(condition),
+      pregnancyWeek: (response['pregnancy_week'] as num?)?.toInt(),
     );
   }
 
@@ -70,11 +71,14 @@ class ApiRecordService implements RecordService {
   @override
   Future<void> shareRecord(DailyRecord record) => saveRecord(record);
 
+  /// [pregnancyWeek]는 서버가 캘린더 주인(아내) 기준으로 계산한 값이다. 없으면(구버전)
+  /// 로그인한 본인 프로필로 계산한다 — 남편은 프로필이 없어 0이 됐던 경로다.
   DailyRecord _fromResponse(
     DateTime date,
     Map<String, dynamic> report,
-    Map<String, dynamic>? condition,
-  ) {
+    Map<String, dynamic>? condition, {
+    int? pregnancyWeek,
+  }) {
     final rawRoutines = report['routines'];
     final routines = rawRoutines is List
         ? rawRoutines
@@ -106,7 +110,10 @@ class ApiRecordService implements RecordService {
         (report['appliance_executions'] as num?)?.toInt() ?? 0;
     return DailyRecord(
       date: date,
-      pregnancyWeek: ProfileStore.instance.profile?.pregnancyWeekAt(date) ?? 0,
+      pregnancyWeek:
+          pregnancyWeek ??
+          ProfileStore.instance.profile?.pregnancyWeekAt(date) ??
+          0,
       conditionLevel: _conditionLevel(condition),
       conditionSummary: _conditionSummary(condition),
       completedRoutines: (report['completed_routines'] as num?)?.toInt() ?? 0,

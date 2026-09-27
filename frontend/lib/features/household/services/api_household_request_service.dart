@@ -105,7 +105,8 @@ class ApiHouseholdRequestService extends ChangeNotifier
     try {
       await _client.put(
         '/api/v1/care/routine-items/${Uri.encodeComponent(taskId)}/execution',
-        {'status': 'completed'},
+        // 완료자를 appliance로 저장해 리포트의 가전 실행 수에 잡히게 한다.
+        {'status': 'completed', 'by_appliance': true},
       );
     } on Object {
       if (previous != null) {

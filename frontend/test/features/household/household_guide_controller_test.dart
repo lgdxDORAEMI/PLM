@@ -269,6 +269,10 @@ void main() {
     await controller.markApplianceDone('laundry-item');
 
     expect(put?.url.path, '/api/v1/care/routine-items/laundry-item/execution');
-    expect(jsonDecode(put!.body), {'status': 'completed'});
+    // 완료자가 appliance로 저장돼야 리포트의 가전 실행 수에 잡힌다.
+    expect(jsonDecode(put!.body), {
+      'status': 'completed',
+      'by_appliance': true,
+    });
   });
 }

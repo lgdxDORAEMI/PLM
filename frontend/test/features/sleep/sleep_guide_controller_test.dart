@@ -1,5 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:plm_frontend/core/network/api_client.dart';
 import 'package:plm_frontend/features/sleep/controllers/sleep_guide_controller.dart';
+import 'package:plm_frontend/features/sleep/services/api_sleep_service.dart';
 import 'package:plm_frontend/features/sleep/models/sleep_guide.dart';
 import 'package:plm_frontend/features/sleep/services/mock_sleep_service.dart';
 import 'package:plm_frontend/features/sleep/services/sleep_service.dart';
@@ -27,7 +33,10 @@ class _FakeSleepService implements SleepService {
         );
 
   @override
-  Future<void> updateEnvironment(String itemId, Map<String, dynamic> values) async {}
+  Future<void> updateEnvironment(
+    String itemId,
+    Map<String, dynamic> values,
+  ) async {}
 
   @override
   Future<void> setCompleted(String itemId, bool completed) async {
@@ -50,6 +59,28 @@ class _FakeSleepService implements SleepService {
 }
 
 void main() {
+  test('수면 환경 실행 완료는 가전 실행으로 기록한다', () async {
+    // 09-27: 완료자가 wife로만 저장돼 리포트의 가전 실행 수가 늘 0이었다.
+    http.Request? put;
+    final service = ApiSleepService(
+      client: ApiClient(
+        baseUrl: 'http://localhost:8000',
+        httpClient: MockClient((request) async {
+          put = request;
+          return http.Response('{}', 200);
+        }),
+      ),
+    );
+
+    await service.setCompleted('sleep-item', true);
+
+    expect(put?.url.path, '/api/v1/care/routine-items/sleep-item/execution');
+    expect(jsonDecode(put!.body), {
+      'status': 'completed',
+      'by_appliance': true,
+    });
+  });
+
   test('환경 추천값을 local 상태에서 수정한다', () async {
     final controller = SleepGuideController(service: const MockSleepService());
     addTearDown(controller.dispose);
