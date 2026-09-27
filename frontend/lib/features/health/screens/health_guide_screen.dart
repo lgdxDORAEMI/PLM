@@ -134,12 +134,28 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
                           ),
                           const SizedBox(height: AppSpacing.md),
                         ],
-                        const SizedBox(height: AppSpacing.sm),
-                        _BodyAreaSelector(
-                          areas: _controller.otherAreas,
-                          selectedArea: _controller.selectedArea,
-                          onSelected: _selectOtherArea,
-                        ),
+                        if (_controller.otherAreas.isNotEmpty) ...[
+                          const SizedBox(height: AppSpacing.sm),
+                          _BodyAreaSelector(
+                            areas: _controller.otherAreas,
+                            selectedArea: _controller.otherArea,
+                            onSelected: _controller.selectOtherArea,
+                          ),
+                          if (_controller.otherActivity case final other?) ...[
+                            const SizedBox(height: AppSpacing.md),
+                            MovementGuideCard(
+                              activity: other,
+                              featured: true,
+                              showCompletion: false,
+                              completed: false,
+                              skipped: false,
+                              onOpen: () =>
+                                  _showGuide(other, allowCompletion: false),
+                              onComplete: () {},
+                              onSkip: () {},
+                            ),
+                          ],
+                        ],
                       ],
                     ),
                   ],
@@ -259,8 +275,6 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
 
   /// 집중 부위를 선택하면 같은 화면의 활동 카드 영역을 해당 부위로 바꾼다.
   void _openAreaGuide(String area) => _controller.selectArea(area);
-
-  void _selectOtherArea(String area) => _controller.selectArea(area);
 
   Future<void> _showGuide(
     BodyCareActivity activity, {
@@ -511,7 +525,7 @@ class _BodyAreaSelector extends StatelessWidget {
   });
 
   final List<String> areas;
-  final String selectedArea;
+  final String? selectedArea;
   final ValueChanged<String> onSelected;
 
   @override

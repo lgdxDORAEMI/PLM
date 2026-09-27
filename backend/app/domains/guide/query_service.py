@@ -120,7 +120,12 @@ class GuideQueryService:
                     completed_at=row.get("completed_at"),
                 )
             )
-        return GuideResponse(date=target_date, category=category, items=items)
+        return GuideResponse(
+            date=target_date,
+            category=category,
+            items=items,
+            area_videos=_area_videos(health_videos) if category == RoutineCategory.HEALTH else None,
+        )
 
     def _meal_replacements(
         self, user_id: str, item_rows: list[dict[str, Any]]
@@ -210,6 +215,12 @@ def _normalize_payload(
 
 
 _BODY_AREA_KO = {code: label for label, code in BODY_AREA_LABELS.items()}
+_OTHER_AREA_CODES = ("waist", "pelvis", "leg", "wrist")
+
+
+def _area_videos(videos: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    """'다른 부위 활동 보기' 칩용. 전신은 집중 부위일 때만 쓰므로 뺀다."""
+    return {_body_area_ko(code): videos[code] for code in _OTHER_AREA_CODES if code in videos}
 
 
 def _body_area_ko(value: Any) -> Any:

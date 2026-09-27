@@ -367,6 +367,7 @@
 - Use Case: UC3, UC11
 - Request: 쿼리 `date`(기본 오늘, KST)
 - Response: `GuideResponse { date, category: meal|household|health|sleep, items: [{ item_key, title, description?, payload: object, status: scheduled|completed|skipped, completed_by?: wife|husband|appliance, completed_at? }] }`
+- `health`만 `area_videos?: { 허리|골반|다리|손목: video }`를 추가로 준다. '다른 부위 활동 보기' 칩용 부위별 영상 카탈로그(`health_exercise_videos`)이며 루틴 항목이 아니라 진행도와 무관하다. 집중 부위 제외는 화면이 한다.
 - Source Data: `daily_routines`(존재 확인용) + `routine_items`(category 필터, `sort_order` 정렬)
 - Authorization: 기본값
 - Error: 404(오늘 생성된 루틴 자체가 없음 — `GET /routine/today`와 동일 조건). 해당 카테고리에 항목이 0개인 것은 오류가 아니라 `items: []`로 정상 응답한다.

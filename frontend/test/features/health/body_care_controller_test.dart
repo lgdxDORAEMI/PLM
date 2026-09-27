@@ -74,10 +74,17 @@ void main() {
     expect(controller.loads.map((load) => load.area), ['허리', '골반']);
     expect(controller.loads.map((load) => load.label), ['매우 심해요', '보통이에요']);
     expect(controller.availableAreas, ['허리', '골반', '다리', '손목', '전신']);
-    expect(controller.otherAreas, ['다리', '손목', '전신']);
+    // 다른 부위 칩은 영상 카탈로그에서 집중 부위를 뺀 것이고, 전신은 칩에 없다.
+    expect(controller.otherAreas, ['다리', '손목']);
 
-    controller.selectArea('손목');
-    expect(controller.selectedActivities.single.title, '손목 이완');
+    controller.selectOtherArea('손목');
+    expect(controller.otherActivity?.video?.youtubeId, '29OhkciWEMY');
+    // 하단 칩은 상단 집중 활동을 바꾸지 않는다.
+    expect(controller.selectedArea, '허리');
+    expect(controller.selectedActivities.single.title, '허리 이완');
+
+    controller.selectOtherArea('손목');
+    expect(controller.otherActivity, isNull);
   });
 
   test('모든 통증이 보통 미만이면 전신 스트레칭을 기본 추천한다', () async {
@@ -191,7 +198,7 @@ void main() {
     expect(dialogComplete.onPressed, isNull);
   });
 
-  testWidgets('전신 운동 영상은 재생 시간과 대상 임신 분기를 표시한다', (tester) async {
+  testWidgets('다른 부위 칩은 상단 활동을 바꾸지 않고 칩 아래에 영상 카드만 띄운다', (tester) async {
     tester.view.physicalSize = const Size(1200, 1200);
     tester.view.devicePixelRatio = 1;
     addTearDown(() {
@@ -205,38 +212,33 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    final wholeChip = find.widgetWithText(ChoiceChip, '전신');
-    await tester.tap(wholeChip);
-    await tester.pumpAndSettle();
-    final wholeActivity = find.byKey(
-      const ValueKey('health-activity-whole-body'),
-    );
-    await tester.ensureVisible(wholeActivity);
-    await tester.pumpAndSettle();
-    expect(
-      find.byKey(const ValueKey('body-complete-whole-body')),
-      findsNothing,
-    );
-    await tester.tap(
-      find.descendant(
-        of: wholeActivity,
-        matching: find.byIcon(Icons.play_arrow),
-      ),
-    );
+    expect(find.widgetWithText(ChoiceChip, '전신'), findsNothing);
+    await tester.tap(find.widgetWithText(ChoiceChip, '손목'));
     await tester.pumpAndSettle();
 
-    expect(find.text('임산부 전신 저강도 운동'), findsOneWidget);
-    expect(find.text('25분 · 임신 1·2·3분기'), findsOneWidget);
+    expect(find.text('허리에 맞춘 오늘의 활동'), findsOneWidget);
+    final other = find.byKey(const ValueKey('health-activity-other-손목'));
+    await tester.ensureVisible(other);
+    await tester.pumpAndSettle();
     expect(
-      // 09-25: 팝업도 재생 대신 썸네일. 카드에도 썸네일이 있어 팝업 안에서 찾는다.
+      tester.getTopLeft(other).dy,
+      greaterThan(tester.getTopLeft(find.widgetWithText(ChoiceChip, '손목')).dy),
+    );
+    expect(find.byKey(const ValueKey('body-complete-other-손목')), findsNothing);
+
+    await tester.tap(
+      find.descendant(of: other, matching: find.byIcon(Icons.play_arrow)),
+    );
+    await tester.pumpAndSettle();
+    expect(
       find.descendant(
         of: find.byType(Dialog),
-        matching: find.byType(VideoThumbnail),
+        matching: find.text('임신 중 손목·손 저림 완화 운동'),
       ),
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('health-video-complete-whole-body')),
+      find.byKey(const ValueKey('health-video-complete-other-손목')),
       findsNothing,
     );
   });
@@ -258,9 +260,17 @@ class _GuideService implements HealthGuideService {
   const _GuideService();
 
   @override
-  Future<BodyCareGuideData> fetchGuide() async => const BodyCareGuideData(
-    loads: [],
-    activities: [
+  Future<BodyCareGuideData> fetchGuide() async => BodyCareGuideData(
+    areaVideos: {
+      for (final area in ['허리', '골반', '다리', '손목'])
+        area: HealthExerciseVideo(
+          title: area,
+          provider: '',
+          youtubeId: area == '손목' ? '29OhkciWEMY' : 'aaaaaaaaaaa',
+        ),
+    },
+    loads: const [],
+    activities: const [
       BodyCareActivity(
         id: 'waist',
         area: '허리',

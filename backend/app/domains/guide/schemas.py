@@ -29,3 +29,6 @@ class GuideResponse(BaseModel):
     category: RoutineCategory
     items: list[GuideItem]
     appliance_connection_status: str | None = None
+    # 건강 가이드 '다른 부위 활동 보기'용 부위별 영상(허리·골반·다리·손목, 한글 키).
+    # 루틴 항목이 아니라 진행도와 무관하다. 집중 부위 제외는 화면이 한다.
+    area_videos: dict[str, dict[str, Any]] | None = None

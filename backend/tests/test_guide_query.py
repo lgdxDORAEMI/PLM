@@ -232,6 +232,33 @@ class GuideQueryServiceTest(unittest.TestCase):
 
         self.assertEqual(guide.items[0].payload["video"]["youtube_id"], "33LLeqyVbG0")
         self.assertEqual(guide.items[0].payload["guide"], "천천히 움직여요.")
+        self.assertEqual(guide.area_videos["허리"]["youtube_id"], "33LLeqyVbG0")
+
+    def test_health_area_videos_list_four_body_parts_without_whole(self) -> None:
+        from app.domains.guide.schemas import RoutineCategory
+
+        item = {
+            **meal_item(0, "전신 스트레칭"),
+            "category": "health",
+            "item_key": "health:whole",
+            "payload": {"bodyArea": "whole"},
+        }
+        client = FakeSupabaseClient(
+            routines=[{"user_id": "wife-1", "date": TARGET_DATE.isoformat(), "id": "r1"}],
+            items=[item],
+            videos=[
+                {"pain_type": part, "routine_part": part, "title_ko": part, "provider": "p",
+                 "youtube_id": f"{part:_<11}"[:11], "duration": None, "target": None,
+                 "is_active": True}
+                for part in ("waist", "pelvis", "leg", "wrist", "whole")
+            ],
+        )
+
+        guide = GuideQueryService(client).get_guide(
+            "wife-1", TARGET_DATE, RoutineCategory.HEALTH
+        )
+
+        self.assertEqual(list(guide.area_videos), ["허리", "골반", "다리", "손목"])
 
 
 class GuideApiTest(unittest.IsolatedAsyncioTestCase):

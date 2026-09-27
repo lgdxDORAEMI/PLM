@@ -19,6 +19,7 @@ class BodyCareController extends ChangeNotifier {
   BodyCareViewState _state = BodyCareViewState.loading;
   BodyCareGuideData? _guide;
   String? _selectedArea;
+  String? _otherArea;
 
   BodyCareViewState get state => _state;
   List<BodyLoad> get loads {
@@ -44,10 +45,30 @@ class BodyCareController extends ChangeNotifier {
       loads.isEmpty ? const {'전신'} : loads.map((load) => load.area).toSet();
   List<BodyLoad> get focusLoads =>
       loads.isEmpty ? const [BodyLoad('전신', '추천 활동', 1)] : loads;
-  List<String> get otherAreas => availableAreas
+
+  /// 집중 부위가 아닌 부위의 영상 칩. 상단 집중 활동과 따로 선택한다.
+  List<String> get otherAreas => (_guide?.areaVideos.keys ?? const <String>[])
       .where((area) => !focusAreas.contains(area))
       .toList(growable: false);
   String get selectedArea => _selectedArea ?? '';
+  String? get otherArea => _otherArea;
+
+  /// 하단 칩 아래에 띄울 영상 카드. 완료·오늘 안하기 없이 보기만 한다.
+  BodyCareActivity? get otherActivity {
+    final area = _otherArea;
+    final video = area == null ? null : _guide?.areaVideos[area];
+    if (area == null || video == null) return null;
+    return BodyCareActivity(
+      id: 'other-$area',
+      area: area,
+      title: video.title,
+      description: video.provider,
+      guide: '',
+      video: video,
+      isFocus: false,
+    );
+  }
+
   bool isCompleted(String id) =>
       _statuses[id] == HealthExecutionStatus.completed;
   bool isSkipped(String id) => _statuses[id] == HealthExecutionStatus.skipped;
@@ -79,6 +100,7 @@ class BodyCareController extends ChangeNotifier {
             ),
           ),
         );
+      _otherArea = null;
       if (activities.isEmpty) {
         _state = BodyCareViewState.empty;
       } else {
@@ -108,6 +130,12 @@ class BodyCareController extends ChangeNotifier {
   void selectArea(String area) {
     if (_selectedArea == area) return;
     _selectedArea = area;
+    notifyListeners();
+  }
+
+  /// 같은 칩을 다시 누르면 카드를 닫는다. 상단 집중 활동(selectedArea)은 바꾸지 않는다.
+  void selectOtherArea(String area) {
+    _otherArea = _otherArea == area ? null : area;
     notifyListeners();
   }
 

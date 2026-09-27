@@ -56,7 +56,11 @@ class HealthExerciseVideo {
 }
 
 class BodyCareGuideData {
-  const BodyCareGuideData({required this.loads, required this.activities});
+  const BodyCareGuideData({
+    required this.loads,
+    required this.activities,
+    this.areaVideos = const {},
+  });
 
   factory BodyCareGuideData.fromJson(Map<String, dynamic> json) {
     final items = (json['items'] as List?)?.whereType<Map>() ?? const [];
@@ -103,14 +107,26 @@ class BodyCareGuideData {
         }
       }
     }
+    final areaVideos = json['area_videos'];
     return BodyCareGuideData(
       loads: loadsByArea.values.toList(growable: false),
       activities: activities,
+      areaVideos: {
+        if (areaVideos is Map)
+          for (final entry in areaVideos.entries)
+            if (entry.value is Map)
+              entry.key.toString(): HealthExerciseVideo.fromJson(
+                (entry.value as Map).cast<String, dynamic>(),
+              ),
+      },
     );
   }
 
   final List<BodyLoad> loads;
   final List<BodyCareActivity> activities;
+
+  /// '다른 부위 활동 보기' 칩용 부위별 영상. 루틴 항목이 아니라 진행도와 무관하다.
+  final Map<String, HealthExerciseVideo> areaVideos;
 }
 
 abstract final class BodyCareMockData {
@@ -197,6 +213,12 @@ abstract final class BodyCareMockData {
       ),
     ),
   ];
+
+  static final areaVideos = {
+    for (final activity in activities)
+      if (activity.video != null && activity.area != '전신')
+        activity.area: activity.video!,
+  };
 
   static List<BodyCareActivity> activitiesFor(String area) => activities
       .where((activity) => activity.area == area)
