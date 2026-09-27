@@ -77,6 +77,9 @@ class MockHouseholdRequestService implements HouseholdRequestService {
   }
 
   @override
+  Future<void> markDone(String taskId) async {}
+
+  @override
   Future<List<PartnerRequestData>> fetchAll({DateTime? date}) async {
     if (_store.requests.isEmpty) _store.request('demo-request');
     return _store.requests.toList(growable: false);

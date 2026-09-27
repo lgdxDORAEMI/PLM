@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../partner/models/partner_request.dart';
+import '../../routine/models/daily_routine.dart';
+import '../../routine/services/api_routine_service.dart';
 import '../models/household_task.dart';
 import 'household_request_service.dart';
 
@@ -91,6 +93,26 @@ class ApiHouseholdRequestService extends ChangeNotifier
     };
     notifyListeners();
     return HouseholdShareResult(requestId: id);
+  }
+
+  @override
+  Future<void> markDone(String taskId) async {
+    // 하단 홈 이동 시 이전 진행도가 보이지 않게 캐시도 같이 갱신한다(건강 가이드와 동일).
+    final previous = ApiRoutineService.updateCachedItemStatus(
+      taskId,
+      RoutineStatus.completed,
+    );
+    try {
+      await _client.put(
+        '/api/v1/care/routine-items/${Uri.encodeComponent(taskId)}/execution',
+        {'status': 'completed'},
+      );
+    } on Object {
+      if (previous != null) {
+        ApiRoutineService.updateCachedItemStatus(taskId, previous);
+      }
+      rethrow;
+    }
   }
 
   @override

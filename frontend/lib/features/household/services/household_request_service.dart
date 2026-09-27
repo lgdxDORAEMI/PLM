@@ -23,6 +23,9 @@ abstract interface class HouseholdRequestService implements Listenable {
 
   HouseholdRequestProgress? progressForTask(String requestId, String taskId);
 
+  /// 가전 '실행' 시 홈 '루틴 진행도'가 읽는 routine_items 실행 상태를 완료로 갱신한다.
+  Future<void> markDone(String taskId);
+
   /// [date]를 주면 그 날짜의 요청만 받는다(서버 필터). 가사 가이드는 오늘 것만 쓴다.
   Future<List<PartnerRequestData>> fetchAll({DateTime? date});
   Future<PartnerRequestData?> fetchRequest(String requestId);

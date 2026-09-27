@@ -248,4 +248,27 @@ void main() {
     expect(controller.tasks[2].status, HouseholdTaskStatus.shared);
     expect(controller.remainingShareableCount, 0);
   });
+
+  test('가전 실행 항목을 루틴 실행 완료로 저장해 진행도에 반영한다', () async {
+    http.Request? put;
+    final client = ApiClient(
+      baseUrl: 'http://localhost:8000',
+      httpClient: MockClient((request) async {
+        if (request.method == 'PUT') {
+          put = request;
+          return http.Response('{}', 200);
+        }
+        return http.Response('Not found', 404);
+      }),
+    );
+    final service = ApiHouseholdRequestService(client: client);
+    final controller = HouseholdGuideController(requestService: service);
+    addTearDown(controller.dispose);
+    addTearDown(service.dispose);
+
+    await controller.markApplianceDone('laundry-item');
+
+    expect(put?.url.path, '/api/v1/care/routine-items/laundry-item/execution');
+    expect(jsonDecode(put!.body), {'status': 'completed'});
+  });
 }

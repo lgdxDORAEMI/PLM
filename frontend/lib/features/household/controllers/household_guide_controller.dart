@@ -197,6 +197,12 @@ class HouseholdGuideController extends ChangeNotifier {
     }
   }
 
+  /// 가전이 대신하는 항목도 가사 루틴 항목이라, 실행 시 완료 처리해야 진행도가 오른다.
+  Future<void> markApplianceDone(String id) async {
+    await requestService.markDone(id);
+    _update(id, (task) => task.copyWith(status: HouseholdTaskStatus.done));
+  }
+
   void confirmPartnerTask(String id) {
     _update(id, (task) => task.copyWith(status: HouseholdTaskStatus.done));
   }

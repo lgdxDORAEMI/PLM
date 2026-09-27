@@ -270,12 +270,18 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
     ];
   }
 
-  /// 실제 기기 제어 없이 오늘의 로컬 실행 이력만 기록한다.
+  /// 실제 기기 제어 없이 실행 이력을 남기고 루틴 항목을 완료 처리한다.
   Future<void> _runAppliance(HouseholdTask task) async {
     ApplianceExecutionStore.instance.record(
       source: ApplianceExecutionSource.household,
       label: task.title,
     );
+    try {
+      await _controller.markApplianceDone(task.id);
+    } on Object {
+      // 가전 실행 기록은 이미 남았으니 진행도 반영 실패로 확인 다이얼로그까지 막지 않는다.
+    }
+    if (!mounted) return;
     await showAppDialog<void>(
       context: context,
       builder: (context) => AppDialog(
