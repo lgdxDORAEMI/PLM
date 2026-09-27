@@ -94,6 +94,21 @@ void main() {
     expect(find.byTooltip('프로필'), findsNothing);
   });
 
+  testWidgets("'루틴 변경' 알림은 홈 캘린더를 쌓지 않고 교체해서 연다", (tester) async {
+    // 09-27: 캘린더는 남편 홈이라 뒤로가기가 없다. 쌓아 올리면 알림으로 돌아갈 길이 막힌다.
+    await _pumpRoute(tester, RouteNames.husbandNotifications);
+    await tester.tap(
+      find.byKey(const ValueKey('notification-routine-2026-09-13')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('컨디션 캘린더'), findsOneWidget);
+    final context = tester.element(find.text('컨디션 캘린더'));
+    expect(ModalRoute.of(context)?.settings.name, RouteNames.husbandCalendar);
+    expect(Navigator.canPop(context), isFalse); // 홈이라 되돌아갈 화면이 없다
+    expect(find.byTooltip('뒤로 가기'), findsNothing);
+  });
+
   testWidgets('ThinQ 초대 검증 성공 후 남편 캘린더로 바로 진입한다', (tester) async {
     AuthSessionStore.instance.update(
       accountId: 'husband-invited',

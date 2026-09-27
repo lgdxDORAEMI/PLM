@@ -165,7 +165,15 @@ class _PartnerNotificationsScreenState extends State<PartnerNotificationsScreen>
         _routineChangedRoute(item.reportDate!),
       _ => null,
     };
-    if (route != null) Navigator.pushNamed(context, route);
+    if (route == null) return;
+    // 09-27: 캘린더는 남편 홈이라 뒤로가기가 없다. 쌓아 올리면 알림으로 돌아갈 길이
+    // 막히므로 홈으로 교체해 연다(홈 우측 종 아이콘으로 알림에 다시 들어간다).
+    // 나머지 화면은 자체 뒤로가기가 있어 그대로 쌓는다.
+    if (route == RouteNames.husbandCalendar) {
+      Navigator.pushReplacementNamed(context, route);
+      return;
+    }
+    Navigator.pushNamed(context, route);
   }
 
   String _routineChangedRoute(String date) {
