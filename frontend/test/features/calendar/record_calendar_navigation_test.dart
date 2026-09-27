@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plm_frontend/core/config/app_config.dart';
@@ -116,6 +117,53 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('홈캠 관련 주의사항'), findsNothing);
+  });
+
+  testWidgets('알림에서 밀고 들어온 남편 캘린더에는 뒤로가기가 있다', (tester) async {
+    // 09-27: '루틴 변경' 알림을 누르면 캘린더가 push되는데 뒤로가기가 없어 되돌아갈 수 없었다.
+    AuthSessionStore.instance.update(
+      accountId: 'calendar-husband',
+      roles: {ActiveRole.husband},
+      husbandLinked: true,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        initialRoute: RouteNames.partnerNotifications,
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        onGenerateInitialRoutes: AppRouter.onGenerateInitialRoutes,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+    unawaited(navigator.pushNamed(RouteNames.partnerCalendar));
+    await tester.pumpAndSettle();
+
+    expect(find.text('컨디션 캘린더'), findsOneWidget);
+    expect(find.byTooltip('뒤로 가기'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('뒤로 가기'));
+    await tester.pumpAndSettle();
+    expect(find.text('알림'), findsOneWidget);
+  });
+
+  testWidgets('캘린더가 첫 화면이면 뒤로가기를 두지 않는다', (tester) async {
+    AuthSessionStore.instance.update(
+      accountId: 'calendar-husband',
+      roles: {ActiveRole.husband},
+      husbandLinked: true,
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        initialRoute: RouteNames.partnerCalendar,
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        onGenerateInitialRoutes: AppRouter.onGenerateInitialRoutes,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('컨디션 캘린더'), findsOneWidget);
+    expect(find.byTooltip('뒤로 가기'), findsNothing);
   });
 
   testWidgets('아내 캘린더에는 홈캠 관련 주의사항 섹션이 있다', (tester) async {

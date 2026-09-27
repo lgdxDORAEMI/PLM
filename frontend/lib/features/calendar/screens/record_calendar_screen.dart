@@ -94,7 +94,9 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen>
     final isWife = widget.role == AppUserRole.wife;
     final appBar = TopAppBar(
       title: '컨디션 캘린더',
-      showBack: false,
+      // 아내는 하단 탭이라 돌아갈 곳이 없다. 남편은 알림·메뉴에서 밀고 들어오므로
+      // 되돌아갈 화면이 있을 때만 뒤로가기를 둔다(09-27).
+      showBack: !isWife && Navigator.canPop(context),
       actions: isWife ? null : _partnerActions(),
       wifeProfileAction: isWife,
       husbandMenuAction: !isWife,
