@@ -250,12 +250,6 @@ class _PartnerReportContent extends StatelessWidget {
               const SizedBox(height: AppSpacing.sm),
           ],
       ],
-      const SizedBox(height: AppSpacing.md),
-      const Text(
-        '공유에 동의한 요약 정보만 표시됩니다.',
-        textAlign: TextAlign.center,
-        style: TextStyle(color: AppColors.textSecondary),
-      ),
     ],
   );
 
