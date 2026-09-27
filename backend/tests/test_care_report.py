@@ -48,6 +48,10 @@ class FakeTable:
         self._filters[column] = value
         return self
 
+    def in_(self, column: str, values: list) -> "FakeTable":
+        self._in = (column, set(values))
+        return self
+
     def gte(self, column: str, value: str) -> "FakeTable":
         self._gte[column] = value
         return self
@@ -80,6 +84,9 @@ class FakeTable:
         for key, value in self._filters.items():
             if row.get(key) != value:
                 return False
+        in_filter = getattr(self, "_in", None)
+        if in_filter and row.get(in_filter[0]) not in in_filter[1]:
+            return False
         for key, value in self._gte.items():
             if row.get(key) is None or row[key] < value:
                 return False
@@ -128,7 +135,9 @@ class FakeSupabaseClient:
             "daily_reports": [],
             "partner_links": [],
             "household_requests": [],
+            "household_request_items": [],
             "recommendation_feedback": [],
+            "pregnancy_profiles": [],
         }
 
     def table(self, name: str) -> FakeTable:
@@ -151,10 +160,18 @@ class FakeSupabaseClient:
         row.update(overrides)
         self.tables["daily_conditions"].append(row)
 
-    def seed_household_request(self, status: str, target_date: date = TARGET_DATE) -> None:
+    def seed_household_request(
+        self, status: str, target_date: date = TARGET_DATE, item_statuses: list[str] | None = None
+    ) -> None:
+        """요청 1건과 그 항목들을 넣는다. item_statuses를 안 주면 요청 상태와 같은 항목 1개."""
+        request_id = str(uuid4())
         self.tables["household_requests"].append(
-            {"wife_user_id": USER, "date": target_date.isoformat(), "status": status}
+            {"id": request_id, "wife_user_id": USER, "date": target_date.isoformat(), "status": status}
         )
+        for item_status in item_statuses or [status]:
+            self.tables["household_request_items"].append(
+                {"request_id": request_id, "status": item_status}
+            )
 
     def seed_item(self, item_id: str, category: str, status: str = "scheduled", **overrides) -> None:
         row = {
@@ -197,6 +214,23 @@ class RecordApiTest(unittest.IsolatedAsyncioTestCase):
         # 별도 실행 로그 테이블이 아니라 routine_items 행 자체가 바뀌었는지 확인.
         stored = self.client.tables["routine_items"][0]
         self.assertEqual(stored["status"], "completed")
+
+    async def test_appliance_completion_is_counted_as_appliance_execution(self) -> None:
+        """09-27: 가전 실행도 완료자가 항상 wife로 저장돼 가전 실행 수가 늘 0이었다."""
+        app.dependency_overrides[get_partner_scope_client] = lambda: self.client
+        self.client.seed_condition()
+        self.client.seed_item("item-1", "household")
+        async with self.http() as client:
+            response = await client.put(
+                "/api/v1/care/routine-items/item-1/execution",
+                json={"status": "completed", "by_appliance": True},
+            )
+            self.assertEqual(response.json()["completed_by"], "appliance")
+            report = await client.post(
+                f"/api/v1/care/daily-reports/{TARGET_DATE.isoformat()}/preview"
+            )
+        self.assertEqual(report.status_code, 200, report.text)
+        self.assertEqual(report.json()["appliance_executions"], 1)
 
     async def test_uncompleting_clears_actor_and_timestamp(self) -> None:
         self.client.seed_item(
@@ -452,6 +486,21 @@ class ReportApiTest(unittest.IsolatedAsyncioTestCase):
             response.json()["family"], {"requested": 4, "confirmed": 3, "completed": 2}
         )
 
+    async def test_family_summary_counts_items_not_requests(self) -> None:
+        """공유 한 번에 항목 3개가 요청 1건으로 묶여도 항목 단위로 센다(09-27 QA)."""
+        self.client.seed_condition()
+        self.client.seed_household_request(
+            "confirmed", item_statuses=["completed", "completed", "confirmed"]
+        )
+
+        async with self.http() as client:
+            response = await client.post(
+                f"/api/v1/care/daily-reports/{TARGET_DATE.isoformat()}/preview"
+            )
+        self.assertEqual(
+            response.json()["family"], {"requested": 3, "confirmed": 3, "completed": 2}
+        )
+
 
 class CalendarApiTest(unittest.IsolatedAsyncioTestCase):
     def setUp(self) -> None:
@@ -493,10 +542,16 @@ class CalendarApiTest(unittest.IsolatedAsyncioTestCase):
             )
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), {"condition": None, "report": None})
+        self.assertEqual(
+            response.json(), {"condition": None, "report": None, "pregnancy_week": None}
+        )
 
     async def test_linked_husband_sees_wifes_calendar_day_detail(self) -> None:
         self.client.seed_condition(TARGET_DATE)
+        # 예정일 2027-02-05면 2026-09-18은 20주차. 남편 프로필이 아니라 아내 프로필 기준이어야 한다.
+        self.client.tables["pregnancy_profiles"].append(
+            {"user_id": USER, "due_date": "2027-02-05"}
+        )
         self.client.tables["partner_links"].append(
             {"husband_user_id": "husband-1", "wife_user_id": USER}
         )
@@ -513,6 +568,7 @@ class CalendarApiTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(
             response.json()["condition"]["target_date"], TARGET_DATE.isoformat()
         )
+        self.assertEqual(response.json()["pregnancy_week"], 20)
 
     async def test_calendar_combines_conditions_and_finalized_reports_without_new_table(self) -> None:
         self.client.seed_condition(date(2026, 9, 1), mood=5, fatigue=1, nausea=1, waist_pain=1, pelvis_pain=1, leg_pain=1, wrist_pain=1)

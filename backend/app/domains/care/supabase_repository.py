@@ -37,6 +37,7 @@ from app.domains.errors import DomainConflictError, DomainForbiddenError, Domain
 from app.services.movement.events import EventStorageError, SupabaseEventStore
 from app.services.movement.report import generate_daily_report
 from app.services.supabase_service import SupabaseService
+from app.utils import dates
 
 from .repository import CareRepository
 from .schemas import (
@@ -64,6 +65,7 @@ ROUTINE_ITEMS_TABLE = "routine_items"
 REPORTS_TABLE = "daily_reports"
 REPORT_KIND = "daily"  # 이 Repository는 W-REPORT-001(Daily)만 다룬다. 오전 리포트(kind=morning)는 family 도메인 소관.
 HOUSEHOLD_REQUESTS_TABLE = "household_requests"
+HOUSEHOLD_REQUEST_ITEMS_TABLE = "household_request_items"
 FEEDBACK_TABLE = "recommendation_feedback"
 _CONFIRMED_OR_FURTHER = {"confirmed", "completed"}
 
@@ -110,6 +112,20 @@ class SupabaseCareRepository(CareRepository):
         )
 
     # --- Condition: 실제 daily_conditions 연결 ---
+
+    def get_pregnancy_week(self, user_id: str, target_date: date) -> int | None:
+        """캘린더 주인의 예정일로 그 날짜의 임신 주차를 계산한다(오전 리포트와 같은 계산)."""
+        rows = self._run(
+            lambda: self.client.table("pregnancy_profiles")
+            .select("due_date")
+            .eq("user_id", user_id)
+            .limit(1)
+            .execute()
+        )
+        if not rows or rows[0].get("due_date") is None:
+            return None
+        week, _ = dates.pregnancy_age(date.fromisoformat(str(rows[0]["due_date"])), target_date)
+        return week
 
     def get_condition(self, user_id: str, target_date: date) -> ConditionResponse | None:
         rows = self._run(
@@ -432,13 +448,26 @@ class SupabaseCareRepository(CareRepository):
         현황만 센다 — 원본을 복제하지 않고 직접 조회한다(오전 리포트가 Care
         테이블을 그 자리에서 읽는 projection과 같은 방식). status는
         unconfirmed→confirmed→completed로만 전이하므로 누적(funnel)
-        집계다: confirmed/completed는 "적어도 그 단계까지 간" 개수다."""
-        rows = self._run(
+        집계다: confirmed/completed는 "적어도 그 단계까지 간" 개수다.
+        09-27: 요청 건이 아니라 항목 단위로 센다. 공유 한 번에 항목 여러 개가 요청 1건으로
+        묶여, 건 단위로는 항목 일부만 끝나도 완료 0으로 보였다(가족 도메인 집계와 기준 통일)."""
+        request_rows = self._run(
             lambda: self.client.table(HOUSEHOLD_REQUESTS_TABLE)
-            .select("status")
+            .select("id")
             .eq("wife_user_id", user_id)
             .eq("date", target_date.isoformat())
             .execute()
+        )
+        request_ids = [row["id"] for row in request_rows]
+        rows = (
+            self._run(
+                lambda: self.client.table(HOUSEHOLD_REQUEST_ITEMS_TABLE)
+                .select("status")
+                .in_("request_id", request_ids)
+                .execute()
+            )
+            if request_ids
+            else []
         )
         return FamilyContributionSummary(
             requested=len(rows),

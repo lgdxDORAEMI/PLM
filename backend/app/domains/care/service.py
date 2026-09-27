@@ -7,6 +7,7 @@ from .repository import CareRepository
 from .schemas import (
     CalendarDayDetailResponse,
     CalendarMonthResponse,
+    CompletionActor,
     ConditionInput,
     ConditionResponse,
     DailyReportResponse,
@@ -84,7 +85,8 @@ class CareService(CareServicePort):
     def set_execution(
         self, user_id: str, item_id: str, payload: RoutineExecutionInput
     ) -> RoutineExecutionResponse:
-        return self.repository.set_execution(user_id, item_id, payload)
+        actor = CompletionActor.APPLIANCE if payload.by_appliance else CompletionActor.WIFE
+        return self.repository.set_execution(user_id, item_id, payload, actor=actor)
 
     def update_routine_item(
         self, user_id: str, item_id: str, payload: RoutineItemUpdateInput
@@ -135,4 +137,5 @@ class CareService(CareServicePort):
         return CalendarDayDetailResponse(
             condition=condition,
             report=self.preview_report(user_id, target_date),
+            pregnancy_week=self.repository.get_pregnancy_week(user_id, target_date),
         )

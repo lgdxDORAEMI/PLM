@@ -41,6 +41,9 @@ class StubCareRepository(CareRepository):
     def get_condition(self, user_id: str, target_date: date) -> ConditionResponse | None:
         return self._conditions.get((user_id, target_date))
 
+    def get_pregnancy_week(self, user_id: str, target_date: date) -> int | None:
+        return None  # Stub은 프로필을 모른다.
+
     def save_condition(
         self, user_id: str, target_date: date, payload: ConditionInput
     ) -> ConditionResponse:

@@ -72,6 +72,9 @@ class RoutineExecutionInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     status: ExecutionStatus
+    # 09-27: 가사 가전 실행·수면 환경 실행처럼 가전이 한 완료면 true. 완료자를 appliance로
+    # 저장해 리포트의 가전 실행 수에 잡힌다. 완료자를 임의 값으로 받지 않고 가전 여부만 받는다.
+    by_appliance: bool = False
 
 
 class RoutineExecutionResponse(BaseModel):
@@ -135,6 +138,9 @@ class CalendarDayDetailResponse(BaseModel):
 
     condition: ConditionResponse | None = None
     report: DailyReportResponse | None = None
+    # 09-27: 캘린더 주인(아내) 예정일 기준 주차. 남편이 조회해도 아내 기준이다.
+    # 예전엔 프론트가 로그인한 본인 프로필로 계산해 남편 화면에 0주차가 떴다.
+    pregnancy_week: int | None = None
 
 
 class RoutineFeedbackKind(StrEnum):
