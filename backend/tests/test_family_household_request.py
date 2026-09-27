@@ -311,6 +311,24 @@ class HouseholdRequestApiTest(unittest.IsolatedAsyncioTestCase):
             response = await client.get("/api/v1/family/household-requests")
         self.assertEqual(len(response.json()), 1)
 
+    async def test_requester_name_comes_from_wife_profile_not_fixed_text(self) -> None:
+        """09-27: 요청자 이름이 코드에 '아내'로 고정돼 남편 화면에 실제 이름이 안 나왔다."""
+        self.fake.link()
+        self.fake.seed_profile(WIFE, "한서현")
+        self.fake.seed_profile(HUSBAND, "최준서")
+        async with client_for(self.fake) as client:
+            created = await client.post("/api/v1/family/household-requests", json=REQUEST_PAYLOAD)
+        self.assertEqual(created.json()["requester_display_name"], "한서현")
+        request_id = created.json()["request_id"]
+
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=HUSBAND)
+        async with client_for(self.fake) as client:
+            listed = await client.get("/api/v1/family/household-requests")
+            single = await client.get(f"/api/v1/family/household-requests/{request_id}")
+        self.assertEqual(listed.json()[0]["requester_display_name"], "한서현")
+        self.assertEqual(listed.json()[0]["recipient_display_name"], "최준서")
+        self.assertEqual(single.json()["requester_display_name"], "한서현")
+
     async def test_list_requests_filters_by_date(self) -> None:
         """09-25: 가사 가이드는 오늘 것만 쓴다. 전체를 받아 클라이언트에서 거르던 것을 서버 필터로 옮겼다."""
         self.fake.link()

@@ -32,7 +32,7 @@ class MockHouseholdRequestService implements HouseholdRequestService {
     final requestId = 'household-request-${++_sequence}';
     final request = PartnerRequestData(
       id: requestId,
-      requester: '희선님',
+      requester: '희선',
       reason: reason,
       tasks: List.unmodifiable([
         for (var index = 0; index < tasks.length; index += 1)

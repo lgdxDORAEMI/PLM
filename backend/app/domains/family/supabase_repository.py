@@ -199,8 +199,13 @@ class SupabaseFamilyRepository(FamilyRepository):
             .execute()
         )
         daily_summary = self._daily_summary(wife_user_id, payload.target_date)
+        names = self._display_names([wife_user_id])
         return _build_response(
-            row, item_rows, wife_display_name, partner.display_name, daily_summary
+            row,
+            item_rows,
+            names.get(wife_user_id) or wife_display_name,
+            partner.display_name,
+            daily_summary,
         )
 
     def get_request(self, request_id: str) -> HouseholdRequestResponse | None:
@@ -286,15 +291,9 @@ class SupabaseFamilyRepository(FamilyRepository):
             .in_("request_id", request_ids)
             .execute()
         )
-        husband_ids = sorted({row["husband_user_id"] for row in rows})
-        profile_rows = self._run(
-            lambda: self.client.table("profiles")
-            .select("user_id,display_name")
-            .in_("user_id", husband_ids)
-            .execute()
+        names = self._display_names(
+            [row["husband_user_id"] for row in rows] + wife_ids
         )
-
-        names = {row["user_id"]: row["display_name"] for row in profile_rows}
         items_by_request: dict[str, list[dict[str, Any]]] = {}
         for item in item_rows:
             items_by_request.setdefault(item["request_id"], []).append(item)
@@ -312,8 +311,8 @@ class SupabaseFamilyRepository(FamilyRepository):
             _build_response(
                 row,
                 items_by_request.get(row["id"], []),
-                "아내",
-                names.get(row["husband_user_id"], "남편"),
+                names.get(row["wife_user_id"]) or "아내",
+                names.get(row["husband_user_id"]) or "남편",
                 summary_for(row),
             )
             for row in rows
@@ -327,18 +326,27 @@ class SupabaseFamilyRepository(FamilyRepository):
             .eq("request_id", row["id"])
             .execute()
         )
-        husband_rows = self._run(
-            lambda: self.client.table("profiles")
-            .select("display_name")
-            .eq("user_id", row["husband_user_id"])
-            .limit(1)
-            .execute()
-        )
-        husband_name = husband_rows[0]["display_name"] if husband_rows else "남편"
+        names = self._display_names([row["wife_user_id"], row["husband_user_id"]])
         daily_summary = self._daily_summary(
             row["wife_user_id"], date.fromisoformat(str(row["date"]))
         )
-        return _build_response(row, item_rows, "아내", husband_name, daily_summary)
+        return _build_response(
+            row,
+            item_rows,
+            names.get(row["wife_user_id"]) or "아내",
+            names.get(row["husband_user_id"]) or "남편",
+            daily_summary,
+        )
+
+    def _display_names(self, user_ids: list[str]) -> dict[str, str]:
+        """요청자(아내)·수신자(남편) 이름을 profiles.display_name에서 한 번에 읽는다."""
+        rows = self._run(
+            lambda: self.client.table("profiles")
+            .select("user_id,display_name")
+            .in_("user_id", sorted(set(user_ids)))
+            .execute()
+        )
+        return {row["user_id"]: row["display_name"] for row in rows if row.get("display_name")}
 
     def _daily_summary(
         self, wife_user_id: str, target_date: date

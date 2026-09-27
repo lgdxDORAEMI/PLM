@@ -182,7 +182,7 @@ void main() {
       find.byKey(const ValueKey('notification-request-demo-request')),
     );
     await tester.pumpAndSettle();
-    expect(find.text('2026-09-13 요청 3건'), findsOneWidget);
+    expect(find.text('희선님이 도움을 요청했어요'), findsOneWidget);
 
     expect(find.text('오늘 요청한 이유'), findsNothing);
     expect(find.text('참고 정보'), findsNothing);
@@ -248,7 +248,7 @@ void main() {
     store.save(
       PartnerRequestData(
         id: 'another-request',
-        requester: '희선님',
+        requester: '희선',
         reason: '추가로 도움이 필요해요.',
         tasks: [
           PartnerRequestTask(
@@ -265,7 +265,7 @@ void main() {
     store.save(
       const PartnerRequestData(
         id: 'old-request',
-        requester: '희선님',
+        requester: '희선',
         reason: '어제 요청이에요.',
         tasks: [PartnerRequestTask(id: 'old-task', title: '어제 가사 요청')],
         supportingInfo: '',
@@ -279,7 +279,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('2026-09-13 요청 4건'), findsOneWidget);
+    expect(find.text('희선님이 도움을 요청했어요'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('추가 가사 요청'),
       200,

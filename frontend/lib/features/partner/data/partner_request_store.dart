@@ -14,7 +14,7 @@ class PartnerRequestStore extends ChangeNotifier {
     id,
     () => PartnerRequestData(
       id: id,
-      requester: '희선님',
+      requester: '희선',
       reason: '오늘은 허리 통증이 있어 무거운 물건을 들지 않는 게 좋아요.',
       tasks: const [
         PartnerRequestTask(

@@ -123,7 +123,7 @@ class _PartnerRequestListScreenState extends State<PartnerRequestListScreen>
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
       children: [
         Text(
-          '${widget.targetDate ?? '전체'} 요청 ${_controller.items.length}건',
+          '$_requesterName님이 도움을 요청했어요',
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: AppSpacing.md),
@@ -142,6 +142,12 @@ class _PartnerRequestListScreenState extends State<PartnerRequestListScreen>
     ),
     _ => AppErrorState(title: '가사 요청 내역을 불러오지 못했어요', onRetry: _controller.load),
   };
+
+  /// 남편은 연결된 아내 한 명의 요청만 받으므로 첫 요청의 요청자 이름을 쓴다.
+  String get _requesterName {
+    final name = _controller.requests.first.requester.trim();
+    return name.isEmpty ? '아내' : name;
+  }
 
   Future<void> _confirmCompletion(PartnerRequestListItem item) async {
     final confirmed = await showDialog<bool>(
