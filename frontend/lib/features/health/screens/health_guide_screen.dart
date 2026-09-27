@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../../core/config/app_config.dart';
 import '../../../design_system/components/app_ink_well.dart';
 import '../../../design_system/components/app_state_view.dart';
+import '../../../design_system/components/info_banner.dart';
 import '../../../design_system/components/content_frame.dart';
 import '../../../design_system/components/responsive_split_view.dart';
 import '../../../design_system/components/top_app_bar.dart';
@@ -112,6 +113,15 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        if (_controller.selectedActivities.isEmpty) ...[
+                          const InfoBanner(
+                            key: ValueKey('health-focus-not-in-routine'),
+                            title: '컨디션 변경이 아직 루틴에 반영되지 않았어요',
+                            message: '홈에서 컨디션을 다시 저장하면 이 부위 활동이 추가돼요.',
+                            tone: InfoBannerTone.warning,
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                        ],
                         for (final activity
                             in _controller.selectedActivities.indexed) ...[
                           MovementGuideCard(

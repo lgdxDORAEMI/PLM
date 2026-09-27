@@ -14,6 +14,7 @@ import '../../../routing/route_names.dart';
 import '../../profile/data/profile_store.dart';
 import '../controllers/planned_activity_controller.dart';
 import '../services/planned_activity_service.dart';
+import '../widgets/routine_generating_dialog.dart';
 
 class ActivityScreen extends StatefulWidget {
   const ActivityScreen({super.key, this.editing = false, this.service});
@@ -195,36 +196,14 @@ class _ActivityScreenState extends State<ActivityScreen> {
       }
       return;
     }
-    final navigator = Navigator.of(context, rootNavigator: true);
-    final loadingRoute = DialogRoute<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const PopScope<void>(
-        canPop: false,
-        child: AlertDialog(
-          title: Text('AI 루틴 생성중...'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: AppSpacing.lg),
-              Text('오늘 컨디션과 예정 활동을 반영하고 있어요.\n약 10~15초 걸릴 수 있어요.'),
-            ],
-          ),
-        ),
-      ),
-    );
-    navigator.push(loadingRoute);
     var generationFailed = false;
     try {
-      await _controller.generateRoutine();
+      await runWithRoutineGeneratingDialog(
+        context,
+        _controller.generateRoutine,
+      );
     } catch (_) {
       generationFailed = true;
-    } finally {
-      // The request result, not a timer, controls the loading window lifetime.
-      if (navigator.mounted && loadingRoute.isActive) {
-        navigator.removeRoute(loadingRoute);
-      }
     }
     if (!mounted) return;
     if (generationFailed) {

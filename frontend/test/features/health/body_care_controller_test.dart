@@ -87,6 +87,27 @@ void main() {
     expect(controller.otherActivity, isNull);
   });
 
+  test('루틴이 컨디션보다 오래돼 집중 부위 항목이 없으면 다른 부위를 대신 올리지 않는다', () async {
+    final controller = BodyCareController(
+      service: const _StaleGuideService(),
+      conditionStore: TodayCareStore.withRepository(
+        _ConditionRepository(
+          const ConditionDraft(
+            waistPain: 2,
+            pelvisPain: 4,
+            legPain: 2,
+            wristPain: 4,
+          ),
+        ),
+      ),
+    );
+
+    await controller.load();
+
+    expect(controller.selectedArea, '골반');
+    expect(controller.selectedActivities, isEmpty);
+  });
+
   test('모든 통증이 보통 미만이면 전신 스트레칭을 기본 추천한다', () async {
     final controller = BodyCareController(
       service: const _GuideService(),
@@ -305,6 +326,36 @@ class _GuideService implements HealthGuideService {
         title: '전신 스트레칭',
         description: '',
         guide: '',
+      ),
+    ],
+  );
+
+  @override
+  Future<void> setStatus(String itemId, HealthExecutionStatus status) async {}
+}
+
+class _StaleGuideService implements HealthGuideService {
+  const _StaleGuideService();
+
+  @override
+  Future<BodyCareGuideData> fetchGuide() async => const BodyCareGuideData(
+    loads: [],
+    activities: [
+      BodyCareActivity(
+        id: 'leg',
+        area: '다리',
+        title: '다리 이완',
+        description: '',
+        guide: '',
+        isFocus: false,
+      ),
+      BodyCareActivity(
+        id: 'whole',
+        area: '전신',
+        title: '전신 스트레칭',
+        description: '',
+        guide: '',
+        isFocus: true,
       ),
     ],
   );

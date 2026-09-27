@@ -9,14 +9,20 @@ import '../../../design_system/tokens/app_radius.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_context.dart';
 import '../../../routing/route_names.dart';
+import '../../../core/config/app_config.dart';
 import '../controllers/today_care_controller.dart';
+import '../services/api_planned_activity_service.dart';
+import '../services/mock_planned_activity_service.dart';
+import '../services/planned_activity_service.dart';
+import '../widgets/routine_generating_dialog.dart';
 import '../widgets/condition_metric.dart';
 import '../widgets/pain_metric_card.dart';
 
 class ConditionScreen extends StatefulWidget {
-  const ConditionScreen({super.key, required this.mode});
+  const ConditionScreen({super.key, required this.mode, this.service});
 
   final ConditionMode mode;
+  final PlannedActivityService? service;
 
   @override
   State<ConditionScreen> createState() => _ConditionScreenState();
@@ -134,6 +140,25 @@ class _ConditionScreenState extends State<ConditionScreen> {
     setState(() => _saving = true);
     try {
       await _controller.save();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('컨디션을 저장하지 못했어요. 다시 시도해 주세요.')),
+        );
+        setState(() => _saving = false);
+      }
+      return;
+    }
+    try {
+      // 수정은 오늘 루틴에도 반영한다. 서버가 바뀐 가이드만 다시 만들고, 안 바뀌었으면 AI 호출 없이 돌려준다.
+      if (_isEditing && mounted) {
+        final service =
+            widget.service ??
+            (AppConfig.hasSupabaseConfig
+                ? ApiPlannedActivityService()
+                : const MockPlannedActivityService());
+        await runWithRoutineGeneratingDialog(context, service.generateRoutine);
+      }
       if (!mounted) return;
       Navigator.pushReplacementNamed(
         context,
@@ -142,7 +167,7 @@ class _ConditionScreenState extends State<ConditionScreen> {
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('컨디션을 저장하지 못했어요. 다시 시도해 주세요.')),
+        const SnackBar(content: Text('컨디션은 저장했지만 루틴에 반영하지 못했어요. 다시 시도해 주세요.')),
       );
     } finally {
       if (mounted) setState(() => _saving = false);

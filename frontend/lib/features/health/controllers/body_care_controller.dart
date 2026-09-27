@@ -111,7 +111,9 @@ class BodyCareController extends ChangeNotifier {
                   .map((load) => load.area)
                   .where(availableAreas.contains)
                   .firstOrNull;
-        _selectedArea ??= availableAreas.first;
+        // 루틴이 컨디션보다 오래됐으면 집중 부위 항목이 없을 수 있다. 그래도 집중이 아닌
+        // 부위를 상단에 올리지 않고, 화면이 '아직 반영되지 않음'을 안내한다.
+        _selectedArea ??= focusAreas.first;
         _state = BodyCareViewState.data;
       }
     } on ApiException catch (error) {
