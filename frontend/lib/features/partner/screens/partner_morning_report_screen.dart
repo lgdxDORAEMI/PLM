@@ -217,21 +217,24 @@ class _PartnerReportContent extends StatelessWidget {
               : report.plannedActivities.join(' · '),
         ),
       ),
-      const SizedBox(height: AppSpacing.xl),
-      Text('오늘 가이드 요약', style: Theme.of(context).textTheme.titleLarge),
-      const SizedBox(height: AppSpacing.md),
-      if (report.guideSummaries.isEmpty)
-        const AppCard(child: Text('공유된 가이드 요약이 없어요.'))
-      else
-        for (final guide in _guideItems.indexed) ...[
-          _GuideSummary(
-            icon: guide.$2.icon,
-            title: guide.$2.label,
-            value: guide.$2.value,
-          ),
-          if (guide.$1 < _guideItems.length - 1)
-            const SizedBox(height: AppSpacing.sm),
-        ],
+      // 오전 리포트는 컨디션·예정 활동만 보여준다. AI 가이드 요약은 Daily 리포트에만 둔다.
+      if (daily) ...[
+        const SizedBox(height: AppSpacing.xl),
+        Text('오늘 가이드 요약', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: AppSpacing.md),
+        if (report.guideSummaries.isEmpty)
+          const AppCard(child: Text('공유된 가이드 요약이 없어요.'))
+        else
+          for (final guide in _guideItems.indexed) ...[
+            _GuideSummary(
+              icon: guide.$2.icon,
+              title: guide.$2.label,
+              value: guide.$2.value,
+            ),
+            if (guide.$1 < _guideItems.length - 1)
+              const SizedBox(height: AppSpacing.sm),
+          ],
+      ],
       const SizedBox(height: AppSpacing.md),
       const Text(
         '공유에 동의한 요약 정보만 표시됩니다.',

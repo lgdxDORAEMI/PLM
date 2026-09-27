@@ -66,31 +66,39 @@ void main() {
     expect(controller.report, same(report));
   });
 
-  testWidgets('화면은 주차·날짜·요약을 모델 값으로 표시한다', (tester) async {
-    final report = PartnerMorningReport.fromJson(responseBody);
-    tester.view.physicalSize = const Size(1200, 1800);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+  for (final daily in [false, true]) {
+    testWidgets(
+      '${daily ? 'Daily' : '오전'} 리포트는 주차·날짜·요약을 표시하고 가이드 요약은 ${daily ? '보인다' : '숨긴다'}',
+      (tester) async {
+        final report = PartnerMorningReport.fromJson(responseBody);
+        tester.view.physicalSize = const Size(1200, 1800);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-    await tester.pumpWidget(
-      MaterialApp(
-        home: PartnerMorningReportScreen(
-          date: '2026-09-20',
-          service: MockPartnerMorningReportService(report: report),
-        ),
-      ),
+        await tester.pumpWidget(
+          MaterialApp(
+            home: PartnerMorningReportScreen(
+              date: '2026-09-20',
+              daily: daily,
+              service: MockPartnerMorningReportService(report: report),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('임신 29주차예요'), findsOneWidget);
+        expect(find.text('9월 20일 컨디션 요약'), findsOneWidget);
+        expect(find.text('피로감 높음 · 허리 통증 높음'), findsOneWidget);
+        expect(find.text('장보기 · 빨래'), findsOneWidget);
+        final guide = daily ? findsOneWidget : findsNothing;
+        expect(find.text('오늘 가이드 요약'), guide);
+        expect(find.text('현미밥과 나물'), guide);
+        expect(find.text('조명 낮추기'), guide);
+        expect(find.textContaining('희선님'), findsNothing);
+      },
     );
-    await tester.pumpAndSettle();
-
-    expect(find.text('임신 29주차예요'), findsOneWidget);
-    expect(find.text('9월 20일 컨디션 요약'), findsOneWidget);
-    expect(find.text('피로감 높음 · 허리 통증 높음'), findsOneWidget);
-    expect(find.text('장보기 · 빨래'), findsOneWidget);
-    expect(find.text('현미밥과 나물'), findsOneWidget);
-    expect(find.text('조명 낮추기'), findsOneWidget);
-    expect(find.textContaining('희선님'), findsNothing);
-  });
+  }
 }
 
 ApiPartnerMorningReportService _apiService(
