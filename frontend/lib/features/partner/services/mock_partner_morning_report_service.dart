@@ -15,6 +15,14 @@ class MockPartnerMorningReportService implements PartnerMorningReportService {
           pregnancyWeek: 28,
           conditionSummary: const ['입덧 심함', '허리 통증 심함', '피로 심함'],
           plannedActivities: const ['장보기', '빨래', '쓰레기 배출'],
+          conditionScores: const [
+            (label: '입덧', score: 4),
+            (label: '허리', score: 4),
+            (label: '골반', score: 3),
+            (label: '다리', score: 2),
+            (label: '손목', score: 1),
+            (label: '피로', score: 4),
+          ],
           guideSummaries: const {
             'meal': '속이 편한 달걀죽과 부드러운 채소',
             'household': '무거운 장보기는 가족과 나누기',

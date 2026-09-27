@@ -23,7 +23,7 @@
 | 프로필 3~6단계(초산경산/단태쌍태/알레르기/주의진단) | Profile | `pregnancy_profiles`(컬럼 존재) | W-PROFILE-003~007, W-MEAL-002 | SOURCE | 컬럼은 있으나 단계별 저장 API 없음(SKELETON_REQUIRED) |
 | 임신 주수·일수 | Profile | — | W-HOME-001, H-REPORT-001, W-MENU-001 | DERIVED | `due_date - 280일` 기준 조회 시점 계산, 저장 안 함 |
 | 역할(role)·표시 이름 | Profile | `profiles`(MISSING) | B-ENTRY-001, W-MENU-001, 알림 발신자 표시 | SOURCE | 신규 테이블 필요 |
-| 당일 컨디션 7종 + 예정 활동 | Condition | `daily_conditions` | W-COND-001, W-TASK-001, 루틴 생성 입력 | SOURCE | 원문은 남편에게 비노출(NFR-013) |
+| 당일 컨디션 7종 + 예정 활동 | Condition | `daily_conditions` | W-COND-001, W-TASK-001, 루틴 생성 입력 | SOURCE | 항목별 1~5점은 남편 캘린더 상세·오전 리포트에 공개(2026-09-27), 그 외 원문은 비노출(NFR-013) |
 | 컨디션 4단계 지수(좋음/보통/나쁨/힘듦) | Condition | — | B-CAL-001, H-REPORT-001 | DERIVED | `daily_conditions` 점수 기준 계산, 계산식 2026-09-22 팀 결정으로 확정(`condition_index_from_scores()`) |
 | 하루 루틴 생성 원본(source/model/request_payload/response) | Routine | `daily_routines` | W-HOME-001, W-CALLBACK-001 | SOURCE | Routine AI 소유, 실동작 |
 | 루틴 항목(카테고리별 payload/status/completed_by) | Routine Item | `routine_items` | Meal/Household/Health/Sleep/Record 전 도메인의 공통 원본 | SOURCE | Routine AI 소유. 다른 도메인은 `category`로 필터링해서 소비하며 복제 저장 금지 |

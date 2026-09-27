@@ -140,6 +140,11 @@ class MorningReportTest(unittest.IsolatedAsyncioTestCase):
         self.assertIn("허리 통증 높음", body["condition_summary"])
         # 원본 점수(정수)는 어디에도 노출되지 않는다.
         self.assertNotIn(5, body["condition_summary"])
+        # 항목별 점수는 입력 화면 순서로 주고 mood는 뺀다.
+        self.assertEqual(
+            [(s["label"], s["score"]) for s in body["condition_scores"]],
+            [("입덧", 2), ("허리", 5), ("골반", 2), ("다리", 2), ("손목", 2), ("피로", 5)],
+        )
         self.assertEqual(body["guide_summaries"]["meal"], "현미밥과 나물")
         self.assertEqual(body["guide_summaries"]["household"], "빨래")
 
@@ -186,7 +191,10 @@ class MorningReportTest(unittest.IsolatedAsyncioTestCase):
         body = response.json()
         self.assertEqual(
             set(body.keys()),
-            {"target_date", "pregnancy_week", "condition_summary", "planned_activities", "guide_summaries"},
+            {
+                "target_date", "pregnancy_week", "condition_summary", "condition_scores",
+                "planned_activities", "guide_summaries",
+            },
         )
 
 

@@ -453,7 +453,7 @@
 - FUC: FUC-H-REPORT-001
 - Use Case: UC8
 - Request: 경로 `target_date`
-- Response: `MorningReportResponse { target_date, pregnancy_week, condition_summary[], planned_activities[], guide_summaries: {category: title 나열} }`(프로필 원본·컨디션 원본·AI 대화 원문 미포함, NFR-013)
+- Response: `MorningReportResponse { target_date, pregnancy_week, condition_summary[], condition_scores[{label, score}], planned_activities[], guide_summaries: {category: title 나열} }`(프로필 원본·AI 대화 원문 미포함, NFR-013). `condition_scores`는 입덧·허리·골반·다리·손목·피로 1~5점(mood 제외)으로, 남편 캘린더 상세와 같은 공개 범위다(2026-09-27). 화면은 오전 리포트에서 `guide_summaries`를 숨기고 Daily 리포트에서만 보여준다
 - Source Data: `partner_links`(family authorization) → `pregnancy_profiles`+`daily_conditions`+`routine_items`(그 자리에서 읽는 projection, 복사 저장 없음)
 - Authorization: 기본값(연동된 남편만 — `partner_links.husband_user_id`로 확인)
 - Error: 403(연동된 아내 계정 없음), 404(해당 날짜 컨디션 없음)

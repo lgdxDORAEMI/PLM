@@ -223,7 +223,7 @@ class FamilyService(FamilyServicePort):
             return
         if first_of_day:
             kind = NotificationType.MORNING_REPORT
-            title, body = "오전 컨디션 리포트가 도착했어요", "오늘의 컨디션과 루틴 요약을 확인해 주세요."
+            title, body = "오전 컨디션 리포트가 도착했어요", "오늘의 컨디션과 예정 활동을 확인해 주세요."
         else:
             kind = NotificationType.CONDITION_CHANGED
             title, body = "아내의 루틴이 변경되었습니다.", "변경된 루틴 요약을 캘린더에서 확인해 주세요."

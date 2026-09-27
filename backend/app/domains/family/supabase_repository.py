@@ -35,6 +35,7 @@ from app.utils import dates
 
 from .repository import FamilyRepository, PartnerIdentity
 from .schemas import (
+    ConditionScore,
     HouseholdDailySummary,
     HouseholdRequestCreate,
     HouseholdRequestItem,
@@ -118,6 +119,7 @@ class SupabaseFamilyRepository(FamilyRepository):
             target_date=target_date,
             pregnancy_week=week,
             condition_summary=_summarize_condition(condition),
+            condition_scores=_condition_scores(condition),
             planned_activities=condition.get("planned_activities") or [],
             guide_summaries=_summarize_guides(item_rows),
         )
@@ -513,9 +515,27 @@ def _build_notification(row: dict[str, Any]) -> NotificationResponse:
     )
 
 
+_SCORE_LABELS_KO = {
+    "nausea": "입덧",
+    "waist_pain": "허리",
+    "pelvis_pain": "골반",
+    "leg_pain": "다리",
+    "wrist_pain": "손목",
+    "fatigue": "피로",
+}
+
+
+def _condition_scores(condition: dict[str, Any]) -> list[ConditionScore]:
+    """아내 입력 화면과 같은 순서의 항목별 점수. mood는 입력 화면에서 빠진 항목이라 제외한다."""
+    return [
+        ConditionScore(label=label, score=condition[column])
+        for column, label in _SCORE_LABELS_KO.items()
+        if isinstance(condition.get(column), int)
+    ]
+
+
 def _summarize_condition(condition: dict[str, Any]) -> list[str]:
-    """원본 1~5 점수를 남편에게 그대로 보여주지 않고 "높음"만 정성 문구로 뽑는다
-    (임계값 3 초과, 04_3 #2처럼 계산식 미확정 항목과 같은 이유로 임시 규칙)."""
+    """4점 이상 항목만 "높음" 문구로 뽑는 한 줄 요약(임계값 3 초과). 항목별 점수는 _condition_scores."""
     return [
         f"{label} 높음"
         for column, label in _BURDEN_LABELS_KO.items()

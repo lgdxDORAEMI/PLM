@@ -13,6 +13,7 @@ import '../../../design_system/tokens/app_spacing.dart';
 import '../../../core/config/app_config.dart';
 import '../../../routing/route_names.dart';
 import '../../../routing/route_refresh_observer.dart';
+import '../../condition/widgets/condition_metric.dart';
 import '../../report/models/daily_record.dart';
 import '../controllers/partner_morning_report_controller.dart';
 import '../models/partner_morning_report.dart';
@@ -202,11 +203,25 @@ class _PartnerReportContent extends StatelessWidget {
       const SizedBox(height: AppSpacing.md),
       InfoBanner(
         title: '오늘 컨디션 요약',
-        message: report.conditionSummary.isEmpty
-            ? '공유된 컨디션 요약이 없어요.'
-            : report.conditionSummary.join(' · '),
+        message: report.conditionSummary.isNotEmpty
+            ? report.conditionSummary.join(' · ')
+            : report.conditionScores.isNotEmpty
+            ? '크게 불편한 곳은 없어요.'
+            : '공유된 컨디션 요약이 없어요.',
         tone: InfoBannerTone.info,
       ),
+      if (report.conditionScores.isNotEmpty) ...[
+        const SizedBox(height: AppSpacing.sm),
+        AppCard(
+          child: Column(
+            spacing: AppSpacing.sm,
+            children: [
+              for (final item in report.conditionScores)
+                _ConditionScoreRow(label: item.label, score: item.score),
+            ],
+          ),
+        ),
+      ],
       const SizedBox(height: AppSpacing.xl),
       Text('오늘 예정 활동', style: Theme.of(context).textTheme.titleLarge),
       const SizedBox(height: AppSpacing.md),
@@ -262,6 +277,47 @@ class _GuideItem {
   final IconData icon;
   final String label;
   final String value;
+}
+
+/// 아내 입력 화면과 같은 5단계 문구로 항목별 점수를 읽기 전용으로 보여준다.
+class _ConditionScoreRow extends StatelessWidget {
+  const _ConditionScoreRow({required this.label, required this.score});
+
+  final String label;
+  final int score;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = score >= 4 ? AppColors.warning : AppColors.primary500;
+    final text = discomfortLabels[score - 1];
+    return Semantics(
+      label: '$label, $text, 5단계 중 $score단계',
+      excludeSemantics: true,
+      child: Row(
+        children: [
+          SizedBox(width: 44, child: Text(label)),
+          for (var step = 1; step <= 5; step++)
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Icon(
+                Icons.circle,
+                size: 10,
+                color: step <= score ? color : AppColors.disabledBackground,
+              ),
+            ),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              text,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: score >= 4 ? AppColors.warning : null,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _GuideSummary extends StatelessWidget {

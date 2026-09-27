@@ -85,6 +85,13 @@ class NotificationResponse(BaseModel):
     read_at: datetime | None = None
 
 
+class ConditionScore(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    label: str
+    score: int = Field(ge=1, le=5)
+
+
 class MorningReportResponse(BaseModel):
     """남편에게 허용된 요약만 담고 Profile 원본과 AI 대화는 포함하지 않는다."""
 
@@ -93,6 +100,8 @@ class MorningReportResponse(BaseModel):
     target_date: date
     pregnancy_week: int = Field(ge=0, le=42)
     condition_summary: list[str]
+    # 아내가 입력한 항목별 1~5점(입덧·허리·골반·다리·손목·피로). 남편 캘린더 상세와 같은 공개 범위다.
+    condition_scores: list[ConditionScore] = []
     planned_activities: list[str]
     guide_summaries: dict[str, str]
 

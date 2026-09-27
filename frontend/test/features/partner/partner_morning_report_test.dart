@@ -17,6 +17,10 @@ void main() {
     'pregnancy_week': 29,
     'condition_summary': ['피로감 높음', '허리 통증 높음'],
     'planned_activities': ['장보기', '빨래'],
+    'condition_scores': [
+      {'label': '입덧', 'score': 3},
+      {'label': '골반', 'score': 4},
+    ],
     'guide_summaries': {
       'meal': '현미밥과 나물',
       'household': '무거운 빨래 나누기',
@@ -40,6 +44,18 @@ void main() {
     expect(report?.pregnancyWeek, 29);
     expect(report?.conditionSummary, ['피로감 높음', '허리 통증 높음']);
     expect(report?.guideSummaries['meal'], '현미밥과 나물');
+    expect(report?.conditionScores.map((s) => (s.label, s.score)), [
+      ('입덧', 3),
+      ('골반', 4),
+    ]);
+  });
+
+  test('항목별 점수가 없는 구버전 응답도 파싱한다', () {
+    final report = PartnerMorningReport.fromJson(
+      Map.of(responseBody)..remove('condition_scores'),
+    );
+
+    expect(report.conditionScores, isEmpty);
   });
 
   test('API 404 응답은 빈 리포트로 처리한다', () async {
@@ -91,6 +107,14 @@ void main() {
         expect(find.text('9월 20일 컨디션 요약'), findsOneWidget);
         expect(find.text('피로감 높음 · 허리 통증 높음'), findsOneWidget);
         expect(find.text('장보기 · 빨래'), findsOneWidget);
+        expect(find.text('보통이에요'), findsOneWidget);
+        expect(find.text('심해요'), findsOneWidget);
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is Semantics && w.properties.label == '골반, 심해요, 5단계 중 4단계',
+          ),
+          findsOneWidget,
+        );
         final guide = daily ? findsOneWidget : findsNothing;
         expect(find.text('오늘 가이드 요약'), guide);
         expect(find.text('현미밥과 나물'), guide);
