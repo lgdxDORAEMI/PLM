@@ -107,26 +107,9 @@ class _PartnerRequestScreenState extends State<PartnerRequestScreen>
                       vertical: AppSpacing.xl,
                     ),
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '${request.requester}이 도움을 요청했어요',
-                              style: Theme.of(context).textTheme.headlineSmall,
-                            ),
-                          ),
-                          AppBadge(
-                            label: switch (request.status) {
-                              PartnerRequestStatus.requested => '미확인',
-                              PartnerRequestStatus.confirmed => '확인',
-                              PartnerRequestStatus.completed => '완료',
-                            },
-                            tone:
-                                request.status == PartnerRequestStatus.completed
-                                ? AppBadgeTone.success
-                                : AppBadgeTone.info,
-                          ),
-                        ],
+                      Text(
+                        '${request.requester}님이 도움을 요청했어요',
+                        style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       const SizedBox(height: AppSpacing.xl),
                       Text(
