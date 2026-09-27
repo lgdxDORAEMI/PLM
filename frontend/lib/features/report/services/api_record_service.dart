@@ -184,7 +184,7 @@ class ApiRecordService implements RecordService {
       'leg_pain': '다리',
       'wrist_pain': '손목',
       'fatigue': '피로',
-      'mood': '기분',
+      // mood는 입력 화면에서 빠졌지만 API가 요구해 기본값(4)이 저장된다. 표시하지 않는다.
     };
     final summaries = labels.entries
         .where((entry) => condition[entry.key] is num)
