@@ -84,7 +84,7 @@ class _MovementScreenState extends State<MovementScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const TopAppBar(title: '모션 인식 (데모)', showBack: false),
+      appBar: const TopAppBar(title: '홈카메라 움직임 탐지 - 영상을 저장하지 않고 자세만 인식해요', showBack: false),
       body: SafeArea(
         top: false,
         child: ContentFrame(
@@ -172,7 +172,10 @@ class _MovementScreenState extends State<MovementScreen>
       case MovementConnectionState.live:
         final frame = _controller.latestFrame;
         if (frame == null) {
-          return const InfoBanner(title: '판정 대기 중...', tone: InfoBannerTone.info);
+          return const InfoBanner(
+            title: '판정 대기 중...',
+            tone: InfoBannerTone.info,
+          );
         }
         return _PostureBadge(frame: frame);
       case MovementConnectionState.disconnected:
@@ -205,11 +208,11 @@ class _PostureBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final (background, foreground) = _colorsFor(frame.burdenLabel);
     return Align(
-      alignment: Alignment.centerLeft,
+      alignment: Alignment.center,
       child: Container(
         padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
+          horizontal: AppSpacing.xl,
+          vertical: AppSpacing.md,
         ),
         decoration: BoxDecoration(
           color: background,
@@ -219,7 +222,7 @@ class _PostureBadge extends StatelessWidget {
           '${frame.posture.value} · ${frame.burdenLabel.value}',
           style: Theme.of(
             context,
-          ).textTheme.labelMedium?.copyWith(color: foreground),
+          ).textTheme.titleLarge?.copyWith(color: foreground, fontSize: 24),
         ),
       ),
     );
