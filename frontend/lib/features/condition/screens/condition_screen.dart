@@ -10,6 +10,8 @@ import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_context.dart';
 import '../../../routing/route_names.dart';
 import '../../../core/config/app_config.dart';
+import '../../profile/data/profile_store.dart';
+import '../../profile/models/profile_draft.dart';
 import '../controllers/today_care_controller.dart';
 import '../services/api_planned_activity_service.dart';
 import '../services/mock_planned_activity_service.dart';
@@ -212,6 +214,10 @@ class _TodayCareIntro extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final week =
+        (ProfileStore.instance.profile ??
+                (AppConfig.previewMode ? ProfileDraft.mockEdit() : null))
+            ?.pregnancyWeekAt(DateTime.now());
     return DecoratedBox(
       decoration: BoxDecoration(
         color: AppColors.primary50,
@@ -230,7 +236,7 @@ class _TodayCareIntro extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
-              '10초면 끝나요 · 오늘 · 임신 28주차',
+              week == null ? '10초면 끝나요 · 오늘' : '10초면 끝나요 · 오늘 · 임신 $week주차',
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
