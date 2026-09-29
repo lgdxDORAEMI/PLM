@@ -40,6 +40,10 @@ class FakeTable:
         self._filters[column] = value
         return self
 
+    def is_(self, column: str, value) -> "FakeTable":
+        self._filters[column] = None if value == "null" else value
+        return self
+
     def in_(self, column: str, values: list) -> "FakeTable":
         self._filters[column] = ("in", set(values))
         return self
@@ -205,6 +209,26 @@ class NotificationApiTest(unittest.IsolatedAsyncioTestCase):
 
             listed_again = await client.get("/api/v1/family/notifications")
         self.assertIsNotNone(listed_again.json()[0]["read_at"])
+
+    async def test_unread_status_is_scoped_and_changes_after_reading(self) -> None:
+        await self._create_request()
+
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=HUSBAND)
+        async with client_for(self.fake) as client:
+            status_before = await client.get("/api/v1/family/notifications/unread")
+            listed = await client.get("/api/v1/family/notifications")
+            notification_id = listed.json()[0]["notification_id"]
+            await client.post(f"/api/v1/family/notifications/{notification_id}/read")
+            status_after = await client.get("/api/v1/family/notifications/unread")
+
+        self.assertEqual(status_before.status_code, 200)
+        self.assertEqual(status_before.json(), {"has_unread": True})
+        self.assertEqual(status_after.json(), {"has_unread": False})
+
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=OTHER_HUSBAND)
+        async with client_for(self.fake) as client:
+            other_status = await client.get("/api/v1/family/notifications/unread")
+        self.assertEqual(other_status.json(), {"has_unread": False})
 
     async def test_reading_someone_elses_notification_is_404(self) -> None:
         await self._create_request()

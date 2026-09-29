@@ -133,6 +133,12 @@ class StubFamilyRepository(FamilyRepository):
             reverse=True,
         )
 
+    def has_unread_notification(self, recipient_user_id: str) -> bool:
+        return any(
+            notification.read_at is None
+            for notification in self._notifications.get(recipient_user_id, [])
+        )
+
     def read_notification(
         self, recipient_user_id: str, notification_id: str, read_at: datetime
     ) -> NotificationResponse | None:

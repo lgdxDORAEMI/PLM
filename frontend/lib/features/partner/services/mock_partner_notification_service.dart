@@ -13,6 +13,9 @@ class MockPartnerNotificationService implements PartnerNotificationService {
   Future<List<PartnerNotificationItem>> fetchAll() async => _store.items;
 
   @override
+  Future<bool> hasUnread() async => _store.unreadCount > 0;
+
+  @override
   Future<PartnerNotificationItem> markRead(String id) async {
     _store.markRead(id);
     return _store.items.firstWhere((item) => item.id == id);

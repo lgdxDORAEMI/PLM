@@ -26,12 +26,46 @@ void main() {
   testWidgets('모두 읽었으면 점을 숨긴다', (tester) async {
     expect(await dotVisible(tester, read: true), isFalse);
   });
+
+  testWidgets('활성 화면에서 5초마다 읽지 않은 알림 상태를 다시 확인한다', (tester) async {
+    final service = _FakeService(read: true);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(body: PartnerNotificationButton(service: service)),
+      ),
+    );
+    await tester.pump();
+    expect(service.hasUnreadCalls, 1);
+
+    service.read = false;
+    await tester.pump(const Duration(seconds: 4));
+    expect(service.hasUnreadCalls, 1);
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump();
+
+    expect(service.hasUnreadCalls, 2);
+    expect(
+      tester
+          .widget<Badge>(
+            find.byKey(const ValueKey('partner-notification-badge')),
+          )
+          .isLabelVisible,
+      isTrue,
+    );
+  });
 }
 
 class _FakeService implements PartnerNotificationService {
-  const _FakeService({required this.read});
+  _FakeService({required this.read});
 
-  final bool read;
+  bool read;
+  int hasUnreadCalls = 0;
+
+  @override
+  Future<bool> hasUnread() async {
+    hasUnreadCalls += 1;
+    return !read;
+  }
 
   @override
   Future<List<PartnerNotificationItem>> fetchAll() async => [

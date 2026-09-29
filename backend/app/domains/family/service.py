@@ -26,6 +26,7 @@ from .schemas import (
     MotionPrivacyResponse,
     NotificationResponse,
     NotificationType,
+    NotificationUnreadResponse,
 )
 
 
@@ -49,6 +50,8 @@ class FamilyServicePort(Protocol):
     ) -> HouseholdRequestResponse: ...
 
     def notifications(self, user_id: str) -> list[NotificationResponse]: ...
+
+    def notification_unread_status(self, user_id: str) -> NotificationUnreadResponse: ...
 
     def read_notification(
         self, user_id: str, notification_id: str
@@ -202,6 +205,11 @@ class FamilyService(FamilyServicePort):
 
     def notifications(self, user_id: str) -> list[NotificationResponse]:
         return self.repository.list_notifications(user_id)
+
+    def notification_unread_status(self, user_id: str) -> NotificationUnreadResponse:
+        return NotificationUnreadResponse(
+            has_unread=self.repository.has_unread_notification(user_id)
+        )
 
     def read_notification(
         self, user_id: str, notification_id: str

@@ -18,6 +18,12 @@ class ApiPartnerNotificationService implements PartnerNotificationService {
   }
 
   @override
+  Future<bool> hasUnread() async {
+    final response = await _client.get('/api/v1/family/notifications/unread');
+    return response?['has_unread'] == true;
+  }
+
+  @override
   Future<PartnerNotificationItem> markRead(String id) async {
     final response = await _client.post(
       '/api/v1/family/notifications/${Uri.encodeComponent(id)}/read',

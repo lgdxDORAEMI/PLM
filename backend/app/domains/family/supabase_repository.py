@@ -413,6 +413,17 @@ class SupabaseFamilyRepository(FamilyRepository):
         )
         return [_build_notification(row) for row in rows]
 
+    def has_unread_notification(self, recipient_user_id: str) -> bool:
+        rows = self._run(
+            lambda: self.client.table("notifications")
+            .select("id")
+            .eq("recipient_user_id", recipient_user_id)
+            .is_("read_at", "null")
+            .limit(1)
+            .execute()
+        )
+        return bool(rows)
+
     def read_notification(
         self, recipient_user_id: str, notification_id: str, read_at: datetime
     ) -> NotificationResponse | None:

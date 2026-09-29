@@ -14,6 +14,7 @@ from app.domains.family.schemas import (
     MotionCollectionInput,
     MotionPrivacyResponse,
     NotificationResponse,
+    NotificationUnreadResponse,
 )
 from app.domains.family.service import FamilyService, FamilyServicePort
 from app.domains.family.stub_repository import StubFamilyRepository
@@ -118,6 +119,16 @@ def complete_household_request_item(
 def list_notifications(user: User, service: Service) -> list[NotificationResponse]:
     try:
         return service.notifications(user.id)
+    except Exception as error:
+        raise to_http_exception(error) from error
+
+
+@router.get("/notifications/unread", response_model=NotificationUnreadResponse)
+def read_notification_unread_status(
+    user: User, service: Service
+) -> NotificationUnreadResponse:
+    try:
+        return service.notification_unread_status(user.id)
     except Exception as error:
         raise to_http_exception(error) from error
 

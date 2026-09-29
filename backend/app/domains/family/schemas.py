@@ -85,6 +85,12 @@ class NotificationResponse(BaseModel):
     read_at: datetime | None = None
 
 
+class NotificationUnreadResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    has_unread: bool
+
+
 class ConditionScore(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
