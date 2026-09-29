@@ -47,6 +47,32 @@ jobs:
           printf 'SUPABASE_URL=%s\nSUPABASE_ANON_KEY=%s\nBACKEND_URL=%s\nDEMO_EMAIL=\nDEMO_PASSWORD=\n' \
             "$SUPABASE_URL" "$SUPABASE_ANON_KEY" "$API_BASE_URL" > frontend/.env
 
+      - name: 백엔드 호환성 확인
+        shell: bash
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
+        run: |
+          case "$API_BASE_URL" in
+            https://*) ;;
+            *) echo "API_BASE_URL은 HTTPS 운영 주소여야 합니다."; exit 1 ;;
+          esac
+
+          share_status="$(curl --silent --show-error --output /dev/null \
+            --write-out '%{http_code}' --request POST \
+            "$API_BASE_URL/api/v1/account/partner-link/share")"
+          test "$share_status" = "401" || {
+            echo "백엔드가 partner-link/share API를 제공하지 않습니다(status=$share_status)."
+            exit 1
+          }
+
+          unread_status="$(curl --silent --show-error --output /dev/null \
+            --write-out '%{http_code}' \
+            "$API_BASE_URL/api/v1/family/notifications/unread")"
+          test "$unread_status" = "401" || {
+            echo "백엔드가 notifications/unread API를 제공하지 않습니다(status=$unread_status)."
+            exit 1
+          }
+
       - name: 패키지 설치
         working-directory: frontend
         run: flutter pub get
