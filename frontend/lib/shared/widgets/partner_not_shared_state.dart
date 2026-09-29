@@ -10,7 +10,7 @@ class PartnerNotSharedState extends StatelessWidget {
   Widget build(BuildContext context) => const Center(
     key: ValueKey('partner-not-shared'),
     child: Text(
-      '아내의 프로필 정보가 없습니다',
+      '아내가 아직 기록을 공유하지 않았습니다.\n아내 화면의 남편 초대에서 연결을 다시 확인해 주세요.',
       textAlign: TextAlign.center,
       style: TextStyle(
         color: AppColors.textDisabled,

@@ -30,12 +30,22 @@ class ApiException implements Exception {
 /// 토큰도 여기서만 붙인다(Supabase Auth는 로그인 상태 확인 용도로만 쓴다,
 /// backend/README.md의 SUPABASE_ANON_KEY 설명과 동일한 경계).
 class ApiClient {
-  ApiClient({http.Client? httpClient, String? baseUrl})
-    : _http = httpClient ?? http.Client(),
-      _baseUrl = baseUrl ?? AppConfig.backendUrl;
+  static Future<bool>? _sessionRefreshInFlight;
+
+  ApiClient({
+    http.Client? httpClient,
+    String? baseUrl,
+    String? Function()? accessTokenProvider,
+    Future<bool> Function()? sessionRefresher,
+  }) : _http = httpClient ?? http.Client(),
+       _baseUrl = baseUrl ?? AppConfig.backendUrl,
+       _accessTokenProvider = accessTokenProvider ?? _supabaseAccessToken,
+       _sessionRefresher = sessionRefresher ?? _refreshSupabaseSession;
 
   final http.Client _http;
   final String _baseUrl;
+  final String? Function() _accessTokenProvider;
+  final Future<bool> Function() _sessionRefresher;
 
   Future<Map<String, dynamic>?> get(
     String path, {
@@ -75,14 +85,19 @@ class ApiClient {
     final uri = Uri.parse(
       '$_baseUrl$path',
     ).replace(queryParameters: query?.isEmpty ?? true ? null : query);
-    final headers = <String, String>{'Content-Type': 'application/json'};
-    final token = _accessToken;
-    if (token != null) headers['Authorization'] = 'Bearer $token';
-    final request = http.Request(method, uri)..headers.addAll(headers);
-    if (body != null) request.body = jsonEncode(body);
+    var token = _accessTokenProvider();
+    var response = await _sendOnce(method, uri, token: token, body: body);
 
-    final streamed = await _http.send(request);
-    final response = await http.Response.fromStream(streamed);
+    // Supabase access tokens can expire while a presentation screen remains open.
+    // Refresh once and replay the request so a transient 401 does not force users
+    // back to the entry screen or leave partner widgets in an unauthenticated state.
+    if (response.statusCode == 401 && token != null) {
+      final refreshed = await _sessionRefresher();
+      if (refreshed) {
+        token = _accessTokenProvider();
+        response = await _sendOnce(method, uri, token: token, body: body);
+      }
+    }
 
     if (response.statusCode == 404 && !throwOnNotFound) return null;
     if (response.statusCode >= 400) {
@@ -90,6 +105,21 @@ class ApiClient {
     }
     if (response.body.isEmpty) return null;
     return jsonDecode(response.body);
+  }
+
+  Future<http.Response> _sendOnce(
+    String method,
+    Uri uri, {
+    required String? token,
+    required Map<String, dynamic>? body,
+  }) async {
+    final headers = <String, String>{'Content-Type': 'application/json'};
+    if (token != null) headers['Authorization'] = 'Bearer $token';
+    final request = http.Request(method, uri)..headers.addAll(headers);
+    if (body != null) request.body = jsonEncode(body);
+
+    final streamed = await _http.send(request);
+    return http.Response.fromStream(streamed);
   }
 
   Map<String, dynamic>? _asMap(Object? value) {
@@ -104,12 +134,37 @@ class ApiClient {
     throw const FormatException('API 응답이 배열 형식이 아닙니다.');
   }
 
-  String? get _accessToken {
+  static String? _supabaseAccessToken() {
     try {
       return Supabase.instance.client.auth.currentSession?.accessToken;
     } catch (_) {
       // Supabase.initialize()가 아직 안 됐거나(.env 없음) 로그인 전 — 토큰 없이 보낸다.
       return null;
+    }
+  }
+
+  static Future<bool> _refreshSupabaseSession() {
+    final inFlight = _sessionRefreshInFlight;
+    if (inFlight != null) return inFlight;
+
+    final refresh = _performSupabaseSessionRefresh();
+    _sessionRefreshInFlight = refresh;
+    refresh.whenComplete(() {
+      if (identical(_sessionRefreshInFlight, refresh)) {
+        _sessionRefreshInFlight = null;
+      }
+    });
+    return refresh;
+  }
+
+  static Future<bool> _performSupabaseSessionRefresh() async {
+    try {
+      final auth = Supabase.instance.client.auth;
+      if (auth.currentSession?.refreshToken == null) return false;
+      final response = await auth.refreshSession();
+      return response.session != null;
+    } catch (_) {
+      return false;
     }
   }
 
