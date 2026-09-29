@@ -30,8 +30,8 @@ class EntryScreen extends StatefulWidget {
 }
 
 class _EntryScreenState extends State<EntryScreen> {
-  static bool _defaultSessionEstablished = false;
   late final EntryController _controller;
+  late bool _sessionEstablished;
   bool _redirectScheduled = false;
   late final bool _apiMode;
   final _emailController = TextEditingController();
@@ -52,24 +52,24 @@ class _EntryScreenState extends State<EntryScreen> {
           widget.service ??
           (_apiMode ? ApiEntryService() : const MockEntryService()),
     )..addListener(_onChanged);
-    if (_automaticEntry &&
-        (!_defaultSessionEstablished ||
-            Supabase.instance.client.auth.currentSession == null)) {
+    final hasExistingSession =
+        _apiMode && Supabase.instance.client.auth.currentSession != null;
+    _sessionEstablished = !_automaticEntry || hasExistingSession;
+    if (_automaticEntry && !hasExistingSession) {
       unawaited(_startDefaultSession());
-    } else if (!_apiMode ||
-        Supabase.instance.client.auth.currentSession != null) {
+    } else if (!_apiMode || hasExistingSession) {
       unawaited(_controller.load());
     }
   }
 
-  /// Fresh launches always authenticate the configured wife before bootstrap.
+  /// Launches without a persisted session authenticate the configured wife.
   Future<void> _startDefaultSession() async {
     if (_automaticSignInInProgress) return;
     _automaticSignInInProgress = true;
     setState(() => _automaticSignInFailed = false);
     try {
       final launchState = await AccountSessionService().startAsWife();
-      _defaultSessionEstablished = true;
+      _sessionEstablished = true;
       if (mounted) _controller.complete(launchState);
     } catch (_) {
       if (mounted) setState(() => _automaticSignInFailed = true);
@@ -125,7 +125,7 @@ class _EntryScreenState extends State<EntryScreen> {
                   onRetry: _startDefaultSession,
                 ),
               )
-            : _automaticEntry && !_defaultSessionEstablished
+            : _automaticEntry && !_sessionEstablished
             ? const Center(child: AppLoadingState(message: '계정에 연결하고 있어요.'))
             : _apiMode && Supabase.instance.client.auth.currentSession == null
             ? _buildSignIn()
