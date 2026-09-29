@@ -22,8 +22,7 @@ from app.services.thinq.models import ApplianceType, ThinQDevice
 
 
 def purifier(device_id: str = "purifier-1") -> ThinQDevice:
-    # The control endpoint is appliance-type-agnostic; type only matters to the household mapper (Phase 2).
-    return ThinQDevice(device_id=device_id, name="공청이", device_type=ApplianceType.WASHER)
+    return ThinQDevice(device_id=device_id, name="공청이", device_type=ApplianceType.AIR_PURIFIER)
 
 
 def configured_settings() -> SimpleNamespace:
@@ -161,6 +160,18 @@ class ControlEndpointTest(unittest.IsolatedAsyncioTestCase):
         ):
             response = await self._call(client, "some-other-device", {"power": "on"})
         self.assertEqual(response.status_code, 404)
+        control.assert_not_called()
+
+    async def test_owned_non_air_purifier_is_rejected(self) -> None:
+        client = ThinQClient()
+        washer = ThinQDevice("washer-1", "세탁기", ApplianceType.WASHER)
+        inventory = DeviceInventory((washer,), InventoryStatus.CONNECTED)
+        with (
+            patch.object(client, "get_inventory", return_value=inventory),
+            patch.object(client, "control") as control,
+        ):
+            response = await self._call(client, "washer-1", {"power": "on"})
+        self.assertEqual(response.status_code, 400)
         control.assert_not_called()
 
     async def test_empty_body_is_rejected(self) -> None:

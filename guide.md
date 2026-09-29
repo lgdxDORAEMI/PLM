@@ -4,7 +4,7 @@
 
 Backend의 `backend/.env`에 `THINQ_PAT=<Personal Access Token>`, `THINQ_COUNTRY_CODE=KR`, `THINQ_CLIENT_ID=<고정 UUID>`를 설정한다. `THINQ_CLIENT_ID`는 한 번 생성해 유지하고 요청마다 새로 만들지 않는다. 실제 PAT는 코드·문서·Frontend `.env`·GitHub Actions에 저장하지 않는다. Railway 배포 시 Backend 서비스 Variable을 사용한다. ThinQ 설정 변경 후 Backend를 재시작한다.
 
-실제 확인 순서: ① Backend 재시작 ② `PLM_WIFE_EMAIL`과 일치하는 아내 계정의 Supabase 로그인 토큰으로 `GET /api/v1/thinq/devices` 조회 ③ `status=connected`와 등록 가전 확인 ④ 오늘 컨디션 입력 및 AI 루틴 생성 ⑤ 가사 가이드 진입 ⑥ `3. 가전이 대신합니다`에서 보유 가전으로 가능한 일만 표시되는지 확인. `connected`에 빈 목록이면 등록 기기가 없거나 해당 PAT의 계정이 다르다. `not_configured`면 PAT·UUID 또는 로그인 계정 설정을, `auth_error`면 PAT 유효성을, `timeout`·`error`면 ThinQ 접속 상태를 확인한다. 오류 시 가전 추천은 비고 일반 가사는 계속 표시된다. 단일 PAT의 목록은 설정된 아내 계정에만 제공한다. 실제 기기 제어는 구현하지 않았다.
+실제 확인 순서: ① Backend 재시작 ② `PLM_WIFE_EMAIL`과 일치하는 아내 계정의 Supabase 로그인 토큰으로 `GET /api/v1/thinq/devices` 조회 ③ `status=connected`와 `device_type=air_purifier` 기기 확인 ④ 오늘 컨디션 입력 및 AI 루틴 생성 ⑤ 수면 가이드에서 공기청정기 모드를 고른 뒤 `수면 환경 전체 실행` 선택 ⑥ 실기기 전원·바람세기와 실행 결과 확인. `connected`에 빈 목록이면 등록 기기가 없거나 해당 PAT의 계정이 다르다. `not_configured`면 PAT·UUID 또는 로그인 계정 설정을, `auth_error`면 PAT 유효성과 제어 권한을, `timeout`·`error`면 ThinQ 접속 상태를 확인한다. 오류 시 일반 가이드는 계속 사용할 수 있지만 수면 환경 전체 실행은 공기청정기 제어 실패로 안내한다. 단일 PAT의 목록과 제어 권한은 설정된 아내 계정에만 제공한다.
 
 
 ## 팀 공통 설정과 개인 SDK 경로

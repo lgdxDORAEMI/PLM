@@ -11,11 +11,17 @@ import 'package:plm_frontend/features/sleep/services/mock_sleep_service.dart';
 import 'package:plm_frontend/features/sleep/services/sleep_service.dart';
 
 class _FakeSleepService implements SleepService {
-  _FakeSleepService({this.deviceId, this.controlOk = true, this.itemId});
+  _FakeSleepService({
+    this.deviceId,
+    this.controlOk = true,
+    this.itemId,
+    this.connectionStatus,
+  });
 
   final String? deviceId;
   final bool controlOk;
   final String? itemId;
+  final String? connectionStatus;
   String? lastPower;
   String? lastWindStrength;
   final Map<String, bool> completed = {};
@@ -44,7 +50,12 @@ class _FakeSleepService implements SleepService {
   }
 
   @override
-  Future<String?> findAirPurifierDeviceId() async => deviceId;
+  Future<String?> findAirPurifierDeviceId() async {
+    if (connectionStatus case final status?) {
+      throw ThinQConnectionException(status);
+    }
+    return deviceId;
+  }
 
   @override
   Future<bool> controlAirPurifier(
@@ -141,6 +152,43 @@ void main() {
 
     expect(ok, isFalse);
     expect(service.lastPower, isNull);
+  });
+
+  test('ThinQ 인증 실패를 미등록 기기와 구분한다', () async {
+    final service = _FakeSleepService(connectionStatus: 'auth_error');
+    final controller = SleepGuideController(service: service);
+    addTearDown(controller.dispose);
+
+    await controller.load();
+
+    expect(controller.airPurifierConnected, isFalse);
+    expect(controller.airPurifierConnectionStatus, 'auth_error');
+    expect(controller.state, SleepGuideViewState.ready);
+  });
+
+  test('기기 조회 API의 연결 실패 상태를 예외로 전달한다', () async {
+    final service = ApiSleepService(
+      client: ApiClient(
+        baseUrl: 'http://localhost:8000',
+        httpClient: MockClient(
+          (_) async => http.Response(
+            jsonEncode({'status': 'not_configured', 'devices': []}),
+            200,
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      service.findAirPurifierDeviceId,
+      throwsA(
+        isA<ThinQConnectionException>().having(
+          (error) => error.status,
+          'status',
+          'not_configured',
+        ),
+      ),
+    );
   });
 
   test('수면 환경 전체 실행 시 홈 루틴 진행도용 실행 상태를 완료로 갱신한다', () async {

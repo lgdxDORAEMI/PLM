@@ -34,6 +34,10 @@ class ApiSleepService implements SleepService {
   @override
   Future<String?> findAirPurifierDeviceId() async {
     final response = await _client.get('/api/v1/thinq/devices');
+    final status = response?['status']?.toString() ?? 'error';
+    if (status != 'connected') {
+      throw ThinQConnectionException(status);
+    }
     final devices = response?['devices'];
     if (devices is! List) return null;
     for (final device in devices.whereType<Map>()) {
