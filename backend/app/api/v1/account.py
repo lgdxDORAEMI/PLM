@@ -100,6 +100,15 @@ def read_partner_link(user: User, service: Service) -> PartnerLinkResponse:
         raise to_http_exception(error) from error
 
 
+@router.post("/partner-link/share", response_model=PartnerLinkResponse)
+def share_partner_link(user: User, service: Service) -> PartnerLinkResponse:
+    """아내가 초대 화면에서 연결을 확인하면 남편 캘린더에 기록을 다시 공개한다(09-29)."""
+    try:
+        return service.share_partner_link(user.id)
+    except Exception as error:
+        raise to_http_exception(error) from error
+
+
 @router.post(
     "/partner-invitations",
     response_model=InvitationResponse,

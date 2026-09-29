@@ -6,6 +6,64 @@ import 'package:plm_frontend/features/report/models/daily_record.dart';
 import 'package:plm_frontend/features/report/services/record_service.dart';
 
 void main() {
+  group('남편 화면(09-29)', () {
+    DateTime clock() => DateTime(2026, 9, 29, 10);
+
+    test('오늘 컨디션이 없어도 전날이 아니라 오늘을 선택하고 주차를 보여준다', () async {
+      final service = _TestRecordService(
+        fetchMonthHandler: (_) async => [_record(28)],
+        fetchRecordHandler: (date) async =>
+            DailyRecord.awaitingCondition(date: date, pregnancyWeek: 20),
+      );
+      final controller = RecordCalendarController(
+        service: service,
+        initialSelectedDate: clock(),
+        selectsTodayWithoutRecord: true,
+        clock: clock,
+      );
+
+      await controller.load();
+      await _flushAsync();
+
+      expect(controller.selectedDate, DateTime(2026, 9, 29));
+      expect(controller.selectedRecord?.awaitingCondition, isTrue);
+      expect(controller.selectedRecord?.pregnancyWeek, 20);
+    });
+
+    test('아내가 공개하지 않았으면 notShared 상태가 되고 기록을 비운다', () async {
+      final service = _TestRecordService(
+        fetchMonthHandler: (_) async =>
+            throw const PartnerRecordNotSharedException(),
+        fetchRecordHandler: (_) async => null,
+      );
+      final controller = RecordCalendarController(
+        service: service,
+        initialSelectedDate: clock(),
+        selectsTodayWithoutRecord: true,
+        clock: clock,
+      );
+
+      await controller.load();
+
+      expect(controller.state, RecordCalendarViewState.notShared);
+      expect(controller.records, isEmpty);
+    });
+  });
+
+  test('아내 화면은 컨디션 없는 날을 예전처럼 기록 없음으로 다룬다', () async {
+    final service = _TestRecordService(
+      fetchMonthHandler: (_) async => [_record(13)],
+      fetchRecordHandler: (date) async =>
+          DailyRecord.awaitingCondition(date: date, pregnancyWeek: 20),
+    );
+    final controller = RecordCalendarController(service: service);
+
+    await controller.load();
+    await _flushAsync();
+
+    expect(controller.detailState, RecordCalendarDetailState.empty);
+  });
+
   test('월 응답이 오면 상세 응답을 기다리지 않고 캘린더를 표시한다', () async {
     final detail = Completer<DailyRecord?>();
     final service = _TestRecordService(

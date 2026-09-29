@@ -64,6 +64,29 @@ void main() {
     expect(await service.fetch(DateTime(2026, 9, 20)), isNull);
   });
 
+  test('아내가 공개하기 전 403은 권한 오류가 아니라 notShared다(09-29)', () async {
+    for (final (detail, expected) in [
+      (
+        ApiException.partnerNotSharedDetail,
+        PartnerMorningReportState.notShared,
+      ),
+      ('연동된 아내 계정이 없습니다.', PartnerMorningReportState.authError),
+    ]) {
+      final controller = PartnerMorningReportController(
+        service: _apiService(
+          (_) async => http.Response(
+            jsonEncode({'detail': detail}),
+            403,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          ),
+        ),
+        date: DateTime(2026, 9, 29),
+      );
+      await controller.load();
+      expect(controller.state, expected);
+    }
+  });
+
   test('Controller는 loading에서 data 상태로 전환한다', () async {
     final report = PartnerMorningReport.fromJson(responseBody);
     final controller = PartnerMorningReportController(

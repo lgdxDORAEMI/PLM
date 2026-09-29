@@ -21,6 +21,8 @@ import '../services/api_partner_morning_report_service.dart';
 import '../services/mock_partner_morning_report_service.dart';
 import '../services/partner_morning_report_service.dart';
 import '../../../shared/widgets/integration_required_state.dart';
+import '../../../shared/widgets/partner_not_shared_state.dart';
+import '../widgets/partner_notification_button.dart';
 
 class PartnerMorningReportScreen extends StatefulWidget {
   const PartnerMorningReportScreen({
@@ -104,14 +106,7 @@ class _PartnerMorningReportScreenState extends State<PartnerMorningReportScreen>
       title: widget.daily ? 'Daily 리포트' : '오전 리포트',
       onBack: _handleBack,
       husbandMenuAction: true,
-      actions: [
-        IconButton(
-          tooltip: '알림',
-          onPressed: () =>
-              Navigator.pushNamed(context, RouteNames.partnerNotifications),
-          icon: const Icon(Icons.notifications_outlined),
-        ),
-      ],
+      actions: const [PartnerNotificationButton()],
     ),
     body: SafeArea(
       top: false,
@@ -137,6 +132,7 @@ class _PartnerMorningReportScreenState extends State<PartnerMorningReportScreen>
       onAction: () =>
           Navigator.pushReplacementNamed(context, RouteNames.partnerCalendar),
     ),
+    PartnerMorningReportState.notShared => const PartnerNotSharedState(),
     PartnerMorningReportState.authError => AppErrorState(
       title: '리포트를 볼 수 없어요',
       message: '로그인 상태와 배우자 연결 권한을 확인해 주세요.',

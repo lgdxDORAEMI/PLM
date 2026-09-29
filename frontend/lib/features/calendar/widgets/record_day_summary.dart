@@ -32,41 +32,56 @@ class RecordDaySummary extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.card),
         boxShadow: AppElevation.level1,
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        spacing: 26,
-        children: [
-          _SummaryItem(
-            label: '컨디션',
-            value: record.conditionSummary,
-            loading: detailsLoading,
-          ),
-          _SummaryItem(
-            label: '실행한 루틴',
-            value: '${record.completedRoutines} / ${record.totalRoutines} 완료',
-            loading: detailsLoading,
-          ),
-          _SummaryItem(
-            label: '가전 자동 실행',
-            value: record.applianceSummary,
-            loading: detailsLoading,
-          ),
-          _SummaryItem(
-            label: '가족 분담',
-            value:
-                '요청 ${record.familyRequested} · 확인 ${record.familyConfirmed} · 완료 ${record.familyCompleted}',
-            loading: detailsLoading,
-          ),
-          if (showMotionCaution)
-            _SummaryItem(
-              label: '홈캠 관련 주의사항',
-              value: record.motionSummaries.isNotEmpty
-                  ? record.motionSummaries.first
-                  : '특이 자세가 감지되지 않았어요',
-              loading: detailsLoading,
+      child: record.awaitingCondition && !detailsLoading
+          ? const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+              child: Text(
+                '아직 아내의 컨디션이 도착하지 않았어요',
+                key: ValueKey('calendar-awaiting-condition'),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 15,
+                  height: 1.5,
+                ),
+              ),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: 26,
+              children: [
+                _SummaryItem(
+                  label: '컨디션',
+                  value: record.conditionSummary,
+                  loading: detailsLoading,
+                ),
+                _SummaryItem(
+                  label: '실행한 루틴',
+                  value:
+                      '${record.completedRoutines} / ${record.totalRoutines} 완료',
+                  loading: detailsLoading,
+                ),
+                _SummaryItem(
+                  label: '가전 자동 실행',
+                  value: record.applianceSummary,
+                  loading: detailsLoading,
+                ),
+                _SummaryItem(
+                  label: '가족 분담',
+                  value:
+                      '요청 ${record.familyRequested} · 확인 ${record.familyConfirmed} · 완료 ${record.familyCompleted}',
+                  loading: detailsLoading,
+                ),
+                if (showMotionCaution)
+                  _SummaryItem(
+                    label: '홈캠 관련 주의사항',
+                    value: record.motionSummaries.isNotEmpty
+                        ? record.motionSummaries.first
+                        : '특이 자세가 감지되지 않았어요',
+                    loading: detailsLoading,
+                  ),
+              ],
             ),
-        ],
-      ),
     );
   }
 }

@@ -10,6 +10,7 @@ from httpx import ASGITransport, AsyncClient
 
 from app.api.v1.family import get_family_service
 from app.core.security import CurrentUser, get_current_user
+from app.domains.errors import PARTNER_NOT_SHARED
 from app.domains.family.service import FamilyService
 from app.domains.family.stub_repository import StubFamilyRepository
 from app.domains.family.supabase_repository import SupabaseFamilyRepository
@@ -68,8 +69,14 @@ class FakeSupabaseClient:
     def table(self, name: str) -> FakeTable:
         return FakeTable(self.tables[name])
 
-    def link(self, wife: str = WIFE, husband: str = HUSBAND) -> None:
-        self.tables["partner_links"].append({"wife_user_id": wife, "husband_user_id": husband})
+    def link(self, wife: str = WIFE, husband: str = HUSBAND, *, shared: bool = True) -> None:
+        self.tables["partner_links"].append(
+            {
+                "wife_user_id": wife,
+                "husband_user_id": husband,
+                "shared_at": "2026-09-18T00:00:00+00:00" if shared else None,
+            }
+        )
 
     def seed_profile(self, due_date: str = "2026-12-20") -> None:
         self.tables["pregnancy_profiles"].append({"user_id": WIFE, "due_date": due_date})
@@ -122,6 +129,17 @@ class MorningReportTest(unittest.IsolatedAsyncioTestCase):
         async with self.http() as client:
             response = await client.get(f"/api/v1/family/morning-reports/{TARGET_DATE}")
         self.assertEqual(response.status_code, 403)
+
+    async def test_unshared_link_is_403_until_wife_shares_again(self) -> None:
+        """09-29: 초기화 후 아내가 다시 공개하기 전에는 '이 날 리포트 보기'도 막는다."""
+        self.client.link(shared=False)
+        self.client.seed_profile()
+        self.client.seed_condition()
+
+        async with self.http() as client:
+            response = await client.get(f"/api/v1/family/morning-reports/{TARGET_DATE}")
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["detail"], PARTNER_NOT_SHARED)
 
     async def test_linked_husband_gets_projection_without_raw_scores(self) -> None:
         self.client.link()

@@ -126,8 +126,14 @@ class FakeSupabaseClient:
     def table(self, name: str) -> FakeTable:
         return FakeTable(self.tables[name], self._defaults.get(name))
 
-    def link(self, wife: str = WIFE, husband: str = HUSBAND) -> None:
-        self.tables["partner_links"].append({"wife_user_id": wife, "husband_user_id": husband})
+    def link(self, wife: str = WIFE, husband: str = HUSBAND, *, shared: bool = True) -> None:
+        self.tables["partner_links"].append(
+            {
+                "wife_user_id": wife,
+                "husband_user_id": husband,
+                "shared_at": "2026-09-18T00:00:00+00:00" if shared else None,
+            }
+        )
 
     def seed_profile(self, user_id: str, display_name: str) -> None:
         self.tables["profiles"].append({"user_id": user_id, "display_name": display_name})

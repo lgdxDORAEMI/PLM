@@ -15,6 +15,9 @@ class ApiRecordService implements RecordService {
         '${month.year.toString().padLeft(4, '0')}-'
         '${month.month.toString().padLeft(2, '0')}';
     final response = await _client.get('/api/v1/care/calendar/$monthKey');
+    if (response?['wife_shared'] == false) {
+      throw const PartnerRecordNotSharedException();
+    }
     final days = response?['days'];
     if (days is! List) return const [];
     return days
@@ -37,9 +40,23 @@ class ApiRecordService implements RecordService {
     // null = 이 엔드포인트가 없는 구버전 백엔드. 이때만 예전 계약으로 폴백한다.
     // 09-25 이후 기록이 없는 날은 404가 아니라 값이 null인 200이므로 여기서 걸리지 않는다.
     if (response == null) return fetchRecord(date);
+    if (response['wife_shared'] == false) {
+      throw const PartnerRecordNotSharedException();
+    }
     final report = response['report'];
     final condition = response['condition'];
-    if (report == null || condition == null) return null; // 그 날짜에 기록이 없다
+    final pregnancyWeek = (response['pregnancy_week'] as num?)?.toInt();
+    // 그 날짜에 컨디션이 없다. 09-29부터 서버가 주차는 주므로 날짜·주차만 담아 돌려준다.
+    // 아내 화면은 컨트롤러에서 예전처럼 "기록 없음"으로 다룬다.
+    if (condition == null) {
+      return pregnancyWeek == null
+          ? null
+          : DailyRecord.awaitingCondition(
+              date: date,
+              pregnancyWeek: pregnancyWeek,
+            );
+    }
+    if (report == null) return null;
     if (report is! Map || condition is! Map) {
       throw const FormatException('캘린더 상세 응답 형식이 올바르지 않습니다.');
     }
@@ -47,7 +64,7 @@ class ApiRecordService implements RecordService {
       date,
       Map<String, dynamic>.from(report),
       Map<String, dynamic>.from(condition),
-      pregnancyWeek: (response['pregnancy_week'] as num?)?.toInt(),
+      pregnancyWeek: pregnancyWeek,
     );
   }
 

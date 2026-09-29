@@ -57,6 +57,9 @@ class StubAccountRepository(AccountRepository):
             partner_link=PartnerLinkStatus.LINKED,
         )
 
+    def share_partner_link(self, wife_user_id: str, *, shared_at: datetime) -> None:
+        """Stub은 공개 상태를 읽는 곳이 없어 기록하지 않는다."""
+
     def set_state(self, user_id: str, state: AccountState) -> None:
         """테스트와 로컬 Demo fixture에서만 사용자 상태를 주입한다."""
         self._states[user_id] = state

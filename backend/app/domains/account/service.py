@@ -28,6 +28,8 @@ class AccountServicePort(Protocol):
 
     def accept_invitation(self, husband_user_id: str, token: str) -> PartnerLinkResponse: ...
 
+    def share_partner_link(self, user_id: str) -> PartnerLinkResponse: ...
+
 
 class AccountService(AccountServicePort):
     INVITATION_TTL = timedelta(hours=72)
@@ -84,6 +86,16 @@ class AccountService(AccountServicePort):
         self.repository.mark_invitation_used(invitation.invitation_id, used_at=now)
         # 남편 표시 이름은 Stub이 모르는 값이라 지어내지 않는다.
         return PartnerLinkResponse(status=PartnerLinkStatus.LINKED, partner_display_name=None)
+
+    def share_partner_link(self, user_id: str) -> PartnerLinkResponse:
+        """연동된 아내가 남편 화면에 자기 기록을 다시 공개한다(09-29)."""
+        state = self.repository.get_state(user_id)
+        if state.role != UserRole.WIFE:
+            raise DomainForbiddenError("아내 계정만 남편에게 기록을 공개할 수 있습니다.")
+        if state.partner_link != PartnerLinkStatus.LINKED:
+            raise DomainConflictError("남편과 연동된 뒤에 공개할 수 있습니다.")
+        self.repository.share_partner_link(user_id, shared_at=datetime.now(timezone.utc))
+        return self.partner_link(user_id)
 
     @staticmethod
     def _destination(

@@ -7,6 +7,7 @@ import '../../design_system/components/top_app_bar.dart';
 import '../../design_system/tokens/app_colors.dart';
 import '../../design_system/tokens/app_spacing.dart';
 import '../../routing/route_names.dart';
+import '../../features/partner/widgets/partner_notification_button.dart';
 
 class SkeletonAction {
   const SkeletonAction(
@@ -236,14 +237,7 @@ class ProductSkeletonScreen extends StatelessWidget {
       ];
     }
     if (shell == SkeletonShell.partner) {
-      return [
-        IconButton(
-          tooltip: '알림',
-          onPressed: () =>
-              Navigator.pushNamed(context, RouteNames.partnerNotifications),
-          icon: const Icon(Icons.notifications_outlined),
-        ),
-      ];
+      return const [PartnerNotificationButton()];
     }
     return null;
   }

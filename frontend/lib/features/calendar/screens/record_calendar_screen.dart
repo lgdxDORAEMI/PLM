@@ -24,6 +24,8 @@ import '../data/calendar_selection_store.dart';
 import '../widgets/condition_calendar.dart';
 import '../widgets/record_day_summary.dart';
 import '../../../shared/widgets/integration_required_state.dart';
+import '../../../shared/widgets/partner_not_shared_state.dart';
+import '../../partner/widgets/partner_notification_button.dart';
 
 class RecordCalendarScreen extends StatefulWidget {
   const RecordCalendarScreen({super.key, required this.role, this.service});
@@ -53,6 +55,7 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen>
           CalendarSelectionStore.instance.selectedDate ??
           (AppConfig.hasSupabaseConfig ? DateTime.now() : null),
       onSelected: CalendarSelectionStore.instance.remember,
+      selectsTodayWithoutRecord: widget.role == AppUserRole.husband,
     )..addListener(_refresh);
     unawaited(_controller.load());
   }
@@ -121,14 +124,7 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen>
     return Scaffold(appBar: appBar, body: body);
   }
 
-  List<Widget> _partnerActions() => [
-    IconButton(
-      tooltip: '알림',
-      onPressed: () =>
-          Navigator.pushNamed(context, RouteNames.partnerNotifications),
-      icon: const Icon(Icons.notifications_outlined),
-    ),
-  ];
+  List<Widget> _partnerActions() => const [PartnerNotificationButton()];
 
   Widget _buildBody() => switch (_controller.state) {
     RecordCalendarViewState.initialLoading => const AppLoadingState(
@@ -139,6 +135,8 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen>
       message: '잠시 후 다시 시도해 주세요.',
       onRetry: _controller.load,
     ),
+    // 09-29: 아내가 초기화 후 아직 초대를 확인하지 않았다(남편 화면 전용).
+    RecordCalendarViewState.notShared => const PartnerNotSharedState(),
     RecordCalendarViewState.ready ||
     RecordCalendarViewState.refreshing => _CalendarContent(
       controller: _controller,
@@ -205,7 +203,11 @@ class _CalendarContent extends StatelessWidget {
             month: month,
             comfortable: expandedCalendar,
           ),
-          secondary: selected == null
+          secondary:
+              selected == null &&
+                  controller.detailState == RecordCalendarDetailState.loading
+              ? const AppLoadingState(message: '기록을 불러오고 있어요')
+              : selected == null
               ? const AppEmptyState(
                   title: '이 달에는 기록이 없어요',
                   message: '기록이 있는 달만 조회할 수 있어요.',
@@ -311,6 +313,7 @@ class _CalendarPanel extends StatelessWidget {
         selectedDate: controller.selectedDate,
         onSelected: controller.selectDate,
         comfortable: comfortable,
+        emptySelectableDate: controller.emptySelectableDate,
       ),
       SizedBox(height: comfortable ? AppSpacing.xxl : AppSpacing.xl),
       const ConditionLegend(),
@@ -366,13 +369,16 @@ class _SelectedDayDetail extends StatelessWidget {
         showMotionCaution: role == AppUserRole.wife,
         detailsLoading: detailsLoading,
       ),
-      const SizedBox(height: AppSpacing.lg),
-      AppButton(
-        key: const ValueKey('calendar-open-report'),
-        label: role == AppUserRole.wife ? '이 날 리포트 자세히 보기' : '이 날 리포트 보기',
-        variant: AppButtonVariant.secondary,
-        onPressed: onOpenReport,
-      ),
+      // 컨디션이 아직 없는 날은 볼 리포트가 없다(09-29).
+      if (!record.awaitingCondition) ...[
+        const SizedBox(height: AppSpacing.lg),
+        AppButton(
+          key: const ValueKey('calendar-open-report'),
+          label: role == AppUserRole.wife ? '이 날 리포트 자세히 보기' : '이 날 리포트 보기',
+          variant: AppButtonVariant.secondary,
+          onPressed: onOpenReport,
+        ),
+      ],
       if (role == AppUserRole.husband &&
           DateUtils.isSameDay(record.date, DateTime.now())) ...[
         const SizedBox(height: AppSpacing.md),

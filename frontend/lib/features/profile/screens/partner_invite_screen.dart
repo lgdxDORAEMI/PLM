@@ -18,6 +18,7 @@ import '../../condition/services/api_planned_activity_service.dart';
 import '../../condition/services/mock_planned_activity_service.dart';
 import '../../condition/services/planned_activity_service.dart';
 import '../../invitation/data/invite_presentation_store.dart';
+import '../data/profile_store.dart';
 import '../../invitation/models/partner_link.dart';
 import '../../invitation/services/api_partner_link_service.dart';
 import '../../invitation/services/partner_link_service.dart';
@@ -212,6 +213,17 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
 
   Future<void> _send() async {
     if (_linked) {
+      // 09-29: 서버에 공개를 남겨야 남편 캘린더가 아내 기록을 보여준다.
+      try {
+        await (widget.partnerLinkService ?? ApiPartnerLinkService()).share();
+      } catch (_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('남편에게 기록을 공개하지 못했어요. 다시 시도해 주세요.')),
+        );
+        return;
+      }
+      if (!mounted) return;
       InvitePresentationStore.instance.acknowledgeLinkedPartner();
       if (widget.entryContext == InviteEntryContext.dailyFlow) {
         await _finish(showLinkedConfirmation: true);
@@ -306,6 +318,7 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
         }
         if (mounted) setState(() => _generating = false);
       }
+      if (generated) ProfileStore.instance.completeResetRoutine();
       if (generated && mounted) {
         Navigator.pushReplacementNamed(context, RouteNames.wifeHome);
       }

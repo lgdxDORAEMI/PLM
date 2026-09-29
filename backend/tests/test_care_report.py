@@ -434,7 +434,7 @@ class ReportApiTest(unittest.IsolatedAsyncioTestCase):
         self.client.seed_condition()
         self.client.seed_item("item-1", "health", status="completed", completed_by="wife")
         self.client.tables["partner_links"].append(
-            {"husband_user_id": "husband-1", "wife_user_id": USER}
+            {"husband_user_id": "husband-1", "wife_user_id": USER, "shared_at": "2026-09-18T00:00:00+00:00"}
         )
         async with self.http() as client:
             await client.post(f"/api/v1/care/daily-reports/{TARGET_DATE.isoformat()}/finalize")
@@ -543,7 +543,43 @@ class CalendarApiTest(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(
-            response.json(), {"condition": None, "report": None, "pregnancy_week": None}
+            response.json(),
+            {"condition": None, "report": None, "pregnancy_week": None, "wife_shared": True},
+        )
+
+    async def test_calendar_day_without_condition_still_gives_pregnancy_week(self) -> None:
+        """09-29: 남편 화면이 오늘 컨디션을 기다리는 동안에도 주차는 보여야 한다."""
+        self.client.tables["pregnancy_profiles"].append(
+            {"user_id": USER, "due_date": "2027-02-05"}
+        )
+        async with self.http() as client:
+            response = await client.get(
+                f"/api/v1/care/calendar/days/{TARGET_DATE.isoformat()}"
+            )
+        body = response.json()
+        self.assertIsNone(body["condition"])
+        self.assertEqual(body["pregnancy_week"], 20)
+
+    async def test_husband_sees_nothing_until_wife_shares_again(self) -> None:
+        """09-29: 연동됐어도 아내가 초기화 후 다시 공개하지 않았으면(shared_at 없음)
+        남편 캘린더에 아내 기록·주차가 보이면 안 된다."""
+        self.client.seed_condition(TARGET_DATE)
+        self.client.tables["pregnancy_profiles"].append(
+            {"user_id": USER, "due_date": "2027-02-05"}
+        )
+        self.client.tables["partner_links"].append(
+            {"husband_user_id": "husband-1", "wife_user_id": USER, "shared_at": None}
+        )
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(id="husband-1")
+
+        async with self.http() as client:
+            month = await client.get("/api/v1/care/calendar/2026-09")
+            day = await client.get(f"/api/v1/care/calendar/days/{TARGET_DATE.isoformat()}")
+
+        self.assertEqual(month.json(), {"month": "2026-09", "days": [], "wife_shared": False})
+        self.assertEqual(
+            day.json(),
+            {"condition": None, "report": None, "pregnancy_week": None, "wife_shared": False},
         )
 
     async def test_linked_husband_sees_wifes_calendar_day_detail(self) -> None:
@@ -553,7 +589,7 @@ class CalendarApiTest(unittest.IsolatedAsyncioTestCase):
             {"user_id": USER, "due_date": "2027-02-05"}
         )
         self.client.tables["partner_links"].append(
-            {"husband_user_id": "husband-1", "wife_user_id": USER}
+            {"husband_user_id": "husband-1", "wife_user_id": USER, "shared_at": "2026-09-18T00:00:00+00:00"}
         )
         app.dependency_overrides[get_current_user] = lambda: CurrentUser(
             id="husband-1"
@@ -597,7 +633,7 @@ class CalendarApiTest(unittest.IsolatedAsyncioTestCase):
         자신이 아니라 아내의 캘린더를 봐야 한다."""
         self.client.seed_condition(date(2026, 9, 1))
         self.client.tables["partner_links"].append(
-            {"husband_user_id": "husband-1", "wife_user_id": USER}
+            {"husband_user_id": "husband-1", "wife_user_id": USER, "shared_at": "2026-09-18T00:00:00+00:00"}
         )
 
         app.dependency_overrides[get_current_user] = lambda: CurrentUser(id="husband-1")

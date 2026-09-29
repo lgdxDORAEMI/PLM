@@ -141,6 +141,8 @@ class CalendarDayDetailResponse(BaseModel):
     # 09-27: 캘린더 주인(아내) 예정일 기준 주차. 남편이 조회해도 아내 기준이다.
     # 예전엔 프론트가 로그인한 본인 프로필로 계산해 남편 화면에 0주차가 떴다.
     pregnancy_week: int | None = None
+    # 09-29: 남편이 조회했는데 아내가 아직 공개하지 않았으면 false. 나머지 값은 비어 있다.
+    wife_shared: bool = True
 
 
 class RoutineFeedbackKind(StrEnum):
@@ -210,6 +212,8 @@ class CalendarMonthResponse(BaseModel):
 
     month: str
     days: list[CalendarDay] = Field(default_factory=list)
+    # 09-29: 남편이 조회했는데 아내가 아직 공개하지 않았으면 false이고 days는 비어 있다.
+    wife_shared: bool = True
 
     @field_validator("month")
     @classmethod

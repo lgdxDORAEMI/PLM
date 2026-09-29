@@ -14,4 +14,9 @@ class ApiPartnerLinkService implements PartnerLinkService {
         ? const PartnerLink(linked: false)
         : PartnerLink.fromJson(response);
   }
+
+  @override
+  Future<void> share() async {
+    await _client.post('/api/v1/account/partner-link/share');
+  }
 }

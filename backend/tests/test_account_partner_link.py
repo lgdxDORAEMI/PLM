@@ -171,13 +171,32 @@ class InvitationLifecycleTest(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.json()["status"], "linked")
 
         link = self.fake.tables["partner_links"][0]
-        self.assertEqual(link, {"wife_user_id": WIFE, "husband_user_id": HUSBAND})  # 원본 데이터 복제 없음
+        # 원본 데이터 복제 없음. 새 연결은 아내가 공개한 상태로 시작한다(09-29).
+        self.assertEqual(set(link), {"wife_user_id", "husband_user_id", "shared_at"})
+        self.assertEqual((link["wife_user_id"], link["husband_user_id"]), (WIFE, HUSBAND))
+        self.assertTrue(link["shared_at"])
         self.assertTrue(self.fake.tables["partner_invitations"][0]["used_at"])
 
         husband_profile = next(
             row for row in self.fake.tables["profiles"] if row["user_id"] == HUSBAND
         )
         self.assertEqual(husband_profile["role"], "husband")
+
+    async def test_linked_wife_shares_again_after_reset(self) -> None:
+        """09-29: 초기화로 비운 shared_at을 아내가 초대 화면에서 확인하면 다시 채운다."""
+        self.fake.tables["partner_links"].append(
+            {"wife_user_id": WIFE, "husband_user_id": HUSBAND, "shared_at": None}
+        )
+        async with client_for(self.fake) as client:
+            response = await client.post("/api/v1/account/partner-link/share")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["status"], "linked")
+        self.assertTrue(self.fake.tables["partner_links"][0]["shared_at"])
+
+    async def test_unlinked_wife_cannot_share(self) -> None:
+        async with client_for(self.fake) as client:
+            response = await client.post("/api/v1/account/partner-link/share")
+        self.assertEqual(response.status_code, 409)
 
     async def test_reusing_used_token_is_conflict_not_success(self) -> None:
         self.fake.seed_invitation("tok-1", used_at=datetime.now(timezone.utc).isoformat())

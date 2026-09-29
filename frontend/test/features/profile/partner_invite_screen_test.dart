@@ -133,6 +133,9 @@ class _LinkedPartnerService implements PartnerLinkService {
   @override
   Future<PartnerLink> fetch() async =>
       const PartnerLink(linked: true, partnerDisplayName: '최준서');
+
+  @override
+  Future<void> share() async {}
 }
 
 class _CountingInvitationService implements InvitationService {

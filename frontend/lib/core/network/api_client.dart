@@ -14,6 +14,13 @@ class ApiException implements Exception {
   final int statusCode;
   final String message;
 
+  /// 09-29: 백엔드 PARTNER_NOT_SHARED(app/domains/errors.py)와 같은 문구다.
+  static const partnerNotSharedDetail = '아내가 아직 기록을 공개하지 않았습니다.';
+
+  /// 남편이 조회했지만 아내가 초기화 후 아직 다시 공개하지 않았다.
+  bool get isPartnerNotShared =>
+      statusCode == 403 && message == partnerNotSharedDetail;
+
   @override
   String toString() => 'ApiException($statusCode): $message';
 }

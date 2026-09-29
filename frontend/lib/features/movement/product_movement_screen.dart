@@ -24,6 +24,7 @@ import 'services/mock_movement_dashboard_service.dart';
 import 'services/movement_dashboard_service.dart';
 import '../../shared/widgets/integration_required_state.dart';
 import 'widgets/movement_alert_card.dart';
+import '../../shared/widgets/partner_not_shared_state.dart';
 
 /// B-MOTION-001의 오늘 감지 상태와 로그를 Backend 조회 결과로 표시한다.
 class ProductMovementScreen extends StatefulWidget {
@@ -77,68 +78,71 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
       top: false,
       child: ContentFrame(
         maxWidth: 1200,
-        child: ListView(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-          children: [
-            if (!AppConfig.hasSupabaseConfig &&
-                !AppConfig.mockPreviewEnabled &&
-                widget.service == null)
-              const IntegrationRequiredState(),
-            if (_controller.state == MovementDashboardViewState.loading)
-              const AppLoadingState(message: '오늘의 움직임 기록을 불러오고 있어요')
-            else if (_controller.state != MovementDashboardViewState.data)
-              AppErrorState(
-                title: _controller.state == MovementDashboardViewState.authError
-                    ? '움직임 기록을 볼 수 없어요'
-                    : '움직임 기록을 불러오지 못했어요',
-                message:
-                    _controller.state == MovementDashboardViewState.serverError
-                    ? '서버 연결을 확인한 뒤 다시 시도해 주세요.'
-                    : null,
-                onRetry: _controller.load,
-              )
-            else ...[
-              if (_isWife) ...[
-                InfoBanner(
-                  title: _controller.data!.collectionEnabled
-                      ? '움직임 수집 중'
-                      : '움직임 수집 꺼짐',
-                  message: _controller.data!.consentGranted
-                      ? '움직임 데이터 수집에 동의한 상태예요.'
-                      : '움직임 데이터 수집 동의가 필요해요.',
-                  tone: _controller.data!.collectionEnabled
-                      ? InfoBannerTone.success
-                      : InfoBannerTone.info,
-                ),
-                const SizedBox(height: AppSpacing.xl),
-              ],
-              ResponsiveSplitView(
-                primaryFlex: 7,
-                secondaryFlex: 5,
-                gap: AppSpacing.xxl,
-                primary: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _CurrentStateCard(data: _controller.data!),
+        child: _controller.state == MovementDashboardViewState.notShared
+            ? const PartnerNotSharedState()
+            : ListView(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+                children: [
+                  if (!AppConfig.hasSupabaseConfig &&
+                      !AppConfig.mockPreviewEnabled &&
+                      widget.service == null)
+                    const IntegrationRequiredState(),
+                  if (_controller.state == MovementDashboardViewState.loading)
+                    const AppLoadingState(message: '오늘의 움직임 기록을 불러오고 있어요')
+                  else if (_controller.state != MovementDashboardViewState.data)
+                    AppErrorState(
+                      title:
+                          _controller.state ==
+                              MovementDashboardViewState.authError
+                          ? '움직임 기록을 볼 수 없어요'
+                          : '움직임 기록을 불러오지 못했어요',
+                      message:
+                          _controller.state ==
+                              MovementDashboardViewState.serverError
+                          ? '서버 연결을 확인한 뒤 다시 시도해 주세요.'
+                          : null,
+                      onRetry: _controller.load,
+                    )
+                  else ...[
+                    if (_isWife) ...[
+                      InfoBanner(
+                        title: _controller.data!.collectionEnabled
+                            ? '움직임 수집 중'
+                            : '움직임 수집 꺼짐',
+                        message: _controller.data!.consentGranted
+                            ? '움직임 데이터 수집에 동의한 상태예요.'
+                            : '움직임 데이터 수집 동의가 필요해요.',
+                        tone: _controller.data!.collectionEnabled
+                            ? InfoBannerTone.success
+                            : InfoBannerTone.info,
+                      ),
+                      const SizedBox(height: AppSpacing.xl),
+                    ],
+                    ResponsiveSplitView(
+                      primaryFlex: 7,
+                      secondaryFlex: 5,
+                      gap: AppSpacing.xxl,
+                      primary: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [_CurrentStateCard(data: _controller.data!)],
+                      ),
+                      secondary: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _TodayEventLog(events: _controller.todayAlerts),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    Text(
+                      '홈카메라는 영상을 저장하지 않고 움직임 패턴만 인식해요. 의료 진단 기능이 아닙니다.',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
                   ],
-                ),
-                secondary: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _TodayEventLog(events: _controller.todayAlerts),
-                  ],
-                ),
+                ],
               ),
-              const SizedBox(height: AppSpacing.xl),
-              Text(
-                '홈카메라는 영상을 저장하지 않고 움직임 패턴만 인식해요. 의료 진단 기능이 아닙니다.',
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: AppColors.textTertiary),
-              ),
-            ],
-          ],
-        ),
       ),
     );
     if (_isWife) {
@@ -158,7 +162,6 @@ class _ProductMovementScreenState extends State<ProductMovementScreen> {
       Navigator.pushReplacementNamed(context, RouteNames.partnerCalendar);
     }
   }
-
 }
 
 /// 그룹 카드를 누르면 바로 뜨는 상세 목록 — 개별 항목을 또 눌러서 들어가는

@@ -9,6 +9,9 @@ enum MovementDashboardViewState {
   data,
   empty,
   authError,
+
+  /// 09-29: 남편 화면. 아내가 초기화 후 아직 다시 공개하지 않았다.
+  notShared,
   domainError,
   serverError,
   error,
@@ -33,6 +36,7 @@ class RealtimeAlertController extends ChangeNotifier {
       _state = MovementDashboardViewState.data;
     } on ApiException catch (error) {
       _state = switch (error.statusCode) {
+        _ when error.isPartnerNotShared => MovementDashboardViewState.notShared,
         401 || 403 => MovementDashboardViewState.authError,
         409 || 422 => MovementDashboardViewState.domainError,
         503 => MovementDashboardViewState.serverError,

@@ -30,7 +30,7 @@ import httpx
 from postgrest.exceptions import APIError
 from supabase import Client
 
-from app.domains.errors import DomainForbiddenError, DomainStorageError
+from app.domains.errors import PARTNER_NOT_SHARED, DomainForbiddenError, DomainStorageError
 from app.utils import dates
 
 from .repository import FamilyRepository, PartnerIdentity
@@ -127,13 +127,16 @@ class SupabaseFamilyRepository(FamilyRepository):
     def _linked_wife_id(self, husband_user_id: str) -> str:
         link_rows = self._run(
             lambda: self.client.table("partner_links")
-            .select("wife_user_id")
+            .select("wife_user_id,shared_at")
             .eq("husband_user_id", husband_user_id)
             .limit(1)
             .execute()
         )
         if not link_rows:
             raise DomainForbiddenError("연동된 아내 계정이 없습니다.")
+        # 09-29: 아내가 초기화 후 다시 공개하기 전에는 리포트를 보여주지 않는다.
+        if not link_rows[0].get("shared_at"):
+            raise DomainForbiddenError(PARTNER_NOT_SHARED)
         return link_rows[0]["wife_user_id"]
 
     def _run(self, request: Callable[[], Any]) -> list[dict]:
@@ -143,14 +146,16 @@ class SupabaseFamilyRepository(FamilyRepository):
             raise DomainStorageError("오전 리포트 저장소에 연결할 수 없습니다.") from error
 
     def get_partner(self, wife_user_id: str) -> PartnerIdentity | None:
+        """09-29: 아내가 초기화 후 다시 초대(공개)하기 전에는 남편이 없는 것으로 본다.
+        호출부 둘(루틴 알림·가사 요청)이 모두 여기서 막혀 남편에게 알림이 가지 않는다."""
         link_rows = self._run(
             lambda: self.client.table("partner_links")
-            .select("husband_user_id")
+            .select("husband_user_id,shared_at")
             .eq("wife_user_id", wife_user_id)
             .limit(1)
             .execute()
         )
-        if not link_rows:
+        if not link_rows or not link_rows[0].get("shared_at"):
             return None
         husband_id = link_rows[0]["husband_user_id"]
         profile_rows = self._run(

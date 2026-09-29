@@ -12,6 +12,7 @@ import '../../../design_system/tokens/app_radius.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/route_names.dart';
 import '../../profile/data/profile_store.dart';
+import '../../invitation/data/invite_presentation_store.dart';
 import '../controllers/planned_activity_controller.dart';
 import '../services/planned_activity_service.dart';
 import '../widgets/routine_generating_dialog.dart';
@@ -152,12 +153,12 @@ class _ActivityScreenState extends State<ActivityScreen> {
               AppButton(
                 key: const ValueKey('activity-submit-button'),
                 label: _controller.generating
-                    ? widget.editing || ProfileStore.instance.awaitsResetRoutine
+                    ? widget.editing || _generatesDirectly
                           ? '오늘 루틴 만드는 중…'
                           : '저장 중…'
                     : widget.editing
                     ? '수정 완료'
-                    : ProfileStore.instance.awaitsResetRoutine
+                    : _generatesDirectly
                     ? 'AI 루틴 만들기'
                     : '다음',
                 onPressed: _controller.generating ? null : _generate,
@@ -168,6 +169,13 @@ class _ActivityScreenState extends State<ActivityScreen> {
       ),
     ),
   );
+
+  /// 초기화 후 이미 초대를 확인했을 때만 초대 화면 없이 바로 루틴을 만든다.
+  /// 09-29: '나중에'로 건너뛰었으면 홈에서 다시 체크할 때도 초대 화면을 연다.
+  /// 초대 화면이 루틴을 만들고, 초대(공개) 전에는 남편 알림이 가지 않는다.
+  bool get _generatesDirectly =>
+      ProfileStore.instance.awaitsResetRoutine &&
+      InvitePresentationStore.instance.isAcknowledged;
 
   List<String> get _customSelections => _controller.selected
       .where((value) => !PlannedActivityController.options.contains(value))
@@ -181,7 +189,7 @@ class _ActivityScreenState extends State<ActivityScreen> {
   Future<void> _generate() async {
     FocusManager.instance.primaryFocus?.unfocus();
     if (_controller.generating) return;
-    if (!widget.editing && !ProfileStore.instance.awaitsResetRoutine) {
+    if (!widget.editing && !_generatesDirectly) {
       try {
         await _controller.saveActivities();
         if (mounted) {

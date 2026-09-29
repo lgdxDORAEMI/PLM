@@ -131,8 +131,14 @@ class FakeSupabaseClient:
     def table(self, name: str) -> FakeTable:
         return FakeTable(self.tables[name], self._defaults.get(name))
 
-    def link(self, wife: str = WIFE, husband: str = HUSBAND) -> None:
-        self.tables["partner_links"].append({"wife_user_id": wife, "husband_user_id": husband})
+    def link(self, wife: str = WIFE, husband: str = HUSBAND, *, shared: bool = True) -> None:
+        self.tables["partner_links"].append(
+            {
+                "wife_user_id": wife,
+                "husband_user_id": husband,
+                "shared_at": "2026-09-18T00:00:00+00:00" if shared else None,
+            }
+        )
 
     def seed_profile(self, user_id: str, display_name: str) -> None:
         self.tables["profiles"].append({"user_id": user_id, "display_name": display_name})
@@ -261,6 +267,12 @@ class RoutineReadyNotificationTest(unittest.TestCase):
         self.service.notify_routine_ready(WIFE, date(2026, 9, 18), "routine-1", first_of_day=False)
         self.assertEqual(self.fake.tables["notifications"][0]["type"], "condition_changed")
         self.assertEqual(self.fake.tables["notifications"][0]["title"], "아내의 루틴이 변경되었습니다.")
+
+    def test_no_notification_until_wife_invites_again(self) -> None:
+        """09-29: 초기화 후 '나중에'로 초대를 건너뛰면 루틴을 만들어도 남편 알림이 없다."""
+        self.fake.link(shared=False)
+        self.service.notify_routine_ready(WIFE, date(2026, 9, 18), "routine-1", first_of_day=True)
+        self.assertEqual(self.fake.tables["notifications"], [])
 
     def test_unlinked_wife_writes_nothing(self) -> None:
         self.service.notify_routine_ready(WIFE, date(2026, 9, 18), "routine-1", first_of_day=True)

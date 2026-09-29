@@ -85,7 +85,7 @@ class FamilyService(FamilyServicePort):
     ) -> HouseholdRequestResponse:
         partner = self.repository.get_partner(user_id)
         if partner is None:
-            raise DomainConflictError("연동된 남편 계정이 없어 요청을 보낼 수 없습니다.")
+            raise DomainConflictError("남편을 초대한 뒤에 요청을 보낼 수 있습니다.")
         request = self.repository.create_request(user_id, "아내", partner, payload)
         self.repository.add_notification(
             partner.user_id,

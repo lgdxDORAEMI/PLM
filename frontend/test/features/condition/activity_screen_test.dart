@@ -6,6 +6,7 @@ import 'package:plm_frontend/design_system/components/app_button.dart';
 import 'package:plm_frontend/features/condition/data/planned_activity_store.dart';
 import 'package:plm_frontend/features/condition/screens/activity_screen.dart';
 import 'package:plm_frontend/features/condition/services/planned_activity_service.dart';
+import 'package:plm_frontend/features/invitation/data/invite_presentation_store.dart';
 import 'package:plm_frontend/features/profile/screens/partner_invite_screen.dart';
 import 'package:plm_frontend/features/profile/data/profile_store.dart';
 import 'package:plm_frontend/routing/route_context.dart';
@@ -163,10 +164,60 @@ void main() {
     expect(tester.widget<AppButton>(submit).onPressed, isNotNull);
   });
 
-  testWidgets('초기화 후 할 일 입력은 초대 화면 없이 루틴을 생성한다', (tester) async {
+  testWidgets('초기화 후 초대를 건너뛰었으면 다시 체크할 때 초대 화면을 거친다(09-29)', (tester) async {
     final profile = ProfileStore.instance;
     profile.requireReentry();
     profile.completeReentry();
+    InvitePresentationStore.instance.resetForCurrentAccount();
+    addTearDown(profile.completeResetRoutine);
+    final service = _PendingActivityService();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ActivityScreen(service: service),
+        routes: {
+          RouteNames.dailyInvite: (_) => PartnerInviteScreen(
+            entryContext: InviteEntryContext.dailyFlow,
+            activityService: service,
+          ),
+          RouteNames.wifeHome: (_) => const Scaffold(body: Text('홈 도착')),
+        },
+      ),
+    );
+    await tester.pump();
+    final submit = find.byKey(const ValueKey('activity-submit-button'));
+    await tester.scrollUntilVisible(
+      submit,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('다음'), findsOneWidget);
+    await tester.tap(submit);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.byType(PartnerInviteScreen), findsOneWidget);
+    expect(service.generationCalls, 0);
+    await tester.scrollUntilVisible(
+      find.text('나중에'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.ensureVisible(find.text('나중에'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('나중에'));
+    await tester.pump();
+    service.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('홈 도착'), findsOneWidget);
+    expect(profile.awaitsResetRoutine, isFalse);
+  });
+
+  testWidgets('초기화 후 초대를 이미 확인했으면 초대 화면 없이 루틴을 생성한다', (tester) async {
+    final profile = ProfileStore.instance;
+    profile.requireReentry();
+    profile.completeReentry();
+    InvitePresentationStore.instance.acknowledgeLinkedPartner();
+    addTearDown(InvitePresentationStore.instance.resetForCurrentAccount);
     addTearDown(profile.completeResetRoutine);
     final service = _PendingActivityService();
     await tester.pumpWidget(

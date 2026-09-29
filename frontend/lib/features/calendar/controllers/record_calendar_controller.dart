@@ -1,11 +1,18 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 
 import '../../report/models/daily_record.dart';
 import '../../report/services/record_service.dart';
 
-enum RecordCalendarViewState { initialLoading, ready, refreshing, error }
+/// notShared(09-29): 남편 화면인데 아내가 아직 기록을 공개하지 않았다.
+enum RecordCalendarViewState {
+  initialLoading,
+  ready,
+  refreshing,
+  error,
+  notShared,
+}
 
 enum RecordCalendarDetailState { idle, loading, ready, empty, error }
 
@@ -14,7 +21,10 @@ class RecordCalendarController extends ChangeNotifier {
     required this.service,
     DateTime? initialSelectedDate,
     this.onSelected,
-  }) : _visibleMonth = DateTime(
+    this.selectsTodayWithoutRecord = false,
+    DateTime Function()? clock,
+  }) : _clock = clock ?? DateTime.now,
+       _visibleMonth = DateTime(
          initialSelectedDate?.year ?? 2026,
          initialSelectedDate?.month ?? 9,
        ),
@@ -22,6 +32,10 @@ class RecordCalendarController extends ChangeNotifier {
 
   final RecordService service;
   final ValueChanged<DateTime>? onSelected;
+
+  /// 09-29: 남편 화면. 오늘 컨디션이 아직 없어도 오늘을 선택해 날짜·주차를 보여준다.
+  final bool selectsTodayWithoutRecord;
+  final DateTime Function() _clock;
   RecordCalendarViewState _state = RecordCalendarViewState.initialLoading;
   RecordCalendarDetailState _detailState = RecordCalendarDetailState.idle;
   DateTime _visibleMonth;
@@ -46,6 +60,19 @@ class RecordCalendarController extends ChangeNotifier {
   bool get canGoNext => _visibleMonth.isBefore(
     DateTime(DateTime.now().year, DateTime.now().month),
   );
+
+  DateTime get _today {
+    final now = _clock();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  /// 기록이 없어도 고를 수 있는 날짜(남편 화면의 오늘). 없으면 null.
+  DateTime? get emptySelectableDate =>
+      selectsTodayWithoutRecord ? _today : null;
+
+  bool _canSelect(DateTime date) =>
+      recordFor(date) != null ||
+      (selectsTodayWithoutRecord && DateUtils.isSameDay(date, _today));
 
   DailyRecord? recordFor(DateTime date) {
     for (final record in _records) {
@@ -73,7 +100,7 @@ class RecordCalendarController extends ChangeNotifier {
   }
 
   Future<void> selectDate(DateTime date) async {
-    if (recordFor(date) == null) return;
+    if (!_canSelect(date)) return;
     _selectedDate = date;
     onSelected?.call(date);
     final cached = _detailsByDate.containsKey(recordDateKey(date));
@@ -103,12 +130,18 @@ class RecordCalendarController extends ChangeNotifier {
     try {
       final loaded = await service.fetchCalendarRecord(date);
       if (!_isCurrentDetailRequest(requestId, key)) return;
-      if (loaded == null) {
+      // 아내 화면은 컨디션 없는 날을 예전처럼 "기록 없음"으로 다룬다.
+      if (loaded == null ||
+          (loaded.awaitingCondition && !selectsTodayWithoutRecord)) {
         _detailState = RecordCalendarDetailState.empty;
       } else {
         _detailsByDate[key] = loaded;
         _detailState = RecordCalendarDetailState.ready;
       }
+    } on PartnerRecordNotSharedException {
+      if (_disposed) return;
+      _markNotShared();
+      return;
     } on Object {
       if (!_isCurrentDetailRequest(requestId, key)) return;
       _detailState = cached
@@ -132,7 +165,8 @@ class RecordCalendarController extends ChangeNotifier {
     final requestId = ++_monthRequestId;
     final hasVisibleData =
         _state != RecordCalendarViewState.initialLoading &&
-        _state != RecordCalendarViewState.error;
+        _state != RecordCalendarViewState.error &&
+        _state != RecordCalendarViewState.notShared;
     _state = hasVisibleData
         ? RecordCalendarViewState.refreshing
         : RecordCalendarViewState.initialLoading;
@@ -151,15 +185,20 @@ class RecordCalendarController extends ChangeNotifier {
       final preferred = preferredDay == null
           ? null
           : recordFor(DateTime(month.year, month.month, preferredDay));
+      final showsToday =
+          selectsTodayWithoutRecord &&
+          month.year == _today.year &&
+          month.month == _today.month;
       if (preferred != null) {
         _selectedDate = preferred.date;
+      } else if (showsToday) {
+        _selectedDate = _today;
       } else if (loaded.isNotEmpty) {
         _selectedDate = loaded.last.date;
       }
       _state = RecordCalendarViewState.ready;
 
-      final selected = recordFor(_selectedDate);
-      if (selected == null) {
+      if (!_canSelect(_selectedDate)) {
         _detailState = RecordCalendarDetailState.idle;
         _notify();
         return;
@@ -178,6 +217,9 @@ class RecordCalendarController extends ChangeNotifier {
           force: refreshSelectedDetails && hasCachedDetails,
         ),
       );
+    } on PartnerRecordNotSharedException {
+      if (_disposed || requestId != _monthRequestId) return;
+      _markNotShared();
     } on Object {
       if (_disposed || requestId != _monthRequestId) return;
       if (hasVisibleData) {
@@ -188,6 +230,14 @@ class RecordCalendarController extends ChangeNotifier {
       }
       _notify();
     }
+  }
+
+  void _markNotShared() {
+    _records = const [];
+    _detailsByDate.clear();
+    _state = RecordCalendarViewState.notShared;
+    _detailState = RecordCalendarDetailState.idle;
+    _notify();
   }
 
   void _notify() {

@@ -329,7 +329,7 @@ class MovementWebSocketTest(unittest.TestCase):
 
     def test_linked_husband_sees_wifes_events(self) -> None:
         self.event_store.record(_bending_event(_TEST_USER_ID))
-        self.scope_client.links.append({"husband_user_id": _HUSBAND_ID, "wife_user_id": _TEST_USER_ID})
+        self.scope_client.links.append({"husband_user_id": _HUSBAND_ID, "wife_user_id": _TEST_USER_ID, "shared_at": "2026-09-18T00:00:00+00:00"})
         app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=_HUSBAND_ID)
 
         response = self.client.get("/api/v1/movement/events")
@@ -351,7 +351,7 @@ class MovementWebSocketTest(unittest.TestCase):
 
     def test_linked_husband_sees_wifes_daily_report(self) -> None:
         self.event_store.record(_bending_event(_TEST_USER_ID))
-        self.scope_client.links.append({"husband_user_id": _HUSBAND_ID, "wife_user_id": _TEST_USER_ID})
+        self.scope_client.links.append({"husband_user_id": _HUSBAND_ID, "wife_user_id": _TEST_USER_ID, "shared_at": "2026-09-18T00:00:00+00:00"})
         app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=_HUSBAND_ID)
 
         response = self.client.get("/api/v1/movement/report/daily")

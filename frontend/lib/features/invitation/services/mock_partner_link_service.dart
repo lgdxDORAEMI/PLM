@@ -10,4 +10,7 @@ class MockPartnerLinkService implements PartnerLinkService {
 
   @override
   Future<PartnerLink> fetch() async => PartnerLink(linked: _store.isLinked);
+
+  @override
+  Future<void> share() async {}
 }

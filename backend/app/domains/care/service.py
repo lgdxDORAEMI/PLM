@@ -130,10 +130,13 @@ class CareService(CareServicePort):
         self, user_id: str, target_date: date
     ) -> CalendarDayDetailResponse:
         """컨디션과 저장 없는 리포트 미리보기를 캘린더용 응답으로 묶는다.
-        기록이 없는 날은 빈 응답(200)이다 — 404는 '엔드포인트 없음'만 뜻하게 남겨둔다."""
+        기록이 없는 날은 빈 응답(200)이다 — 404는 '엔드포인트 없음'만 뜻하게 남겨둔다.
+        09-29: 기록이 없어도 주차는 준다. 남편 화면이 오늘 컨디션을 기다리는 동안 표시한다."""
         condition = self.repository.get_condition(user_id, target_date)
         if condition is None:
-            return CalendarDayDetailResponse()
+            return CalendarDayDetailResponse(
+                pregnancy_week=self.repository.get_pregnancy_week(user_id, target_date)
+            )
         return CalendarDayDetailResponse(
             condition=condition,
             report=self.preview_report(user_id, target_date),

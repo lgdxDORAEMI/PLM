@@ -9,6 +9,9 @@ enum PartnerMorningReportState {
   data,
   empty,
   authError,
+
+  /// 09-29: 아내가 초기화 후 아직 다시 공개하지 않았다.
+  notShared,
   serverError,
   error,
 }
@@ -37,6 +40,7 @@ class PartnerMorningReportController extends ChangeNotifier {
     } on ApiException catch (error) {
       _report = null;
       _state = switch (error.statusCode) {
+        _ when error.isPartnerNotShared => PartnerMorningReportState.notShared,
         401 || 403 => PartnerMorningReportState.authError,
         503 => PartnerMorningReportState.serverError,
         _ => PartnerMorningReportState.error,

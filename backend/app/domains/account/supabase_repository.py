@@ -15,7 +15,7 @@ Supabase 연동)가 전담한다 — 한때 여기 있던 get_profile/save_profi
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Callable
 from uuid import uuid4
 
@@ -95,7 +95,12 @@ class SupabaseAccountRepository(AccountRepository):
         구분해서 알린다(그냥 503으로 보이면 안 됨)."""
         try:
             self.client.table("partner_links").upsert(
-                {"wife_user_id": wife_user_id, "husband_user_id": husband_user_id},
+                {
+                    "wife_user_id": wife_user_id,
+                    "husband_user_id": husband_user_id,
+                    # 09-29: 초대를 수락한 순간 아내가 공개한 것으로 본다.
+                    "shared_at": datetime.now(timezone.utc).isoformat(),
+                },
                 on_conflict="wife_user_id",
                 default_to_null=False,
             ).execute()
@@ -116,6 +121,16 @@ class SupabaseAccountRepository(AccountRepository):
                 on_conflict="user_id",
                 default_to_null=False,
             )
+            .execute()
+        )
+
+    def share_partner_link(self, wife_user_id: str, *, shared_at: datetime) -> None:
+        """09-29: 초기화로 비운 shared_at을 아내가 초대 화면에서 다시 확인하면 채운다.
+        남편 캘린더는 이 값이 있어야 아내 기록을 보여준다."""
+        self._run(
+            lambda: self.client.table("partner_links")
+            .update({"shared_at": shared_at.isoformat()})
+            .eq("wife_user_id", wife_user_id)
             .execute()
         )
 

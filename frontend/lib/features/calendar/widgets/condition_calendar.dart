@@ -14,6 +14,7 @@ class ConditionCalendar extends StatelessWidget {
     required this.selectedDate,
     required this.onSelected,
     this.comfortable = false,
+    this.emptySelectableDate,
   });
 
   final DateTime month;
@@ -21,6 +22,9 @@ class ConditionCalendar extends StatelessWidget {
   final DateTime selectedDate;
   final ValueChanged<DateTime> onSelected;
   final bool comfortable;
+
+  /// 기록이 없어도 누를 수 있는 날짜(09-29, 남편 화면의 오늘). 색은 없고 선택 테두리만 그린다.
+  final DateTime? emptySelectableDate;
 
   @override
   Widget build(BuildContext context) {
@@ -66,14 +70,18 @@ class ConditionCalendar extends StatelessWidget {
             final date = DateTime(month.year, month.month, index - leading + 1);
             final record = _recordFor(date);
             final selected = DateUtils.isSameDay(date, selectedDate);
+            final selectable =
+                record != null ||
+                (emptySelectableDate != null &&
+                    DateUtils.isSameDay(date, emptySelectableDate));
             return Semantics(
               selected: selected,
-              button: record != null,
+              button: selectable,
               label:
                   '${date.day}일${record == null ? ', 기록 없음' : ', ${_levelLabel(record.conditionLevel)}'}',
               child: AppInkWell(
                 key: ValueKey('calendar-day-${recordDateKey(date)}'),
-                onTap: record == null ? null : () => onSelected(date),
+                onTap: selectable ? () => onSelected(date) : null,
                 customBorder: const CircleBorder(),
                 child: Container(
                   decoration: BoxDecoration(
