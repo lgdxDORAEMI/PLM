@@ -4,6 +4,9 @@ import 'package:plm_frontend/design_system/components/app_button.dart';
 import 'package:plm_frontend/features/entry/controllers/entry_controller.dart';
 import 'package:plm_frontend/features/entry/screens/entry_screen.dart';
 import 'package:plm_frontend/features/entry/services/entry_service.dart';
+import 'package:plm_frontend/features/profile/data/profile_store.dart';
+import 'package:plm_frontend/features/profile/models/profile_draft.dart';
+import 'package:plm_frontend/routing/app_session.dart';
 import 'package:plm_frontend/routing/route_context.dart';
 import 'package:plm_frontend/routing/route_names.dart';
 
@@ -48,6 +51,44 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const ValueKey('husband-home')), findsOneWidget);
+  });
+
+  testWidgets('초기화한 아내는 entry의 시작하기를 누른 뒤 프로필 설정으로 간다', (tester) async {
+    final accountId = 'reset-wife-${DateTime.now().microsecondsSinceEpoch}';
+    AuthSessionStore.instance.update(
+      accountId: accountId,
+      roles: {ActiveRole.wife},
+      husbandLinked: true,
+      profileComplete: true,
+    );
+    ProfileStore.instance.save(ProfileDraft.mockEdit());
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: EntryScreen(
+          service: _MutableEntryService(AppLaunchState.wifeReady),
+          restartAfterReset: true,
+        ),
+        routes: {
+          RouteNames.profileSetup: (_) => const Scaffold(
+            body: Text('프로필 설정', key: ValueKey('profile-setup')),
+          ),
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('시작하기'), findsOneWidget);
+    expect(find.byKey(const ValueKey('profile-setup')), findsNothing);
+
+    final startButton = find.byKey(const ValueKey('entry-start-button'));
+    await tester.ensureVisible(startButton);
+    await tester.tap(startButton);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const ValueKey('profile-setup')), findsOneWidget);
+    expect(AuthSessionStore.instance.profileComplete, isFalse);
+    expect(ProfileStore.instance.requiresReentryFor(accountId), isTrue);
   });
 }
 

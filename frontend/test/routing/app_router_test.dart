@@ -51,6 +51,8 @@ void main() {
   });
 
   test('초기화한 아내는 entry에서 다시 시작한 뒤 프로필 설정으로 간다', () {
+    AppConfig.mockPreviewEnabled = false;
+    ProfileStore.instance.save(ProfileDraft.mockEdit());
     expect(
       AppRouter.resolveLocation(RouteNames.entryAfterReset),
       RouteNames.entryAfterReset,

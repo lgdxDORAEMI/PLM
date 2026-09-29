@@ -10,8 +10,10 @@ import '../../../design_system/components/app_state_view.dart';
 import '../../../design_system/components/responsive_page_content.dart';
 import '../../../design_system/tokens/app_spacing.dart';
 import '../../../routing/app_router.dart';
+import '../../../routing/app_session.dart';
 import '../../../routing/route_context.dart';
 import '../../../routing/route_names.dart';
+import '../../profile/data/profile_store.dart';
 import '../controllers/entry_controller.dart';
 import '../services/account_session_service.dart';
 import '../services/api_entry_service.dart';
@@ -24,11 +26,13 @@ class EntryScreen extends StatefulWidget {
     super.key,
     this.service,
     this.invitationToken,
+    this.restartAfterReset = false,
     this.partnerPollInterval = const Duration(seconds: 3),
   });
 
   final EntryService? service;
   final String? invitationToken;
+  final bool restartAfterReset;
   final Duration partnerPollInterval;
 
   @override
@@ -105,6 +109,7 @@ class _EntryScreenState extends State<EntryScreen> {
     final shouldRedirect =
         _controller.state == EntryViewState.ready &&
         launchState != null &&
+        !widget.restartAfterReset &&
         launchState != AppLaunchState.wifeNeedsProfile &&
         (launchState != AppLaunchState.partnerNeedsLink ||
             widget.invitationToken != null);
@@ -243,6 +248,9 @@ class _EntryScreenState extends State<EntryScreen> {
   }
 
   Widget _buildReadyState() {
+    if (widget.restartAfterReset) {
+      return PregnancyEntryView(onStart: _startWifeProfileSetup);
+    }
     if (_controller.launchState == AppLaunchState.partnerNeedsLink) {
       return const PregnancyEntryView(
         onStart: null,
@@ -251,10 +259,7 @@ class _EntryScreenState extends State<EntryScreen> {
       );
     }
     if (_controller.launchState == AppLaunchState.wifeNeedsProfile) {
-      return PregnancyEntryView(
-        onStart: () =>
-            Navigator.pushReplacementNamed(context, RouteNames.profileSetup),
-      );
+      return PregnancyEntryView(onStart: _startWifeProfileSetup);
     }
     return const Center(
       child: Padding(
@@ -262,5 +267,22 @@ class _EntryScreenState extends State<EntryScreen> {
         child: AppLoadingState(message: '시작 화면으로 이동하고 있어요.'),
       ),
     );
+  }
+
+  /// Entry의 시작 버튼을 누른 뒤에만 새 프로필 입력 흐름을 연다.
+  void _startWifeProfileSetup() {
+    if (widget.restartAfterReset) {
+      final profileStore = ProfileStore.instance;
+      profileStore.requireReentry();
+      profileStore.reset();
+      final auth = AuthSessionStore.instance;
+      auth.update(
+        accountId: auth.accountId,
+        roles: auth.roles,
+        husbandLinked: auth.husbandLinked,
+        profileComplete: false,
+      );
+    }
+    Navigator.pushReplacementNamed(context, RouteNames.profileSetup);
   }
 }

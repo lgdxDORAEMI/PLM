@@ -145,9 +145,7 @@ abstract final class AppRouter {
         : ProfileStore.instance.hasProfile;
     if (path == RouteNames.entry) {
       final restartingAfterReset =
-          active == ActiveRole.wife &&
-          uri.queryParameters['source'] == 'reset' &&
-          !hasProfile;
+          active == ActiveRole.wife && uri.queryParameters['source'] == 'reset';
       return restartingAfterReset ? uri.toString() : _homeFor(active);
     }
     if (path.startsWith('/role/switch/')) return _homeFor(active);
@@ -316,12 +314,16 @@ abstract final class AppRouter {
     final path = uri.path;
     final parts = uri.pathSegments;
     if (path == RouteNames.entry) {
+      final restartAfterReset = uri.queryParameters['source'] == 'reset';
       if (AppConfig.previewMode) {
-        return const EntryScreen(
+        return EntryScreen(
           service: MockEntryService(state: AppLaunchState.wifeNeedsProfile),
+          restartAfterReset: restartAfterReset,
         );
       }
-      if (AppConfig.hasSupabaseConfig) return const EntryScreen();
+      if (AppConfig.hasSupabaseConfig) {
+        return EntryScreen(restartAfterReset: restartAfterReset);
+      }
       final auth = AuthSessionStore.instance;
       final needsInvite =
           auth.isAuthenticated &&
