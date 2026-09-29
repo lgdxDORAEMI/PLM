@@ -116,7 +116,7 @@ class _PartnerNotificationPoller extends ChangeNotifier
     with WidgetsBindingObserver {
   _PartnerNotificationPoller(this._service);
 
-  static const pollInterval = Duration(seconds: 5);
+  static const pollInterval = Duration(seconds: 3);
   static const maxRetryInterval = Duration(seconds: 30);
 
   final PartnerNotificationService _service;

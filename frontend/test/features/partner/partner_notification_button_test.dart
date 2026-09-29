@@ -27,7 +27,7 @@ void main() {
     expect(await dotVisible(tester, read: true), isFalse);
   });
 
-  testWidgets('활성 화면에서 5초마다 읽지 않은 알림 상태를 다시 확인한다', (tester) async {
+  testWidgets('활성 화면에서 3초마다 읽지 않은 알림 상태를 다시 확인한다', (tester) async {
     final service = _FakeService(read: true);
     await tester.pumpWidget(
       MaterialApp(
@@ -38,7 +38,7 @@ void main() {
     expect(service.hasUnreadCalls, 1);
 
     service.read = false;
-    await tester.pump(const Duration(seconds: 4));
+    await tester.pump(const Duration(seconds: 2));
     expect(service.hasUnreadCalls, 1);
     await tester.pump(const Duration(seconds: 1));
     await tester.pump();
