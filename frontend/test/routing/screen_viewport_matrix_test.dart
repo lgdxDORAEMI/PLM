@@ -152,7 +152,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(ActiveRoleStore.instance.value, ActiveRole.husband);
-    expect(find.text('컨디션 캘린더'), findsOneWidget);
+    expect(find.text('홈'), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
 
     await tester.tap(find.byTooltip('메뉴'));

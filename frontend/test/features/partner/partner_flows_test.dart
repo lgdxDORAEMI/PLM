@@ -4,6 +4,7 @@ import 'package:plm_frontend/core/config/app_config.dart';
 import 'package:plm_frontend/design_system/components/app_card.dart';
 import 'package:plm_frontend/design_system/tokens/app_colors.dart';
 import 'package:plm_frontend/features/calendar/data/calendar_selection_store.dart';
+import 'package:plm_frontend/features/calendar/screens/record_calendar_screen.dart';
 import 'package:plm_frontend/features/invitation/data/partner_connection_store.dart';
 import 'package:plm_frontend/features/partner/data/partner_notification_store.dart';
 import 'package:plm_frontend/features/partner/data/partner_request_store.dart';
@@ -73,7 +74,7 @@ void main() {
       find.byKey(const ValueKey('notification-routine-2026-09-13')),
     );
     await tester.pumpAndSettle();
-    expect(find.text('컨디션 캘린더'), findsOneWidget);
+    expect(find.text('홈'), findsOneWidget);
     expect(CalendarSelectionStore.instance.selectedDate, DateTime(2026, 9, 13));
   });
 
@@ -102,8 +103,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('컨디션 캘린더'), findsOneWidget);
-    final context = tester.element(find.text('컨디션 캘린더'));
+    expect(find.text('홈'), findsOneWidget);
+    final context = tester.element(find.text('홈'));
     expect(ModalRoute.of(context)?.settings.name, RouteNames.husbandCalendar);
     expect(Navigator.canPop(context), isFalse); // 홈이라 되돌아갈 화면이 없다
     expect(find.byTooltip('뒤로 가기'), findsNothing);
@@ -121,7 +122,7 @@ void main() {
     expect(ActiveRoleStore.instance.value, ActiveRole.husband);
     expect(AuthSessionStore.instance.accountId, 'husband-invited');
     expect(AuthSessionStore.instance.roles, {ActiveRole.husband});
-    expect(find.text('컨디션 캘린더'), findsOneWidget);
+    expect(find.text('홈'), findsOneWidget);
   });
 
   testWidgets('아내 계정에서 초대 URL을 열어도 남편 역할 권한을 추가하지 않는다', (tester) async {
@@ -135,7 +136,7 @@ void main() {
     expect(AuthSessionStore.instance.accountId, 'wife-invitation-url');
     expect(AuthSessionStore.instance.roles, {ActiveRole.wife});
     expect(ActiveRoleStore.instance.value, ActiveRole.wife);
-    expect(find.text('컨디션 캘린더'), findsNothing);
+    expect(find.byType(RecordCalendarScreen), findsNothing);
   });
 
   testWidgets('남편 Home은 캘린더이며 Bottom Navigation과 프로필이 없다', (tester) async {

@@ -93,7 +93,8 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen>
   Widget build(BuildContext context) {
     final isWife = widget.role == AppUserRole.wife;
     final appBar = TopAppBar(
-      title: '컨디션 캘린더',
+      // 남편에게는 이 화면이 첫 화면이라 '홈'으로 부른다(09-29).
+      title: isWife ? '컨디션 캘린더' : '홈',
       // 아내는 하단 탭이라 돌아갈 곳이 없다. 남편은 알림·메뉴에서 밀고 들어오므로
       // 되돌아갈 화면이 있을 때만 뒤로가기를 둔다(09-27).
       showBack: !isWife && Navigator.canPop(context),

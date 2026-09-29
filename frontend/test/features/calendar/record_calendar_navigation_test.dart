@@ -139,7 +139,7 @@ void main() {
     unawaited(navigator.pushNamed(RouteNames.partnerCalendar));
     await tester.pumpAndSettle();
 
-    expect(find.text('컨디션 캘린더'), findsOneWidget);
+    expect(find.text('홈'), findsOneWidget);
     expect(find.byTooltip('뒤로 가기'), findsOneWidget);
 
     await tester.tap(find.byTooltip('뒤로 가기'));
@@ -162,7 +162,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('컨디션 캘린더'), findsOneWidget);
+    expect(find.text('홈'), findsOneWidget);
     expect(find.byTooltip('뒤로 가기'), findsNothing);
   });
 

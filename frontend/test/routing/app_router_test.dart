@@ -246,7 +246,7 @@ void main() {
       ActiveRole.wife,
       ActiveRole.husband,
     });
-    expect(find.text('컨디션 캘린더'), findsOneWidget);
+    expect(find.text('홈'), findsOneWidget);
     expect(find.byType(NavigationBar), findsNothing);
     expect(find.text('전환'), findsNothing);
     expect(navigatorKey.currentState!.canPop(), isFalse);
