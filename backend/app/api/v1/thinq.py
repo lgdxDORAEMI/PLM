@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from app.core.security import CurrentUser, get_current_user
 from app.services.thinq.access import inventory_for_user
 from app.services.thinq.client import ControlResult, ControlStatus, InventoryStatus, ThinQClient, get_thinq_client
+from app.services.thinq.models import ApplianceType
 
 router = APIRouter(prefix="/thinq", tags=["thinq"])
 
@@ -60,14 +61,15 @@ async def control_device(
     user: Annotated[CurrentUser, Depends(get_current_user)],
     client: Annotated[ThinQClient, Depends(get_thinq_client)],
 ) -> ControlResponse:
-    """Household guide (power only) and sleep guide (power + wind_strength) share this endpoint."""
+    """Control an air purifier owned by the configured ThinQ account."""
     if body.power is None and body.wind_strength is None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "제어할 값이 없습니다.")
     inventory = await inventory_for_user(user, client)
-    if inventory.status != InventoryStatus.CONNECTED or not any(
-        device.device_id == device_id for device in inventory.devices
-    ):
+    device = next((item for item in inventory.devices if item.device_id == device_id), None)
+    if inventory.status != InventoryStatus.CONNECTED or device is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "등록된 가전을 찾을 수 없습니다.")
+    if device.device_type != ApplianceType.AIR_PURIFIER:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "공기청정기만 제어할 수 있습니다.")
     # 꺼진 기기에 "켜기+바람세기"를 한 요청으로 같이 보내면 거부하는 기기가 있어,
     # 전원부터 보내고 성공한 뒤에 바람세기를 별도 요청으로 보낸다.
     result = ControlResult(ControlStatus.OK)

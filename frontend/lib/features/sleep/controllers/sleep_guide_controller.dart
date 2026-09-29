@@ -35,10 +35,12 @@ class SleepGuideController extends ChangeNotifier {
   SleepGuideViewState _state = SleepGuideViewState.loading;
   SleepGuideData? _guide;
   String? _airPurifierDeviceId;
+  String _airPurifierConnectionStatus = 'loading';
 
   SleepGuideViewState get state => _state;
   SleepGuideData? get guide => _guide;
   bool get airPurifierConnected => _airPurifierDeviceId != null;
+  String get airPurifierConnectionStatus => _airPurifierConnectionStatus;
 
   /// 데이터 공급자가 바뀌어도 화면은 동일한 상태 전이를 사용한다.
   Future<void> load() async {
@@ -52,8 +54,15 @@ class SleepGuideController extends ChangeNotifier {
       if (_state == SleepGuideViewState.ready) {
         try {
           _airPurifierDeviceId = await service.findAirPurifierDeviceId();
+          _airPurifierConnectionStatus = _airPurifierDeviceId == null
+              ? 'no_device'
+              : 'connected';
+        } on ThinQConnectionException catch (error) {
+          _airPurifierDeviceId = null;
+          _airPurifierConnectionStatus = error.status;
         } on Object {
           _airPurifierDeviceId = null;
+          _airPurifierConnectionStatus = 'error';
         }
       }
     } on ApiException catch (error) {

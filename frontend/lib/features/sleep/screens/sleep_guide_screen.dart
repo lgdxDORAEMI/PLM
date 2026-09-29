@@ -137,12 +137,15 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
   Future<void> _runAll() async {
     if (_controller.state != SleepGuideViewState.ready) return;
     bool? purifierOk;
-    if (_controller.airPurifierConnected) {
-      final purifier = _controller.guide!.environments
-          .where((item) => item.type == SleepEnvironmentType.purifier)
-          .firstOrNull;
-      if (purifier != null) {
+    final purifier = _controller.guide!.environments
+        .where((item) => item.type == SleepEnvironmentType.purifier)
+        .firstOrNull;
+    if (purifier != null) {
+      if (_controller.airPurifierConnected) {
         purifierOk = await _controller.runAirPurifier(purifier.value);
+      } else {
+        // PAT 누락·인증 실패·미등록 기기를 성공으로 표시하지 않는다.
+        purifierOk = false;
       }
     }
     if (!mounted) return;
@@ -161,17 +164,26 @@ class _SleepGuideScreenState extends State<SleepGuideScreen> {
         iconColor: purifierOk == false
             ? AppColors.danger
             : AppColors.categorySleep,
-        title: purifierOk == false
-            ? '공기청정기를 제어하지 못했어요'
-            : '수면 루틴을 실행했습니다',
+        title: purifierOk == false ? '공기청정기를 제어하지 못했어요' : '수면 루틴을 실행했습니다',
         message: purifierOk == false
-            ? '연결 상태를 확인하고 다시 시도해 주세요. 나머지 환경은 이력에 반영했어요.'
+            ? '${_purifierFailureMessage()} 나머지 환경은 이력에 반영했어요.'
             : '수면 환경 전체 실행 1회를 오늘의 가전 실행 내역에 반영했어요.',
         actions: [
           AppDialogAction(label: '확인', onPressed: () => Navigator.pop(context)),
         ],
       ),
     );
+  }
+
+  String _purifierFailureMessage() {
+    return switch (_controller.airPurifierConnectionStatus) {
+      'not_configured' => 'ThinQ 연결 설정이 완료되지 않았어요.',
+      'auth_error' => 'ThinQ PAT 인증 또는 제어 권한을 확인해 주세요.',
+      'timeout' => 'ThinQ 응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요.',
+      'unsupported_country' => '현재 국가 설정에서는 ThinQ 연결을 사용할 수 없어요.',
+      'no_device' => 'ThinQ 계정에 등록된 공기청정기를 찾지 못했어요.',
+      _ => '공기청정기가 온라인인지 확인하고 다시 시도해 주세요.',
+    };
   }
 
   void _handleBack() {
