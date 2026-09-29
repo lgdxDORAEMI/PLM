@@ -135,13 +135,22 @@ class ProfileService:
     def save_medical_notes(
         self, user_id: str, data: MedicalNotesInput
     ) -> ProfileResponse:
-        return self._update_step(
+        saved = self._update_step(
             user_id,
             {
                 "medical_conditions": data.medical_conditions,
                 "medical_note": data.medical_note,
             },
         )
+        # 09-30: 마지막 단계까지 저장하면 초대 전이라도 남편 화면에 아내 정보를 연다.
+        # 초기화가 비운 shared_at을 다시 채운다. 연동이 없으면 바뀌는 행이 없다.
+        self._run(
+            lambda: self.client.table("partner_links")
+            .update({"shared_at": _now()})
+            .eq("wife_user_id", user_id)
+            .execute()
+        )
+        return saved
 
     def _update_step(self, user_id: str, values: dict[str, Any]) -> ProfileResponse:
         """3~6단계 공통 저장 경로. 행은 1단계 저장 때만 생기므로, 수정된 행이 없으면
