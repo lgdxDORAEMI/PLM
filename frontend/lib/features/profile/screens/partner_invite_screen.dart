@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/config/app_config.dart';
+import '../../../core/network/api_client.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_card.dart';
 import '../../../design_system/components/app_state_view.dart';
@@ -298,6 +299,7 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
       );
       navigator.push(loadingRoute);
       var generated = false;
+      var conditionMissing = false;
       try {
         final service =
             widget.activityService ??
@@ -306,8 +308,10 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
                 : const MockPlannedActivityService());
         await service.generateRoutine();
         generated = true;
-      } catch (_) {
-        if (mounted) {
+      } catch (error) {
+        conditionMissing =
+            error is ApiException && error.isTodayConditionMissing;
+        if (mounted && !conditionMissing) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('오늘의 루틴을 만들지 못했어요. 다시 시도해 주세요.')),
           );
@@ -317,6 +321,14 @@ class _PartnerInviteScreenState extends State<PartnerInviteScreen> {
           navigator.removeRoute(loadingRoute);
         }
         if (mounted) setState(() => _generating = false);
+      }
+      if (conditionMissing && mounted) {
+        final messenger = ScaffoldMessenger.of(context);
+        Navigator.pushReplacementNamed(context, RouteNames.condition);
+        messenger.showSnackBar(
+          const SnackBar(content: Text('컨디션 저장이 확인되지 않아 입력 화면으로 이동했어요.')),
+        );
+        return;
       }
       if (generated) ProfileStore.instance.completeResetRoutine();
       if (generated && mounted) {

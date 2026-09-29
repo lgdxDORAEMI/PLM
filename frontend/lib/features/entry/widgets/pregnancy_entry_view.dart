@@ -9,16 +9,28 @@ import '../../../design_system/tokens/app_spacing.dart';
 
 /// B-ENTRY-001의 정보 구조를 현재 PLM 디자인 시스템으로 재해석한 Demo Entry다.
 class PregnancyEntryView extends StatelessWidget {
-  const PregnancyEntryView({super.key, required this.onStart});
+  const PregnancyEntryView({
+    super.key,
+    required this.onStart,
+    this.actionLabel = '시작하기',
+    this.actionIcon = Icons.arrow_forward,
+  });
 
-  final VoidCallback onStart;
+  final VoidCallback? onStart;
+  final String actionLabel;
+  final IconData? actionIcon;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final desktop = constraints.maxWidth >= AppBreakpoints.desktop;
-        final intro = _EntryIntro(onStart: desktop ? onStart : null);
+        final intro = _EntryIntro(
+          onStart: onStart,
+          actionLabel: actionLabel,
+          actionIcon: actionIcon,
+          showAction: desktop,
+        );
         const preview = _EntryPreview();
 
         return SingleChildScrollView(
@@ -41,8 +53,8 @@ class PregnancyEntryView extends StatelessWidget {
                     const SizedBox(height: AppSpacing.xxl),
                     AppButton(
                       key: const ValueKey('entry-start-button'),
-                      label: '시작하기',
-                      icon: Icons.arrow_forward,
+                      label: actionLabel,
+                      icon: actionIcon,
                       onPressed: onStart,
                     ),
                   ],
@@ -54,9 +66,17 @@ class PregnancyEntryView extends StatelessWidget {
 }
 
 class _EntryIntro extends StatelessWidget {
-  const _EntryIntro({this.onStart});
+  const _EntryIntro({
+    required this.onStart,
+    required this.actionLabel,
+    required this.actionIcon,
+    required this.showAction,
+  });
 
   final VoidCallback? onStart;
+  final String actionLabel;
+  final IconData? actionIcon;
+  final bool showAction;
 
   @override
   Widget build(BuildContext context) => Column(
@@ -71,10 +91,7 @@ class _EntryIntro extends StatelessWidget {
             ),
             child: const SizedBox.square(
               dimension: 48,
-              child: Icon(
-                Icons.favorite_outline,
-                color: AppColors.primary700,
-              ),
+              child: Icon(Icons.favorite_outline, color: AppColors.primary700),
             ),
           ),
           const SizedBox(width: AppSpacing.md),
@@ -99,14 +116,14 @@ class _EntryIntro extends StatelessWidget {
           context,
         ).textTheme.bodyLarge?.copyWith(color: AppColors.textSecondary),
       ),
-      if (onStart != null) ...[
+      if (showAction) ...[
         const SizedBox(height: AppSpacing.xxxl),
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 320),
           child: AppButton(
             key: const ValueKey('entry-start-button'),
-            label: '시작하기',
-            icon: Icons.arrow_forward,
+            label: actionLabel,
+            icon: actionIcon,
             onPressed: onStart,
           ),
         ),
@@ -125,7 +142,10 @@ class _EntryPreview extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Pregnancy Life Mode', style: Theme.of(context).textTheme.titleLarge),
+        Text(
+          'Pregnancy Life Mode',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
         const SizedBox(height: AppSpacing.sm),
         Text(
           '오늘 필요한 생활 루틴을 한눈에 확인하세요.',

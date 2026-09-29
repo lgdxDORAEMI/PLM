@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plm_frontend/design_system/components/app_button.dart';
+import 'package:plm_frontend/core/network/api_client.dart';
 import 'package:plm_frontend/features/condition/data/planned_activity_store.dart';
 import 'package:plm_frontend/features/condition/screens/activity_screen.dart';
 import 'package:plm_frontend/features/condition/services/planned_activity_service.dart';
@@ -164,6 +165,32 @@ void main() {
     expect(tester.widget<AppButton>(submit).onPressed, isNotNull);
   });
 
+  testWidgets('루틴 생성 시 오늘 컨디션이 없으면 컨디션 화면으로 복구한다', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ActivityScreen(
+          editing: true,
+          service: _MissingConditionActivityService(),
+        ),
+        routes: {
+          RouteNames.condition: (_) => const Scaffold(body: Text('컨디션 입력 화면')),
+        },
+      ),
+    );
+    await tester.pump();
+    final submit = find.byKey(const ValueKey('activity-submit-button'));
+    await tester.scrollUntilVisible(
+      submit,
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(submit);
+    await tester.pumpAndSettle();
+
+    expect(find.text('컨디션 입력 화면'), findsOneWidget);
+    expect(find.text('컨디션 저장이 확인되지 않아 입력 화면으로 이동했어요.'), findsOneWidget);
+  });
+
   testWidgets('초기화 후 초대를 건너뛰었으면 다시 체크할 때 초대 화면을 거친다(09-29)', (tester) async {
     final profile = ProfileStore.instance;
     profile.requireReentry();
@@ -296,4 +323,20 @@ class _EditActivityService implements PlannedActivityService {
 
   @override
   Future<void> generateRoutine() async {}
+}
+
+class _MissingConditionActivityService implements PlannedActivityService {
+  @override
+  Future<List<String>> fetch(DateTime date) async => const [];
+
+  @override
+  Future<void> generateRoutine() async =>
+      throw ApiException(409, ApiException.todayConditionMissingDetail);
+
+  @override
+  Future<void> saveActivities(DateTime date, List<String> activities) async {}
+
+  @override
+  Future<void> saveAndGenerate(DateTime date, List<String> activities) =>
+      generateRoutine();
 }

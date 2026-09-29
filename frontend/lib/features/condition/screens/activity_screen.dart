@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../../../core/network/api_client.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_input.dart';
 import '../../../design_system/components/app_ink_well.dart';
@@ -204,17 +205,26 @@ class _ActivityScreenState extends State<ActivityScreen> {
       }
       return;
     }
-    var generationFailed = false;
+    Object? generationFailure;
     try {
       await runWithRoutineGeneratingDialog(
         context,
         _controller.generateRoutine,
       );
-    } catch (_) {
-      generationFailed = true;
+    } catch (error) {
+      generationFailure = error;
     }
     if (!mounted) return;
-    if (generationFailed) {
+    if (generationFailure case final ApiException error
+        when error.isTodayConditionMissing) {
+      final messenger = ScaffoldMessenger.of(context);
+      Navigator.pushReplacementNamed(context, RouteNames.condition);
+      messenger.showSnackBar(
+        const SnackBar(content: Text('컨디션 저장이 확인되지 않아 입력 화면으로 이동했어요.')),
+      );
+      return;
+    }
+    if (generationFailure != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('오늘의 루틴을 만들지 못했어요. 다시 시도해 주세요.')),
       );

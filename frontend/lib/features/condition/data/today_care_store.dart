@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/time/kst_date.dart';
 import '../models/condition_draft.dart';
 import '../../routine/services/api_routine_service.dart';
 import 'api_condition_repository.dart';
@@ -32,7 +33,7 @@ class TodayCareStore extends ChangeNotifier {
 
   /// Restores today's record after a page reload without repeating requests.
   Future<void> loadToday() async {
-    final date = DateTime.now();
+    final date = KstDate.today();
     if (_loadedDate != null &&
         _loadedDate!.year == date.year &&
         _loadedDate!.month == date.month &&
@@ -51,8 +52,9 @@ class TodayCareStore extends ChangeNotifier {
     _today = value;
     notifyListeners();
     try {
-      await _repository.saveToday(DateTime.now(), value);
-      _loadedDate = DateTime.now();
+      final today = KstDate.today();
+      await _repository.saveToday(today, value);
+      _loadedDate = today;
       if (!_sameCondition(previous, value)) {
         ApiRoutineService.invalidateCache();
       }
@@ -65,7 +67,7 @@ class TodayCareStore extends ChangeNotifier {
 
   void finishDay() {
     _today = null;
-    _loadedDate = DateTime.now();
+    _loadedDate = KstDate.today();
     notifyListeners();
   }
 

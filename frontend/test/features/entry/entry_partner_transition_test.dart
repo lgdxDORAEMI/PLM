@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:plm_frontend/design_system/components/app_button.dart';
 import 'package:plm_frontend/features/entry/controllers/entry_controller.dart';
 import 'package:plm_frontend/features/entry/screens/entry_screen.dart';
 import 'package:plm_frontend/features/entry/services/entry_service.dart';
@@ -34,6 +35,13 @@ void main() {
     );
     await tester.pump();
     expect(find.byKey(const ValueKey('husband-home')), findsNothing);
+    expect(find.text('초대 대기중입니다'), findsOneWidget);
+    expect(
+      tester
+          .widget<AppButton>(find.byKey(const ValueKey('entry-start-button')))
+          .onPressed,
+      isNull,
+    );
 
     service.state = AppLaunchState.partnerLinked;
     await tester.pump(const Duration(milliseconds: 20));

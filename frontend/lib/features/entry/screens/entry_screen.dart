@@ -244,12 +244,10 @@ class _EntryScreenState extends State<EntryScreen> {
 
   Widget _buildReadyState() {
     if (_controller.launchState == AppLaunchState.partnerNeedsLink) {
-      return const Center(
-        child: AppEmptyState(
-          title: '초대 연결이 필요해요',
-          message: '아내가 보낸 초대 링크를 열어 연결을 완료해 주세요.',
-          icon: Icons.link_outlined,
-        ),
+      return const PregnancyEntryView(
+        onStart: null,
+        actionLabel: '초대 대기중입니다',
+        actionIcon: Icons.hourglass_top,
       );
     }
     if (_controller.launchState == AppLaunchState.wifeNeedsProfile) {

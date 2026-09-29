@@ -6,6 +6,7 @@ import '../features/condition/screens/activity_screen.dart';
 import '../features/condition/screens/condition_screen.dart';
 import '../features/entry/screens/entry_screen.dart';
 import '../features/entry/services/mock_entry_service.dart';
+import '../features/entry/widgets/husband_link_guard.dart';
 import '../features/health/screens/health_guide_screen.dart';
 import '../features/home/screens/wife_home_screen.dart';
 import '../features/household/screens/household_guide_screen.dart';
@@ -378,7 +379,9 @@ abstract final class AppRouter {
       return const ProductMovementScreen(role: AppUserRole.wife);
     }
     if (path == RouteNames.husbandMovement) {
-      return const ProductMovementScreen(role: AppUserRole.husband);
+      return const HusbandLinkGuard(
+        child: ProductMovementScreen(role: AppUserRole.husband),
+      );
     }
     if (path == RouteNames.healthGuide) return const HealthGuideScreen();
     if (path == RouteNames.sleepGuide) return const SleepGuideScreen();
@@ -402,26 +405,38 @@ abstract final class AppRouter {
     }
     if (path == RouteNames.wifeSettings) return const WifeSettingsScreen();
     if (path == RouteNames.husbandCalendar) {
-      return const PartnerCalendarScreen();
+      return const HusbandLinkGuard(child: PartnerCalendarScreen());
     }
-    if (path == RouteNames.husbandMenu) return const HusbandMenuScreen();
+    if (path == RouteNames.husbandMenu) {
+      return const HusbandLinkGuard(child: HusbandMenuScreen());
+    }
     if (path == RouteNames.husbandNotifications) {
-      return const PartnerNotificationsScreen();
+      return const HusbandLinkGuard(child: PartnerNotificationsScreen());
     }
     if (path == RouteNames.husbandRequests) {
-      return PartnerRequestListScreen(targetDate: uri.queryParameters['date']);
+      return HusbandLinkGuard(
+        child: PartnerRequestListScreen(
+          targetDate: uri.queryParameters['date'],
+        ),
+      );
     }
     if (parts.length == 4 && parts[0] == 'husband' && parts[1] == 'report') {
       if (parts[2] == 'morning') {
-        return PartnerMorningReportScreen(date: parts[3]);
+        return HusbandLinkGuard(
+          child: PartnerMorningReportScreen(date: parts[3]),
+        );
       }
-      return PartnerMorningReportScreen(date: parts[3], daily: true);
+      return HusbandLinkGuard(
+        child: PartnerMorningReportScreen(date: parts[3], daily: true),
+      );
     }
     if (parts.length >= 3 && parts[0] == 'husband' && parts[1] == 'requests') {
       if (parts.length == 4) {
-        return PartnerRequestResultScreen(requestId: parts[2]);
+        return HusbandLinkGuard(
+          child: PartnerRequestResultScreen(requestId: parts[2]),
+        );
       }
-      return PartnerRequestScreen(requestId: parts[2]);
+      return HusbandLinkGuard(child: PartnerRequestScreen(requestId: parts[2]));
     }
     if (path == RouteNames.routineFallback) {
       return const RoutineFallbackScreen();

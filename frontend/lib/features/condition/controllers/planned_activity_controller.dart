@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../core/config/app_config.dart';
+import '../../../core/time/kst_date.dart';
 import '../data/planned_activity_store.dart';
 import '../services/api_planned_activity_service.dart';
 import '../services/mock_planned_activity_service.dart';
@@ -40,7 +41,7 @@ class PlannedActivityController extends ChangeNotifier {
 
   /// Restores activities from the condition record when the page is reopened.
   Future<void> loadActivities() async {
-    final values = await service.fetch(DateTime.now());
+    final values = await service.fetch(KstDate.today());
     if (values.isEmpty && !AppConfig.hasSupabaseConfig) return;
     _selected
       ..clear()
@@ -67,7 +68,7 @@ class PlannedActivityController extends ChangeNotifier {
     _generating = true;
     notifyListeners();
     try {
-      await service.saveAndGenerate(DateTime.now(), _selected.toList());
+      await service.saveAndGenerate(KstDate.today(), _selected.toList());
       store.save(_selected);
     } finally {
       _generating = false;
@@ -81,7 +82,7 @@ class PlannedActivityController extends ChangeNotifier {
     _generating = true;
     notifyListeners();
     try {
-      await service.saveActivities(DateTime.now(), _selected.toList());
+      await service.saveActivities(KstDate.today(), _selected.toList());
       store.save(_selected);
     } finally {
       _generating = false;
