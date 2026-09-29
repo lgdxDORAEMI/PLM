@@ -7,9 +7,11 @@ import 'routing/app_session.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  final initialLocation =
+      WidgetsBinding.instance.platformDispatcher.defaultRouteName;
   await AppConfig.initialize();
   if (AppConfig.hasSupabaseConfig) {
-    await const AppSessionRestorer().restore();
+    await const AppSessionRestorer().restore(initialLocation: initialLocation);
   }
   ActiveRoleStore.instance.restoreFor(AuthSessionStore.instance);
   runApp(const PLMApp());
