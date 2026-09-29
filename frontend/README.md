@@ -94,7 +94,7 @@ flutter run -d chrome --dart-define=PLM_PREVIEW=true
 - 404: 오늘 데이터가 아직 없는 정상 빈 상태일 수 있음
 - 401: Supabase 세션 확인
 - 403: 계정 권한 또는 `FRONTEND_ORIGIN` 확인
-- 503: Railway, Supabase, DB 스키마 또는 LLM 연결 확인
+- 503: Coolify, Supabase, DB 스키마 또는 LLM 연결 확인
 
 화면별 경로는 [API 문서](../docs/api.md), 연결 상태는 [FE–BE 연결 기록](../docs/FE_BE_CONNECTION_STATUS.md)을 참고합니다.
 
@@ -111,7 +111,7 @@ flutter build web --release --base-href /PLM/
 ```powershell
 flutter build web --release `
   --base-href /PLM/ `
-  --dart-define=API_BASE_URL=https://plm-backend-production-cc76.up.railway.app
+  --dart-define=API_BASE_URL=https://plm-api.dx6project.site
 ```
 
 ## GitHub Pages 배포
@@ -121,13 +121,13 @@ flutter build web --release `
 1. `frontend/`만 체크아웃
 2. Flutter 3.44.4 설치
 3. Repository Variables로 `frontend/.env` 생성
-4. `/PLM/` base href와 Railway API 주소로 Web 릴리스 빌드
+4. `/PLM/` base href와 Coolify API 주소로 Web 릴리스 빌드
 5. `frontend/build/web`만 Pages Artifact로 업로드
 
 필요한 Repository Variables:
 
 ```text
-API_BASE_URL=https://plm-backend-production-cc76.up.railway.app
+API_BASE_URL=https://plm-api.dx6project.site
 SUPABASE_URL=<Supabase Project URL>
 SUPABASE_ANON_KEY=<Supabase public anon key>
 ```
@@ -137,7 +137,7 @@ SUPABASE_ANON_KEY=<Supabase public anon key>
 ## 배포 확인
 
 - 앱: <https://lgdxdoraemi.github.io/PLM/>
-- 브라우저 Network의 API 호스트가 Railway인지 확인
+- 브라우저 Network의 API 호스트가 `plm-api.dx6project.site`인지 확인
 - 오래된 UI가 보이면 강력 새로고침
 - Console의 401/403/404/503을 위 연결 기준에 따라 확인
 

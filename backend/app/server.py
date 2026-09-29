@@ -7,7 +7,7 @@ DEFAULT_PORT = 8000
 
 
 def server_port() -> int:
-    """Railway가 주입한 PORT를 검증하고 로컬 기본 포트를 반환한다."""
+    """배포 환경이 주입한 PORT를 검증하고 로컬 기본 포트를 반환한다."""
     raw_port = os.getenv("PORT", str(DEFAULT_PORT))
     try:
         return int(raw_port)

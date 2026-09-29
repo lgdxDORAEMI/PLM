@@ -4,7 +4,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
-# OpenCV/MediaPipe가 headless Railway 컨테이너에서 요구하는 런타임 라이브러리입니다.
+# OpenCV/MediaPipe가 headless Coolify 컨테이너에서 요구하는 런타임 라이브러리입니다.
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends \
         libgl1 \

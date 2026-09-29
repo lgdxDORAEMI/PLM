@@ -4,9 +4,9 @@ PLM Backend는 인증된 생활 기록, AI 루틴·챗봇, 네 가지 가이드,
 
 운영 주소:
 
-- API: <https://plm-backend-production-cc76.up.railway.app>
-- Swagger UI: <https://plm-backend-production-cc76.up.railway.app/docs>
-- Healthcheck: <https://plm-backend-production-cc76.up.railway.app/health>
+- API: <https://plm-api.dx6project.site>
+- Swagger UI: <https://plm-api.dx6project.site/docs>
+- Healthcheck: <https://plm-api.dx6project.site/health>
 
 ## 제공 기능
 
@@ -84,7 +84,7 @@ http://localhost:8000/docs
 FRONTEND_ORIGIN=https://lgdxdoraemi.github.io
 ```
 
-`FRONTEND_ORIGIN`에는 `/PLM/` 경로가 아니라 Origin만 입력합니다. `.env`를 커밋하지 않고 Railway Variables에서 비밀값을 관리합니다.
+`FRONTEND_ORIGIN`에는 `/PLM/` 경로가 아니라 Origin만 입력합니다. `.env`를 커밋하지 않고 Coolify Environment Variables에서 비밀값을 관리합니다.
 
 ## Supabase와 마이그레이션
 
@@ -131,30 +131,30 @@ python -m unittest discover -s tests
 python -m unittest tests.test_chat tests.test_routine_home tests.test_app
 ```
 
-## Railway 배포
+## Coolify 배포
 
-Railway의 GitHub 연결 서비스는 다음 설정을 사용합니다.
+Coolify 애플리케이션은 `main` 브랜치 push 웹훅으로 자동 재배포합니다. 다음 설정을 유지합니다.
 
 ```text
-Root Directory: backend
-Dockerfile Path: /backend/Dockerfile
+Branch: main
+Dockerfile: backend/Dockerfile
 Start Command: python -m app.server
 Healthcheck Path: /health
-Watch Path: /backend/**
+Domain: https://plm-api.dx6project.site
 ```
 
 `backend/Dockerfile`은 Python 3.13 slim 이미지에 requirements와 MediaPipe/OpenCV가 요구하는 Linux 라이브러리를 설치합니다. `models/pose_landmarker_full.task`는 모션 API 런타임 파일이므로 배포에서 제외하면 안 됩니다.
 
 배포 순서:
 
-1. Railway 서비스 Variables를 `backend/.env.example` 기준으로 입력합니다.
+1. Coolify Environment Variables를 `backend/.env.example` 기준으로 입력합니다.
 2. `FRONTEND_ORIGIN=https://lgdxdoraemi.github.io`를 설정합니다.
-3. Public Networking 도메인을 생성합니다.
+3. `plm-api.dx6project.site` 도메인과 HTTPS를 애플리케이션에 연결합니다.
 4. 배포 후 `/health`와 `/docs`를 확인합니다.
-5. GitHub의 `API_BASE_URL`을 Railway 공개 주소로 설정합니다.
+5. GitHub의 `API_BASE_URL`을 `https://plm-api.dx6project.site`로 설정합니다.
 6. Pages 앱에서 등록 계정 진입과 인증 API를 확인합니다.
 
-Railway의 `PORT`는 자동 주입됩니다. Start Command에서 `$PORT`를 직접 확장하지 않고 `python -m app.server`를 유지합니다.
+Coolify에서 `PORT`를 주입하지 않으면 서버는 기본 `8000` 포트를 사용합니다. Start Command는 `python -m app.server`를 유지합니다.
 
 ## 운영 문제 확인
 
@@ -166,6 +166,6 @@ Railway의 `PORT`는 자동 주입됩니다. Start Command에서 `$PORT`를 직�
 | 409/422 | 선행 입력, 상태 충돌, 요청 본문 |
 | 503 DB 오류 | Supabase 연결, 서비스 키, 운영 마이그레이션 |
 | 503 Chat/AI 오류 | `LLM_API_KEY`, Base URL, 공급자 응답 |
-| 시작 실패 | Railway Root Directory, Dockerfile, `PORT`, 런타임 라이브러리 |
+| 시작 실패 | Coolify 빌드 경로, Dockerfile, `PORT`, 런타임 라이브러리 |
 
 더 자세한 초기 설정과 장애 대응은 [guide.md](../guide.md)를 참고합니다.

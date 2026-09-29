@@ -2,7 +2,7 @@
 
 ## ThinQ Connect 설정과 확인
 
-Backend의 `backend/.env`에 `THINQ_PAT=<Personal Access Token>`, `THINQ_COUNTRY_CODE=KR`, `THINQ_CLIENT_ID=<고정 UUID>`를 설정한다. `THINQ_CLIENT_ID`는 한 번 생성해 유지하고 요청마다 새로 만들지 않는다. 실제 PAT는 코드·문서·Frontend `.env`·GitHub Actions에 저장하지 않는다. Railway 배포 시 Backend 서비스 Variable을 사용한다. ThinQ 설정 변경 후 Backend를 재시작한다.
+Backend의 `backend/.env`에 `THINQ_PAT=<Personal Access Token>`, `THINQ_COUNTRY_CODE=KR`, `THINQ_CLIENT_ID=<고정 UUID>`를 설정한다. `THINQ_CLIENT_ID`는 한 번 생성해 유지하고 요청마다 새로 만들지 않는다. 실제 PAT는 코드·문서·Frontend `.env`·GitHub Actions에 저장하지 않는다. Coolify 배포 시 애플리케이션 Environment Variable을 사용한다. ThinQ 설정 변경 후 Backend를 재시작한다.
 
 실제 확인 순서: ① Backend 재시작 ② `PLM_WIFE_EMAIL`과 일치하는 아내 계정의 Supabase 로그인 토큰으로 `GET /api/v1/thinq/devices` 조회 ③ `status=connected`와 `device_type=air_purifier` 기기 확인 ④ 오늘 컨디션 입력 및 AI 루틴 생성 ⑤ 수면 가이드에서 공기청정기 모드를 고른 뒤 `수면 환경 전체 실행` 선택 ⑥ 실기기 전원·바람세기와 실행 결과 확인. `connected`에 빈 목록이면 등록 기기가 없거나 해당 PAT의 계정이 다르다. `not_configured`면 PAT·UUID 또는 로그인 계정 설정을, `auth_error`면 PAT 유효성과 제어 권한을, `timeout`·`error`면 ThinQ 접속 상태를 확인한다. 오류 시 일반 가이드는 계속 사용할 수 있지만 수면 환경 전체 실행은 공기청정기 제어 실패로 안내한다. 단일 PAT의 목록과 제어 권한은 설정된 아내 계정에만 제공한다.
 
@@ -146,38 +146,38 @@ if (-not (Test-Path .env)) { Copy-Item .env.example .env }
 python 02_translate_chunk_embed_upload.py --step all
 ```
 
-## Railway와 GitHub Pages 배포
+## Coolify와 GitHub Pages 배포
 
 현재 운영 주소는 다음과 같습니다.
 
 ```text
 Web App: https://lgdxdoraemi.github.io/PLM/
-Backend API: https://plm-backend-production-cc76.up.railway.app
-Swagger UI: https://plm-backend-production-cc76.up.railway.app/docs
-Healthcheck: https://plm-backend-production-cc76.up.railway.app/health
+Backend API: https://plm-api.dx6project.site
+Swagger UI: https://plm-api.dx6project.site/docs
+Healthcheck: https://plm-api.dx6project.site/health
 ```
 
-전체 배포 개요와 빠른 확인 절차는 [루트 README](README.md#배포-구조), 서비스별 상세 설정은 [Frontend README](frontend/README.md#github-pages-배포)와 [Backend README](backend/README.md#railway-배포)를 함께 참고합니다.
+전체 배포 개요와 빠른 확인 절차는 [루트 README](README.md#배포-구조), 서비스별 상세 설정은 [Frontend README](frontend/README.md#github-pages-배포)와 [Backend README](backend/README.md#coolify-배포)를 함께 참고합니다.
 
-### 1. Railway Backend 생성
+### 1. Coolify Backend 설정
 
-Railway에서 GitHub 저장소를 연결하고 Backend 서비스를 생성한 뒤 아래 값을 사용합니다.
+Coolify에서 GitHub 저장소를 연결하고 `main` 브랜치 push 웹훅을 활성화합니다. 애플리케이션은 저장소의 `backend/Dockerfile`로 빌드합니다.
 
 ```text
-Root Directory: backend
-Dockerfile Path: /backend/Dockerfile
+Branch: main
+Dockerfile: backend/Dockerfile
 Start Command: python -m app.server
 Healthcheck Path: /health
-Watch Path: /backend/**
+Domain: https://plm-api.dx6project.site
 ```
 
-Backend는 `backend/Dockerfile`로 빌드합니다. Dockerfile에는 MediaPipe/OpenCV가 Railway의 headless Linux 환경에서 요구하는 `libxcb`, OpenGL 및 GLib 런타임 패키지가 포함되어 있습니다. `ImportError: libxcb.so.1`이 발생하면 Railpack 빌드가 아니라 저장소 루트 기준 `/backend/Dockerfile`을 사용하는지 먼저 확인합니다.
+Backend는 `backend/Dockerfile`로 빌드합니다. Dockerfile에는 MediaPipe/OpenCV가 Coolify의 headless Linux 환경에서 요구하는 `libxcb`, OpenGL 및 GLib 런타임 패키지가 포함되어 있습니다. `ImportError: libxcb.so.1`이 발생하면 다른 빌드팩이 아니라 `backend/Dockerfile`을 사용하는지 먼저 확인합니다.
 
-`app.server`는 Railway가 주입한 `PORT`를 Python에서 직접 읽고 검증한 뒤 Uvicorn을 시작합니다. Start Command에서 `$PORT`를 직접 사용하면 Railway 실행 방식에 따라 문자열로 전달될 수 있으므로 `python -m app.server`를 유지합니다.
+`app.server`는 `PORT` 환경변수를 Python에서 직접 읽고 검증한 뒤 Uvicorn을 시작하며, 값이 없으면 `8000`을 사용합니다. Start Command는 `python -m app.server`를 유지합니다.
 
-Root Directory로 `backend/`만 배포 범위에 포함하고, Watch Path로 Backend 변경이 있을 때만 새 배포를 생성합니다. `tests/`와 문서는 실행 시 import되지 않으며 크기가 작으므로, GitHub 연동 배포에서 보장되지 않는 별도 ignore 설정은 추가하지 않습니다. `models/pose_landmarker_full.task`는 모션 API가 런타임에 직접 사용하므로 제외하지 않습니다.
+현재 Coolify 웹훅은 `main`으로 push될 때 자동 배포합니다. `tests/`와 문서는 실행 시 import되지 않습니다. `models/pose_landmarker_full.task`는 모션 API가 런타임에 직접 사용하므로 빌드 컨텍스트에서 제외하지 않습니다.
 
-Railway Backend 서비스의 Variables에는 `backend/.env.example`을 기준으로 실제 사용하는 서버 설정을 입력합니다.
+Coolify 애플리케이션 Environment Variables에는 `backend/.env.example`을 기준으로 실제 사용하는 서버 설정을 입력합니다.
 
 ```text
 SUPABASE_URL
@@ -195,14 +195,14 @@ THINQ_CLIENT_ID
 FRONTEND_ORIGIN=https://lgdxdoraemi.github.io
 ```
 
-`SUPABASE_DB_URL`은 마이그레이션을 Railway에서 직접 실행할 때만 추가합니다. `SUPABASE_SERVICE_ROLE_KEY`, 계정 비밀번호, `LLM_API_KEY`, `THINQ_PAT`은 Railway Backend 서비스에만 저장합니다. Flutter 빌드 인자나 GitHub Repository Variable에 넣지 않습니다. 배포 후 Railway의 Public Networking에서 도메인을 생성하고 `https://<railway-domain>` 주소의 `/health`와 `/docs`를 확인합니다.
+`SUPABASE_DB_URL`은 마이그레이션을 배포 서버에서 직접 실행할 때만 추가합니다. `SUPABASE_SERVICE_ROLE_KEY`, 계정 비밀번호, `LLM_API_KEY`, `THINQ_PAT`은 Coolify 애플리케이션에만 저장합니다. Flutter 빌드 인자나 GitHub Repository Variable에 넣지 않습니다. 배포 후 `https://plm-api.dx6project.site/health`와 `/docs`를 확인합니다.
 
 ### 2. GitHub Repository Variables 설정
 
 GitHub 저장소의 `Settings > Secrets and variables > Actions > Variables`에 다음 값을 추가합니다.
 
 ```text
-API_BASE_URL=https://<railway-domain>
+API_BASE_URL=https://plm-api.dx6project.site
 SUPABASE_URL=<Supabase Project URL>
 SUPABASE_ANON_KEY=<Supabase public anon key>
 ```
@@ -225,9 +225,10 @@ flutter build web --release \
 
 ### 4. 배포 확인
 
-1. `https://<railway-domain>/health`가 `{"status":"ok"}`를 반환하는지 확인합니다.
-2. `https://<railway-domain>/docs`에서 OpenAPI 문서가 열리는지 확인합니다.
-3. `https://lgdxdoraemi.github.io/PLM/`에서 앱을 열고 브라우저 개발자 도구의 API 요청 대상이 Railway URL인지 확인합니다.
-4. Railway 배포 로그에 Pages Origin의 요청이 남고 CORS 오류가 없는지 확인합니다.
+1. `https://plm-api.dx6project.site/health`가 `{"status":"ok"}`를 반환하는지 확인합니다.
+2. `https://plm-api.dx6project.site/docs`에서 OpenAPI 문서가 열리는지 확인합니다.
+3. 인증 없이 `POST /api/v1/account/partner-link/share`와 `GET /api/v1/family/notifications/unread`가 `401`인지 확인합니다. `404`이면 Coolify가 이전 커밋을 실행 중입니다.
+4. `https://lgdxdoraemi.github.io/PLM/`에서 앱을 열고 브라우저 개발자 도구의 API 요청 대상이 `plm-api.dx6project.site`인지 확인합니다.
+5. Coolify 배포 로그에 Pages Origin의 요청이 남고 CORS 오류가 없는지 확인합니다.
 
 개별 단계는 `--step translate`, `--step embed`, `--step upload`로 실행할 수 있습니다.
