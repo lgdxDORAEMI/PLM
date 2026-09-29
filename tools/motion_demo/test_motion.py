@@ -195,7 +195,7 @@ class SessionManagerTest(unittest.TestCase):
         manager.set_calibration(session_id, CalibrationProfile(10, 175, 45, 0))
 
         # trunk_dev=0(Standing, 라벨은 원래도 Normal)이지만 trunk_flexion_abs는
-        # 절대 30도 이상으로 계속 보내서 누적 임계값(데모 10초)을 넘긴다.
+        # 절대 30도 이상으로 계속 보내서 누적 임계값(데모 5초)을 넘긴다.
         last_state = None
         for t in range(12):
             last_state = manager.update_judgement(
