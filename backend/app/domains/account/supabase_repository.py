@@ -176,12 +176,16 @@ class SupabaseAccountRepository(AccountRepository):
         column = "wife_user_id" if role == UserRole.WIFE else "husband_user_id"
         rows = self._run(
             lambda: self.client.table("partner_links")
-            .select("wife_user_id,husband_user_id")
+            .select("wife_user_id,husband_user_id,shared_at")
             .eq(column, user_id)
             .limit(1)
             .execute()
         )
         if not rows:
+            return PartnerLinkStatus.UNLINKED, None
+        # A reset keeps the relationship but clears shared_at. The wife must
+        # share again before the husband's entry flow can open Husband Home.
+        if role == UserRole.HUSBAND and not rows[0].get("shared_at"):
             return PartnerLinkStatus.UNLINKED, None
         partner_id = rows[0]["husband_user_id"] if role == UserRole.WIFE else rows[0]["wife_user_id"]
         return PartnerLinkStatus.LINKED, self._display_name(partner_id)

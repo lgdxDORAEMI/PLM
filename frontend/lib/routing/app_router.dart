@@ -139,7 +139,16 @@ abstract final class AppRouter {
       return RouteNames.entry;
     }
     if (!auth.canAccess(active)) return RouteNames.entry;
-    if (path == RouteNames.entry) return _homeFor(active);
+    final hasProfile = AppConfig.hasSupabaseConfig
+        ? auth.profileComplete
+        : ProfileStore.instance.hasProfile;
+    if (path == RouteNames.entry) {
+      final restartingAfterReset =
+          active == ActiveRole.wife &&
+          uri.queryParameters['source'] == 'reset' &&
+          !hasProfile;
+      return restartingAfterReset ? uri.toString() : _homeFor(active);
+    }
     if (path.startsWith('/role/switch/')) return _homeFor(active);
     if (!_isKnownPath(path)) return _homeFor(active);
 
@@ -149,9 +158,6 @@ abstract final class AppRouter {
         ? ActiveRole.husband
         : null;
     if (requestedRole != active) return _homeFor(active);
-    final hasProfile = AppConfig.hasSupabaseConfig
-        ? auth.profileComplete
-        : ProfileStore.instance.hasProfile;
     if (active == ActiveRole.wife && !hasProfile) {
       return RouteNames.profileSetup;
     }

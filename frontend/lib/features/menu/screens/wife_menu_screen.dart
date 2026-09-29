@@ -263,7 +263,7 @@ class _WifeMenuScreenState extends State<WifeMenuScreen> {
       if (!mounted) return;
       Navigator.of(
         context,
-      ).pushNamedAndRemoveUntil(RouteNames.profileSetup, (_) => false);
+      ).pushNamedAndRemoveUntil(RouteNames.entryAfterReset, (_) => false);
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

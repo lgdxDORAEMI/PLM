@@ -48,11 +48,15 @@ class AppSessionRestorer {
   /// have shared the same browser's persisted Supabase session.
   static ActiveRole? roleForLocation(String location) {
     final uri = Uri.tryParse(location);
-    final path = uri == null
-        ? ''
+    final routeUri = uri == null
+        ? null
         : uri.fragment.startsWith('/')
-        ? Uri.tryParse(uri.fragment)?.path ?? ''
-        : uri.path;
+        ? Uri.tryParse(uri.fragment)
+        : uri;
+    final path = routeUri == null ? '' : routeUri.path;
+    if (path == '/entry' && routeUri?.queryParameters['source'] == 'reset') {
+      return ActiveRole.wife;
+    }
     if (path.startsWith('/wife/')) return ActiveRole.wife;
     if (path.startsWith('/husband/')) return ActiveRole.husband;
     return null;

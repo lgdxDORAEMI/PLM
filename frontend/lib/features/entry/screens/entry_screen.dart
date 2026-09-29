@@ -20,10 +20,16 @@ import '../services/mock_entry_service.dart';
 import '../widgets/pregnancy_entry_view.dart';
 
 class EntryScreen extends StatefulWidget {
-  const EntryScreen({super.key, this.service, this.invitationToken});
+  const EntryScreen({
+    super.key,
+    this.service,
+    this.invitationToken,
+    this.partnerPollInterval = const Duration(seconds: 3),
+  });
 
   final EntryService? service;
   final String? invitationToken;
+  final Duration partnerPollInterval;
 
   @override
   State<EntryScreen> createState() => _EntryScreenState();
@@ -40,6 +46,7 @@ class _EntryScreenState extends State<EntryScreen> {
   String? _signInError;
   bool _automaticSignInFailed = false;
   bool _automaticSignInInProgress = false;
+  Timer? _partnerLinkPollTimer;
 
   bool get _automaticEntry => _apiMode && widget.invitationToken == null;
 
@@ -80,6 +87,7 @@ class _EntryScreenState extends State<EntryScreen> {
 
   @override
   void dispose() {
+    _partnerLinkPollTimer?.cancel();
     _controller
       ..removeListener(_onChanged)
       ..dispose();
@@ -93,6 +101,7 @@ class _EntryScreenState extends State<EntryScreen> {
     if (!mounted) return;
 
     final launchState = _controller.launchState;
+    _syncPartnerLinkPolling(launchState);
     final shouldRedirect =
         _controller.state == EntryViewState.ready &&
         launchState != null &&
@@ -110,6 +119,22 @@ class _EntryScreenState extends State<EntryScreen> {
       });
     }
     setState(() {});
+  }
+
+  void _syncPartnerLinkPolling(AppLaunchState? launchState) {
+    final shouldPoll =
+        widget.invitationToken == null &&
+        _controller.state == EntryViewState.ready &&
+        launchState == AppLaunchState.partnerNeedsLink;
+    if (!shouldPoll) {
+      _partnerLinkPollTimer?.cancel();
+      _partnerLinkPollTimer = null;
+      return;
+    }
+    _partnerLinkPollTimer ??= Timer.periodic(
+      widget.partnerPollInterval,
+      (_) => unawaited(_controller.refresh()),
+    );
   }
 
   @override

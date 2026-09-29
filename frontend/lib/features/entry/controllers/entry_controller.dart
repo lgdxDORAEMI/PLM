@@ -34,4 +34,18 @@ class EntryController extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  /// Refreshes an already-rendered entry state without replacing it with a
+  /// loading screen. Transient polling failures keep the current state.
+  Future<void> refresh() async {
+    if (_state != EntryViewState.ready) return;
+    try {
+      final launchState = await service.resolveLaunchState();
+      if (_launchState == launchState) return;
+      _launchState = launchState;
+      notifyListeners();
+    } on Object {
+      // Keep the current entry state and retry on the next interval.
+    }
+  }
 }

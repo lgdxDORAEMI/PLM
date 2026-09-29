@@ -246,10 +246,32 @@ class RelationshipAuthorizationTest(unittest.IsolatedAsyncioTestCase):
             response = await client.get("/api/v1/account/bootstrap")
         self.assertEqual(response.json()["destination"], "husband_invitation_required")
 
-        self.fake.tables["partner_links"].append({"wife_user_id": WIFE, "husband_user_id": HUSBAND})
+        self.fake.tables["partner_links"].append(
+            {"wife_user_id": WIFE, "husband_user_id": HUSBAND, "shared_at": "2026-09-29T00:00:00+00:00"}
+        )
         async with client_for(self.fake) as client:
             response = await client.get("/api/v1/account/bootstrap")
         self.assertEqual(response.json()["destination"], "husband_calendar")
+
+    async def test_husband_entry_waits_until_wife_shares_after_reset(self) -> None:
+        self.fake.tables["profiles"].append({"user_id": HUSBAND, "role": "husband"})
+        self.fake.tables["partner_links"].append(
+            {"wife_user_id": WIFE, "husband_user_id": HUSBAND, "shared_at": None}
+        )
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=HUSBAND)
+        async with client_for(self.fake) as client:
+            waiting = await client.get("/api/v1/account/bootstrap")
+        self.assertEqual(waiting.json()["destination"], "husband_invitation_required")
+
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=WIFE)
+        async with client_for(self.fake) as client:
+            shared = await client.post("/api/v1/account/partner-link/share")
+        self.assertEqual(shared.status_code, 200)
+
+        app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=HUSBAND)
+        async with client_for(self.fake) as client:
+            ready = await client.get("/api/v1/account/bootstrap")
+        self.assertEqual(ready.json()["destination"], "husband_calendar")
 
     async def test_partner_link_returns_own_display_name_regardless_of_link_status(self) -> None:
         """my_display_name은 profiles.display_name(본인 행)에서 오며, partner_links
@@ -271,7 +293,11 @@ class RelationshipAuthorizationTest(unittest.IsolatedAsyncioTestCase):
             ]
         )
         self.fake.tables["partner_links"].append(
-            {"wife_user_id": WIFE, "husband_user_id": HUSBAND}
+            {
+                "wife_user_id": WIFE,
+                "husband_user_id": HUSBAND,
+                "shared_at": "2026-09-29T00:00:00+00:00",
+            }
         )
 
         app.dependency_overrides[get_current_user] = lambda: CurrentUser(id=WIFE)

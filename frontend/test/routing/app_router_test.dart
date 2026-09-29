@@ -5,6 +5,7 @@ import 'package:plm_frontend/features/profile/data/profile_store.dart';
 import 'package:plm_frontend/features/profile/models/profile_draft.dart';
 import 'package:plm_frontend/routing/app_router.dart';
 import 'package:plm_frontend/routing/app_session.dart';
+import 'package:plm_frontend/routing/route_context.dart';
 import 'package:plm_frontend/routing/route_names.dart';
 
 void main() {
@@ -45,6 +46,17 @@ void main() {
     );
     expect(
       AppRouter.resolveLocation('/wife/profile/onboarding/5'),
+      RouteNames.profileSetup,
+    );
+  });
+
+  test('초기화한 아내는 entry에서 다시 시작한 뒤 프로필 설정으로 간다', () {
+    expect(
+      AppRouter.resolveLocation(RouteNames.entryAfterReset),
+      RouteNames.entryAfterReset,
+    );
+    expect(
+      AppRouter.resolveLaunchRoute(AppLaunchState.wifeNeedsProfile),
       RouteNames.profileSetup,
     );
   });

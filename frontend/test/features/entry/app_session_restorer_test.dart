@@ -87,6 +87,10 @@ void main() {
       AppSessionRestorer.roleForLocation('/PLM/#/husband/notifications'),
       ActiveRole.husband,
     );
+    expect(
+      AppSessionRestorer.roleForLocation('/PLM/#/entry?source=reset'),
+      ActiveRole.wife,
+    );
   });
 
   test('저장된 세션이 없으면 인증 상태를 비운다', () async {

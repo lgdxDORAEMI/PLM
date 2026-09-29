@@ -2,6 +2,7 @@
 abstract final class RouteNames {
   static const root = '/';
   static const entry = '/entry';
+  static const entryAfterReset = '/entry?source=reset';
   static const inviteAccept = '/invite/accept';
   static const roleSwitchPattern = '/role/switch/:targetRole';
 
