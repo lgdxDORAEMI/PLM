@@ -136,7 +136,7 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
     children: [
       _SectionTitle(
         number: 1,
-        title: '오늘은 이것만 직접',
+        title: '오늘 할일',
         label: '${_controller.directListTasks.length}개 · 가볍게',
       ),
       const SizedBox(height: AppSpacing.md),
@@ -145,7 +145,7 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
         children: [
           if (_controller.directListTasks.isEmpty)
             Text(
-              '직접 할 일을 모두 가족과 나눴어요.',
+              '할 일을 모두 가족과 나눴어요.',
               style: Theme.of(
                 context,
               ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
