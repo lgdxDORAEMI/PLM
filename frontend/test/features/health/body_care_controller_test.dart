@@ -8,7 +8,7 @@ import 'package:plm_frontend/features/health/models/body_care_guide.dart';
 import 'package:plm_frontend/features/health/screens/health_guide_screen.dart';
 import 'package:plm_frontend/features/health/services/health_guide_service.dart';
 import 'package:plm_frontend/features/health/services/mock_health_guide_service.dart';
-import 'package:plm_frontend/features/health/widgets/video_thumbnail.dart';
+import 'package:plm_frontend/features/health/widgets/youtube_embed.dart';
 
 void main() {
   test('활동 완료와 오늘 안하기는 취소할 수 없는 최종 상태다', () async {
@@ -150,7 +150,7 @@ void main() {
     expect(find.text(message), findsNothing);
   });
 
-  testWidgets('운동 재생 버튼은 해당 영상의 썸네일 화면을 연다', (tester) async {
+  testWidgets('운동 재생 버튼은 해당 영상의 재생 화면을 연다', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: HealthGuideScreen(service: MockHealthGuideService()),
@@ -164,10 +164,10 @@ void main() {
     expect(find.text('임신 중 허리 통증 완화 스트레칭'), findsOneWidget);
     expect(find.text('Pregnancy and Postpartum TV'), findsOneWidget);
     expect(
-      // 09-25: 팝업도 재생 대신 썸네일. 카드에도 썸네일이 있어 팝업 안에서 찾는다.
+      // 09-30: 팝업에서 영상을 재생한다(테스트에서는 브라우저 없는 대체 화면).
       find.descendant(
         of: find.byType(Dialog),
-        matching: find.byType(VideoThumbnail),
+        matching: find.byType(YouTubeEmbed),
       ),
       findsOneWidget,
     );

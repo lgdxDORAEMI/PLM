@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../design_system/tokens/app_colors.dart';
 import '../../../design_system/tokens/app_radius.dart';
 
-/// 09-25 팀 결정: 운동 영상을 앱 안에서 재생하지 않고 유튜브 썸네일만 보여준다.
+/// 운동 카드의 유튜브 썸네일. 누르면 팝업에서 영상이 재생된다(09-30, youtube_embed.dart).
 /// 썸네일은 youtube_id로 만든다(DB에 URL 컬럼 없음). 못 불러오면 회색 박스로 내려간다.
 class VideoThumbnail extends StatelessWidget {
   const VideoThumbnail({

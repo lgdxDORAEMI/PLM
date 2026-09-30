@@ -21,7 +21,7 @@ import '../services/health_guide_service.dart';
 import '../services/mock_health_guide_service.dart';
 import '../../../shared/widgets/integration_required_state.dart';
 import '../widgets/movement_guide_card.dart';
-import '../widgets/video_thumbnail.dart';
+import '../widgets/youtube_embed.dart';
 
 class HealthGuideScreen extends StatefulWidget {
   const HealthGuideScreen({super.key, this.service});
@@ -405,11 +405,13 @@ class _HealthGuideScreenState extends State<HealthGuideScreen> {
                   ],
                 ),
                 const SizedBox(height: AppSpacing.md),
+                // 09-30 QA: 팝업에서 영상을 바로 재생한다(09-25 썸네일 전용 결정 되돌림).
+                // DB는 youtube_id만 저장하고, 재생 주소는 youtube_embed_web.dart가 만든다.
                 AspectRatio(
                   aspectRatio: 16 / 9,
-                  child: VideoThumbnail(
-                    youtubeId: video.youtubeId,
-                    showPlayIcon: false,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.card),
+                    child: YouTubeEmbed(youtubeId: video.youtubeId),
                   ),
                 ),
                 if (allowCompletion) ...[
