@@ -95,6 +95,27 @@ void main() {
     ]);
   });
 
+  test('확정된 리포트 상태를 화면 모델에 유지한다', () async {
+    final client = ApiClient(
+      baseUrl: 'https://example.test',
+      httpClient: MockClient((request) async {
+        if (request.url.path.contains('/conditions/')) {
+          return http.Response(jsonEncode(_normalCondition), 200);
+        }
+        return http.Response(
+          jsonEncode({..._emptyReport, 'finalized': true}),
+          200,
+        );
+      }),
+    );
+
+    final record = await ApiRecordService(
+      client: client,
+    ).fetchRecord(DateTime(2026, 9, 13));
+
+    expect(record?.finalized, isTrue);
+  });
+
   test('통합 API가 아직 배포되지 않았으면 기존 상세 API로 폴백한다', () async {
     final requests = <String>[];
     final client = ApiClient(

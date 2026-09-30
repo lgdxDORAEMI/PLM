@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plm_frontend/core/config/app_config.dart';
+import 'package:plm_frontend/design_system/components/app_button.dart';
 import 'package:plm_frontend/features/report/screens/daily_report_screen.dart';
 import 'package:plm_frontend/features/calendar/data/calendar_selection_store.dart';
 import 'package:plm_frontend/features/condition/data/today_care_store.dart';
@@ -58,6 +59,11 @@ void main() {
     expect(TodayCareStore.instance.hasTodayCare, isFalse);
     expect(recordDateKey(CalendarSelectionStore.instance.selectedDate!), date);
     expect(find.byType(WifeHomeScreen), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('home-condition-missing')),
+      findsOneWidget,
+    );
+    expect(find.byKey(const ValueKey('home-routine-success')), findsNothing);
   });
 
   testWidgets('날짜를 선택해 해당 Daily Report로 이동한다', (tester) async {
@@ -97,7 +103,13 @@ void main() {
     final reportContext = tester.element(find.byType(DailyReportScreen));
     expect(
       ModalRoute.of(reportContext)?.settings.name,
-      RouteNames.dailyReport('2026-09-07'),
+      RouteNames.dailyReport('2026-09-07', fromCalendar: true),
+    );
+    expect(
+      tester
+          .widget<AppButton>(find.byKey(const ValueKey('report-save-button')))
+          .onPressed,
+      isNull,
     );
   });
 

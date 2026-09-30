@@ -150,6 +150,7 @@ class ApiRecordService implements RecordService {
       motionSummaries:
           (report['motion_summaries'] as List?)?.whereType<String>().toList() ??
           const [],
+      finalized: report['finalized'] == true,
     );
   }
 

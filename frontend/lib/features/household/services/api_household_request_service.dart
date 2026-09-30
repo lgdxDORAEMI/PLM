@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../core/network/api_client.dart';
+import '../../../core/time/kst_date.dart';
 import '../../partner/models/partner_request.dart';
 import '../../routine/models/daily_routine.dart';
 import '../../routine/services/api_routine_service.dart';
@@ -19,8 +20,10 @@ class ApiHouseholdRequestService extends ChangeNotifier
 
   @override
   Future<List<HouseholdTask>> fetchGuide() async {
+    final today = KstDate.today();
     final response = await _client.get(
       '/api/v1/household/today',
+      query: {'date': _dateKey(today)},
       throwOnNotFound: true,
     );
     applianceConnectionStatus = response?['appliance_connection_status']
@@ -69,11 +72,7 @@ class ApiHouseholdRequestService extends ChangeNotifier
     required String reason,
     required String supportingInfo,
   }) async {
-    final now = DateTime.now();
-    final date =
-        '${now.year.toString().padLeft(4, '0')}-'
-        '${now.month.toString().padLeft(2, '0')}-'
-        '${now.day.toString().padLeft(2, '0')}';
+    final date = _dateKey(KstDate.today());
     final response = await _client.post('/api/v1/family/household-requests', {
       'target_date': date,
       'reason': reason,

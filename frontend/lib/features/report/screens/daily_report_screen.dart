@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../../core/config/app_config.dart';
+import '../../../core/time/kst_date.dart';
 import '../../../design_system/components/app_button.dart';
 import '../../../design_system/components/app_card.dart';
 import '../../../design_system/components/app_state_view.dart';
@@ -26,10 +27,16 @@ import '../widgets/routine_record_card.dart';
 import '../../../shared/widgets/integration_required_state.dart';
 
 class DailyReportScreen extends StatefulWidget {
-  const DailyReportScreen({super.key, required this.date, this.service});
+  const DailyReportScreen({
+    super.key,
+    required this.date,
+    this.service,
+    this.fromCalendar = false,
+  });
 
   final String date;
   final RecordService? service;
+  final bool fromCalendar;
 
   @override
   State<DailyReportScreen> createState() => _DailyReportScreenState();
@@ -113,6 +120,7 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
       busy:
           _controller.state == DailyReportViewState.saving ||
           _controller.state == DailyReportViewState.sharing,
+      saveEnabled: !widget.fromCalendar && !_controller.record!.finalized,
       onSave: _save,
       onShare: _share,
     ),
@@ -122,8 +130,7 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
     if (await _controller.save() && mounted) {
       final savedDate = _controller.record!.date;
       CalendarSelectionStore.instance.remember(savedDate);
-      if (!AppConfig.hasSupabaseConfig &&
-          recordDateKey(savedDate) == recordDateKey(DateTime.now())) {
+      if (recordDateKey(savedDate) == recordDateKey(KstDate.today())) {
         TodayCareStore.instance.finishDay();
       }
       Navigator.pushNamedAndRemoveUntil(
@@ -169,11 +176,13 @@ class _DailyReportContent extends StatelessWidget {
   const _DailyReportContent({
     required this.record,
     required this.busy,
+    required this.saveEnabled,
     required this.onSave,
     required this.onShare,
   });
   final DailyRecord record;
   final bool busy;
+  final bool saveEnabled;
   final VoidCallback onSave;
   final VoidCallback onShare;
 
@@ -226,6 +235,7 @@ class _DailyReportContent extends StatelessWidget {
         secondary: _ReportInsights(
           record: record,
           busy: busy,
+          saveEnabled: saveEnabled,
           onSave: onSave,
           onShare: onShare,
         ),
@@ -257,12 +267,14 @@ class _ReportInsights extends StatelessWidget {
   const _ReportInsights({
     required this.record,
     required this.busy,
+    required this.saveEnabled,
     required this.onSave,
     required this.onShare,
   });
 
   final DailyRecord record;
   final bool busy;
+  final bool saveEnabled;
   final VoidCallback onSave;
   final VoidCallback onShare;
 
@@ -301,7 +313,7 @@ class _ReportInsights extends StatelessWidget {
       AppButton(
         key: const ValueKey('report-save-button'),
         label: busy ? '처리 중…' : '저장하고 마치기',
-        onPressed: busy ? null : onSave,
+        onPressed: busy || !saveEnabled ? null : onSave,
       ),
       const SizedBox(height: AppSpacing.md),
       AppButton(

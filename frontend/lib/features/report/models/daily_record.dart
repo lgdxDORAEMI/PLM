@@ -36,6 +36,7 @@ class DailyRecord {
     this.burdenCount = 0,
     this.motionSummaries = const [],
     this.awaitingCondition = false,
+    this.finalized = false,
   });
 
   /// 09-29: 그날 컨디션이 아직 없는 날. 남편 화면이 날짜·주차만 보여줄 때 쓴다.
@@ -55,7 +56,8 @@ class DailyRecord {
        burdenArea = '',
        burdenCount = 0,
        motionSummaries = const [],
-       awaitingCondition = true;
+       awaitingCondition = true,
+       finalized = false;
 
   final DateTime date;
   final int pregnancyWeek;
@@ -73,6 +75,7 @@ class DailyRecord {
   final int burdenCount;
   final List<String> motionSummaries;
   final bool awaitingCondition;
+  final bool finalized;
 
   DailyRecord copyWithFamilySummary({
     required int requested,
@@ -95,6 +98,7 @@ class DailyRecord {
     burdenCount: burdenCount,
     motionSummaries: motionSummaries,
     awaitingCondition: awaitingCondition,
+    finalized: finalized,
   );
 
   DailyRecord copyWithApplianceSummary({
@@ -117,6 +121,7 @@ class DailyRecord {
     burdenCount: burdenCount,
     motionSummaries: motionSummaries,
     awaitingCondition: awaitingCondition,
+    finalized: finalized,
   );
 }
 

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:plm_frontend/core/network/api_client.dart';
+import 'package:plm_frontend/core/time/kst_date.dart';
 import 'package:plm_frontend/features/household/controllers/household_guide_controller.dart';
 import 'package:plm_frontend/features/household/models/household_task.dart';
 import 'package:plm_frontend/features/partner/data/partner_request_store.dart';
@@ -148,7 +149,7 @@ void main() {
   });
 
   test('여러 요청의 기존 확인·완료를 항목 ID로 복원하고 남은 항목을 추가 요청한다', () async {
-    final today = DateTime.now();
+    final today = KstDate.today();
     final dateKey =
         '${today.year.toString().padLeft(4, '0')}-'
         '${today.month.toString().padLeft(2, '0')}-'
@@ -158,6 +159,7 @@ void main() {
       baseUrl: 'http://localhost:8000',
       httpClient: MockClient((request) async {
         if (request.url.path == '/api/v1/household/today') {
+          expect(request.url.queryParameters['date'], dateKey);
           return http.Response(
             jsonEncode({
               'items': [
@@ -176,6 +178,7 @@ void main() {
         }
         if (request.url.path == '/api/v1/family/household-requests' &&
             request.method == 'GET') {
+          expect(request.url.queryParameters['date'], dateKey);
           return http.Response(
             jsonEncode([
               {
@@ -221,7 +224,7 @@ void main() {
     addTearDown(service.dispose);
 
     expect(await service.fetchGuide(), hasLength(3));
-    expect(await service.fetchAll(), hasLength(2));
+    expect(await service.fetchAll(date: today), hasLength(2));
     await controller.loadGuide();
     expect(controller.loadFailed, isFalse);
     expect(controller.tasks.map((task) => task.id), [
@@ -236,6 +239,7 @@ void main() {
     expect(controller.selectedCount, 1);
 
     expect(await controller.shareSelected(), isTrue);
+    expect(posted!['target_date'], dateKey);
     expect(posted!['items'], [
       {
         'title': '같은 이름의 할 일',

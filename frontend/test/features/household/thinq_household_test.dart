@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:plm_frontend/core/network/api_client.dart';
+import 'package:plm_frontend/core/time/kst_date.dart';
 import 'package:plm_frontend/features/household/models/household_task.dart';
 import 'package:plm_frontend/features/household/services/api_household_request_service.dart';
 import 'package:plm_frontend/features/household/widgets/household_task_card.dart';
@@ -15,6 +16,12 @@ void main() {
       baseUrl: 'http://localhost:8000',
       httpClient: MockClient((request) async {
         expect(request.url.path, '/api/v1/household/today');
+        final today = KstDate.today();
+        final expectedDate =
+            '${today.year.toString().padLeft(4, '0')}-'
+            '${today.month.toString().padLeft(2, '0')}-'
+            '${today.day.toString().padLeft(2, '0')}';
+        expect(request.url.queryParameters['date'], expectedDate);
         return http.Response(
           jsonEncode({
             'appliance_connection_status': 'connected',

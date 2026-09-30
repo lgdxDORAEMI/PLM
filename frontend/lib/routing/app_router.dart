@@ -397,7 +397,10 @@ abstract final class AppRouter {
       );
     }
     if (parts.length == 3 && parts[0] == 'wife' && parts[1] == 'report') {
-      return DailyReportScreen(date: parts[2]);
+      return DailyReportScreen(
+        date: parts[2],
+        fromCalendar: uri.queryParameters['source'] == 'calendar',
+      );
     }
     if (path == RouteNames.wifeCalendar) return const WifeCalendarScreen();
     if (path == RouteNames.wifeMenu) {

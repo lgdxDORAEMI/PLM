@@ -149,7 +149,7 @@ class _RecordCalendarScreenState extends State<RecordCalendarScreen>
     CalendarSelectionStore.instance.remember(record.date);
     final date = recordDateKey(record.date);
     final route = widget.role == AppUserRole.wife
-        ? RouteNames.dailyReport(date)
+        ? RouteNames.dailyReport(date, fromCalendar: true)
         : RouteNames.husbandDailyReport(date);
     Navigator.pushNamed(context, route);
   }

@@ -49,8 +49,10 @@ abstract final class RouteNames {
   static const partnerMorningReportPattern = husbandMorningReportPattern;
   static const partnerRequestPattern = husbandRequestPattern;
 
-  static String dailyReport(String date) =>
-      '/wife/report/${Uri.encodeComponent(date)}';
+  static String dailyReport(String date, {bool fromCalendar = false}) => Uri(
+    path: '/wife/report/${Uri.encodeComponent(date)}',
+    queryParameters: fromCalendar ? const {'source': 'calendar'} : null,
+  ).toString();
   static String husbandMorningReport(String date) =>
       '/husband/report/morning/${Uri.encodeComponent(date)}';
   static String husbandDailyReport(String date) =>

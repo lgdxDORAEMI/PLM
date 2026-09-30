@@ -1,4 +1,5 @@
 import '../../../core/network/api_client.dart';
+import '../../../core/time/kst_date.dart';
 import '../models/daily_routine.dart';
 import 'routine_service.dart';
 
@@ -57,7 +58,7 @@ class ApiRoutineService implements RoutineService {
     if (cached == null && !forceRefresh && parsedCache != null) {
       return parsedCache;
     }
-    final today = DateTime.now().toUtc().add(const Duration(hours: 9));
+    final today = KstDate.today();
     final todayKey =
         '${today.year.toString().padLeft(4, '0')}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
     final json = cached != null && cached['date'] == todayKey
@@ -165,7 +166,7 @@ class ApiRoutineService implements RoutineService {
   }
 
   static bool _isToday(DateTime date) {
-    final today = DateTime.now().toUtc().add(const Duration(hours: 9));
+    final today = KstDate.today();
     return date.year == today.year &&
         date.month == today.month &&
         date.day == today.day;

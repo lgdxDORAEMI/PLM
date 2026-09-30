@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../core/config/app_config.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/time/kst_date.dart';
 import '../../partner/models/partner_request.dart';
 import '../models/household_task.dart';
 import '../services/api_household_request_service.dart';
@@ -53,7 +54,7 @@ class HouseholdGuideController extends ChangeNotifier {
       if (requestService is ApiHouseholdRequestService) {
         // 09-25: 날짜 필터를 서버로 넘긴다. 예전에는 전체를 받아 오늘 것만 남겨
         // 요청이 쌓일수록 느려졌다(7건에 30쿼리·1.2초).
-        final requests = await requestService.fetchAll(date: DateTime.now());
+        final requests = await requestService.fetchAll(date: KstDate.today());
         _shared = requests.isNotEmpty;
         _lastRequestId = requests.isEmpty ? null : requests.last.id;
         _requestIdByTaskId.clear();
