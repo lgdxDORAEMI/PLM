@@ -122,8 +122,8 @@ class _DailyReportScreenState extends State<DailyReportScreen> {
     if (await _controller.save() && mounted) {
       final savedDate = _controller.record!.date;
       CalendarSelectionStore.instance.remember(savedDate);
-      if (!AppConfig.hasSupabaseConfig &&
-          recordDateKey(savedDate) == recordDateKey(DateTime.now())) {
+      // 실 연동에서는 새로고침 시 ApiConditionRepository가 확정 리포트를 보고 같은 상태를 복원한다.
+      if (recordDateKey(savedDate) == recordDateKey(DateTime.now())) {
         TodayCareStore.instance.finishDay();
       }
       Navigator.pushNamedAndRemoveUntil(

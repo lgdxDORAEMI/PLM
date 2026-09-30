@@ -48,13 +48,15 @@ void main() {
     test('GET 200은 snake_case 응답을 ConditionDraft로 변환한다', () async {
       final client = ApiClient(
         httpClient: MockClient(
-          (request) async => http.Response(
-            '{"nausea":2,"waist_pain":4,"pelvis_pain":3,"leg_pain":1,'
-            '"wrist_pain":1,"fatigue":4,"mood":5,"target_date":"2026-09-18",'
-            '"planned_activities":[],"changed_fields":[],"write_kind":"updated",'
-            '"updated_at":"2026-09-18T00:00:00Z"}',
-            200,
-          ),
+          (request) async => request.url.path.contains('/daily-reports/')
+              ? http.Response('', 404)
+              : http.Response(
+                  '{"nausea":2,"waist_pain":4,"pelvis_pain":3,"leg_pain":1,'
+                  '"wrist_pain":1,"fatigue":4,"mood":5,"target_date":"2026-09-18",'
+                  '"planned_activities":[],"changed_fields":[],"write_kind":"updated",'
+                  '"updated_at":"2026-09-18T00:00:00Z"}',
+                  200,
+                ),
         ),
         baseUrl: 'http://test',
       );
@@ -65,6 +67,21 @@ void main() {
       expect(result?.mood, 5);
     });
 
+    test('그날 리포트를 저장하고 마쳤으면 컨디션을 묻지 않고 null을 돌려준다', () async {
+      final paths = <String>[];
+      final client = ApiClient(
+        httpClient: MockClient((request) async {
+          paths.add(request.url.path);
+          return http.Response('{"finalized":true}', 200);
+        }),
+        baseUrl: 'http://test',
+      );
+      final repository = ApiConditionRepository(client);
+
+      expect(await repository.fetchToday(_date), isNull);
+      expect(paths, ['/api/v1/care/daily-reports/2026-09-18']);
+    });
+
     test('PUT은 /api/v1/care/conditions/{date}로 snake_case body를 보낸다', () async {
       late Uri capturedUri;
       late String capturedBody;
@@ -72,11 +89,14 @@ void main() {
         httpClient: MockClient((request) async {
           capturedUri = request.url;
           capturedBody = request.body;
-          return http.Response('{"nausea":2,"waist_pain":4,"pelvis_pain":3,'
-              '"leg_pain":1,"wrist_pain":1,"fatigue":4,"mood":5,'
-              '"target_date":"2026-09-18","planned_activities":[],'
-              '"changed_fields":[],"write_kind":"created",'
-              '"updated_at":"2026-09-18T00:00:00Z"}', 200);
+          return http.Response(
+            '{"nausea":2,"waist_pain":4,"pelvis_pain":3,'
+            '"leg_pain":1,"wrist_pain":1,"fatigue":4,"mood":5,'
+            '"target_date":"2026-09-18","planned_activities":[],'
+            '"changed_fields":[],"write_kind":"created",'
+            '"updated_at":"2026-09-18T00:00:00Z"}',
+            200,
+          );
         }),
         baseUrl: 'http://test',
       );
