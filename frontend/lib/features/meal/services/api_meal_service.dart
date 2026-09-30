@@ -168,6 +168,21 @@ class ApiMealService implements MealService {
     }
     final reason = response?['reason']?.toString() ?? '';
     final cautions = response?['cautions'];
+    final newCautions = cautions is List
+        ? cautions
+              .whereType<Map>()
+              .map(
+                (value) => MealCaution(
+                  title: value['title']?.toString() ?? '',
+                  description: value['description']?.toString() ?? '',
+                ),
+              )
+              .where((caution) => caution.title.isNotEmpty)
+              .toList()
+        : const <MealCaution>[];
+    // 09-30 QA: '오늘 조심할 것'은 메뉴가 아니라 그날 컨디션 기준이라 메뉴를 바꿔도 유지한다.
+    // AI가 새 메뉴에 조심할 것을 비워 보내면 기존 항목(예: 과식)이 사라지던 문제.
+    final keptTitles = current.cautions.map((caution) => caution.title).toSet();
     return MealRecommendation(
       id: current.id,
       period: current.period,
@@ -179,17 +194,10 @@ class ApiMealService implements MealService {
       nutritionTags:
           (response?['nutritionTags'] as List?)?.whereType<String>().toList() ??
           const [],
-      cautions: cautions is List
-          ? cautions
-                .whereType<Map>()
-                .map(
-                  (value) => MealCaution(
-                    title: value['title']?.toString() ?? '',
-                    description: value['description']?.toString() ?? '',
-                  ),
-                )
-                .toList()
-          : const [],
+      cautions: [
+        ...current.cautions,
+        ...newCautions.where((caution) => !keptTitles.contains(caution.title)),
+      ],
       imagePath: response?['imagePath']?.toString(),
       imageUrl: response?['imageUrl']?.toString(),
     );

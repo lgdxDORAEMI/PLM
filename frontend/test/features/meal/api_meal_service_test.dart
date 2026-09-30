@@ -113,4 +113,46 @@ void main() {
     expect(body['payload']['nutritionTags'], ['에너지']);
     expect(body['payload']['imagePath'], 'snack/steamed_potato.jpg');
   });
+
+  test('다른 메뉴로 바꿔도 오늘 조심할 것은 유지하고 새 항목만 더한다(09-30 QA)', () async {
+    final service = ApiMealService(
+      client: ApiClient(
+        baseUrl: 'http://localhost:8000',
+        httpClient: MockClient(
+          (_) async => http.Response(
+            jsonEncode({
+              'title': '두부 채소죽',
+              'reason': '속이 편해요',
+              'nutritionTags': ['단백질'],
+              'cautions': [
+                {'title': '과식', 'description': '중복'},
+                {'title': '찬 음식', 'description': '속이 불편할 수 있어요'},
+              ],
+            }),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          ),
+        ),
+      ),
+    );
+    const current = MealRecommendation(
+      id: 'routine-item-42',
+      period: MealPeriod.breakfast,
+      title: '계란찜과 흰쌀죽',
+      description: '',
+      reasonTitle: '속쓰림 완화에 도움',
+      reason: '',
+      evidence: '',
+      nutritionTags: [],
+      cautions: [MealCaution(title: '과식', description: '속쓰림과 부종을 유발할 수 있어요')],
+    );
+
+    final next = await service.fetchAlternative(
+      current: current,
+      request: '다른 메뉴 보기',
+    );
+
+    expect(next.cautions.map((c) => c.title), ['과식', '찬 음식']);
+    expect(next.cautions.first.description, '속쓰림과 부종을 유발할 수 있어요');
+  });
 }
