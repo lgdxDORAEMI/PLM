@@ -45,7 +45,11 @@ def device(kind: ApplianceType, suffix: str) -> ThinQDevice:
 class ApplianceMapperTest(unittest.TestCase):
     def test_only_owned_washer_matches_laundry(self) -> None:
         result = apply_inventory(
-            guide(task("laundry", "빨래"), task("cleaning", "청소"), task("dishes", "설거지")),
+            guide(
+                task("laundry", "빨래", "partner"),
+                task("cleaning", "청소"),
+                task("dishes", "설거지"),
+            ),
             DeviceInventory((device(ApplianceType.WASHER, "세탁기"),), InventoryStatus.CONNECTED),
         )
         self.assertEqual([item.payload["owner"] for item in result.items], ["appliance", "partner", "partner"])
@@ -69,6 +73,14 @@ class ApplianceMapperTest(unittest.TestCase):
             InventoryStatus.CONNECTED,
         ))
         self.assertEqual([appliance["name"] for appliance in result.items[0].payload["appliances"]], ["세탁기", "건조기"])
+
+    def test_duplicate_laundry_key_suffix_still_matches_washer(self) -> None:
+        result = apply_inventory(
+            guide(task("laundry:2", "빨래")),
+            DeviceInventory((device(ApplianceType.WASHER, "세탁기"),), InventoryStatus.CONNECTED),
+        )
+        self.assertEqual(result.items[0].payload["owner"], "appliance")
+        self.assertEqual(result.items[0].payload["appliances"][0]["name"], "세탁기")
 
     def test_empty_inventory_has_no_appliance_tasks(self) -> None:
         result = apply_inventory(guide(task("laundry", "빨래"), task("groceries", "장보기", "partner")),
@@ -98,6 +110,47 @@ class ApplianceMapperTest(unittest.TestCase):
 
 
 class ThinQFailureTest(unittest.IsolatedAsyncioTestCase):
+    @staticmethod
+    def settings() -> SimpleNamespace:
+        return SimpleNamespace(
+            thinq_pat=SimpleNamespace(get_secret_value=lambda: "pat"),
+            thinq_client_id="00000000-0000-4000-8000-000000000001",
+            thinq_country_code="KR",
+        )
+
+    async def test_transient_failure_retries_once(self) -> None:
+        client = ThinQClient()
+        connected = DeviceInventory(
+            (device(ApplianceType.WASHER, "세탁기"),),
+            InventoryStatus.CONNECTED,
+        )
+        with patch.object(
+            client,
+            "_fetch_once",
+            side_effect=[DeviceInventory((), InventoryStatus.TIMEOUT), connected],
+        ) as fetch:
+            result = await client._fetch("pat", "KR", "00000000-0000-4000-8000-000000000001")
+        self.assertEqual(result, connected)
+        self.assertEqual(fetch.await_count, 2)
+
+    async def test_transient_refresh_failure_uses_last_verified_inventory(self) -> None:
+        client = ThinQClient(ttl_seconds=0, stale_ttl_seconds=1800)
+        connected = DeviceInventory(
+            (device(ApplianceType.WASHER, "세탁기"),),
+            InventoryStatus.CONNECTED,
+        )
+        with (
+            patch("app.services.thinq.client.get_settings", return_value=self.settings()),
+            patch("app.services.thinq.client.time.monotonic", return_value=100.0),
+            patch.object(
+                client,
+                "_fetch",
+                side_effect=[connected, DeviceInventory((), InventoryStatus.TIMEOUT)],
+            ),
+        ):
+            self.assertEqual(await client.get_inventory(), connected)
+            self.assertEqual(await client.get_inventory(), connected)
+
     async def test_device_endpoint_returns_only_normalized_fields(self) -> None:
         client = ThinQClient()
         inventory = DeviceInventory(
@@ -133,7 +186,7 @@ class ThinQFailureTest(unittest.IsolatedAsyncioTestCase):
                 async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as http:
                     response = await http.get("/api/v1/thinq/devices")
                 self.assertEqual(response.status_code, 200)
-                self.assertEqual(response.json(), {"status": "not_configured", "devices": []})
+                self.assertEqual(response.json(), {"status": "account_mismatch", "devices": []})
                 inventory.assert_not_called()
             finally:
                 app.dependency_overrides.clear()
@@ -173,7 +226,7 @@ class ThinQFailureTest(unittest.IsolatedAsyncioTestCase):
         try:
             with patch("app.services.thinq.client.ThinQApi") as api:
                 api.return_value.async_get_device_list.side_effect = ThinQAPIException("1103", secret, {})
-                result = await client._fetch(secret, "KR", "00000000-0000-4000-8000-000000000001")
+                result = await client._fetch_once(secret, "KR", "00000000-0000-4000-8000-000000000001")
             self.assertEqual(result.status, InventoryStatus.AUTH_ERROR)
             self.assertNotIn(secret, repr(result) + stream.getvalue())
         finally:

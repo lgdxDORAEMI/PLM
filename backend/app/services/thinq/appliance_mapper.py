@@ -27,7 +27,9 @@ TITLE_ACTIVITIES = {
 def _activity(item: GuideItem) -> str | None:
     """Stored activity code takes priority; title fallback is exact, not substring."""
     if item.item_key.startswith("household:"):
-        code = item.item_key.partition(":")[2]
+        # Routine regeneration appends :2, :3 to duplicate keys. The suffix is
+        # an identity disambiguator, not part of the household activity code.
+        code = item.item_key.partition(":")[2].split(":", 1)[0]
         if code in ACTIVITY_APPLIANCES:
             return code
         if code != "custom":

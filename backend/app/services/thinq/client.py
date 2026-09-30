@@ -1,6 +1,7 @@
 """Read-only ThinQ Connect inventory with a short process-local cache."""
 
 import asyncio
+import logging
 import time
 from dataclasses import dataclass
 from enum import StrEnum
@@ -14,9 +15,13 @@ from app.core.config import get_settings
 from .models import ThinQDevice, normalize_device
 
 
+logger = logging.getLogger(__name__)
+
+
 class InventoryStatus(StrEnum):
     CONNECTED = "connected"
     NOT_CONFIGURED = "not_configured"
+    ACCOUNT_MISMATCH = "account_mismatch"
     AUTH_ERROR = "auth_error"
     TIMEOUT = "timeout"
     ERROR = "error"
@@ -45,15 +50,18 @@ class DeviceInventory:
 
 
 class ThinQClient:
-    def __init__(self, ttl_seconds: int = 300) -> None:
+    def __init__(self, ttl_seconds: int = 300, stale_ttl_seconds: int = 1800) -> None:
         self._ttl_seconds = ttl_seconds
+        self._stale_ttl_seconds = max(stale_ttl_seconds, ttl_seconds)
         self._cached: DeviceInventory | None = None
         self._expires_at = 0.0
+        self._stale_expires_at = 0.0
         self._lock = asyncio.Lock()
 
     def clear_cache(self) -> None:
         self._cached = None
         self._expires_at = 0.0
+        self._stale_expires_at = 0.0
 
     async def get_inventory(self) -> DeviceInventory:
         """Never propagate SDK exceptions: they may contain sensitive request details."""
@@ -72,11 +80,33 @@ class ThinQClient:
                 return self._cached
             result = await self._fetch(pat, settings.thinq_country_code, settings.thinq_client_id)
             if result.status == InventoryStatus.CONNECTED:
+                now = time.monotonic()
                 self._cached = result
-                self._expires_at = time.monotonic() + self._ttl_seconds
+                self._expires_at = now + self._ttl_seconds
+                self._stale_expires_at = now + self._stale_ttl_seconds
+            elif (
+                result.status in {InventoryStatus.TIMEOUT, InventoryStatus.ERROR}
+                and self._cached is not None
+                and time.monotonic() < self._stale_expires_at
+            ):
+                # A transient ThinQ failure must not move known appliance tasks
+                # into the family section. Keep the last verified inventory while
+                # allowing the next request to refresh it again.
+                logger.warning(
+                    "ThinQ inventory refresh failed with %s; using last verified inventory",
+                    result.status.value,
+                )
+                return self._cached
             return result
 
     async def _fetch(self, pat: str, country: str, client_id: str) -> DeviceInventory:
+        result = await self._fetch_once(pat, country, client_id)
+        if result.status not in {InventoryStatus.TIMEOUT, InventoryStatus.ERROR}:
+            return result
+        logger.warning("ThinQ inventory lookup failed with %s; retrying once", result.status.value)
+        return await self._fetch_once(pat, country, client_id)
+
+    async def _fetch_once(self, pat: str, country: str, client_id: str) -> DeviceInventory:
         try:
             async with aiohttp.ClientSession() as session:
                 try:

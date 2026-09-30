@@ -172,12 +172,22 @@ class _HouseholdGuideScreenState extends State<HouseholdGuideScreen> {
         Text(
           switch (status) {
             'not_configured' => 'ThinQ 연결 설정이 필요해요.',
+            'account_mismatch' => '현재 로그인한 계정에는 등록 가전을 표시할 수 없어요.',
             'auth_error' => 'ThinQ 연결을 다시 확인해 주세요.',
             _ => '가전 목록을 확인하지 못했어요. 잠시 후 다시 시도해 주세요.',
           },
           style: Theme.of(
             context,
           ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: TextButton.icon(
+            onPressed: _controller.loadGuide,
+            icon: const Icon(Icons.refresh),
+            label: const Text('가전 다시 확인'),
+          ),
         ),
         const SizedBox(height: AppSpacing.sm),
       ],

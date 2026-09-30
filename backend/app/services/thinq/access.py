@@ -10,6 +10,8 @@ async def inventory_for_user(user: CurrentUser, client: ThinQClient) -> DeviceIn
     """Do not expose one account's registered devices to another login."""
     owner_email = get_settings().plm_wife_email.strip().casefold()
     user_email = (user.email or "").strip().casefold()
-    if not owner_email or user_email != owner_email:
+    if not owner_email:
         return DeviceInventory((), InventoryStatus.NOT_CONFIGURED)
+    if user_email != owner_email:
+        return DeviceInventory((), InventoryStatus.ACCOUNT_MISMATCH)
     return await client.get_inventory()
