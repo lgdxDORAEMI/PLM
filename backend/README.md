@@ -129,6 +129,8 @@ DB 적용 절차는 [Supabase README](../supabase/README.md)를 참고합니다.
 - 자동 등록 계정 세션 API: localhost 또는 `FRONTEND_ORIGIN` 요청만 허용
 - 날짜 기준: 생활 기록은 KST 날짜 사용
 
+배우자 공개 상태는 `partner_links.shared_at`으로 판정합니다. 아내가 프로필 입력을 모두 마쳐도 이 값은 자동으로 채워지지 않으며, 기존 연결을 다시 공개할 때는 초대 화면의 `초대하기`가 호출하는 `POST /api/v1/account/partner-link/share`에서만 갱신합니다. 남편의 `GET /api/v1/account/bootstrap`은 공개 전에는 `husband_invitation_required`, 공개 후에는 `husband_calendar`를 반환합니다. 새 배우자 연결은 초대 수락이 완료된 뒤 공개 상태로 시작합니다.
+
 `GET /api/v1/thinq/devices`는 ThinQ 진단 시 PAT나 모델 정보 없이 `status`, `device_id`, `name`, `device_type`만 반환합니다. 설정된 아내 계정이 아닌 로그인에는 `account_mismatch`와 빈 기기 목록을 반환합니다. 가사 가이드가 빨래를 가족 항목으로 표시하면 먼저 이 API가 `connected`와 `washer`를 반환하는지 확인합니다.
 
 `GET /api/v1/chat/messages`는 날짜를 생략하면 KST 기준 오늘 대화만 반환합니다. `GET /api/v1/routine/home`은 오늘 컨디션이나 루틴 생성 여부와 무관하게 프로필 주차 안내를 반환합니다.
