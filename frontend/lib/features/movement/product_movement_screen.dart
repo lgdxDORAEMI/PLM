@@ -257,7 +257,7 @@ class _CurrentStateCard extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 LinearProgressIndicator(
-                  value: (data.forwardBendSeconds / 3600).clamp(0, 1),
+                  value: (data.forwardBendSeconds / 300).clamp(0, 1),
                   color: AppColors.warning,
                   backgroundColor: AppColors.surfaceSubtle,
                 ),
