@@ -46,6 +46,7 @@ class DailyRoutinePlan {
     this.isBackendFallback = false,
     this.weekNotes = const [],
     this.caution,
+    this.householdRequestCompleted = false,
   });
 
   final DateTime date;
@@ -62,6 +63,10 @@ class DailyRoutinePlan {
   /// Backend home.caution: 오늘의 팁(AI)이 있으면 그 문장, 없으면 주차별 주의 문구.
   final String? caution;
 
+  /// 오늘 남편에게 보낸 가사 요청 중 항목이 모두 완료된 요청이 1건 이상인지.
+  /// 홈 진행도의 가사 분야는 routine_items 대신 이 값으로 판정한다.
+  final bool householdRequestCompleted;
+
   DailyRoutinePlan copyWith({List<RoutineItem>? items}) => DailyRoutinePlan(
     date: date,
     updatedLabel: updatedLabel,
@@ -70,5 +75,6 @@ class DailyRoutinePlan {
     isBackendFallback: isBackendFallback,
     weekNotes: weekNotes,
     caution: caution,
+    householdRequestCompleted: householdRequestCompleted,
   );
 }

@@ -393,6 +393,7 @@ class _WifeHomeScreenState extends State<WifeHomeScreen> {
       RoutineProgress(
         items: plan.items,
         healthFocusAreas: _healthFocusAreas(_todayCareStore.today),
+        householdRequestCompleted: plan.householdRequestCompleted,
       ),
       const SizedBox(height: AppSpacing.xl),
       // 시안: 버튼 라벨 Bold(700).

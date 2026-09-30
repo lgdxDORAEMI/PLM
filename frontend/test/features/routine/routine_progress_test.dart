@@ -83,4 +83,39 @@ void main() {
 
     expect(find.text('1 / 1 완료'), findsOneWidget);
   });
+
+  testWidgets('가사는 항목 상태와 무관하게 완료된 남편 요청이 있어야 완료다', (tester) async {
+    const items = [
+      RoutineItem(
+        id: 'household:laundry',
+        title: '빨래',
+        description: '',
+        type: RoutineType.household,
+        status: RoutineStatus.completed,
+      ),
+      RoutineItem(
+        id: 'household:dishes',
+        title: '설거지',
+        description: '',
+        type: RoutineType.household,
+        status: RoutineStatus.scheduled,
+      ),
+    ];
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(body: RoutineProgress(items: items)),
+      ),
+    );
+    expect(find.text('0 / 1 완료'), findsOneWidget);
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: RoutineProgress(items: items, householdRequestCompleted: true),
+        ),
+      ),
+    );
+    expect(find.text('1 / 1 완료'), findsOneWidget);
+  });
 }

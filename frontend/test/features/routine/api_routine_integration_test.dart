@@ -54,6 +54,27 @@ void main() {
             headers: {'content-type': 'application/json; charset=utf-8'},
           );
         }
+        if (request.url.path == '/api/v1/family/household-requests') {
+          expect(request.url.queryParameters['date'], date);
+          // 확인만 된 요청 1건 + 모두 완료된 요청 1건 → 가사 완료.
+          return http.Response(
+            jsonEncode([
+              {
+                'items': [
+                  {'status': 'confirmed'},
+                ],
+              },
+              {
+                'items': [
+                  {'status': 'completed'},
+                  {'status': 'completed'},
+                ],
+              },
+            ]),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        }
         if (request.url.path.endsWith('/today')) {
           expect(request.url.queryParameters['date'], date);
           final category = switch (request.url.path) {
@@ -108,12 +129,14 @@ void main() {
       'PUT /api/v1/care/conditions/$date',
       'PUT /api/v1/care/conditions/$date/activities',
       'POST /api/v1/routine/today',
+      'GET /api/v1/family/household-requests',
       'GET /api/v1/meals/today',
       'GET /api/v1/household/today',
       'GET /api/v1/health/today',
       'GET /api/v1/sleep/today',
     ]);
     expect(plan.isBackendFallback, isTrue);
+    expect(plan.householdRequestCompleted, isTrue);
     final meal = plan.items.firstWhere((item) => item.id == 'saved-meal-1');
     final health = plan.items.firstWhere((item) => item.id == 'saved-health-1');
     expect(meal.title, '저장된 식사');

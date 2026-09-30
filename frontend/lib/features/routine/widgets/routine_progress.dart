@@ -9,14 +9,19 @@ class RoutineProgress extends StatelessWidget {
     super.key,
     required this.items,
     this.healthFocusAreas,
+    this.householdRequestCompleted = false,
   });
 
   final List<RoutineItem> items;
   final Set<String>? healthFocusAreas;
 
+  /// 가사 분야는 항목 상태가 아니라 '남편에게 보낸 요청이 모두 완료된 건이 있는지'로 판정한다.
+  /// 가전 실행·본인 항목은 진행도에 반영하지 않는다.
+  final bool householdRequestCompleted;
+
   @override
   Widget build(BuildContext context) {
-    // 분야(식사·가사·건강·수면) 단위로 센다. 분야의 모든 항목이 완료돼야 완료다.
+    // 분야(식사·가사·건강·수면) 단위로 센다. 분야의 모든 항목이 완료돼야 완료다(가사는 예외).
     final groups = <RoutineType, List<RoutineItem>>{};
     for (final item in items) {
       if (!item.countsTowardProgress) continue;
@@ -29,14 +34,16 @@ class RoutineProgress extends StatelessWidget {
       (groups[item.type] ??= []).add(item);
     }
     final total = groups.length;
-    final completed = groups.values
+    final completed = groups.entries
         .where(
-          (group) => group.every(
-            (item) =>
-                item.status == RoutineStatus.completed ||
-                (item.type == RoutineType.health &&
-                    item.status == RoutineStatus.skipped),
-          ),
+          (entry) => entry.key == RoutineType.household
+              ? householdRequestCompleted
+              : entry.value.every(
+                  (item) =>
+                      item.status == RoutineStatus.completed ||
+                      (item.type == RoutineType.health &&
+                          item.status == RoutineStatus.skipped),
+                ),
         )
         .length;
     final progress = total == 0 ? 0.0 : completed / total;

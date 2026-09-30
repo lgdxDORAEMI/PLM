@@ -85,6 +85,10 @@ class ApiRoutineService implements RoutineService {
           status: RoutineStatus.scheduled,
         ),
     ];
+    // 홈 진행도의 가사 분야용. 가이드와 함께 보내고, 실패해도 홈은 띄운다(가사만 미완료로 보임).
+    final householdRequests = _client
+        .getList('/api/v1/family/household-requests', query: {'date': dateKey})
+        .then<List<dynamic>?>((value) => value, onError: (_) => null);
     // 09-25: 4종 가이드는 서로 독립이라 함께 보낸다. 순차 await면 왕복 4번을 그대로 기다렸다.
     final guides = await Future.wait([
       for (final type in RoutineType.values)
@@ -142,6 +146,19 @@ class ApiRoutineService implements RoutineService {
                 const [])
           : const [],
       caution: home is Map ? home['caution'] as String? : null,
+      // 요청 단위로 본다: 한 요청의 항목이 모두 완료되면 이후 새 요청을 보내도 완료가 유지된다.
+      // 남편이 '확인'만 한 상태는 완료가 아니다.
+      householdRequestCompleted: (await householdRequests ?? const [])
+          .whereType<Map>()
+          .map((request) => request['items'])
+          .whereType<List>()
+          .any(
+            (items) =>
+                items.isNotEmpty &&
+                items.every(
+                  (item) => item is Map && item['status'] == 'completed',
+                ),
+          ),
     );
     _cachedToday = plan;
     return plan;
