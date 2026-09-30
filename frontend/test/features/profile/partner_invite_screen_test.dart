@@ -38,12 +38,13 @@ void main() {
 
   testWidgets('메뉴에서 이미 연동된 가족을 확인하면 결과 화면 없이 메뉴로 돌아간다', (tester) async {
     final invitation = _CountingInvitationService();
+    final partnerLink = _LinkedPartnerService();
     await tester.pumpWidget(
       MaterialApp(
         home: PartnerInviteScreen(
           entryContext: InviteEntryContext.profileMenu,
           service: invitation,
-          partnerLinkService: _LinkedPartnerService(),
+          partnerLinkService: partnerLink,
         ),
         routes: {
           RouteNames.wifeMenu: (_) => const Scaffold(body: Text('메뉴 도착')),
@@ -53,6 +54,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('최준서님과 연결됐어요'), findsNothing);
+    expect(partnerLink.shareCalls, 0);
 
     final send = find.byKey(const ValueKey('partner-invite-send'));
     await tester.scrollUntilVisible(
@@ -68,6 +70,7 @@ void main() {
     expect(find.text('최준서님과 연결됐어요'), findsNothing);
     expect(find.text('메뉴 도착'), findsOneWidget);
     expect(invitation.createCalls, 0);
+    expect(partnerLink.shareCalls, 1);
   });
 
   testWidgets('일일 흐름에서는 연결 확인 후 별도 버튼 없이 루틴을 생성한다', (tester) async {
@@ -130,12 +133,16 @@ class _PendingRoutineService implements PlannedActivityService {
 }
 
 class _LinkedPartnerService implements PartnerLinkService {
+  int shareCalls = 0;
+
   @override
   Future<PartnerLink> fetch() async =>
       const PartnerLink(linked: true, partnerDisplayName: '최준서');
 
   @override
-  Future<void> share() async {}
+  Future<void> share() async {
+    shareCalls += 1;
+  }
 }
 
 class _CountingInvitationService implements InvitationService {

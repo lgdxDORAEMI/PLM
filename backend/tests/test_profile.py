@@ -275,7 +275,7 @@ class ProfileApiTest(unittest.IsolatedAsyncioTestCase):
     async def test_full_six_step_completion_flow(self) -> None:
         """STEP 10: 1~6단계를 순서대로 저장하고 GET이 전체를 그대로 돌려주는지 확인한다
         (W-PROFILE-007 요약 화면이 의존하는 계약)."""
-        # 초기화로 공개가 비워진 연동 부부(09-30: 마지막 단계 저장 시 다시 공개된다).
+        # 프로필을 모두 저장해도 초대하기 전에는 남편에게 공개하지 않는다.
         link = {"wife_user_id": "user-1", "shared_at": None}
         self.supabase.partner_links["user-1"] = link
         async with self.client() as client:
@@ -306,7 +306,7 @@ class ProfileApiTest(unittest.IsolatedAsyncioTestCase):
                 json={"medical_conditions": ["고혈압"], "medical_note": "정기 검진 권유받음"},
             )
             self.assertEqual(response.status_code, 200)
-            self.assertTrue(link["shared_at"])
+            self.assertIsNone(link["shared_at"])
             self.assertEqual(response.json()["completed_step"], 4)  # 5~6단계는 카운트 제외(TBD)
 
             response = await client.get("/api/v1/profile/me")
