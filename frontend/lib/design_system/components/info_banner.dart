@@ -62,10 +62,11 @@ class InfoBanner extends StatelessWidget {
                       const SizedBox(height: AppSpacing.xs),
                       Text(
                         message!,
-                        style: (compact
-                                ? Theme.of(context).textTheme.bodySmall
-                                : Theme.of(context).textTheme.bodyMedium)
-                            ?.copyWith(color: colors.foreground),
+                        style:
+                            (compact
+                                    ? Theme.of(context).textTheme.bodySmall
+                                    : Theme.of(context).textTheme.bodyMedium)
+                                ?.copyWith(color: colors.foreground),
                       ),
                     ],
                   ],
