@@ -139,7 +139,8 @@ class _PartnerNotificationsScreenState extends State<PartnerNotificationsScreen>
               ? '새 알림이 없어요'
               : '읽지 않은 알림 ${_controller.unreadCount}개',
           message: '오전 리포트·가사 요청·루틴 변경을 시간순으로 보여드려요.',
-          tone: InfoBannerTone.info,
+          tone: InfoBannerTone.subtle,
+          compact: true,
         ),
         const SizedBox(height: AppSpacing.xl),
         const SizedBox.shrink(),

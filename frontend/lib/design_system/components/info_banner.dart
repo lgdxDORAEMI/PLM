@@ -4,7 +4,7 @@ import '../tokens/app_colors.dart';
 import '../tokens/app_radius.dart';
 import '../tokens/app_spacing.dart';
 
-enum InfoBannerTone { neutral, info, success, warning, danger }
+enum InfoBannerTone { subtle, neutral, info, success, warning, danger }
 
 /// 안내·성공·경고·오류를 색상뿐 아니라 Icon과 Text로 함께 전달한다.
 class InfoBanner extends StatelessWidget {
@@ -14,12 +14,14 @@ class InfoBanner extends StatelessWidget {
     this.message,
     this.tone = InfoBannerTone.info,
     this.icon,
+    this.compact = false,
   });
 
   final String title;
   final String? message;
   final InfoBannerTone tone;
   final IconData? icon;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -34,11 +36,15 @@ class InfoBanner extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.card),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          padding: EdgeInsets.all(compact ? AppSpacing.md : AppSpacing.lg),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(icon ?? _iconFor(tone), color: colors.foreground),
+              Icon(
+                icon ?? _iconFor(tone),
+                color: colors.foreground,
+                size: compact ? 20 : null,
+              ),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
@@ -46,13 +52,21 @@ class InfoBanner extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: colors.foreground,
-                      ),
+                      style:
+                          (compact
+                                  ? Theme.of(context).textTheme.labelLarge
+                                  : Theme.of(context).textTheme.titleMedium)
+                              ?.copyWith(color: colors.foreground),
                     ),
                     if (message != null) ...[
                       const SizedBox(height: AppSpacing.xs),
-                      Text(message!),
+                      Text(
+                        message!,
+                        style: (compact
+                                ? Theme.of(context).textTheme.bodySmall
+                                : Theme.of(context).textTheme.bodyMedium)
+                            ?.copyWith(color: colors.foreground),
+                      ),
                     ],
                   ],
                 ),
@@ -66,6 +80,10 @@ class InfoBanner extends StatelessWidget {
 
   _BannerColors _colorsFor(InfoBannerTone tone) {
     return switch (tone) {
+      InfoBannerTone.subtle => const _BannerColors(
+        AppColors.surfaceSubtle,
+        AppColors.textSecondary,
+      ),
       InfoBannerTone.neutral => const _BannerColors(
         AppColors.surfaceSubtle,
         AppColors.textPrimary,
@@ -91,6 +109,7 @@ class InfoBanner extends StatelessWidget {
 
   IconData _iconFor(InfoBannerTone tone) {
     return switch (tone) {
+      InfoBannerTone.subtle => Icons.info_outline,
       InfoBannerTone.neutral => Icons.info_outline,
       InfoBannerTone.info => Icons.info_outline,
       InfoBannerTone.success => Icons.check_circle_outline,
