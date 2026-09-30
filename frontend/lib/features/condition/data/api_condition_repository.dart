@@ -25,27 +25,18 @@ class ApiConditionRepository implements ConditionRepository {
     _cachedActivities = const [];
   }
 
-  /// 그날 리포트를 '저장하고 마치기'로 확정했으면 컨디션이 없는 것으로 돌려준다 —
-  /// 새로고침·계정 전환 뒤에도 홈이 루틴 대신 컨디션 체크 버튼을 보여준다.
-  /// 메뉴 '초기화'가 리포트도 지우므로 다음 시연은 처음부터 시작된다.
-  /// 동시 요청은 BE 공유 연결에서 503이 날 수 있어 순서대로 보낸다.
   @override
   Future<ConditionDraft?> fetchToday(DateTime date) async {
-    final finalized = await _client.get(
-      '/api/v1/care/daily-reports/${_isoDate(date)}',
-    );
-    final response = finalized != null
-        ? null
-        : await _client.get('/api/v1/care/conditions/${_isoDate(date)}');
+    final response = await _client.get('/api/v1/care/conditions/${_isoDate(date)}');
     if (response == null) {
       forgetCache();
       return null;
     }
     _cachedKey = _key(date);
     _cachedActivities =
-        (response['planned_activities'] as List?)?.whereType<String>().toList(
-          growable: false,
-        ) ??
+        (response['planned_activities'] as List?)
+            ?.whereType<String>()
+            .toList(growable: false) ??
         const [];
     return _fromResponse(response);
   }
