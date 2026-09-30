@@ -44,19 +44,6 @@ class MealRecommendationCard extends StatelessWidget {
                     height: 1.41,
                   ),
           ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            recommendation.description,
-            style: compact
-                ? Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.textSecondary,
-                  )
-                : const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 17,
-                    height: 1.59,
-                  ),
-          ),
           const SizedBox(height: AppSpacing.lg),
           Wrap(
             spacing: AppSpacing.sm,

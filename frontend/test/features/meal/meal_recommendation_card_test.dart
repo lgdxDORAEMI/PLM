@@ -31,5 +31,7 @@ void main() {
 
     final image = tester.widget<Image>(find.byType(Image));
     expect((image.image as NetworkImage).url, imageUrl);
+    expect(find.text(recommendation.title), findsOneWidget);
+    expect(find.text(recommendation.description), findsNothing);
   });
 }
