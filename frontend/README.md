@@ -14,7 +14,7 @@ PLM Frontend는 아내와 남편의 생활 루틴·가족 공유 흐름을 제�
 - 오늘 챗봇 대화 복원, 추천 카드, 컨디션 수정 확인과 루틴 재생성 상태
 - 3점 이상 통증 집중 부위별 건강 영상, 다른 부위 영상 선택 조회, 전신 스트레칭 기본 추천과 `활동 완료`·`오늘 안하기` 진행도 반영
 - 수면 환경 설정과 연결된 공기청정기 전원·바람세기 실행
-- 가사 분담 요청과 확인·완료 상태
+- 보유 ThinQ 가전과 빨래·청소·설거지 매칭, 연결 오류 재조회, 가사 분담 요청과 확인·완료 상태
 - Daily 리포트, 월별 달력과 기록 날짜를 먼저 표시하고 선택 날짜의 컨디션 7종 점수를 포함한 상세를 독립적으로 갱신하는 캘린더, 오늘 기록 초기화
 - 오늘 기록 초기화 후 Entry의 `시작하기`에서 프로필 설정으로 이어지는 재시작 흐름
 
@@ -69,6 +69,8 @@ DEMO_PASSWORD=
 - `SUPABASE_URL`과 `SUPABASE_ANON_KEY`가 모두 있어야 실제 인증·API 모드를 사용합니다.
 - 로컬 API 주소는 `.env`의 `BACKEND_URL`을 사용합니다.
 - 배포 빌드는 `--dart-define=API_BASE_URL=...` 값을 우선합니다.
+- `BACKEND_URL`에는 마지막 `/`를 붙이지 않습니다. `ApiClient`가 `/api/v1/...` 경로를 이어 붙입니다.
+- 로컬 Chrome은 `http://localhost:8000`, Android Emulator는 `http://10.0.2.2:8000`, 실제 기기는 같은 네트워크에 있는 PC의 LAN IP를 사용합니다.
 - Service Role Key, 등록 계정 비밀번호, LLM·ThinQ 비밀값을 Frontend에 넣지 않습니다.
 
 ## 로컬 실행
@@ -77,6 +79,14 @@ DEMO_PASSWORD=
 flutter pub get
 flutter run -d chrome
 ```
+
+실행 전에 Backend 연결을 확인합니다.
+
+```powershell
+Invoke-RestMethod http://localhost:8000/health
+```
+
+정상 응답은 `{"status":"ok"}`입니다. VS Code의 기본 `PLM: Chrome` 설정은 `API_BASE_URL`을 별도로 주입하지 않으므로 `frontend/.env`의 `BACKEND_URL`을 그대로 사용합니다.
 
 로컬 예시 화면만 확인하려면 다음과 같이 실행합니다.
 
@@ -96,6 +106,14 @@ flutter run -d chrome --dart-define=PLM_PREVIEW=true
 - 401: Supabase 세션 확인
 - 403: 계정 권한 또는 `FRONTEND_ORIGIN` 확인
 - 503: Coolify, Supabase, DB 스키마 또는 LLM 연결 확인
+
+가사 가이드의 `appliance_connection_status`는 다음처럼 처리합니다.
+
+- `connected`: 보유 기기와 빨래·청소·설거지를 매칭합니다.
+- `account_mismatch`: 현재 로그인 계정은 서버의 ThinQ PAT 소유 계정이 아닙니다.
+- `not_configured`: Backend의 ThinQ 설정이 비어 있거나 Client ID 형식이 잘못됐습니다.
+- `auth_error`: PAT 인증 정보를 갱신해야 합니다.
+- `timeout`, `error`, `unsupported_country`: 안내와 `가전 다시 확인` 버튼을 표시합니다.
 
 화면별 경로는 [API 문서](../docs/api.md), 연결 상태는 [FE–BE 연결 기록](../docs/FE_BE_CONNECTION_STATUS.md)을 참고합니다.
 
@@ -135,11 +153,14 @@ SUPABASE_ANON_KEY=<Supabase public anon key>
 
 `main`의 `frontend/**` 또는 배포 Workflow 변경이 배포를 시작합니다. 수동 배포는 GitHub Actions의 `Flutter Web GitHub Pages 배포`에서 `Run workflow`를 실행합니다. Flutter Web은 hash routing을 사용하므로 내부 주소는 `/#/wife/home` 형태입니다.
 
+이 Workflow는 Frontend만 배포합니다. `backend/**` 변경은 Coolify의 GitHub Webhook과 `backend/Dockerfile` 배포 상태를 별도로 확인해야 합니다.
+
 ## 배포 확인
 
 - 앱: <https://lgdxdoraemi.github.io/PLM/>
 - 브라우저 Network의 API 호스트가 `plm-api.dx6project.site`인지 확인
-- 오래된 UI가 보이면 강력 새로고침
+- 오래된 UI가 보이면 강력 새로고침하고 GitHub Actions의 배포 `head_sha`가 `origin/main`과 같은지 확인
+- UI는 최신인데 API 동작이 이전 버전이면 Coolify의 실행 커밋과 재배포 로그 확인
 - Console의 401/403/404/503을 위 연결 기준에 따라 확인
 
 전체 로컬·운영 설정은 [guide.md](../guide.md)를 참고합니다.
